@@ -1,0 +1,9 @@
+schema: paperclip/v1
+agents:
+  chief-of-staff:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/

@@ -116,6 +116,7 @@ founder-os/
 ├── metrics.md              # the numbers: revenue, pipeline, runway, hours
 ├── offer.md                # ICP + offer + pricing
 ├── pipeline.md             # prospects + next action each
+├── week.md                 # current week's blocks, rewritten each Monday
 ├── clients/<slug>.md       # scope, health, revenue per client
 ├── network.md              # relationships + follow-up queue
 ├── skills.md               # capability map + learning plan
@@ -140,15 +141,23 @@ founder-os/
 | `metrics.md` | `cfo` |
 | `offer.md` | `positioning-advisor` |
 | `pipeline.md` | `pipeline-coach` |
+| `week.md` | `focus-coach` |
 | `clients/` | `delivery-lead` |
 | `network.md` | `network-manager` |
 | `skills.md` | `skills-mentor` |
 | `content.md` | `brand-editor` |
 | `systems.md` | `ops-engineer` |
 | `decisions/` | `chief-of-staff` |
-| `reviews/daily/`, `reviews/weekly/` | `chief-of-staff` |
-| `reviews/monthly/` | `cfo` |
+| `reviews/daily/`, `reviews/weekly/`, `reviews/monthly/` | `chief-of-staff` |
 | `reviews/quarterly/` | `strategist` |
+
+**Corrected 2026-07-15 during implementation.** `reviews/monthly/` was originally assigned to `cfo`, which contradicted §6 giving the `monthly-review` skill to `chief-of-staff` — an agent cannot run a skill whose output it may not write. The CFO's monthly close writes `metrics.md` (which is what a numbers close *is*); the Chief of Staff writes the retrospective. This produces a clean handoff — CFO closes the numbers, CoS says what they mean — and keeps all three recurring retrospectives with one owner.
+
+A skill's declared output must be owned by the agent that holds the skill. This is now enforced mechanically: SKILL.md declares `metadata.writes`, and `check_skill_writes` in `scripts/validate_package.py` fails the build if the holder does not own the path.
+
+**Also corrected 2026-07-15:** `week.md` was added, owned by `focus-coach`. The original map listed only 10 owners, leaving Focus Coach with three skills and a scheduled Monday `week-plan` task but nowhere to write — and leaving `calendar-audit` ("planned vs. actual") with no baseline to compare against. `week.md` holds the current week's blocks and is rewritten each Monday.
+
+**Two agents deliberately own nothing:** `board-member` (a board advises; it does not write company state — its findings reach the workspace only if the founder logs them via `decision-log`) and — no longer — `focus-coach`, whose lack of ownership was an oversight rather than a design choice. That distinction is the test for any future agent: owning nothing must be a decision, not an omission.
 
 ### The decision log
 

@@ -1,0 +1,48 @@
+# Workspace file ownership. Everyone reads; only the owner writes.
+# Enforced by the state-integrity skill and scripts/validate_package.py.
+workspace_files:
+  - charter.md
+  - goals.md
+  - metrics.md
+  - offer.md
+  - pipeline.md
+  - week.md
+  - clients/
+  - network.md
+  - skills.md
+  - content.md
+  - systems.md
+  - decisions/
+  - reviews/daily/
+  - reviews/weekly/
+  - reviews/monthly/
+  - reviews/quarterly/
+
+owns:
+  chief-of-staff:
+    - charter.md
+    - decisions/
+    - reviews/daily/
+    - reviews/weekly/
+    - reviews/monthly/
+  strategist:
+    - goals.md
+    - reviews/quarterly/
+  cfo:
+    - metrics.md
+  positioning-advisor:
+    - offer.md
+  pipeline-coach:
+    - pipeline.md
+  focus-coach:
+    - week.md
+  delivery-lead:
+    - clients/
+  network-manager:
+    - network.md
+  skills-mentor:
+    - skills.md
+  brand-editor:
+    - content.md
+  ops-engineer:
+    - systems.md
