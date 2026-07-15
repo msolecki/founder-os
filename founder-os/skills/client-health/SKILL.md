@@ -51,8 +51,15 @@ Then:
 
 5. **Apply the rule: two reds is a failing engagement.** Not "monitor it" — a
    direct conversation this week, started by the founder, naming the thing
-   plainly. One red is a note in the log. Three reds means the founder already
-   knew and has been managing their own feelings instead of the client.
+   plainly. One red is `at-risk`: a note in the log, not an action. Three reds
+   means the founder already knew and has been managing their own feelings
+   instead of the client.
+
+   The verdict is arithmetic on the reds, and the vocabulary is fixed: **zero
+   reds `healthy`, one red `at-risk`, two or more `failing`.** These three words
+   are the only ones this skill emits, because `daily-brief` reads them every
+   weekday morning and a synonym is invisible to it — a client the founder would
+   call "a bit wobbly" is a client no other agent will ever hear about.
 6. **Ask the question the founder is avoiding: if this client emailed tomorrow to
    end the engagement, would the first feeling be panic or relief?** Relief is
    diagnostic, and it shows up months before any of the four signals move. Write
@@ -69,8 +76,12 @@ Append to `clients/<client>.md` under `## Health`:
     Tone: <G/A/R> — latency <n>d vs <n>d baseline
     Effort: <G/A/R> — <n> h/unit vs <n> at start
     Relief test: <panic | relief>
-    Verdict: <healthy | watch | failing>
+    Verdict: <healthy | at-risk | failing>
     Action this week: <the specific conversation, and who opens it>
+
+`Verdict:` is this skill's only published output and `daily-brief` is its reader.
+Those three tokens, spelled exactly that way, or the morning brief goes quiet
+about a client that is on fire.
 
 ## Guardrails
 

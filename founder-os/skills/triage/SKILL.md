@@ -33,12 +33,16 @@ Read first — house rule 1:
 - `reviews/daily/` — the last three briefs: has this pile already been triaged?
 
 **Then, deliberately, more than `context-load` allows.** `context-load` caps you
-at one file beyond charter/goals/metrics, and that cap is right for every
-cadence that works inside one domain. Triage does not: its input is five items
-that each live in a different agent's file, and "is this real?" cannot be
-answered for a pipeline item without `pipeline.md`. So this skill takes a
-bounded exception, and the bound is what keeps it from becoming the averaging
-failure `context-load` warns about:
+at two files beyond charter/goals/metrics — the file your decision owns, which
+for this skill is `reviews/daily/`, plus one more — and that cap is right for
+every cadence that works inside one domain. Triage does not: its input is five
+items that each live in a different agent's file, and "is this real?" cannot be
+answered for a pipeline item without `pipeline.md`.
+
+So this skill takes a bounded exception, and `context-load` names it back — a
+carve-out only one side knows about is not a carve-out, it is a skill quietly
+amending a rule it does not own. The bound is what keeps it from becoming the
+averaging failure `context-load` warns about:
 
 - One file per item, five files maximum, **read only the section that item
   lives in** — not the file.

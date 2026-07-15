@@ -31,7 +31,7 @@ metadata:
 
 ## Output
 
-<Exact file written, exact section, exact format.>
+<Exact file written, exact section from ownership.yaml `sections:`, exact format.>
 
 ## Guardrails
 
@@ -74,6 +74,29 @@ nothing, be able to say why — as the board can.
 `context-load`, `guardrails`, `state-integrity`. They are cross-cutting, and
 `founder-os-init` scaffolds the entire workspace regardless of owner. Do not add
 `metadata.writes` to them; the validator skips them by design.
+
+## Sections
+
+`owns:` says who may write a file. **`sections:` says what is inside it, and it is
+the other half of the same contract.** Write to a heading it declares for your
+path, spelled exactly, or declare your new heading there first — in the same pull
+request, never afterwards.
+
+`check_sections` in `scripts/validate_package.py` fails the build if a skill
+writes a path that declares no sections. It cannot read your prose, so it cannot
+catch you inventing a heading the map does not list: that one is on you and on
+review, and `founder-os-doctor` will report it in the founder's workspace weeks
+later, which is not where you want to find out.
+
+A heading may carry a dated suffix — `## Close — 2026-07`, `## Gap — 2026-07-15`.
+The section *name* is what is pinned; the suffix is free.
+
+The failure this prevents is quiet and it is why the key exists. `founder-os-init`
+scaffolds these headings and nothing else. A skill told to "replace `## Shape`" in
+a file where nobody scaffolded `## Shape` will helpfully create it — and the next
+skill creates `## Deep hours` for the same thing, and now the file has two
+headings, one of which is read and one of which is furniture the founder can see
+and no agent will ever open. Nothing errors. It just quietly stops being true.
 
 ## The quality bar
 

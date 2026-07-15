@@ -73,18 +73,24 @@ When it blocks, say exactly this to the founder:
 
 ## Guardrails
 
-**Owning nothing is a valid state.** The Board Member and the Focus Coach own no
-workspace files at all. For them this skill refuses every write, always, and
-that is correct rather than broken — they advise the founder and hand to owners.
-An agent that owns nothing and finds itself writing something has misread its
-own role, not this map.
+**Owning nothing is a valid state.** For an agent absent from `owns:` this skill
+refuses every write, always, and that is correct rather than broken — it advises
+the founder and hands to owners. An agent that owns nothing and finds itself
+writing something has misread its own role, not this map. Which agents those are
+is a question for `ownership.yaml` and not for this file: naming them here would
+be the second map this skill just told you not to keep.
 
 **Creating a file is not writing a file.** `founder-os-init` and
 `founder-os-doctor` are the only skills that may bring a missing file into
-existence across an ownership boundary, and only as an empty stub with its
-heading. Neither may put a line of content into a file its holder does not own.
-Scaffolding is lifecycle; content is ownership. No other skill gets this
-exemption, and these two do not get it extended by analogy.
+existence across an ownership boundary, and only as an empty stub carrying the
+headings `ownership.yaml` `sections:` declares for it. The same two may restore a
+section heading that has gone missing from a file that already exists — empty,
+and only one the map declares. An absent heading is what makes the owning skill
+invent a second spelling for it, and two spellings of one section is this skill's
+failure mode wearing a smaller hat: both exist, one gets read, the other is
+wallpaper nobody notices. Neither skill may put a line of content into a file its
+holder does not own. Scaffolding is lifecycle; content is ownership. No other
+skill gets this exemption, and these two do not get it extended by analogy.
 
 **This skill never edits `ownership.yaml`.** An agent that can rewrite the map
 that binds it is not bound. Changing ownership is a founder decision, and a

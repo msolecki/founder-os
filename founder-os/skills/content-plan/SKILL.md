@@ -18,16 +18,24 @@ year of silence is caused by the plan, not by the founder's discipline.
 
 ## When to use
 
-Monthly. Triggered automatically by `tasks/content-plan`. Also when the founder
-has gone quiet for a month, or has a plan and nothing to say — which means the
-plan was built from topics rather than from questions.
+Weekly. Triggered automatically by `tasks/content-plan`, Wednesdays. Also when
+the founder has gone quiet for a month, or has a plan and nothing to say — which
+means the plan was built from topics rather than from questions.
+
+**Weekly does not mean re-planning weekly.** The plan is a rolling four-week
+horizon and most Wednesdays touch one week of it: fill the week that just came
+into view, mark what shipped, cut what died. A skill that rewrites the whole plan
+every Wednesday has never let a plan survive contact with a week, and the founder
+learns the plan is provisional — at which point it stops being a commitment and
+becomes a suggestion they are already behind on.
 
 ## Inputs
 
 Read first, in order — house rule 1:
 
 - `content.md` — the `## Shipped` list. **What actually went out, not what was
-  scheduled.** This number sets next month's cadence and nothing else does.
+  scheduled.** The trailing four weeks of it set the cadence and nothing else
+  does.
 - `offer.md` — the ICP, the trigger, the offer. Every piece serves this or it
   is out.
 - `pipeline.md` — what prospects actually asked on calls. These are the posts.
@@ -35,30 +43,54 @@ Read first, in order — house rule 1:
 
 ## Steps
 
-1. **Count what shipped last month.** Not scheduled. Shipped, with a date.
-2. **Set the cadence to that number.** Not higher. If they shipped one, plan
-   one. This is the rule that makes the plan survive a bad week, and a bad week
-   is not a hypothetical — it is roughly one week in four. A founder who ships
-   one a month for a year has twelve pieces; a founder who plans twelve a month
-   has four pieces and a year of guilt. Raise the cadence only after a month
-   where the plan was met with room to spare.
+1. **Count what shipped in the trailing four weeks.** Not scheduled. Shipped,
+   with a date, from `## Shipped`. It is a rolling window, recounted every
+   Wednesday — the number moves slowly and that is the point: a window that
+   resets on the 1st lets a strong fortnight authorise a cadence the founder
+   cannot hold in March.
+2. **Set the cadence to that number, per four weeks.** Not higher. If they
+   shipped one, plan one. This is the rule that makes the plan survive a bad
+   week, and a bad week is not a hypothetical — it is roughly one week in four. A
+   founder who ships one a month for a year has twelve pieces; a founder who
+   plans twelve a month has four pieces and a year of guilt. Raise it only after
+   a four-week window where the plan was met with room to spare.
 3. **Give every piece a source question.** A real question, asked by a real
    person who fits the ICP, on a real call — from `pipeline.md` or the audience
    quotes. Write the question, not the topic.
 4. **Cut every piece with no source question.** If you cannot name which ICP
    attribute the reader has and what they asked, it is a hobby post. At most one
-   speculative piece per month; that one is for the founder, and calling it what
-   it is keeps it from eating the plan.
-5. **Ask the question the founder is avoiding: of the last ten things you
+   speculative piece per four weeks; that one is for the founder, and calling it
+   what it is keeps it from eating the plan.
+5. **Name the channel, from the record and not from preference.** Every piece
+   ships somewhere, and where is half of this decision. The evidence is already in
+   the workspace and the founder has never looked at it: `## Audience` records the
+   `source` of every verbatim quote — where the ICP was actually talking — and
+   `pipeline.md` says where each live deal started. **The channel that produced
+   deals and quotes is the channel.** The one the founder enjoys writing for is a
+   preference; if it wins anyway, write that it won on preference and let the next
+   plan check it.
+
+   **One primary channel until it produces conversations.** A second channel costs
+   what doubling the cadence costs, and step 2 already said what the founder can
+   sustain — a founder on four channels is on none, publishing a quarter of the
+   volume in four places where nobody sees a pattern. Add a second only after a
+   four-week window where the first met its cadence *and* produced a named
+   conversation. Cross-posting is not a second channel: it is the same piece with
+   another URL, it is free, so do it and do not count it.
+
+   If the ICP is not on the founder's channel, that is not a content finding and
+   you do not solve it by posting harder — hand it to the **Positioning Advisor**
+   with the sources attached.
+6. **Ask the question the founder is avoiding: of the last ten things you
    published, which produced a conversation?** If the answer is "I don't know",
    the first task is not more posts — it is finding out. A year of publishing
    into an unmeasured void is not a content strategy, it is a habit with a
    plausible cover story.
-6. **Check where the attention is actually landing.** If what performs best is
+7. **Check where the attention is actually landing.** If what performs best is
    aimed at people outside the ICP, do not quietly follow it — that is
    repositioning the company one post at a time, without a decision. Hand the
    finding to the **Positioning Advisor**.
-7. **Schedule against the founder's real week.** Look at what happened the last
+8. **Schedule against the founder's real week.** Look at what happened the last
    time a piece was due mid-delivery-crunch. Plan around the crunch, or the plan
    is fiction with dates.
 
@@ -75,30 +107,40 @@ Read first, in order — house rule 1:
 
 Write to `content.md`, replacing `## Plan`:
 
-    ## Plan — <Month YYYY>
-    Cadence: <n>/month — last month shipped <n>
+    ## Plan — rolling 4 weeks from YYYY-MM-DD
+    Cadence: <n>/4 weeks — trailing 4 weeks shipped <n>
     ICP: <one line, from offer.md YYYY-MM-DD>
+    Primary channel: <channel> — <n> of the last <n> live deals started there (pipeline.md), <n> of <n> audience quotes sourced there
+    Second channel: <none | <channel>, added YYYY-MM-DD after <n>/4 weeks met + <the named conversation>>
 
-    | date | piece | the ICP question it answers | source | status |
-    |------|-------|-----------------------------|--------|--------|
-    | YYYY-MM-DD | <title> | "<the question, verbatim>" | <call with X, YYYY-MM-DD> | planned |
+    | date | piece | the ICP question it answers | source | channel | status |
+    |------|-------|-----------------------------|--------|---------|--------|
+    | YYYY-MM-DD | <title> | "<the question, verbatim>" | <call with X, YYYY-MM-DD> | <channel> | planned |
 
-    Speculative this month: <n>/1
+    Speculative this window: <n>/1
 
-Append to `## Shipped` as pieces go out — this is what next month's cadence is
-computed from, so it is not optional bookkeeping:
+Append to `## Shipped` as pieces go out — this is what the trailing-four-week
+cadence is computed from, so it is not optional bookkeeping:
 
     ## Shipped
-    - YYYY-MM-DD — <title> — <link> — conversations produced: <n | unknown>
+    - YYYY-MM-DD — <title> — <channel> — <link> — conversations produced: <n | unknown>
 
 ## Guardrails
 
-Never plan a cadence above last month's shipped count. If the founder insists,
-write their number and the shipped number next to each other in the file and let
-the next plan settle it.
+Never plan a cadence above the trailing four weeks' shipped count. If the founder
+insists, write their number and the shipped number next to each other in the file
+and let the next plan settle it.
 
 Never plan a piece without a source question. "Thought leadership on <topic>" is
 not a piece, it is a category, and nobody has ever finished writing one.
+
+Never plan a piece without a channel. "Publish it" is not a plan; a piece with no
+named destination gets written and then parked, because deciding where to put it
+turns out to have been part of writing it.
+
+Never add a channel because a platform is having a moment. The cadence rule
+governs channels too: the founder's output is fixed, and a new channel divides it
+rather than adding to it.
 
 Do not write `pipeline.md` when a post produces a lead — hand to the **Pipeline
 Coach**. Do not write `offer.md` when the audience turns out to be someone else

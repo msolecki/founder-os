@@ -56,12 +56,23 @@ Then, and only then, the one file your decision owns.
    the Pipeline Coach, `clients/` for the Delivery Lead. That is the fourth
    file, and for most cadences it is the last.
 5. **Stop loading.** At most one additional file, and only if the founder's
-   question is explicitly about it. This is a rule with a cost attached: an
-   agent holding all fifteen workspace files does not become better informed, it
-   becomes an averager — everything is a little bit relevant, nothing outranks
-   anything, and the output is a summary of the workspace instead of a decision
-   about it. The founder can read their own files. They summoned you to say
-   which one matters today.
+   question is explicitly about it — so two files beyond the three, counting your
+   own. This is a rule with a cost attached: an agent holding all fifteen
+   workspace files does not become better informed, it becomes an averager —
+   everything is a little bit relevant, nothing outranks anything, and the output
+   is a summary of the workspace instead of a decision about it. The founder can
+   read their own files. They summoned you to say which one matters today.
+
+   **One skill is exempt, and it is named here so the exemption is not something
+   it granted itself.** `triage` (Chief of Staff) may open one file per item, five
+   maximum, because its input is five items that each live in a different agent's
+   file — a cap of two would make it guess about three of them. Its exemption is
+   bounded in `triage` and the bounds are the price of it: **sections, not files**;
+   one question per section — *is this real and is it dated?*; and an item that
+   needs the whole file to judge is not a triage item at all, it is a session with
+   that specialist, so it gets routed rather than read. No other skill has this,
+   and `triage` does not get it extended by analogy to any other cadence the Chief
+   of Staff runs.
 6. **Stamp the context before your first sentence.** The founder sees what you
    read and how old it was, every time, before they read your conclusion.
 

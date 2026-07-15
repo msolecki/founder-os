@@ -1,6 +1,6 @@
 ---
 name: quarterly-planning
-description: Close last quarter's bets with verdicts and commit at most three new ones, each with a kill condition — run in the last week of the quarter
+description: Close last quarter's bets with verdicts and commit at most three new ones, each with a kill condition — run in the first days of the quarter, once the numbers that settle the old one are in
 metadata:
   writes:
     - goals.md
@@ -18,12 +18,26 @@ first step is the one that matters.
 
 ## When to use
 
-Last week of the quarter. Triggered automatically by `tasks/quarterly-planning`.
+**The first days of the quarter**, once the CFO's close for the final month is in
+`metrics.md`. Triggered automatically by `tasks/quarterly-planning`, which fires
+on day 1 — 1 January, 1 April, 1 July, 1 October.
+
+At the start and not the end, because **step 1 is not optional and it is not
+possible early**. Verdicting a quarter in its last week means verdicting it
+against numbers that are not in yet: two bets are pending, the close has not
+landed, and the founder marks them won because the week has been going well.
+A quarter you judge before it ends is a quarter you judge on mood, and this
+skill's whole argument is that "never measured" is the most damning verdict
+available. Wait the four days. Judge the finished thing.
 
 Never mid-quarter. A new opportunity mid-quarter is `bet-sizing`, and an
 underperforming bet mid-quarter is `kill-or-continue` — neither is a reason to
 reopen the plan, and reopening the plan is how the quarter's commitments become
 suggestions.
+
+If `metrics.md` has no close for the quarter's final month, stop and hand to the
+**CFO** — the same rule `monthly-review` runs on. Step 1 has nothing to settle
+verdicts with and the rest of this skill is built on step 1.
 
 ## Inputs
 
@@ -74,10 +88,17 @@ Read first, in order — house rule 1:
 Replace `goals.md` with this quarter's bets:
 
     # Q<n> YYYY
-    ## Bet <n>: <name>
+    ## Bets
+    ### Bet <n>: <name>
     Outcome: <metric that exists in metrics.md> reaches <value> by <date>
     Cost: <hours> h + <cash>   (from bet-sizing)
     Kill if: <metric> is below <value> on <date>
+
+`## Bets` is the section `ownership.yaml` pins for `goals.md` and it is the one
+`founder-os-init` scaffolds; the bets are `###` blocks under it. `bet-sizing`
+appends `Cost:` and `Cap:` to a bet's block and `kill-or-continue` writes its
+verdict line there — both need to find the block, and they find it under this
+heading.
 
 Append to `reviews/quarterly/YYYY-Qn.md`:
 

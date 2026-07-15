@@ -105,13 +105,21 @@ Record it in `pipeline.md` under `## Live`:
 
     ### <Prospect> — proposal sent YYYY-MM-DD
     Scope: <one line> | Price: <amount> (offer.md YYYY-MM-DD) | Expires: YYYY-MM-DD
-    Exclusions: <n> — baseline for scope-guard
+    Exclusions — verbatim, the baseline scope-guard rules against:
+    - <exclusion, in the words the client will read> → if requested: <change order at <rate> | separate engagement>
+    - <exclusion> → if requested: <...>
+    - <exclusion> → if requested: <...>
     Start date confirmed with Delivery Lead: <yes | NO — do not send>
     Next action: <what the founder does> — YYYY-MM-DD
 
-The `Exclusions` line is a handoff. When this deal closes, the **Delivery Lead**
-reads this proposal as the scope baseline. Write it so it can be enforced by
-someone who was not on the call.
+**Write the exclusions out in full. Never a count.** This block is the handoff:
+when the deal closes, `pipeline-review` carries these lines into `## Won`, where
+the **Delivery Lead** rules against them for the life of the engagement. A count
+is worse than nothing — `scope-guard` cannot check whether an ask is named in the
+integer 3, but the integer tells it a baseline exists, so it never triggers the
+one escape hatch it has and rules from vibes instead. Write these lines so they
+can be enforced in week five by someone who was not on the call and has only this
+file.
 
 ## Guardrails
 

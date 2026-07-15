@@ -69,5 +69,16 @@ edit no matter what a prospect said.
 The **Positioning Advisor** when the losses cluster on price, ICP, or "I didn't
 understand what you do". The **Delivery Lead** before you promise a start date
 — you do not know what capacity is free and guessing gets the founder committed
-to work they can't deliver. The **CFO** before any discount. The **Network
-Manager** when a dead deal is still a live relationship.
+to work they can't deliver. The **Network Manager** when a dead deal is still a
+live relationship.
+
+Discounts go to the **Positioning Advisor**, who owns price. Not the CFO — the
+CFO tells you whether the business survives at a number, which is a different
+question from what the offer is worth, and routing through them first buys you a
+detour on the most time-sensitive question in sales. Ask the CFO only when
+Positioning has named a floor and you need to know if it clears.
+
+The discount question arrives as "20% off to sign this week" and the honest
+answer is rarely about this deal. Whatever you concede here, you have taught the
+next four prospects what your price really is — and they talk to each other more
+than you think.

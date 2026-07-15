@@ -55,15 +55,25 @@ Read first, in order — house rule 1:
    what specifically was the last thing that happened, and who went quiet first.
    Each entry in `## Dead` is an input to `win-loss-analysis`; a cause of "went
    quiet" teaches nothing next quarter.
-6. **Compute coverage and say it plainly.** Total value of surviving live deals
+
+6. **Move every won deal to `## Won`, carrying its exclusions verbatim.** A won
+   deal must leave `## Live` — it is not a prospect any more — and it must not
+   leave `pipeline.md`, because the exclusions `proposal-draft` wrote are the
+   only written boundary on the engagement that just started. Copy the
+   `Exclusions:` lines across exactly as they are. Do not summarise them, do not
+   count them, do not decide three of them no longer apply. Then tell the
+   **Delivery Lead** the engagement is live and where its baseline is.
+7. **Compute coverage and say it plainly.** Total value of surviving live deals
    against the revenue gap in `goals.md`. Below 3× coverage, the finding is not
    "follow up harder" — it is that there are not enough deals, and no amount of
    diligence on eight zombies produces a ninth real one. This number is the
    reason the killing matters: an honest short pipeline is what sends the
    founder to go get more.
-7. **Name founder latency.** Median days from first call to proposal sent across
+8. **Name founder latency.** Median days from first call to proposal sent across
    the live list. Over three days, that is the review's finding, regardless of
-   what any prospect said.
+   what any prospect said. `win-loss-analysis` runs the same median over the
+   quarter's closed deals — that is the same rule on a different population, and
+   this one is the leading indicator of it.
 
 ## Named failure modes
 
@@ -75,7 +85,8 @@ Read first, in order — house rule 1:
 
 ## Output
 
-Write to `pipeline.md`. Rewrite `## Live` and append to `## Dead`:
+Write to `pipeline.md`. Rewrite `## Live`; **append** to `## Won` and `## Dead`;
+replace `## Last review`.
 
     ## Live
     ### <Prospect> — <offer> — <amount> — <stage>
@@ -83,14 +94,26 @@ Write to `pipeline.md`. Rewrite `## Live` and append to `## Dead`:
     Next action: <what the FOUNDER does> — YYYY-MM-DD
     Last contact: YYYY-MM-DD | In pipeline since: YYYY-MM-DD | Re-dated: <n>×
 
+    ## Won
+    ### <Client> — won YYYY-MM-DD — <amount> — <offer>
+    Proposal sent: YYYY-MM-DD | Delivery Lead notified: YYYY-MM-DD
+    Exclusions — verbatim from the signed proposal, scope-guard's baseline:
+    - <exclusion> → if requested: <change order at <rate> | separate engagement>
+    Engagement: <live | closed YYYY-MM-DD>
+
     ## Dead
     - <Prospect> — <amount> — died YYYY-MM-DD — <specific cause> — win/loss: <pending|done>
 
     ## Last review
     Date: YYYY-MM-DD
-    Live: <n> (<total value>) | Killed today: <n> (<value>) | Handed to Network Manager: <n>
+    Live: <n> (<total value>) | Won: <n> | Killed today: <n> (<value>) | Handed to Network Manager: <n>
     Coverage: <n>× against a <amount> gap (goals.md YYYY-MM-DD)
     Median call→proposal: <n> days
+
+`## Won` is the scope record, not the sales record. `win-loss-analysis` writes
+`## Win/loss` for the post-mortem on both wins and losses; `## Won` exists for one
+reader, `scope-guard`, and one purpose: what this client was told they were not
+getting.
 
 ## Guardrails
 
@@ -101,6 +124,16 @@ and no time left to fix it.
 
 Never invent a next action. If you cannot name one the founder would actually
 do, that is the finding.
+
+**Never rewrite, prune, or tidy `## Won`.** `## Live` is a working list and this
+review rewrites it every Thursday — that is what makes the killing possible.
+`## Won` is the opposite: it is a record, it is append-only, and it outlives the
+review that wrote it. The entries look dead to a pipeline review because the
+selling is over, and deleting one does not tidy the file — it silently removes
+the only written boundary on an engagement that is still running, and nobody
+finds out until a client asks for something in week five and `scope-guard` has
+nothing to rule against. Mark an engagement `closed` when it ends. Leave it
+there.
 
 Do not write `clients/` when a deal closes — hand the won deal to the **Delivery
 Lead**. Do not write `network.md` — hand relationships to the **Network

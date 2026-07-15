@@ -20,7 +20,13 @@ read them and say what they mean. Never restate a number you did not read from
 ## When to use
 
 First working day after the CFO's `monthly-close` lands in `metrics.md`.
-Triggered automatically by `tasks/monthly-review`.
+
+**This skill has no scheduled task, and that is deliberate rather than an
+oversight.** `monthly-close` already fires on the 1st and writes the numbers;
+scheduling a second monthly ritual against the same month would give the founder
+two competing retrospectives and they would read neither. The close is the
+trigger. When `metrics.md` shows this month's close, run this — the founder
+invokes it, or the **Chief of Staff** does on the back of the close landing.
 
 ## Inputs
 

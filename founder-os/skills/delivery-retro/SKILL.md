@@ -36,15 +36,28 @@ Read first, in order — house rule 1:
 2. **Compute variance per phase, not per project.** "20% over" is unactionable.
    "Discovery on target, build 15% over, revisions 210% over" names the thing to
    fix and prices it.
-3. **Answer the one question that matters: was it estimating, or was it scope?**
-   These have different owners, and confusing them is precisely why the same
-   overrun repeats.
+3. **Answer the one question that matters: scope, estimating, or unfamiliarity?**
+   These have three different owners, and confusing them is precisely why the
+   same overrun repeats. Pick one — the dominant cause of the worst phase, not a
+   blend. A retro that says "a bit of both" routes to nobody.
    - **Scope** → the work grew and nobody charged for it. That is a `scope-guard`
      failure and it belongs to the Delivery Lead. Fix the boundary, not the
      estimate.
-   - **Estimating** → the work was correctly bounded and simply took longer than
-     quoted. Then `offer.md` is mispriced, and that is the **Positioning
-     Advisor's** file.
+   - **Estimating** → the work was correctly bounded, the founder had done this
+     kind of work before, and it still took longer than quoted. Then `offer.md`
+     is mispriced, and that is the **Positioning Advisor's** file.
+   - **Unfamiliarity** → the work was correctly bounded and the estimate was fair
+     *for someone who had done it before*. The founder had not. That is a
+     capability gap, it belongs to the **Skills Mentor**, and `skill-gap` reads
+     this exact field to find it.
+
+   **Estimating and unfamiliarity are the split that matters most here**, because
+   they feel identical from inside the overrun and have opposite fixes. Reprice a
+   thing the founder simply hasn't done yet and you have raised the price of them
+   learning on the client's money — the second project runs over too, at the new
+   rate. The test is one question: **would this estimate have been right for
+   someone who had shipped this three times?** Yes → unfamiliarity. No →
+   estimating.
 4. **Apply the thresholds:**
    - under 10% over → noise. Do not act, do not reprice, do not hold a meeting
      with yourself about it.
@@ -58,8 +71,11 @@ Read first, in order — house rule 1:
 5. **Hand the numbers to their owners, explicitly.** The effective rate goes to
    the **CFO** for `metrics.md` — this skill produces the number, it does not
    write it. The repricing goes to the **Positioning Advisor** for
-   `pricing-strategy`. A retro that ends in `clients/` and never reaches the
-   price is a diary entry.
+   `pricing-strategy`. A `Cause: unfamiliarity` goes to the **Skills Mentor** for
+   `skill-gap`, which needs an instance in `clients/` before it will name a gap
+   at all — this retro is that instance, and if it does not get written the gap
+   stays a hypothesis and the founder learns nothing twice. A retro that ends in
+   `clients/` and never reaches the price is a diary entry.
 
 ## Output
 
@@ -68,11 +84,17 @@ Append to `clients/<client>.md` under `## Retro`:
     ### YYYY-MM-DD — <project>
     Quoted: <n> h / <amount>
     Actual: <n> h  (delivery <n> + sales <n> + revisions <n> + unbilled <n>)
+    Revisions: <n> rounds / <n> h
     Variance: <n>% — worst phase <phase> at <n>%
-    Cause: <scope | estimating>
+    Cause: <scope | estimating | unfamiliarity>
     Effective rate: <amount>/h vs target <amount>/h
     Repeat: <n>th consecutive project over on <phase>
-    Handoff: <CFO — metrics.md> / <Positioning Advisor — pricing-strategy>
+    Handoff: <CFO — metrics.md> / <Positioning Advisor — pricing-strategy> / <Skills Mentor — skill-gap>
+
+`Revisions` records **rounds and hours, not hours alone**. Three rounds at two
+hours and one round at six are the same six hours and they are not the same
+finding: rounds count how many times the work came back, which is what
+`skill-gap` reads to tell a capability problem from an expensive one.
 
 ## Guardrails
 

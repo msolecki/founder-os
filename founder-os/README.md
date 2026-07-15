@@ -36,13 +36,13 @@ yet:
 | Agent | Only this agent decides… |
 |---|---|
 | Chief of Staff | What deserves your attention now, and who handles it |
-| Board Member | Whether a plan survives contact with a hostile reader |
+| Board Member | Whether a plan survives contact with reality |
 | Strategist | What bet we make this quarter — and what we kill |
 | Positioning Advisor | Exactly who we serve and what we sell them |
 | Pipeline Coach | What happens next with each prospect |
 | Delivery Lead | Whether we can take this on, and if it's good enough to ship |
 | CFO | Whether we can afford it and if it actually makes money |
-| Focus Coach | What goes in the calendar — and what gets defended |
+| Focus Coach | What goes in the calendar — and what comes out |
 | Skills Mentor | Which capability to build next, and how |
 | Brand Editor | What to publish, and where |
 | Network Manager | Who to talk to, and when to follow up |
@@ -88,8 +88,13 @@ trust is exactly what makes a confident wrong answer expensive. See
 ## Extending it
 
 `references/skill-template.md` is the template every skill follows, and
-`references/ownership.yaml` is the file-ownership map. If you add a skill,
-declare what it writes and make sure its agent owns that path.
+`references/ownership.yaml` is the file-ownership map — both who owns each file
+and which sections live inside it. If you add a skill, declare what it writes and
+make sure its agent owns that path.
+
+The validator that enforces all of this (`scripts/validate_package.py`) is build
+tooling and lives in the source repo alongside the tests, not in the installed
+package — clone the repo and run it there before opening a pull request.
 
 ## License
 

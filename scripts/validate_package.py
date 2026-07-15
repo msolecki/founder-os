@@ -104,9 +104,17 @@ def check_teams(root):
         if not (d.is_dir() and (d / "TEAM.md").exists()):
             continue
         fm, _ = parse_frontmatter(d / "TEAM.md")
-        for f in ("name", "description", "slug", "manager"):
+        for f in ("name", "description", "slug"):
             if not fm.get(f):
                 errs.append("teams/%s: missing '%s'" % (d.name, f))
+        # 'manager' must be declared, but null is a legitimate value: a board has
+        # no manager — the founder chairs it, and the founder is not an agent.
+        # Requiring truthiness here forced teams/board to name the very agent its
+        # reviewer exists to attack. Absent and null are different claims: absent
+        # is an omission, null is a decision.
+        if "manager" not in fm:
+            errs.append("teams/%s: missing 'manager' (use 'manager: null' for a "
+                        "manager-less team)" % d.name)
         if fm.get("slug") and fm["slug"] != d.name:
             errs.append("teams/%s: slug '%s' does not match directory" % (d.name, fm["slug"]))
         for p in [fm.get("manager")] + list(fm.get("includes") or []):
@@ -208,6 +216,51 @@ def check_skill_writes(root, agents):
     return errs
 
 
+def check_sections(root, agents):
+    """Every workspace path a skill writes must declare its section contract.
+
+    `owns:` says who may write a file; `sections:` says what is inside it. Both
+    halves are load-bearing. Without the second, `founder-os-init` scaffolds a
+    bare heading, every skill invents its own spelling for the section it was
+    told to replace, and nothing catches it — `founder-os-doctor` checks that
+    files exist, so section rot is undetectable by design.
+
+    Two directions, because a map can drift on either side:
+      - a skill writes a path with no declared sections -> the contract is missing
+      - sections are declared for a path no agent owns   -> the contract is stale
+    """
+    errs = []
+    p = root / "references" / "ownership.yaml"
+    if not p.exists():
+        return errs  # check_ownership reports the missing map
+    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    sections = data.get("sections") or {}
+    own_path = _ownership_by_path(root)
+
+    for path in sorted(sections):
+        if path not in own_path:
+            errs.append("ownership.yaml: sections declared for '%s', which no "
+                        "agent owns" % path)
+        if not sections[path]:
+            errs.append("ownership.yaml: sections for '%s' is empty" % path)
+
+    sdir = root / "skills"
+    if not sdir.is_dir():
+        return errs
+    for d in sorted(sdir.iterdir()):
+        if not (d.is_dir() and (d / "SKILL.md").exists()):
+            continue
+        fm, _ = parse_frontmatter(d / "SKILL.md")
+        writes = (fm.get("metadata") or {}).get("writes") or []
+        if isinstance(writes, str):
+            writes = [writes]
+        for w in writes:
+            if w in own_path and w not in sections:
+                errs.append("skills/%s: writes '%s', which declares no sections "
+                            "in ownership.yaml" % (d.name, w))
+    return errs
+
+
 def main():
     root = Path(sys.argv[1] if len(sys.argv) > 1 else "founder-os")
     if not root.is_dir():
@@ -217,7 +270,8 @@ def main():
     errs = (check_company(root) + check_agents(root, agents)
             + check_role_skill_exclusivity(agents) + check_orphans(root, agents)
             + check_teams(root) + check_tasks(root, agents)
-            + check_ownership(root, agents) + check_skill_writes(root, agents))
+            + check_ownership(root, agents) + check_skill_writes(root, agents)
+            + check_sections(root, agents))
     for e in errs:
         print("FAIL: %s" % e)
     print("\n%d agent(s), %d error(s)" % (len(agents), len(errs)))

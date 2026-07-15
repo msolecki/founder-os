@@ -29,7 +29,10 @@ into eloquence.
 
 Read first, in order — house rule 1:
 
-- `content.md` — the `## Plan` slot: which question this answers, for whom
+- `content.md` — the `## Plan` slot: which question this answers, for whom, and
+  **on which channel**. The channel is not a delivery detail decided after the
+  writing; it is the length, the shape, and whether the first line has to work
+  alone. `content-plan` already decided it — do not re-decide it here.
 - `content.md` `## Audience` — their verbatim words. Write in those, not in the
   founder's internal vocabulary.
 - `offer.md` — the ICP. The reader is one specific person.
@@ -65,6 +68,14 @@ Read first, in order — house rule 1:
    candour; at 9am it reads as a grievance, and it is on the internet either way.
 8. **Cut the throat-clearing.** The first two paragraphs are almost always the
    founder warming up. Start at the third — where the specific thing happens.
+9. **Fit it to the channel in the slot.** Same idea, same evidence, shaped for
+   where it lands: what the reader sees before deciding to keep reading, and how
+   much they will read if they do. A piece written channel-blind and posted
+   anywhere reads as reposted from somewhere else, which is what it is. If the
+   idea cannot survive the channel's shape, that is a finding for `content-plan`
+   — the slot is wrong, not the idea. Do not quietly move it: the channel was
+   decided from where the ICP actually is, and this draft does not get to
+   overturn that with a preference.
 
 ## Named failure modes
 
@@ -84,14 +95,16 @@ Record in `content.md` under `## Drafts`:
 
     ## Drafts
     ### <title> — for the YYYY-MM-DD slot
+    Channel: <from the ## Plan slot>
     Answers: "<the source question, verbatim>"
     One idea: <the single sentence>
     Evidence: <what happened, when, the number>
     Status: draft | HELD for morning re-read | shipped YYYY-MM-DD
 
-On publication, move it to `## Shipped` with its date and link — `content-plan`
-computes next month's cadence from that list, and a piece that shipped without
-being recorded makes the next plan smaller than the truth.
+On publication, move it to `## Shipped` with its date, channel and link —
+`content-plan` computes the cadence from the trailing four weeks of that list,
+and a piece that shipped without being recorded makes the next plan smaller than
+the truth.
 
 ## Guardrails
 

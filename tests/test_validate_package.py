@@ -51,7 +51,9 @@ def minimal_package(root: Path) -> None:
         "metadata:\n  skill: daily-brief\n---\n\nBody.\n"
     ))
     write(root / "references" / "ownership.yaml", (
-        "workspace_files:\n  - goals.md\nowns:\n  chief-of-staff:\n    - goals.md\n"
+        "workspace_files:\n  - goals.md\n"
+        "owns:\n  chief-of-staff:\n    - goals.md\n"
+        "sections:\n  goals.md:\n    - \"## Bets\"\n"
     ))
 
 
@@ -60,7 +62,8 @@ def all_errors(root: Path):
     return (V.check_company(root) + V.check_agents(root, agents)
             + V.check_role_skill_exclusivity(agents) + V.check_orphans(root, agents)
             + V.check_teams(root) + V.check_tasks(root, agents)
-            + V.check_ownership(root, agents) + V.check_skill_writes(root, agents))
+            + V.check_ownership(root, agents) + V.check_skill_writes(root, agents)
+            + V.check_sections(root, agents))
 
 
 class TestValidator(unittest.TestCase):
@@ -124,6 +127,55 @@ class TestValidator(unittest.TestCase):
             "manager: ../../agents/ghost/AGENTS.md\nincludes: []\n---\n\nB.\n"
         ))
         self.assertTrue(any("ghost" in e for e in V.check_teams(self.root)))
+
+    def test_null_manager_is_clean(self):
+        # A board has no manager: the founder chairs it and the founder is not an
+        # agent. Requiring a truthy manager forced teams/board to name the very
+        # agent its reviewer exists to attack.
+        write(self.root / "teams" / "board" / "TEAM.md", (
+            "---\nname: Board\ndescription: d\nslug: board\nmanager: null\n"
+            "includes:\n  - ../../agents/cfo/AGENTS.md\n---\n\nB.\n"
+        ))
+        self.assertEqual(V.check_teams(self.root), [])
+
+    def test_missing_manager_key_is_caught(self):
+        # Absent and null are different claims: absent is an omission, null is a
+        # decision. Only the omission is an error.
+        write(self.root / "teams" / "board" / "TEAM.md", (
+            "---\nname: Board\ndescription: d\nslug: board\n"
+            "includes:\n  - ../../agents/cfo/AGENTS.md\n---\n\nB.\n"
+        ))
+        errs = V.check_teams(self.root)
+        self.assertTrue(any("manager" in e for e in errs))
+
+    def test_skill_writing_a_path_with_no_declared_sections_is_caught(self):
+        write(self.root / "references" / "ownership.yaml", (
+            "workspace_files:\n  - goals.md\n"
+            "owns:\n  chief-of-staff:\n    - goals.md\n"
+        ))
+        write(self.root / "skills" / "daily-brief" / "SKILL.md", (
+            "---\nname: daily-brief\ndescription: d\n"
+            "metadata:\n  writes:\n    - goals.md\n---\n\nBody.\n"
+        ))
+        errs = V.check_sections(self.root, V.load_agents(self.root))
+        self.assertTrue(any("goals.md" in e and "sections" in e for e in errs))
+
+    def test_sections_declared_for_unowned_path_is_caught(self):
+        write(self.root / "references" / "ownership.yaml", (
+            "workspace_files:\n  - goals.md\n"
+            "owns:\n  chief-of-staff:\n    - goals.md\n"
+            "sections:\n  goals.md:\n    - \"## Bets\"\n"
+            "  ghost.md:\n    - \"## Nowhere\"\n"
+        ))
+        errs = V.check_sections(self.root, V.load_agents(self.root))
+        self.assertTrue(any("ghost.md" in e for e in errs))
+
+    def test_skill_writing_a_path_with_declared_sections_is_clean(self):
+        write(self.root / "skills" / "daily-brief" / "SKILL.md", (
+            "---\nname: daily-brief\ndescription: d\n"
+            "metadata:\n  writes:\n    - goals.md\n---\n\nBody.\n"
+        ))
+        self.assertEqual(V.check_sections(self.root, V.load_agents(self.root)), [])
 
     def test_task_skill_not_held_by_assignee_is_caught(self):
         write(self.root / "tasks" / "daily-brief" / "TASK.md", (

@@ -80,11 +80,11 @@ Each agent passed one test: *name a decision only this agent makes*.
 | Slug | Title | reportsTo | Only this agent decides… |
 |---|---|---|---|
 | `chief-of-staff` | Chief of Staff | `null` | What deserves your attention now, and who handles it |
-| `board-member` | Board Member | `null` | Whether a plan survives contact with a hostile reader |
+| `board-member` | Board Member | `null` | Whether a plan survives contact with reality |
 | `strategist` | Chief Strategy Officer | `chief-of-staff` | What bet we make this quarter — and what we kill |
 | `positioning-advisor` | Head of Positioning | `chief-of-staff` | Exactly who we serve and what we sell them |
 | `delivery-lead` | COO | `chief-of-staff` | Whether we can take this on, and if it's good enough to ship |
-| `focus-coach` | Head of Focus | `chief-of-staff` | What goes in the calendar — and what gets defended |
+| `focus-coach` | Head of Focus | `chief-of-staff` | What goes in the calendar — and what comes out |
 | `pipeline-coach` | Revenue Lead | `positioning-advisor` | What happens next with each prospect |
 | `brand-editor` | Head of Content | `positioning-advisor` | What to publish, and where |
 | `network-manager` | Head of Relationships | `positioning-advisor` | Who to talk to, and when to follow up |
