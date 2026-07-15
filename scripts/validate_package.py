@@ -218,6 +218,31 @@ def check_ownership(root, agents):
     return errs
 
 
+def check_workspace_files_complete(root, agents):
+    """Every owned path is also a scaffolded path.
+
+    check_ownership walks workspace_files: -> owns: and catches a workspace file
+    nobody owns. This is the other direction, and it catches the quieter bug: a
+    path in owns: that never made it into workspace_files: is owned, writable and
+    green — and founder-os-init scaffolds from workspace_files:, so the directory
+    its owner was promised is never created. The agent writes into a path that
+    does not exist, on a founder's machine, months later.
+    """
+    errs = []
+    p = root / "references" / "ownership.yaml"
+    if not p.exists():
+        return errs
+    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    declared = set(data.get("workspace_files") or [])
+    for agent, files in (data.get("owns") or {}).items():
+        for f in files or []:
+            if f not in declared:
+                errs.append("ownership.yaml: '%s' is owned by '%s' but is not in "
+                            "workspace_files: — founder-os-init will never "
+                            "scaffold it" % (f, agent))
+    return errs
+
+
 def check_skill_writes(root, agents):
     errs = []
     sdir = root / "skills"
@@ -311,7 +336,8 @@ def check_beliefs(root, agents):
 
 CHECKS = [check_plugin, check_agents, check_agent_tools, check_agent_graph,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
-          check_ownership, check_skill_writes, check_sections, check_beliefs]
+          check_ownership, check_workspace_files_complete, check_skill_writes,
+          check_sections, check_beliefs]
 
 
 def main():
