@@ -29,6 +29,17 @@ real — and the next action is to propose. Not before `capacity-check`.
 Read first, in order — house rule 1:
 
 - `pipeline.md` — this deal: what they asked for, in their words, on the call
+- `voice.md` — `## Samples`, `## Tells`, `## Never`, `## Register`. A proposal is
+  the most formal thing the founder sends, and `## Register` says by how much the
+  formality shifts — **it shifts from their baseline, not to a generic one.** A
+  founder who writes in three-sentence paragraphs does not become a management
+  consultant on page one, and the buyer who liked them on the call is the person
+  reading this. The prose sections are where this lands: the problem statement,
+  "done means", and the consequence attached to each exclusion.
+
+  If `## Samples` is empty, say so on the handoff — "no voice samples on record;
+  this reads as a generic proposal document" — and hand the founder
+  `voice-capture` (**Brand Editor**).
 - `offer.md` — the offer, the `### Not included` list, the price, and the floor.
   You copy from this file; you do not invent a number in it.
 - `clients/` — **the most important input**. Every scope overrun that actually
@@ -36,6 +47,18 @@ Read first, in order — house rule 1:
   exclusions live.
 - Delivery Lead's `capacity-check` — the start date. You do not know what is
   free, and guessing commits the founder to work they cannot deliver.
+
+## Beliefs
+
+- A proposal does not persuade. The deal was won or lost on the call; this
+  document has two jobs — to be signable today and enforceable in week five —
+  and every sentence serving neither is there to comfort the founder.
+- The buyer reads the price, the dates, and the one thing they were already
+  worried about. Length is not thoroughness. It is evidence the founder did not
+  know which of the three it was.
+- Exclusions do not lose deals. They lose the deals that were going to become
+  disasters, and the founder experiences those two as the same event — which is
+  why the list gets softened at exactly the moment it is about to do its job.
 
 ## Steps
 
@@ -74,7 +97,16 @@ Read first, in order — house rule 1:
 8. **State payment shape.** Deposit before start, stages after. The deposit is
    not about cash flow — it is the first evidence that this buyer can actually
    execute a decision internally.
-9. **Ask the question the founder avoids: what did the last project cost in
+9. **Read the prose back against `voice.md`.** Cut every `## Never` hit; a
+   `FATAL` one gets rewritten, not substituted. Then check the problem statement
+   against `## Tells`: it is quoted from the call and it is the first thing the
+   buyer reads, so it is where a borrowed register does the most damage — the
+   buyer met a person on that call and is checking whether the same person wrote
+   this. Scope, price, dates and exclusions are structural and stay plain; do not
+   let a voice pass loosen an exclusion into something friendlier. **An exclusion
+   is not the place for warmth.** It is enforced in week five by someone who was
+   not on the call, and a softened one is a silent exclusion with better manners.
+10. **Ask the question the founder avoids: what did the last project cost in
    unbilled hours — and is that thing excluded here?** If it is not, this
    proposal is a plan to donate the same fortnight twice.
 
@@ -90,6 +122,11 @@ Read first, in order — house rule 1:
 ## Output
 
 The proposal document goes to the founder to send. This skill does not send.
+
+**If the founder rewrites the prose before sending, hand the sent version to
+`voice-capture` (Brand Editor).** A proposal edit is the rarest voice sample in
+the company — it is the founder's formal register, under pressure, with money on
+it — and `## Register` cannot be filled from cold outreach alone.
 
 Its structure, in order:
 

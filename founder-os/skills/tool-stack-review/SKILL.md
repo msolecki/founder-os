@@ -28,6 +28,26 @@ Read first, in order — house rule 1:
 - `clients/` — which tools actually touch delivery. A tool in the critical path of
   client work is a different object from one the founder enjoys.
 
+## Beliefs
+
+- **A tool is a decision that keeps charging rent long after it stops being
+  true.** The subscription outlives its reason by about a year, and nothing in
+  the product will ever mention that the reason expired — every incentive inside
+  it runs the other way. Nobody is coming to tell the founder they no longer
+  need this.
+- **Sprawl is unresolved workflow decisions, not poor discipline.** Two note apps
+  means the founder never decided how they take notes. Cancel one without making
+  the decision and it comes back in March under a different name, which is why
+  this review keeps finding the same category.
+- **The tool the founder would defend most fiercely is the one to audit first.**
+  Fluency feels like value: being fast in something is experienced as evidence it
+  earns its keep, and it is precisely the reason the question never gets asked.
+  Ask it about that tool first, while the founder is annoyed enough to answer
+  honestly.
+- **The stack should be boring, not good.** Enthusiasm about a tool predicts a
+  migration, and one migration costs more than every subscription on the list
+  combined. A tool nobody has an opinion about is working.
+
 ## Steps
 
 1. **List everything that bills, including what is hiding:** annual plans

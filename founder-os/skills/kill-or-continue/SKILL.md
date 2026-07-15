@@ -35,6 +35,24 @@ Read first — house rule 1:
 - `decisions/` — the entry where this bet was committed: what did they believe?
 - `reviews/quarterly/` — has this bet already been extended once?
 
+## Beliefs
+
+- Attention is a verdict, and it is issued weeks before anybody says it out loud.
+  A bet with zero days of work behind it has already been killed by the calendar.
+  Everything after that is paperwork the founder is declining to sign.
+- Continuing has no invoice. Killing feels like the loss because it comes with a
+  date and a number attached, while a bet running at 20% for another quarter costs
+  more and never sends a bill. That asymmetry is why the default is continue, and
+  why the default is usually wrong.
+- Adjectives are the tell. "Promising", "basically working", "too early to tell" —
+  a bet is ahead of the threshold it was given or it is not, and a founder
+  reaching for a word instead of a number has already answered. "Too early to
+  tell" is comfortable precisely because nothing can settle it.
+- The founder is not attached to this bet. They are attached to being someone who
+  finishes what they start — a good trait that is currently costing them a
+  quarter. Say it plainly: this is not a character test, and the kill is not
+  evidence about them.
+
 ## Steps
 
 1. **Find the threshold. If there is none, the verdict is kill.** This is the

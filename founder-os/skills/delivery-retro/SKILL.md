@@ -26,6 +26,26 @@ Read first, in order — house rule 1:
 - `pipeline.md` — the proposal: what was quoted, in hours and in money
 - `metrics.md` — the target effective rate to measure against
 
+## Beliefs
+
+- **The overrun is never in the phase the founder remembers.** Memory keeps the
+  phase that was stressful; the timesheet keeps the phase that was long, and
+  they are reliably different phases. When the file and the recollection
+  disagree, the file is the project.
+- **A project delivered on time by working the weekend is an overrun.** It
+  settled the bill in a currency nobody logged. "We shipped it" is not a
+  variance, and a retro that accepts it as one is how a phase stays mispriced
+  for three consecutive projects.
+- **An estimate is a claim about the founder, not about the work.** Two people
+  quoting this project honestly produce different correct numbers. So "the
+  estimate was too low" is usually false and "I was not yet the person that
+  estimate described" is usually true — and only one of those has a fix that
+  isn't a price rise.
+- **Revision rounds diagnose the brief, not the client's taste.** Three rounds
+  means the client was not shown the thing early enough to be cheaply wrong
+  about it. The fix is upstream in what was agreed, never downstream in more
+  polish.
+
 ## Steps
 
 1. **Recover the actual hours, including the ones nobody billed.** The estimate

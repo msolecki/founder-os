@@ -5,6 +5,7 @@ reportsTo: delivery-lead
 skills:
   - automation-audit
   - tool-stack-review
+  - ingestion-gate
   - guardrails
   - state-integrity
 ---

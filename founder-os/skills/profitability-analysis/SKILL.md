@@ -28,6 +28,26 @@ Read first, in order — house rule 1:
   `scope-guard` counted and the unbilled hours `delivery-retro` recovered
 - `offer.md` — what this work was supposed to be priced at
 
+## Beliefs
+
+- **Margin dies between the work, not in the work.** The delivery hours land
+  roughly where they were estimated. It is the waiting, the re-briefing, the
+  chasing and the fourth re-reading of a thread that empty the rate — none of
+  which appear in the deliverable, and all of which belong in the denominator.
+- **An underpriced client is not a client, it is a template.** The founder quotes
+  the next similar project from what they charged this one, so a bad rate
+  propagates to every engagement that resembles it. This quarter's margin is the
+  small part of the cost.
+- **Revenue per client is a vanity ranking, and the founder's memory uses it
+  instead of this one.** The biggest logo is usually mid-table on rate and gets
+  defended anyway, because losing it would be visible to everyone the founder
+  knows. Losing margin is visible to nobody — which is precisely why margin is
+  what gets lost.
+- **Efficiency is the wrong lever and it is the first one founders reach for.**
+  A client at 55% of target is not fixed by faster work: the same client served
+  twice as fast still costs more to serve than they pay, and the founder now has
+  less time in which to notice.
+
 ## Steps
 
 1. **Build the denominator honestly. This is the entire skill.** Hours per client

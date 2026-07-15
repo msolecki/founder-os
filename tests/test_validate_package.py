@@ -9,6 +9,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import validate_package as V
 
 
+# The four headings every agent body must carry, in order.
+AGENT_TAIL = ("---\n\n## What triggers you\nx\n## What you do\nx\n"
+              "## What you produce\nx\n## Who you hand off to\nx\n")
+UNIVERSALS = "  - guardrails\n  - state-integrity\n  - ingestion-gate\n"
+
+
 def write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -30,17 +36,15 @@ def minimal_package(root: Path) -> None:
         "  - Ship\n"
         "---\n\nBody.\n"
     ))
-    for slug in ("guardrails", "state-integrity", "daily-brief"):
+    for slug in ("guardrails", "state-integrity", "ingestion-gate", "daily-brief"):
         write(root / "skills" / slug / "SKILL.md",
-              "---\nname: %s\ndescription: d\n---\n\nBody.\n" % slug)
-    write(root / "agents" / "chief-of-staff" / "AGENTS.md", (
-        "---\nname: Chief of Staff\ntitle: Chief of Staff\nreportsTo: null\n"
-        "skills:\n  - daily-brief\n  - guardrails\n  - state-integrity\n---\n\nBody.\n"
-    ))
-    write(root / "agents" / "cfo" / "AGENTS.md", (
-        "---\nname: CFO\ntitle: CFO\nreportsTo: chief-of-staff\n"
-        "skills:\n  - guardrails\n  - state-integrity\n---\n\nBody.\n"
-    ))
+              "---\nname: %s\ndescription: d\n---\n\n## Beliefs\n\n- A.\n- B.\n- C.\n\n## Steps\n\n1. Go.\n" % slug)
+    write(root / "agents" / "chief-of-staff" / "AGENTS.md",
+          "---\nname: Chief of Staff\ntitle: Chief of Staff\nreportsTo: null\n"
+          "skills:\n  - daily-brief\n" + UNIVERSALS + AGENT_TAIL)
+    write(root / "agents" / "cfo" / "AGENTS.md",
+          "---\nname: CFO\ntitle: CFO\nreportsTo: chief-of-staff\n"
+          "skills:\n" + UNIVERSALS + AGENT_TAIL)
     write(root / "teams" / "board" / "TEAM.md", (
         "---\nname: Board\ndescription: d\nslug: board\n"
         "manager: ../../agents/chief-of-staff/AGENTS.md\n"
@@ -63,7 +67,8 @@ def all_errors(root: Path):
             + V.check_role_skill_exclusivity(agents) + V.check_orphans(root, agents)
             + V.check_teams(root) + V.check_tasks(root, agents)
             + V.check_ownership(root, agents) + V.check_skill_writes(root, agents)
-            + V.check_sections(root, agents))
+            + V.check_sections(root, agents) + V.check_routines(root, agents)
+            + V.check_beliefs(root, agents) + V.check_agent_headings(root, agents))
 
 
 class TestValidator(unittest.TestCase):
@@ -86,7 +91,7 @@ class TestValidator(unittest.TestCase):
     def test_dangling_skill_reference_is_caught(self):
         write(self.root / "agents" / "cfo" / "AGENTS.md", (
             "---\nname: CFO\ntitle: CFO\nreportsTo: chief-of-staff\n"
-            "skills:\n  - no-such-skill\n  - guardrails\n  - state-integrity\n---\n\nB.\n"
+            "skills:\n  - no-such-skill\n  - guardrails\n  - state-integrity\n  - ingestion-gate\n---\n\n## What triggers you\nx\n## What you do\nx\n## What you produce\nx\n## Who you hand off to\nx\n"
         ))
         errs = V.check_agents(self.root, V.load_agents(self.root))
         self.assertTrue(any("no-such-skill" in e for e in errs))
@@ -94,7 +99,7 @@ class TestValidator(unittest.TestCase):
     def test_dangling_reports_to_is_caught(self):
         write(self.root / "agents" / "cfo" / "AGENTS.md", (
             "---\nname: CFO\ntitle: CFO\nreportsTo: ghost\n"
-            "skills:\n  - guardrails\n  - state-integrity\n---\n\nB.\n"
+            "skills:\n  - guardrails\n  - state-integrity\n  - ingestion-gate\n---\n\n## What triggers you\nx\n## What you do\nx\n## What you produce\nx\n## Who you hand off to\nx\n"
         ))
         errs = V.check_agents(self.root, V.load_agents(self.root))
         self.assertTrue(any("ghost" in e for e in errs))
@@ -108,7 +113,7 @@ class TestValidator(unittest.TestCase):
     def test_role_skill_owned_by_two_agents_is_caught(self):
         write(self.root / "agents" / "cfo" / "AGENTS.md", (
             "---\nname: CFO\ntitle: CFO\nreportsTo: chief-of-staff\n"
-            "skills:\n  - daily-brief\n  - guardrails\n  - state-integrity\n---\n\nB.\n"
+            "skills:\n  - daily-brief\n  - guardrails\n  - state-integrity\n  - ingestion-gate\n---\n\n## What triggers you\nx\n## What you do\nx\n## What you produce\nx\n## Who you hand off to\nx\n"
         ))
         errs = V.check_role_skill_exclusivity(V.load_agents(self.root))
         self.assertTrue(any("daily-brief" in e for e in errs))
@@ -220,6 +225,93 @@ class TestValidator(unittest.TestCase):
         ))
         errs = V.check_skill_writes(self.root, V.load_agents(self.root))
         self.assertTrue(any("nowhere.md" in e for e in errs))
+
+    def _make_recurring(self, task_fm, paperclip):
+        write(self.root / "tasks" / "daily-brief" / "TASK.md", task_fm)
+        write(self.root / ".paperclip.yaml", paperclip)
+
+    GOOD_PC = (
+        "routines:\n  daily-brief:\n    catchUpPolicy: enqueue_missed_with_cap\n"
+        "    concurrencyPolicy: coalesce_if_active\n    triggers:\n"
+        "      - kind: schedule\n        enabled: true\n"
+        "        cronExpression: \"0 8 * * 1-5\"\n        timezone: UTC\n"
+    )
+    GOOD_TASK = ("---\nname: Daily Brief\nassignee: chief-of-staff\nrecurring: true\n"
+                 "metadata:\n  skill: daily-brief\n---\n\nBody.\n")
+
+    def test_recurring_task_with_routine_is_clean(self):
+        self._make_recurring(self.GOOD_TASK, self.GOOD_PC)
+        self.assertEqual(V.check_routines(self.root, V.load_agents(self.root)), [])
+
+    def test_legacy_schedule_block_is_caught(self):
+        # The exact shape we shipped: the importer parses this as legacyRecurrence.
+        self._make_recurring(
+            "---\nname: Daily Brief\nassignee: chief-of-staff\n"
+            "metadata:\n  skill: daily-brief\n"
+            "schedule:\n  timezone: UTC\n  recurrence:\n    frequency: monthly\n"
+            "    interval: 3\n---\n\nBody.\n", self.GOOD_PC)
+        errs = V.check_routines(self.root, V.load_agents(self.root))
+        self.assertTrue(any("legacy" in e for e in errs))
+
+    def test_recurring_task_without_routine_never_fires(self):
+        self._make_recurring(self.GOOD_TASK, "routines: {}\n")
+        errs = V.check_routines(self.root, V.load_agents(self.root))
+        self.assertTrue(any("never fire" in e for e in errs))
+
+    def test_missing_catch_up_policy_is_caught(self):
+        # Default skip_missed silently drops a cadence when the laptop was closed.
+        self._make_recurring(self.GOOD_TASK, (
+            "routines:\n  daily-brief:\n    triggers:\n      - kind: schedule\n"
+            "        cronExpression: \"0 8 * * 1-5\"\n        timezone: UTC\n"))
+        errs = V.check_routines(self.root, V.load_agents(self.root))
+        self.assertTrue(any("catchUpPolicy" in e for e in errs))
+
+    def test_malformed_cron_is_caught(self):
+        self._make_recurring(self.GOOD_TASK, self.GOOD_PC.replace('"0 8 * * 1-5"', '"0 8 * *"'))
+        errs = V.check_routines(self.root, V.load_agents(self.root))
+        self.assertTrue(any("5-field" in e for e in errs))
+
+    def test_orphan_routine_is_caught(self):
+        self._make_recurring(self.GOOD_TASK, self.GOOD_PC + (
+            "  ghost-routine:\n    catchUpPolicy: skip_missed\n    triggers:\n"
+            "      - kind: schedule\n        cronExpression: \"0 9 * * 1\"\n"
+            "        timezone: UTC\n"))
+        errs = V.check_routines(self.root, V.load_agents(self.root))
+        self.assertTrue(any("ghost-routine" in e for e in errs))
+
+    def _role_skill(self, body):
+        # daily-brief is a role skill (held by chief-of-staff), so it needs Beliefs.
+        write(self.root / "skills" / "daily-brief" / "SKILL.md",
+              "---\nname: daily-brief\ndescription: d\n---\n\n" + body)
+
+    BELIEFS_OK = ("## Beliefs\n\n- One a generic advisor would not say.\n"
+                  "- Two, contestable.\n- Three, the one they resist.\n\n## Steps\n\n1. Go.\n")
+
+    def test_role_skill_with_three_beliefs_is_clean(self):
+        self._role_skill(self.BELIEFS_OK)
+        self.assertEqual(V.check_beliefs(self.root, V.load_agents(self.root)), [])
+
+    def test_role_skill_without_beliefs_is_caught(self):
+        self._role_skill("## Steps\n\n1. Go.\n")
+        errs = V.check_beliefs(self.root, V.load_agents(self.root))
+        self.assertTrue(any("missing '## Beliefs'" in e for e in errs))
+
+    def test_too_few_beliefs_is_caught(self):
+        self._role_skill("## Beliefs\n\n- Only one.\n\n## Steps\n\n1. Go.\n")
+        errs = V.check_beliefs(self.root, V.load_agents(self.root))
+        self.assertTrue(any("the bar is 3" in e for e in errs))
+
+    def test_beliefs_after_steps_is_caught(self):
+        self._role_skill("## Steps\n\n1. Go.\n\n## Beliefs\n\n- A.\n- B.\n- C.\n")
+        errs = V.check_beliefs(self.root, V.load_agents(self.root))
+        self.assertTrue(any("before '## Steps'" in e for e in errs))
+
+    def test_system_skills_are_exempt_from_beliefs(self):
+        # guardrails is a refusal rule; it does not get opinions about itself.
+        write(self.root / "skills" / "guardrails" / "SKILL.md",
+              "---\nname: guardrails\ndescription: d\n---\n\n## Steps\n\n1. Refuse.\n")
+        errs = V.check_beliefs(self.root, V.load_agents(self.root))
+        self.assertFalse(any("guardrails" in e for e in errs))
 
     def test_unowned_workspace_file_is_caught(self):
         write(self.root / "references" / "ownership.yaml", (

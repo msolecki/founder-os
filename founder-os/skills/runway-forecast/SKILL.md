@@ -28,6 +28,29 @@ Read first, in order — house rule 1:
 - `clients/` — contracted revenue already committed, and when it actually
   invoices
 
+## Beliefs
+
+- **Runway computed on the pipeline is fiction, and it is a specific fiction:
+  the deals do not slip independently.** Stage discounts price each deal as
+  though its risk were its own, but deals stall in the same month, for the same
+  reasons that made the month tight. The pipeline thins exactly when the founder
+  is relying on it, which is why the honest number leads and the discounted one
+  is a footnote.
+- **Runway is bought in weeks, and the cheapest week is sitting in the
+  receivables.** A founder who wants more runway reaches for cutting costs
+  because cutting feels like control. The money is already earned; it is in
+  somebody else's account, and collecting it is faster than any economy on the
+  list.
+- **Concentration does not feel like risk while it is being paid — it feels like
+  a good relationship.** That is the whole problem. Compute the runway a second
+  time with the client the founder would least like to lose removed entirely;
+  the number that comes back is the real one, and the founder's reluctance to
+  run that arithmetic is itself the finding.
+- **A short runway is a pricing event.** It shows up in how the next proposal is
+  written and what the founder agrees to on the call, and the discount conceded
+  under that pressure outlives the shortage by years. The cost of a thin month
+  is rarely paid in that month.
+
 ## Steps
 
 1. **Fix the burn before you touch the cash.** Real monthly burn includes the

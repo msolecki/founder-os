@@ -6,6 +6,7 @@ skills:
   - red-team
   - assumption-audit
   - premortem
+  - ingestion-gate
   - guardrails
   - state-integrity
 ---

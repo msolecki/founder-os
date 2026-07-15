@@ -29,6 +29,24 @@ Read first, in order — house rule 1:
 - `metrics.md` — last month's actual hours worked, if logged. Actuals beat
   estimates, always.
 
+## Beliefs
+
+- **Fragmentation costs more than volume.** Four engagements at five hours each
+  do not fit into the twenty hours that three engagements at seven hours fit
+  into. The founder estimates in blocks and delivers in slices, and no amount of
+  discipline converts one into the other.
+- **A thirty-minute call at 11am does not cost thirty minutes, it costs the
+  morning.** Meetings priced at their duration are why the arithmetic balances
+  and the week does not. Count the block the meeting lands in, not the invite.
+- **Capacity does not respond to motivation.** An energised week and a miserable
+  week produce roughly the same deliverable hours — the difference shows up in
+  how the founder narrates them afterwards, not in the timesheet. A schedule
+  that assumes a good week is a schedule that assumes a coin lands heads.
+- **The client the founder would drop everything for should be quoted the
+  longest lead time, not the shortest.** Willingness to rearrange the week is
+  not a discount that client earned; it is an unpriced option they were handed,
+  and the week it gets exercised is the week the other three engagements slip.
+
 ## Steps
 
 1. **Start from the week, not the month.** Monthly capacity hides the fact that

@@ -35,6 +35,21 @@ Read first, in order — house rule 1:
 - `pipeline.md` — what prospects asked for, and what they didn't understand
 - `metrics.md` — which engagement shape made money
 
+## Beliefs
+
+- Nobody has ever bought competence. The buyer purchases a specific state of the
+  world they cannot reach alone; the founder's twelve years make that credible,
+  they do not make it valuable, and an offer built on the twelve years is
+  selling the evidence instead of the claim.
+- "We work bespoke" is almost never a service philosophy. It is a decision
+  nobody made. Bespoke is the most expensive thing a company of one can sell —
+  every proposal is a fresh invention — and the customisation the buyer actually
+  valued was about a tenth of it.
+- The offer the founder finds boring is usually the one worth selling.
+  Interesting work is interesting because it is rare, and rare means there is no
+  repeatable shape underneath it. Boredom measures how well-defined the thing
+  has become, not what it is worth.
+
 ## Steps
 
 1. **Name the deliverable as a noun the buyer already wanted.** "A migration

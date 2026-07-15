@@ -29,7 +29,8 @@ Monthly, and immediately after any of these:
   `sections:` is the expected structure inside each flat file. Both are checks.
 - Every file in `$FOUNDER_OS_HOME`, plus its last-modified date. The dates are
   half the diagnosis.
-- All 8 `tasks/*/TASK.md` and `charter.md` `## Timezone` for the timezone check.
+- `.paperclip.yaml` `routines:` and `charter.md` `## Timezone` for the timezone
+  check, and all 8 `tasks/*/TASK.md` for the missing-trigger check.
 
 ## The checks
 
@@ -46,7 +47,8 @@ a health report that lists eleven green checks trains the founder to skim it.
 | **Orphan clients** | A `clients/*.md` file names no client that `metrics.md` shows revenue for, and is unmodified > 90 days | Two possibilities and both matter: the engagement ended and nobody closed the file, or work is being delivered and not billed. |
 | **Empty decision log** | `decisions/` is empty after 30 days of use | House rule 3 is not being followed. Six months from now the founder asks why they raised rates and the answer will not exist. `annual-review` has nothing to read. |
 | **Cadence gone quiet** | No file in `reviews/daily/` for the last 5 weekdays | The scheduler is not firing, or it is firing at an hour the founder ignores. Check the timezone. |
-| **Timezone drift** | Any `tasks/*/TASK.md` `schedule.timezone` ≠ `charter.md` `## Timezone` | A package update reset it. The cadences did not break — they fire at the wrong hour and get ignored, which looks identical to the founder losing interest. |
+| **Timezone drift** | Any `.paperclip.yaml` `routines.<slug>.triggers[].timezone` ≠ `charter.md` `## Timezone` | A package update reset it to UTC. The cadences did not break — they fire at the wrong hour and get ignored, which looks identical to the founder losing interest. |
+| **Cadence with no trigger** | A `tasks/*/TASK.md` with `recurring: true` has no `.paperclip.yaml` `routines.<slug>` entry, or that entry has no `kind: schedule` trigger | The task exists, names an agent, names a skill, and will never once fire. This is the failure that shipped: `quarterly-planning` carried a legacy `monthly`/`interval: 3` recurrence the importer rejected outright, and a whole quarterly cadence was silently absent. Nothing in the workspace shows it — there is no file missing, because a review that never ran leaves nothing behind. |
 
 ## Steps
 
@@ -75,12 +77,23 @@ Only three things, and all of them are structural:
 - **Restore a missing section heading, empty**, to a file that already exists —
   only a heading the map declares. A heading the map does not declare is a
   finding for its owner, never a repair: deleting it would destroy content.
-- **Rewrite `schedule.timezone` in `tasks/*/TASK.md`** to match `charter.md`
-  `## Timezone`.
+- **Rewrite `timezone` on `.paperclip.yaml` `routines.<slug>.triggers[]`** to
+  match `charter.md` `## Timezone`. That field only. The cron expression and the
+  policies beside it are not yours, and a cadence firing at the right hour on the
+  wrong day is not an improvement.
 
 Everything else is a handoff, by name and with the finding attached: stale
 metrics → **CFO**. Goals without kill conditions → **Strategist**. Orphan client
 files → **Delivery Lead**. Empty decision log → **Chief of Staff**.
+
+A cadence with no trigger is a report, never a repair, and it goes to the
+founder. Restoring it means writing a cron expression, and a cron this skill
+invented is worse than the missing one it replaced: the founder now believes the
+cadence is back, and it fires on a schedule nobody chose. Name the slug, say it
+has never fired and cannot, and point at reinstalling the package — the shipped
+`.paperclip.yaml` carries all 8 routines. `scripts/validate_package.py` catches
+this at build time; you are the check that catches it in an install that has
+already drifted.
 
 This skill and `founder-os-init` are the only two that may create a file — or a
 declared heading — across an ownership boundary, and only ever an empty one.

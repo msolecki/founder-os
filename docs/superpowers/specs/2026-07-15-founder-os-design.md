@@ -346,4 +346,60 @@ Agent bodies follow: **What triggers you / What you do / What you produce / Who 
 
 ## 9. Open questions
 
-None blocking. The timezone mutation (§4) is a known, accepted trade-off.
+None blocking.
+
+---
+
+## 10. v1.1 — competitor analysis and the defect it found (2026-07-15)
+
+Five rival `founder-os` repos and the paperclipai platform were analysed. Findings that changed the design.
+
+### 10.1 The cadence engine was partly fiction — CRITICAL, fixed
+
+`TASK.md` `schedule.recurrence` is the **legacy** path. The Paperclip importer names the field `legacyRecurrence` and, at `server/src/services/company-portability.ts:1321`, hard-errors on any weekly/monthly/yearly `interval > 1`, returning `trigger: null`:
+
+```ts
+} else if (frequency === "monthly") {
+    if (interval !== 1) {
+      errors.push(`... legacy monthly recurrence with interval > 1 ...`);
+      return { trigger: null, warnings, errors };
+```
+
+§4 shipped `quarterly-planning` as `frequency: monthly, interval: 3`. **The quarterly cadence never existed.** Our validator proved every internal reference resolved; it could not see the importer. That gap was a direct consequence of treating companies.sh as a reference rather than a dependency — the same mistake that left `thecloudtips/founder-os` with 395 files, a fabricated MCP config, and 3 stars.
+
+**Resolution.** `TASK.md` now carries only `recurring: true` (portable, per spec §10). Schedules live in `.paperclip.yaml routines.<slug>.triggers` as cron. `quarterly-planning` is `0 11 1 1,4,7,10 *` — true calendar quarters, which also removes the drift that `schedule.startsAt` was patching. `startsAt` is gone.
+
+`catchUpPolicy: enqueue_missed_with_cap` is set explicitly on all 8. The runtime default is `skip_missed`: a closed laptop on Friday makes the weekly review silently never happen — a promise that fails exactly when it was needed.
+
+`check_routines` in the validator now hard-fails any `schedule:` block in a TASK.md and any recurring task without a firing trigger. **The legacy path cannot return.**
+
+### 10.2 Guardrails guarded the wrong axis — House Rule 0
+
+Every guardrail was organised by **topic** (CFO refuses tax/legal, Focus Coach refuses medical). Topic guardrails cannot see irreversibility: *"send the follow-up to Anna"* is not a tax, legal, or medical question. Nothing in v1.0 stopped an agent from **sending** the outreach it drafted, on a founder whose Claude has a mail MCP connected.
+
+**House Rule 0: Never outbound. Never money.** Adapted from `tomkels987/founder-os`, which repeats the invariant in every routine. Drafting is permitted; sending, paying, posting and signing are not, regardless of agent or instruction. The capability existing is not the permission.
+
+### 10.3 Nothing governed whether a claim was true — House Rule 5 + `ingestion-gate`
+
+`ownership.yaml` governs *who may write* a file. It says nothing about the truth of what goes in. Without a gate, House Rule 2 ("evidence over vibes") is a laundering machine: a guess written once is quoted as a number forever.
+
+`ingestion-gate` becomes the **third universal skill** (all 12 agents, alongside `guardrails` and `state-integrity`). Claims are tiered FACT / VALIDATE / DISREGARD before entering a canonical file, with provenance stamped **inline** — a file's mtime says when someone touched the file, not when the claim was last true. Adapted from `tomkels987`'s `INGESTION_GATE.md` and `SOURCES_OF_TRUTH.md`.
+
+### 10.4 New workspace files
+
+| File | Owner | Why |
+|---|---|---|
+| `queue.md` | `chief-of-staff` | Cadences produced advice that evaporated — "follow up with Anna" left no artifact. Durable states: Doing / Queued / Blocked / Done / Dropped. Concept from `cloudrepo-io/founder-os`; its approval gate was rejected (a solo founder approving their own plan is ceremony — the gate that matters is House Rule 0, on *sending*). |
+| `voice.md` | `brand-editor` | Three skills draft text that goes out under the founder's name with no voice spec at all. Concept from `jermaine-craig/Founder-OS`, whose version is an anti-slop filter with no samples and — their bug — is wired into no skill. |
+
+### 10.5 Rejected, with reasons
+
+- **OAuth integrations** (`jermaine-craig`): BYO-GCP + Testing status expires the refresh token every **7 days**, forever; escaping that makes `gmail.modify` a restricted scope requiring a CASA assessment. Their `output/` is not gitignored while their Gmail tool writes 5,000 chars of every email body into it — in a repo whose headline feature is forking. If external reads are ever added: MCP connectors, read-only, opt-in, never core.
+- **Chasing skill count**: `thecloudtips` ships ~10× our surface and was never run once. Size is not the differentiator; an end-to-end run is.
+- **A named authorial POV** (`yomidenzel/BOS`): unupdatable and must be defended. Its principles file also trains the agent to override the user by authority (*"90% chance you're the one who's wrong"*) alongside *"dopamine cycles feed retention"*. The **mechanism** (opinionatedness) is worth taking; the doctrine is not.
+
+### 10.6 Market position (verified 2026-07-15)
+
+**Zero of the 18 companies in the companies.sh directory use routines** — not one recurring trigger; only 7 `TASK.md` total, all one-shot starters. Founder OS would be the only company in the directory that runs on a schedule. That, plus being the only package about the operator rather than the work, is the position.
+
+The runtime **does** enforce the org chart (`agent-invokability.ts` blocks on `reporting_cycle`, `manager_terminated`, and cancels live runs on a broken graph), so `reportsTo` is load-bearing. **Single-owner-per-file is ours alone** — zero references in the runtime. Our validator is the only thing enforcing it; it must not be marketed as runtime-guaranteed. `.paperclip.yaml` `permissions` / `permissionGrants` is the only real backstop and is not yet used.

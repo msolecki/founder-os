@@ -34,6 +34,24 @@ Read first — house rule 1:
 - `decisions/` — assumptions the founder has already tested and forgotten they
   tested
 
+## Beliefs
+
+- The assumptions that kill a plan are the ones the founder does not experience as
+  assumptions. Anything they can state as a belief has already been examined once.
+  The load-bearing ones are stated as facts, in passing, in the first paragraph —
+  and they never appear on a list the founder writes unaided.
+- If striking what is already recorded does not remove at least half the list, the
+  list is not assumptions, it is the plan retyped one sentence at a time. Twenty
+  items is a transcript. What survives is usually three, and the collapse from
+  twenty to three is the audit.
+- A statement that cannot be false is not a modest assumption; it is not an
+  assumption at all. "The market wants this" survives every possible world, which
+  is exactly why it feels solid and exactly why it is worth nothing.
+- Reluctance is the ranking. Whichever assumption the founder is least willing to
+  test is load-bearing, whatever they marked it — and the reasons the test would
+  be unfair, unrepresentative, or premature are a more reliable signal than the
+  mark, because they took effort to produce.
+
 ## Steps
 
 1. **Rewrite each assumption as a falsifiable statement.** "The market wants

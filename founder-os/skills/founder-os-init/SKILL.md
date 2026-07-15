@@ -1,6 +1,6 @@
 ---
 name: founder-os-init
-description: Run first-install onboarding — interview the founder, scaffold the workspace, and rewrite the scheduled tasks to their timezone
+description: Run first-install onboarding — interview the founder, scaffold the workspace, and rewrite the cadence triggers to their timezone
 ---
 
 # Founder OS Init
@@ -16,6 +16,10 @@ fifteen carefully scaffolded files, and a founder who closes the terminal and
 never opens it again. Get the four files that matter real, stub the rest, and
 let the cadences fill them in.
 
+This is step 1 of `projects/onboarding`, and onboarding ends by running the
+founder's first `daily-brief`. Everything you collect here is that brief's
+input. Collect nothing you cannot use in it.
+
 ## When to use
 
 Immediately after install, before any other agent runs. Also after moving
@@ -30,10 +34,18 @@ Do not run it to "refresh" a live workspace. That is `founder-os-doctor`.
 - `references/ownership.yaml` — `workspace_files:` is the scaffold list and
   `sections:` is what goes inside each one. Read both; do not scaffold from
   memory or from this skill. The map changes and this file does not.
+- `.paperclip.yaml` — `routines:` holds the 8 cadence triggers. Step 3 rewrites
+  the `timezone` on each; nothing else in that file is yours to touch.
 - `$FOUNDER_OS_HOME`, default `./founder-os/`.
 - Existing `charter.md`, if any — the abort check in step 1.
 
 ## Steps
+
+**Start. Do not ask whether they are ready.** No "shall we begin?", no "this
+takes about twenty minutes, is now a good time?" — the first question goes in
+the first message you send. A handshake is a turn the founder spends to receive
+nothing, and it hands them the first convenient moment to defer this to a
+better afternoon. There is no better afternoon. There is this session.
 
 1. **Refuse to init over a live workspace.** If `charter.md` exists and has
    content, stop and say so. Re-running init over real state is the one way this
@@ -45,14 +57,18 @@ Do not run it to "refresh" a live workspace. That is `founder-os-doctor`.
    `Europe/Warsaw`, `America/Denver`. Store it in `charter.md` under
    `## Timezone`; `founder-os-doctor` reads it from there.
 
-3. **Rewrite the schedules in all 8 `tasks/*/TASK.md` files.** Two edits, every
-   file: `schedule.timezone` to the value from step 2, and — in
-   `tasks/quarterly-planning/TASK.md` only — `schedule.startsAt` forward to the
-   next calendar quarter boundary (1 Jan, 1 Apr, 1 Jul, 1 Oct) at 11:00 in that
-   timezone, keeping it behind the 09:00 monthly close it depends on. The shipped
-   anchor is a quarter boundary in UTC, which stops being one the moment the
-   founder is not in UTC. See below for why this whole step is strange and why it
-   stays.
+3. **Rewrite the cadence timezones in `.paperclip.yaml`.** One edit per routine:
+   `routines.<slug>.triggers[].timezone` to the value from step 2, for all 8
+   routines. The schedules live there, not in `tasks/*/TASK.md` — a TASK.md
+   carries only `recurring: true`, and a `schedule:` block in one is a hard
+   validation failure, not a shortcut. See below for why this step is strange and
+   why it stays.
+
+   Do not touch the cron expressions. `quarterly-planning` fires on
+   `0 11 1 1,4,7,10 *` — the cron names the months, so it lands on 1 Jan / 1 Apr /
+   1 Jul / 1 Oct from any install date. There is no start date to move forward and
+   no drift to patch: the schedule is anchored to the calendar itself, and setting
+   the timezone is all that is left to do.
 
 4. **Scaffold every entry in `workspace_files:`, with the headings `sections:`
    declares for it.** Directories as directories. Files as their H1 followed by
@@ -68,7 +84,28 @@ Do not run it to "refresh" a live workspace. That is `founder-os-doctor`.
    different name each time. By month three no two files agree and the map is
    fiction. The headings are the contract; you are laying it down.
 
-5. **Hand off to `projects/onboarding`. Do not run it.** This skill *is* what
+5. **Show them what was built while they talked. Two or three lines, not a file
+   listing.** The workspace appeared during the interview and the founder did
+   not see it happen. Show it now, at the one moment they are still deciding
+   whether this was worth the twenty minutes.
+
+   `ls` output is not a payoff, it is a receipt. The founder cannot tell a
+   scaffolded heading from a real one, and eighteen filenames over mostly empty
+   files is "we did a lot" theatre — it reads as effort, which is the currency
+   this package specifically refuses.
+
+   Show the lines that prove it heard them, quoted from what you just wrote:
+   their own sentence under `charter.md` `## Business`; the client they would not
+   take again, named, under `offer.md` `## ICP`; the runway that falls out of the
+   cash and burn they gave you two minutes ago — a number they did not work out,
+   from two numbers they did. Say the runway; do not write it. `## Runway` is the
+   CFO's, and `baseline-metrics` is where it lands.
+
+   **If a line would be true for any other founder, cut it.** Generic output at
+   this exact moment reads as a template, and a founder who concludes they have
+   been talking to a template has concluded correctly and should stop.
+
+6. **Hand off to `projects/onboarding`. Do not run it.** This skill *is* what
    onboarding's first task invokes — `write-charter` runs `founder-os-init` — so
    the moment you finish, that task is finished too. Say in one line that
    onboarding continues at `define-icp` → `set-quarter-goals` →
@@ -85,14 +122,32 @@ Do not run it to "refresh" a live workspace. That is `founder-os-doctor`.
    metrics baselined before goals exist have nothing to be a baseline *of*. Say
    the order. Let the founder or the **Chief of Staff** run it.
 
-6. **Stop at twenty minutes.** Hard rule, not a target. Past twenty minutes you
+   **Name the ending, not just the order.** Onboarding finishes by running their
+   first `daily-brief` on the state those three steps complete — say so in the
+   same breath as the order. It is the reason to finish. A founder told that
+   three questions stand between them and a real brief answers three questions;
+   a founder told "next: define-icp" has been handed a chore list and will do it
+   on Sunday, meaning never.
+
+   **The brief is not yours to run and it must not fire here.** You are holding a
+   thin `goals.md` and a `metrics.md` twenty minutes old. `set-quarter-goals` and
+   `baseline-metrics` are what make a brief worth reading, and one run now would
+   rank a bet the founder has not finished writing. It would also spend the
+   payoff in the middle and leave onboarding ending on paperwork — the exact
+   failure the project is arranged to avoid.
+
+7. **Stop at twenty minutes.** Hard rule, not a target. Past twenty minutes you
    are conducting an interview, not onboarding, and the founder is answering to
    be polite. A thin charter that exists beats a rich one that was abandoned in
-   the middle. Anything unanswered gets a `TODO` line and the first weekly review
-   picks it up.
+   the middle.
 
-7. **End by running the first `daily-brief`.** The founder must see the company
-   produce something on day one, or the install was a chore with no payoff.
+   **Anything unanswered becomes a queue item, not a `TODO` line.** Run `queue`
+   — you are running as the **Chief of Staff**, who owns `queue.md` — and file it
+   with an id and `bet: none`. A `TODO` in `charter.md` is homework with a file
+   extension: `weekly-review` reads `goals.md`, `reviews/daily/`, `queue.md` and
+   `reviews/weekly/`, so it will never see it, and neither will anything else.
+   The queue is swept every Friday. The TODO line is read by nobody, including
+   the founder who watched you write it.
 
 ## The interview
 
@@ -123,26 +178,29 @@ wherever the conversation ended up.
 
 If the founder does not know their cash number, that is the most important
 finding of the onboarding. Write it down as unknown and hand to the **CFO**.
-Do not estimate it for them.
+Do not estimate it for them, and do not tell them to go and find it — that is
+homework, and it goes in the queue per step 7 like every other unanswered
+question. Tomorrow's brief will name it as the thing that is rotting, because it
+is.
 
 ## The package rewrites its own files
 
-Step 3 edits files inside this package's own installation. That is unusual, and
+Step 3 edits a file inside this package's own installation. That is unusual, and
 it is deliberate — flagged as a known trade-off in the design spec (§4), not
 discovered later.
 
-`TASK.md` schedules embed a literal `schedule.timezone` and, for the quarterly
-plan, a literal `schedule.startsAt`. This package ships to strangers. The
-alternative is shipping the author's timezone and hoping: every founder outside
-that zone gets a daily brief at the wrong hour, turns the cadence off in week
-one, and is left with a prompt library — the scheduled cadences are the only
-thing that makes this an OS rather than a folder of prompts.
+`.paperclip.yaml` ships every routine trigger with a literal `timezone: UTC`.
+This package ships to strangers. The alternative is shipping the author's
+timezone and hoping: every founder outside that zone gets a daily brief at the
+wrong hour, turns the cadence off in week one, and is left with a prompt library
+— the scheduled cadences are the only thing that makes this an OS rather than a
+folder of prompts.
 
 **The consequence, which you must tell the founder:** reinstalling or updating
-the package overwrites `tasks/*/TASK.md` and restores the shipped values. The
-cadences do not break loudly when this happens; they fire at the wrong hour and
-get ignored. After any update, re-run step 3. `founder-os-doctor` checks for
-this drift specifically.
+the package overwrites `.paperclip.yaml` and restores `timezone: UTC` on every
+trigger. The cadences do not break loudly when this happens; they fire at the
+wrong hour and get ignored. After any update, re-run step 3. `founder-os-doctor`
+checks for this drift specifically.
 
 ## Output
 
@@ -150,16 +208,19 @@ this drift specifically.
   file carrying the headings `sections:` declares for it — `charter.md`,
   `offer.md`, `goals.md` and `metrics.md` with real content from the interview
   filed under those headings; the rest as headings with nothing under them.
-- All 8 `tasks/*/TASK.md` with `schedule.timezone` set to the founder's zone, and
-  `tasks/quarterly-planning/TASK.md` with `schedule.startsAt` on the next quarter
-  boundary in that zone.
-- One line naming `projects/onboarding` as what happens next, starting at
-  `define-icp`.
+- `.paperclip.yaml` with `timezone` set to the founder's zone on all 8
+  `routines.<slug>.triggers[]`. Cron expressions and policies untouched.
+- Two or three lines, on screen, quoted from what you just wrote, that would be
+  wrong for any other founder — step 5.
+- One line naming `projects/onboarding` as what happens next: `define-icp` →
+  `set-quarter-goals` → `baseline-metrics`, ending in their first daily brief.
+  The brief is onboarding's output, not this skill's — step 6 says why.
+- `queue.md` carrying one item per unanswered question, each with an id and
+  `bet: none`. No `TODO` lines anywhere.
 - `decisions/YYYY-MM-DD-founder-os-installed.md` — the timezone chosen, the
   workspace path, and any question the founder could not answer. This is the
   first entry in the decision log and it establishes the habit that makes
   `annual-review` possible twelve months from now.
-- The first daily brief.
 
 ## Guardrails
 

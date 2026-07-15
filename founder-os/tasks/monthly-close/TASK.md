@@ -1,15 +1,9 @@
 ---
 name: Monthly Close
 assignee: cfo
+recurring: true
 metadata:
   skill: revenue-review
-schedule:
-  timezone: UTC
-  recurrence:
-    frequency: monthly
-    interval: 1
-    monthdays: [1]
-    time: { hour: 9, minute: 0 }
 ---
 
 Run the `revenue-review` skill — the monthly numbers close, written to

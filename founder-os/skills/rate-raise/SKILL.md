@@ -30,6 +30,26 @@ Read first, in order — house rule 1:
 - `pipeline.md` — the win rate on proposals sent in the last two quarters
 - `offer.md` — what the **Positioning Advisor** says the offer is worth
 
+## Beliefs
+
+- **The rate is not a verdict on the founder, and treating it as one is what
+  makes the conversation hard.** It is a number that either funds the business or
+  does not. On the other side of the email it is a line item next to three other
+  line items, read by someone who will spend ninety seconds on it.
+- **Clients do not leave over a rate. They leave over a rate plus a doubt they
+  already had.** A raise reveals the relationship; it does not cause the exit.
+  Finding out which relationships were already gone is worth the raise on its
+  own, and it is information available no other way.
+- **The client the founder is most afraid of losing is the one to raise first.**
+  The fear is a fact about the founder's dependence, not about that client's
+  value — and dependence is exactly the thing a rate raise exists to test.
+  Raising everyone except them is not a raise; it is a confession, and next
+  quarter's table will say so.
+- **Raising is faster than finding, and founders do it in the wrong order.** The
+  raise is available this week, from the desk, with no pipeline and no travel.
+  A replacement client is sixty days and a pile of unpaid sales hours away.
+  Founders pick the slow lever because it involves no confrontation.
+
 ## Steps
 
 1. **Decide whether, from triggers rather than feelings:**

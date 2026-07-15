@@ -35,6 +35,24 @@ Read first — house rule 1:
 Do not read the year's `reviews/weekly/`. They record what happened, which is
 what this skill is deliberately not scoring.
 
+## Beliefs
+
+- Hindsight is not extra information about a decision, it is different
+  information, and it is inadmissible here. The only fair judge of a call is what
+  was knowable on the day it was made, which is why this review reads `decisions/`
+  and not the year's results.
+- Nobody can remember what they believed before they knew the answer. This is not
+  a failing of this founder; it is a property of people, and it is the entire
+  reason the log exists. Memory is not an input to this review, however vivid.
+- Success teaches the wrong lesson more reliably than failure does. A bad call
+  that paid gets repeated, gets called instinct, and is invisible to every review
+  that scores outcomes — including every review the founder has ever run on
+  themselves.
+- Most of what the founder is proudest of this year was variance, and so was most
+  of what they are ashamed of. This review exists to find the thin residue that
+  was actually judgment, and it will be a smaller pile than either of the other
+  two.
+
 ## Steps
 
 1. **Read every decision entry, oldest first.** Oldest first matters: it puts you

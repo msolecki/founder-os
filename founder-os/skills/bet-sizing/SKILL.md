@@ -35,6 +35,24 @@ Read first — house rule 1:
 - `decisions/` — has a bet of this shape been made before, and what did it
   actually cost?
 
+## Beliefs
+
+- The upside is not in dispute and it is not an input. Every bet that reaches this
+  room has a good upside — that is why it arrived. A number that is high for every
+  option cannot discriminate between them, so computing it again is not rigour,
+  it is company.
+- Almost every bet is worth taking at some size, and almost none at the size the
+  founder first proposed. "Should I do this?" is the wrong question wearing the
+  clothes of caution. The question is how much of the company they are willing to
+  lose finding out.
+- Deliberation is spend. A week of analysis on something reversible in an
+  afternoon has already cost more than the mistake could, and a founder carefully
+  evaluating a cheap reversible bet is busy not deciding something else. Ask which
+  one.
+- Founder hours are not free on a quiet week. "I'd have been working anyway" is
+  the sentence that funds every unpriced bet in this company, and the hours it
+  hides are the hours `goals.md` had already committed to something else.
+
 ## Steps
 
 1. **Price the hours at the rate in `metrics.md`.** Founder hours are the most

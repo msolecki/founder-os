@@ -27,6 +27,25 @@ Read first, in order — house rule 1:
   `delivery-retro` recovered
 - `pipeline.md` — what closed this month, and when the cash for it actually lands
 
+## Beliefs
+
+- **A record month is a warning until proven otherwise.** Revenue arriving in a
+  spike was delivered in a spike, and the hours that produced it were taken from
+  the weeks that would have sold the next quarter. Read a great month as a hole
+  sixty days out and check `pipeline.md` before celebrating.
+- **A company of one dies of a fortnight, not of a year.** Timing kills before
+  volume does: there is no credit line, no finance function and nobody who
+  notices before the founder does. A profitable month with the cash landing
+  three weeks late is a worse month than a smaller one that cleared.
+- **The friendliest client is the cheapest source of credit in the business, and
+  they never asked to be.** Warm invoices get chased last, because chasing
+  someone pleasant costs the founder something that chasing a stranger does not.
+  Age the receivables before looking at the names, or the ageing gets edited by
+  affection.
+- **A client who pays late is not short of money — they are short of a reason to
+  pay you first.** Payment order is a ranking of suppliers, and the founder is
+  ranked in it every month whether or not they ever look at the result.
+
 ## Steps
 
 1. **Split booked from collected, before anything else.** Invoiced is not
@@ -53,6 +72,25 @@ Read first, in order — house rule 1:
    numbers to `metrics.md`, then hand to the **Chief of Staff**, who owns
    `reviews/monthly/` and writes what it means. Say the handoff out loud so it
    happens.
+7. **Propose the chases in the same handoff.** `metrics.md` holds the ageing —
+   *past terms: 12k across two clients, oldest 47 days* — and an ageing is a
+   number, not an obligation. Nobody in this company owns *chase the 47-day
+   invoice from X*: it is not a deal, so it is not the Pipeline Coach's; it is not
+   a relationship, so it is not the Network Manager's; and this file records that
+   it is late without anyone ever being asked to fix it. That is precisely why it
+   is 47 days old, and it is the class `queue.md` exists for.
+
+   One item per client past terms, with `bet: none` where it serves no bet — an
+   overdue invoice serves no bet and still has to be paid. **If more than three
+   clients are past terms, do not propose four items.** Four invoice chases is not
+   a queue, it is step 2's finding wearing ids: the month has not happened yet,
+   and the founder has a collections problem that fifteen slots and a 21-day clock
+   will not solve one chase at a time.
+
+   Hand them to the **Chief of Staff**. You do not write `queue.md` — what
+   deserves attention is decided across every cadence, and this review only sees
+   money. Propose; do not append. And do not close one: a chase is a send, the
+   founder sends, and this skill cannot know whether it went.
 
 ## Output
 

@@ -36,6 +36,18 @@ Read first, in order — house rule 1:
   the ICP is a qualification finding, not a sales one.
 - The prospect — a call, if they will take one.
 
+## Beliefs
+
+- The prospect is not lying and also does not know why they didn't buy. People
+  reconstruct their own decisions afterwards, so an honest answer and an
+  accurate one are different objects, and only the second one is worth a call.
+- Every stated reason has passed one filter: it could be said to a near-stranger
+  without causing offence. That filter removes precisely the reasons worth
+  having.
+- An unexamined win is more expensive than a loss. A loss costs one quarter; a
+  win nobody can explain becomes a theory of the business, and the founder will
+  run it for two years before anything is permitted to contradict it.
+
 ## Steps
 
 1. **Reconstruct from the record before you speak to anyone.** Days from first

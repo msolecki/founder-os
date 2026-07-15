@@ -7,6 +7,7 @@ skills:
   - bet-sizing
   - kill-or-continue
   - annual-review
+  - ingestion-gate
   - guardrails
   - state-integrity
 ---

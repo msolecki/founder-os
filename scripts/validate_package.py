@@ -7,8 +7,11 @@ from pathlib import Path
 import yaml
 
 SYSTEM_SKILLS = {"founder-os-init", "founder-os-doctor", "context-load",
-                 "guardrails", "state-integrity"}
-UNIVERSAL_SKILLS = {"guardrails", "state-integrity"}
+                 "guardrails", "state-integrity", "ingestion-gate"}
+# Paperclip runtime enums (packages/shared/src/constants.ts).
+CATCH_UP_POLICIES = {"skip_missed", "enqueue_missed_with_cap"}
+CONCURRENCY_POLICIES = {"coalesce_if_active", "always_enqueue", "skip_if_active"}
+UNIVERSAL_SKILLS = {"guardrails", "state-integrity", "ingestion-gate"}
 REQUIRED_COMPANY_FIELDS = ["name", "description", "slug", "schema", "version",
                            "license", "authors", "goals"]
 
@@ -261,6 +264,131 @@ def check_sections(root, agents):
     return errs
 
 
+AGENT_HEADINGS = ["## What triggers you", "## What you do",
+                  "## What you produce", "## Who you hand off to"]
+
+
+def check_agent_headings(root, agents):
+    """Agent bodies keep the mandated four headings, in order.
+
+    Twelve agents are only legible if every one answers the same four questions
+    in the same order — a reader who has to hunt for "who do I hand off to"
+    stops handing off. This was review-only until a reviewer pointed out that
+    nothing would catch a regression. `## Refusals` and anything else may follow
+    the four; they may not interleave.
+    """
+    errs = []
+    for slug in sorted(agents):
+        _, body = agents[slug]
+        found = [(body.index(h), h) for h in AGENT_HEADINGS if h in body]
+        missing = [h for h in AGENT_HEADINGS if h not in body]
+        for h in missing:
+            errs.append("agents/%s: missing mandated heading '%s'" % (slug, h))
+        order = [h for _, h in sorted(found)]
+        expected = [h for h in AGENT_HEADINGS if h in body]
+        if order != expected:
+            errs.append("agents/%s: headings out of order — got %s, expected %s"
+                        % (slug, order, expected))
+    return errs
+
+
+def check_beliefs(root, agents):
+    """Every role skill states >=3 principles, before the steps that use them.
+
+    The validator cannot judge whether a belief is any good — the bar ("at least
+    3 principles a competent generic advisor would NOT say") is a judgement call
+    no regex reaches. It can enforce that the section exists, is populated, and
+    sits before `## Steps`, which is the difference between a contract and an
+    aspiration. System skills are exempt: they are mechanical procedure, and a
+    refusal rule does not get to have opinions about itself.
+    """
+    errs = []
+    sdir = root / "skills"
+    if not sdir.is_dir():
+        return errs
+    for d in sorted(sdir.iterdir()):
+        if not (d.is_dir() and (d / "SKILL.md").exists()):
+            continue
+        if d.name in SYSTEM_SKILLS:
+            continue
+        _, body = parse_frontmatter(d / "SKILL.md")
+        if "## Beliefs" not in body:
+            errs.append("skills/%s: missing '## Beliefs' — every role skill states at "
+                        "least 3 principles a generic advisor would not say" % d.name)
+            continue
+        b_at = body.index("## Beliefs")
+        if "## Steps" in body and b_at > body.index("## Steps"):
+            errs.append("skills/%s: '## Beliefs' must come before '## Steps' — the agent "
+                        "reads what it believes before what to do" % d.name)
+        section = body[b_at + len("## Beliefs"):]
+        nxt = re.search(r"\n## ", section)
+        if nxt:
+            section = section[:nxt.start()]
+        bullets = [ln for ln in section.split("\n") if ln.strip().startswith("- ")]
+        if len(bullets) < 3:
+            errs.append("skills/%s: '## Beliefs' has %d bullet(s); the bar is 3"
+                        % (d.name, len(bullets)))
+    return errs
+
+
+def check_routines(root, agents):
+    """Every recurring task must have a real, firing trigger.
+
+    The Paperclip importer parses TASK.md `schedule.recurrence` as
+    `legacyRecurrence` and hard-errors on weekly/monthly/yearly interval > 1,
+    returning trigger:null — the cadence silently does not exist. Our own
+    quarterly-planning (frequency: monthly, interval: 3) shipped that way and
+    nothing caught it, because a package that "validates" is not a package that
+    imports. This check is the difference.
+    """
+    errs = []
+    tasks = {}
+    for tfile in (sorted(root.glob("tasks/*/TASK.md"))
+                  + sorted(root.glob("projects/*/tasks/*/TASK.md"))):
+        fm, _ = parse_frontmatter(tfile)
+        rel = tfile.relative_to(root)
+        if "schedule" in fm:
+            errs.append("%s: uses legacy 'schedule:' — the importer treats this as "
+                        "legacyRecurrence and hard-errors on interval > 1. Use "
+                        "'recurring: true' + .paperclip.yaml routines.<slug>.triggers." % rel)
+        if fm.get("recurring"):
+            tasks[tfile.parent.name] = rel
+
+    p = root / ".paperclip.yaml"
+    data = (yaml.safe_load(p.read_text(encoding="utf-8")) or {}) if p.exists() else {}
+    routines = data.get("routines") or {}
+
+    for slug in sorted(tasks):
+        r = routines.get(slug)
+        if not r:
+            errs.append("%s: recurring task has no .paperclip.yaml routines.%s entry — "
+                        "it will never fire" % (tasks[slug], slug))
+            continue
+        if r.get("catchUpPolicy") not in CATCH_UP_POLICIES:
+            errs.append("routines.%s: catchUpPolicy must be set to one of %s — the runtime "
+                        "default (skip_missed) silently drops missed runs"
+                        % (slug, sorted(CATCH_UP_POLICIES)))
+        cc = r.get("concurrencyPolicy")
+        if cc is not None and cc not in CONCURRENCY_POLICIES:
+            errs.append("routines.%s: concurrencyPolicy '%s' is not one of %s"
+                        % (slug, cc, sorted(CONCURRENCY_POLICIES)))
+        scheduled = [t for t in (r.get("triggers") or []) if t.get("kind") == "schedule"]
+        if not scheduled:
+            errs.append("routines.%s: no trigger of kind 'schedule'" % slug)
+        for t in scheduled:
+            cron = t.get("cronExpression")
+            if not cron or len(str(cron).split()) != 5:
+                errs.append("routines.%s: cronExpression '%s' is not a 5-field expression"
+                            % (slug, cron))
+            if not t.get("timezone"):
+                errs.append("routines.%s: schedule trigger needs a timezone" % slug)
+
+    for slug in sorted(routines):
+        if slug not in tasks:
+            errs.append("routines.%s: no recurring task with that slug" % slug)
+    return errs
+
+
 def main():
     root = Path(sys.argv[1] if len(sys.argv) > 1 else "founder-os")
     if not root.is_dir():
@@ -271,6 +399,8 @@ def main():
             + check_role_skill_exclusivity(agents) + check_orphans(root, agents)
             + check_teams(root) + check_tasks(root, agents)
             + check_ownership(root, agents) + check_skill_writes(root, agents)
+            + check_routines(root, agents) + check_beliefs(root, agents)
+            + check_agent_headings(root, agents)
             + check_sections(root, agents))
     for e in errs:
         print("FAIL: %s" % e)

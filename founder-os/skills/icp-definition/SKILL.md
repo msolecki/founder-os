@@ -30,6 +30,21 @@ Read first, in order — house rule 1:
 - `pipeline.md` — who is currently in play, and who has been in play too long
 - `metrics.md` — effective rate per engagement, if the CFO has it
 
+## Beliefs
+
+- Being wrong about the ICP costs less than being vague about it. A narrow
+  definition that turns out wrong is discovered within a quarter and corrected;
+  a broad one is never wrong and never right, and it survives for years
+  precisely because nothing can falsify it.
+- An ICP is a set of situations, not a set of people. The same buyer is in it in
+  March and out of it in June, and nothing about them changed except what broke.
+- Two thirds of revenue from one segment is not concentration risk to be
+  diversified away. It is the answer, arrived at by accident — and the founder
+  is about to spend a year escaping it.
+- Until it costs a live, payable deal, it is not a definition, it is a
+  paragraph. The founder finds out the ICP is real on the day they say no to
+  money they could have taken.
+
 ## Steps
 
 1. **Rank the paid clients by three numbers, not by feeling.** Margin,

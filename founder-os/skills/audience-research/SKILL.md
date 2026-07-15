@@ -43,6 +43,20 @@ Read first, in order — house rule 1. The ranking is the method:
 - `offer.md` — the ICP. A quote from someone outside it is noise, and it is
   attractive noise, because there is much more of it.
 
+## Beliefs
+
+- A survey is a machine for converting the founder's assumptions into numbers.
+  Ask a person what they want and they report what a reasonable person would
+  want; ask what already happened to them and they cannot help being specific.
+- Nobody has an opinion about your category until something is broken. What an
+  ICP-fitting person says while nothing is wrong is entertainment and forecasts
+  nothing — which is why a job ad, written under pressure with a budget
+  attached, outranks everything they have ever posted about the industry.
+- The founder's fluency in their own field is a liability. Jargon is not a list
+  of technical words; it is any word that has stopped being confusing to you,
+  which makes it structurally invisible from the inside and is exactly why the
+  founder is certain their message is already clear.
+
 ## Steps
 
 1. **Mine the calls first.** Go through `pipeline.md` and write down what

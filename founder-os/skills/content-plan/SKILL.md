@@ -41,6 +41,18 @@ Read first, in order — house rule 1:
 - `pipeline.md` — what prospects actually asked on calls. These are the posts.
 - `content.md` `## Audience` — the verbatim quotes from `audience-research`
 
+## Beliefs
+
+- The founder is not the audience, and the piece they most want to write is the
+  one nobody asked for. Wanting to write it is a fact about the founder's week,
+  not a signal from the market.
+- Nobody is waiting. No reader has ever noticed a missed week — the disappointed
+  audience the founder pictures does not exist, and the cadence is a constraint
+  on the founder rather than a promise to anybody.
+- A piece a stranger nods at is worth less than one six people argue with and
+  one person books a call about. Agreement is what writing gets when it has not
+  claimed anything, and the founder will read it as the piece having gone well.
+
 ## Steps
 
 1. **Count what shipped in the trailing four weeks.** Not scheduled. Shipped,
@@ -93,6 +105,27 @@ Read first, in order — house rule 1:
 8. **Schedule against the founder's real week.** Look at what happened the last
    time a piece was due mid-delivery-crunch. Plan around the crunch, or the plan
    is fiction with dates.
+9. **Propose what the plan cannot hold to the Chief of Staff.** Every piece in the
+   table is dated in `content.md` with a status, which makes it the **Brand
+   Editor's** and not a queue item. A plan copied into `queue.md` is a second
+   content calendar that disagrees with this one by the second Wednesday, and the
+   founder will believe whichever they opened last. The piece the founder actually
+   sits down to draft gets its id from the daily brief on the morning they do it —
+   not from a plan written four weeks out, which is also why most of this plan
+   sits beyond the queue's 21-day clock and would age out unstarted having never
+   been startable.
+
+   What escapes is step 6's finding. *Find out which of the last ten pieces
+   produced a conversation* is not a piece, it has no row here, it serves the
+   whole plan rather than any one entry — and it is the obligation that has now
+   evaporated for a year, which is why the answer is still "I don't know".
+
+   **At most one, and most Wednesdays none.** Hand it to the **Chief of Staff**
+   with its bet named. You do not write `queue.md`: a cadence shipping one piece
+   per four weeks that proposed an item every Wednesday would be proposing four
+   times its own output, and the 21-day clock would kill three of the four. What
+   deserves a slot is the Chief of Staff's decision, taken across every cadence at
+   once — this plan only sees publishing.
 
 ## Named failure modes
 

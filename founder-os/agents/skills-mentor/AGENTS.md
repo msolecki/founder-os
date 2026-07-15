@@ -5,6 +5,7 @@ reportsTo: focus-coach
 skills:
   - skill-gap
   - learning-plan
+  - ingestion-gate
   - guardrails
   - state-integrity
 ---

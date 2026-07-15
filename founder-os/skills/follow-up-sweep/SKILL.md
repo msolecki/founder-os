@@ -37,6 +37,39 @@ Read first, in order — house rule 1:
   The result of that work is the best reconnect reason available and it is free.
 - `content.md` — anything published that answers a question a specific person on
   this list once asked
+- `voice.md` — **read this before you write a sentence, not after.** `## Samples`
+  is the founder's actual sent mail; `## Tells` is what makes it recognisably
+  theirs; `## Never` is the phrase list that gets a message deleted on sight;
+  `## Register` says how writing to someone the founder has not spoken to in a
+  year differs from writing to a client of two years. This is the register the
+  founder gets wrong most reliably: long silence reads to them as distance to be
+  apologised for, and the apology is the first sentence that makes the message
+  about them.
+
+  **If `## Samples` is empty, say so out loud in the handoff** — "no voice samples
+  on record; these are written in a default register and will read like it" — and
+  hand the founder `voice-capture` (**Brand Editor**). Drafting silently on an
+  empty voice file is how a message that is right about the person still arrives
+  sounding like a mail merge, which is the exact thing this sweep exists to
+  prevent — and the recipient will blame the founder, not the draft. Do not
+  reconstruct a voice from `content.md`, from published posts, or from the
+  founder's description of themselves. `content.md` is on this list for reconnect
+  reasons; published writing is a different register performed for strangers, and
+  it is not evidence of how this founder writes to someone who knows them.
+
+## Beliefs
+
+- The gap holds itself open. Every month of not writing raises the perceived
+  cost of writing, so the message that eventually goes out is over-explained,
+  apologetic, and — for the first time in the entire relationship — about the
+  founder.
+- Nobody remembers being reconnected with; they remember what they were told. A
+  message the recipient could not repeat to a colleague the next morning did not
+  happen, however good it felt to send.
+- The name the founder is most embarrassed to contact is the most valuable one
+  on the list, and the embarrassment is proportional to how well it went.
+  Sweeping in order of comfort is how a founder spends a decade of goodwill on
+  the people who were never going to help.
 
 ## Steps
 
@@ -73,8 +106,19 @@ Read first, in order — house rule 1:
    nine months, the touch is the message. A reconnect with an ask attached after
    fourteen months of silence tells the recipient exactly what they were: an
    entry in a file, contacted when needed.
-7. **Write per-person, in the founder's voice.** If two messages in the sweep
-   could be swapped between recipients, both are broadcasts. Rewrite both.
+7. **Write per-person, then read it back against `voice.md`.** If two messages in
+   the sweep could be swapped between recipients, both are broadcasts. Rewrite
+   both.
+
+   Every `## Never` entry is a search, not a vibe — find and cut each one, and
+   treat a `FATAL` hit as a rewrite rather than a substitution. Then the harder
+   half: does the draft do what `## Tells` says the founder does? A message that
+   passes `## Never` and fails `## Tells` is de-slopped, not theirs — the filter
+   is the easy half. And it fails worse here than anywhere else in the company:
+   these people have heard from this founder before. A stranger reading an
+   off-voice message learns nothing; someone who knows them hears that something
+   is off, cannot name it, and files the whole reconnect as insincere — which
+   costs the relationship rather than the reply.
 8. **Apply the two-touch rule.** Two unanswered touches → stop, drop the
    interval to annual, and note it. Chasing is what turns a network into an
    ex-network. The non-reply is information; it is not an invitation to try
@@ -83,6 +127,24 @@ Read first, in order — house rule 1:
    actually want?** If the answer is nothing, across the whole list, the finding
    is not about the list. It is that the founder has been taking from this
    network for a year and putting nothing back.
+10. **Propose what this file cannot hold to the Chief of Staff.** Everyone on this
+    sweep is held by `network.md` — a row under `## Sweep`, or a deferral with a
+    date — and neither is a queue item. The founder sending the messages is not a
+    queue item either; it needs no id, and this skill could not close it anyway.
+
+    What escapes is the giving. An introduction the founder has now committed to
+    making is work owed to a third person, it closes or it doesn't, and no file on
+    this list holds it — `network.md` records that a message went out, not that
+    the founder still owes Marta an intro to Piotr three weeks later.
+
+    **At most one, and most weeks none.** Name it, name the bet, and hand it to
+    the **Chief of Staff**. You propose; you do not write `queue.md` — what
+    deserves one of fifteen slots against a 21-day clock is their decision, and
+    this sweep sees one week of one map. The arithmetic says why the cap on this
+    step is one: five
+    reconnects a week each proposing an item would fill the entire queue by the
+    third week and starve every other cadence, and the age-out would then kill
+    them at the rate they arrived.
 
 ## Named failure modes
 

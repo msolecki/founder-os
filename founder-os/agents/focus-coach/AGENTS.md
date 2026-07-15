@@ -6,6 +6,7 @@ skills:
   - week-plan
   - calendar-audit
   - energy-audit
+  - ingestion-gate
   - guardrails
   - state-integrity
 ---

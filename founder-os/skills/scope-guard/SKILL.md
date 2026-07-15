@@ -43,6 +43,26 @@ A count is not a list. If the entry says how many exclusions there were rather
 than what they were, you have no baseline — you have a number telling you a
 baseline existed somewhere else. Treat it as the empty case and hand it over.
 
+## Beliefs
+
+- **An exclusion earns its value when it is read aloud, not when it is
+  produced.** Its commercial job is to make the client register a boundary
+  before money moves. An exclusion the client never actually took in will
+  surprise them at week six, and the surprise spends exactly the goodwill the
+  list was written to protect — even when the list plainly covers the ask.
+- **Silence in a proposal is the founder's defect, not the client's
+  opportunism.** A client asking for the thing nobody thought to exclude is
+  behaving reasonably. Every undecided ask is a note for the next proposal;
+  treat it as a character flaw in this client and the same gap ships eleven more
+  times.
+- **"Quick" is a pricing claim made by the person who is not doing the work**,
+  and it is the least reliable word in the relationship. It does not mean the
+  estimate is small. It means there is no estimate.
+- **Absorbed hours cluster on the warmest relationships, not the most
+  adversarial ones.** Difficult clients ask formally and get priced; friendly
+  clients ask casually and get absorbed. Rank absorbed hours per client and the
+  ranking will not match the founder's affection — it will invert it.
+
 ## Steps
 
 1. **Check the exclusions first.** If the ask is named there, it is out, and the

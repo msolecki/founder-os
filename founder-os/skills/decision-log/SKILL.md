@@ -33,6 +33,23 @@ Read first — house rule 1:
 - `metrics.md` — the number the decision rests on, and its date
 - `goals.md` — which bet this serves, or whether it serves none
 
+## Beliefs
+
+- A reason written after the outcome is not a reason. It is a story with a
+  reason's grammar, and its tell is that it is more coherent than the week it
+  claims to describe. Twenty-four hours is not tidiness — it is the window in
+  which the record is still evidence rather than autobiography.
+- Most decisions do not deserve an entry, and refusing to log is this skill's most
+  common correct output. A folder that records preferences buries the four
+  decisions a year that actually cost something, and nobody reads a diary back.
+- The founder's confidence at the moment of deciding carries no information about
+  whether they were right, and it is the thing they will remember most vividly.
+  Record the number, the rejected option, and the falsifier. Conviction is not
+  admissible and does not go in the file.
+- The entries the founder will most want to quietly amend later are the ones worth
+  keeping unedited. Being embarrassed by a past entry is the log working — a log
+  you can correct is a log that only ever proves you were consistent.
+
 ## Steps
 
 1. **Apply the log test.** Log it if reversing it would cost more than a day of

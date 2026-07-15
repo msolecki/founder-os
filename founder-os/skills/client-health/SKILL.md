@@ -27,6 +27,26 @@ Read first, in order — house rule 1:
 - `pipeline.md` — is a renewal or expansion pending? It changes what silence
   means
 
+## Beliefs
+
+- **A client who has stopped complaining is not satisfied.** Complaints are
+  engagement. The quiet ones have already had the conversation about you
+  internally and reached a conclusion nobody sent. Rising friction is a
+  healthier signal than a relationship that has gone smooth.
+- **Health is a property of the deal's shape, not the client's personality.**
+  Most "difficult clients" were priced, scoped or sequenced badly at the start,
+  and the same person on a better-shaped engagement would have been fine. This
+  matters because personalities cannot be fixed and deals can.
+- **The founder is one of the signals, and they are not scoring themselves.**
+  A large share of failing engagements went quiet from the founder's end first:
+  latency is bidirectional, and a client's tone frequently tracks the founder's
+  own avoidance of them by about three weeks. Before scoring tone red, check who
+  stopped replying.
+- **Renewal rewards the client having felt in control, not the work having been
+  good.** A client who cannot say what they got this month will not renew a
+  project that went perfectly. The founder reads that as ingratitude; it is a
+  reporting failure and it is fixable.
+
 ## Steps
 
 Score four signals. Green, amber, or red — not out of ten. Scores out of ten

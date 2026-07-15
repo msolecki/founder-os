@@ -33,6 +33,25 @@ Read first — house rule 1:
 - `decisions/` — is this a new bet, or the defence of an old one?
 - `clients/` — revenue concentration, if the plan touches delivery
 
+## Beliefs
+
+- Certainty is a fact about the founder, not about the plan. A plan its author is
+  sure of has been examined less than one they doubt, not more — which is why
+  confidence is this skill's trigger rather than a point in the plan's favour.
+- Count the plan's numbers that appear in `metrics.md` with a date. Under half and
+  you are reading a wish with a spreadsheet attached; there is no point attacking
+  the strategy of a document whose arithmetic is imported from hope. Most plans
+  die here, and the founder came prepared to defend the idea.
+- One load-bearing assumption, not six. Six risks is what a reader produces when
+  they have skimmed — the generic risks are always available, cost nothing to
+  list, and the founder can generate them unaided. If you cannot name the single
+  belief whose falsity collapses everything downstream, you have not read the plan
+  yet.
+- The moment the founder starts explaining what you have misunderstood, the review
+  is over and the answer is on the record. Nothing said in defence of a written
+  plan is evidence about the plan — it is evidence about how much of the plan
+  lives outside the paragraph they handed you.
+
 ## Steps
 
 1. **Find the load-bearing assumption. One.** Every plan rests on a single

@@ -30,6 +30,26 @@ Read first, in order — house rule 1:
 - `metrics.md` — the founder's effective hourly rate. It is the price of the build
   hours, and it is what turns this from a preference into a calculation.
 
+## Beliefs
+
+- **Every automation is a permanent employee with an on-call rota of one.** It
+  draws no salary and it cannot be fired, but it can page the founder at 2am
+  during a client deadline. The real cost is not the build; it is that a company
+  of one now owns one more thing capable of failing while nobody is looking.
+- **Automating an unstable process freezes it.** A task that has run the same way
+  twelve times is a candidate. One that has run three times is still being
+  designed, and the script will settle the design by accident — after which
+  nobody revisits it, because it works.
+- **The manual work that survives is the work done for the favourite client.**
+  The bespoke monthly report nobody else receives, invented once as a courtesy,
+  now a standing cost that appears in no proposal. It is never top of the
+  automation list, because the founder does not experience it as work. Count its
+  minutes with the others before deciding anything.
+- **Manual and deliberate beats automated and unreviewed.** A monthly task done
+  by hand is also the founder's only scheduled look at the number. Automate it
+  and the looking stops — the next thing that goes wrong is discovered by a
+  client, which costs more than the hours the script ever saved.
+
 ## Steps
 
 1. **Delete, then simplify, then buy, then build. In that order, no skipping.**

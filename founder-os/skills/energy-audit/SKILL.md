@@ -32,6 +32,30 @@ Read first, in order — house rule 1:
 - `clients/` — delivery hours, to see which weeks mixed sales and delivery.
 - `metrics.md` — output that shipped, so "good week" means something checkable.
 
+## Beliefs
+
+- The founder cannot answer "when do you work best" and the ledger can. Asked
+  directly, they will report an identity — "I'm a morning person" — and the
+  record will report a completion rate. When the two disagree, the number is
+  what `week-plan` gets.
+- A calendar is a claim and the audit is the evidence. A block on Tuesday says
+  the founder intended to work at 14:00; only the ledger says whether anything
+  finished. This skill reads the second thing and treats the first as a
+  hypothesis.
+- Founders misremember where the week went, in a consistent direction. The hours
+  that hurt are recalled as longer and the hours that vanished are not recalled
+  at all — which is why a shape reconstructed in conversation is worth less than
+  no shape.
+- Four weeks is the floor because three will produce a pattern. An invented
+  shape is worse than an empty one: `week-plan` will build a quarter of blocks
+  on it, and nothing in the workspace will ever contradict it.
+- A flat result is a finding, not a failure to look harder. The pressure to
+  return a shape is exactly how a chronotype gets invented and then scheduled
+  around for a year.
+- The count of days off is an observation. What it means about a person is not
+  this skill's question and not this company's — read `## Guardrails` before you
+  write the sentence after the number.
+
 ## Steps
 
 1. **Check you have enough weeks. Four is the floor.** Under four weeks of

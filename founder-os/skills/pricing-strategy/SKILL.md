@@ -33,6 +33,19 @@ Read first, in order — house rule 1:
 - `clients/` — hours actually spent per engagement, including the unbilled ones
 - `pipeline.md` — what prospects have flinched at, and what they didn't
 
+## Beliefs
+
+- Price is a claim about the buyer, not about the work. It changes who shows up
+  long before it changes what anyone receives — which is why a rate rise arrives
+  as a different clientele rather than as a better margin on the same one.
+- Losing on price is cheap. Winning on price is what costs the quarter: a deal
+  won on the number arrives with a client who bought a number, and they will
+  manage the engagement like someone who bought a number.
+- The founder's price is not low because they undervalue their work. It is low
+  because a low price is an effective way of not being rejected, and it is
+  working. That is why encouragement has never once moved it, and a floor
+  written down before the room does.
+
 ## Steps
 
 1. **Compute the effective rate on the last three delivered engagements.** Fee

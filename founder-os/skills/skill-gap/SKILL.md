@@ -40,6 +40,24 @@ Read first, in order — house rule 1:
   probably that one, not a new one.
 - `metrics.md` — the effective rate, to price the gap in money.
 
+## Beliefs
+
+- Learning is the most expensive way to close a capability gap and it is always
+  the founder's first choice, because it is the only one that feels like growth.
+  Contractor, tool and automation are all faster. Learning wins when it beats
+  the three on arithmetic, and not before.
+- A gap the founder can feel but no retro recorded is a hypothesis. The
+  sensation of being unqualified is not distributed in proportion to real gaps —
+  it is distributed in proportion to how recently someone sat in a room with an
+  expert.
+- Being asked to find a gap is not evidence that one exists. A manufactured gap
+  costs the same forty hours as a real one, and "there is no gap" is a
+  legitimate and frequently correct output of this skill.
+- Most alleged skill gaps are scope failures or pricing failures wearing a
+  learning problem's clothes. A founder trained to do underpriced work faster is
+  still doing underpriced work, and now believes the problem is solved.
+- Two gaps closed in a quarter is zero gaps closed.
+
 ## Steps
 
 1. **State the delta in one sentence.** The offer today versus the offer the

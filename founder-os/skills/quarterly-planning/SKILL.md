@@ -49,6 +49,24 @@ Read first, in order — house rule 1:
 - `charter.md` — what the business is for, in case three quarters of drift have
   quietly answered that question differently
 
+## Beliefs
+
+- "Never measured" is a worse verdict than "lost". A lost bet bought information
+  and can be reasoned from; an unmeasured bet consumed a quarter and returned
+  nothing — and it is the one the founder will file under "we learned a lot".
+  Read the count out before anyone is allowed to enjoy the new plan.
+- A quarter is thirteen weeks and every founder plans for about eighteen. This is
+  not a discipline problem to be exhorted away: it is the base rate, it is in
+  `reviews/quarterly/` in their own handwriting, and the correct response is to
+  commit three bets rather than to promise better execution.
+- Optimism is not the enemy of a plan — it is the reason the plan exists. What
+  kills the quarter is optimism with no date attached. A kill condition expresses
+  no doubt about the bet; it is what makes committing to it a decision rather than
+  a mood.
+- The bet the founder least wants to cut is usually the one with the most already
+  spent on it, not the one most ahead of its case. Capacity does not know the
+  difference, and neither does the quarter.
+
 ## Steps
 
 1. **Close the old quarter first. Verdict every bet, no exceptions.** Won,
@@ -82,6 +100,27 @@ Read first, in order — house rule 1:
    plan instead of forwarding it, that is the signal to forward it.
 8. **Write `goals.md`, then `reviews/quarterly/`.** `goals.md` is the live plan;
    the review is the record of what was decided and what last quarter returned.
+9. **Propose the first move on each bet to the Chief of Staff — and almost nothing
+   else.** A quarter is thirteen weeks; `queue.md` runs a 21-day clock. Most of
+   this plan is therefore not queue work, and putting it there would be a lie with
+   an id attached: an item dated for September ages out in August having never
+   been startable, and it gets dropped with the reason `aged out`, which is false.
+   It was not passed over — it was not due. Work dated for September belongs to
+   whoever owns September. A quarter is held in `goals.md`, which you just wrote,
+   and a bet is not an obligation — it is a wager with a kill condition.
+
+   What escapes is the first move: the one thing per bet that must happen inside
+   three weeks or the bet has not started. **One per bet, three maximum**, because
+   step 3 caps the bets at three and a bet with two first moves has not been
+   sized.
+
+   Hand them to the **Chief of Staff** with each bet named — you do not write
+   `queue.md`, because what deserves a slot is decided against everything else the
+   founder owes, and this skill has spent the last hour looking at thirteen weeks
+   rather than at Tuesday. Three items on day 1 is already a fifth of the cap. **If
+   `## Queued` cannot take them, that is the finding, and it is a better one than
+   anything in this plan:** the founder is opening a quarter with a queue still
+   full of last quarter's obligations, and no new plan has ever fixed that.
 
 ## Output
 

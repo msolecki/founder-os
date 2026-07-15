@@ -34,6 +34,18 @@ Read first, in order — house rule 1:
   measured against.
 - `metrics.md` — cash and burn, for what the gap actually means
 
+## Beliefs
+
+- Deals do not die of neglect. They die at a specific moment, in a specific
+  conversation, and the founder was present for it. "Went quiet" describes the
+  founder's attention, not the prospect's decision.
+- A pipeline does not exist to forecast revenue. It exists to say how many weeks
+  remain to fix the quarter. Reviewed for accuracy it is a report; reviewed for
+  lead time it is a decision, and only one of those was worth the hour.
+- An honest empty pipeline is better news than a full one made of maybes. The
+  founder can act on nothing. They cannot act on eight things that are secretly
+  nothing, because every one of them comes with a plausible reason to wait.
+
 ## Steps
 
 1. **Test each entry against the deal definition.** A deal has: a named amount,
@@ -74,6 +86,24 @@ Read first, in order — house rule 1:
    what any prospect said. `win-loss-analysis` runs the same median over the
    quarter's closed deals — that is the same rule on a different population, and
    this one is the leading indicator of it.
+9. **Propose what this file cannot hold to the Chief of Staff.** Every surviving
+   deal's next action is dated in `pipeline.md`. Those are yours, they are not
+   queue items, and copying them into `queue.md` would create two truths that
+   disagree by Thursday — the intake rule refuses them and house rule 4 is why.
+
+   What escapes is step 7's finding. Below 3× coverage, *go get more deals* is an
+   obligation with no prospect to attach it to, no row in this file, and nowhere
+   else to live: it is the class the queue exists for, and it is the one that
+   evaporates every week. Make it concrete enough to close — *book three
+   discovery calls* — or it is a worry, not an item.
+
+   **At most one, and most weeks none.** Name it, name the bet in `goals.md` it
+   serves, and hand it to the **Chief of Staff**. You do not write `queue.md`:
+   what deserves one of fifteen slots against a 21-day clock is their decision,
+   made across every cadence, and this review can only see the pipeline. If
+   `## Queued` is already full, say so and hand it over as a triage rather than an
+   append — something gets dropped to make room, or your item is not important, it
+   is just the newest.
 
 ## Named failure modes
 

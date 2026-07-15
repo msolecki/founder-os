@@ -35,9 +35,36 @@ Read first, in order — house rule 1:
   alone. `content-plan` already decided it — do not re-decide it here.
 - `content.md` `## Audience` — their verbatim words. Write in those, not in the
   founder's internal vocabulary.
+- `voice.md` — `## Samples`, `## Tells`, `## Never`, `## Register`. **This and
+  `## Audience` are not the same input and they do not conflict:** the audience's
+  quotes decide *which words* the piece uses, the founder's samples decide *how
+  the sentences go*. A piece in the founder's vocabulary is unreadable to the
+  buyer; a piece in the founder's voice is why anyone reads a solo founder at
+  all. `## Register` covers the public post, which is the loosest register in the
+  file and the one furthest from a proposal.
+
+  If `## Samples` is empty, say so on the handoff — "no voice samples on record;
+  this is a competent post by nobody in particular" — and hand the founder
+  `voice-capture` (**Brand Editor**). A published piece in a default register
+  does not just underperform, it teaches the audience that this founder sounds
+  like everyone else, and that impression is expensive to reverse.
 - `offer.md` — the ICP. The reader is one specific person.
 - `clients/` and `pipeline.md` — the specific thing that actually happened, with
   the number attached
+
+## Beliefs
+
+- The most valuable thing the founder knows is the thing they think is too
+  obvious to write down. Expertise is largely the inability to see what you
+  know; "everyone knows that" is a report on the founder's peer group, not on
+  the buyer.
+- A draft that came out easily usually has no idea in it. It was a transcription
+  of something the founder already believed, which is why it took twenty minutes
+  — and why nobody will reach the end of it.
+- A piece that costs the founder nothing to publish returns nothing. The number,
+  the named failure, the client they fired: the discomfort of putting those on
+  the internet under their own name is not a side effect of the piece working,
+  it is the mechanism.
 
 ## Steps
 
@@ -76,6 +103,17 @@ Read first, in order — house rule 1:
    — the slot is wrong, not the idea. Do not quietly move it: the channel was
    decided from where the ICP actually is, and this draft does not get to
    overturn that with a preference.
+10. **Read it back against `voice.md`, last.** Every `## Never` entry is a
+    search — and this is the skill where the `FATAL` one shows up, because
+    "This isn't a hiring problem. This is a pricing problem." is exactly the
+    sentence a post about a lesson wants to end on. It is also the sentence that
+    tells every reader in the founder's category that nobody wrote this.
+
+    Then `## Tells`, which is the half that matters here: a post that is
+    de-slopped and voiceless is the **safe draft** under a different name. The
+    founder's advantage is that they are one identifiable person with scars; a
+    piece that could have been written by their category loses to the entire
+    internet whether or not it contains a banned phrase.
 
 ## Named failure modes
 
@@ -90,6 +128,13 @@ Read first, in order — house rule 1:
 ## Output
 
 The draft goes to the founder. This skill does not publish.
+
+**If the founder edits it before publishing, run `voice-capture` on the published
+version.** Both skills are the **Brand Editor's**, so this handoff costs one
+step and gets skipped for exactly that reason — it feels like bookkeeping. It is
+not: a piece the founder rewrote before publishing is a sample of their public
+register with their name permanently attached, which is the highest bar they
+write to and the one they actually meet.
 
 Record in `content.md` under `## Drafts`:
 

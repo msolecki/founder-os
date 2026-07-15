@@ -25,6 +25,42 @@ metadata:
 
 <Which workspace files to read first. House rule 1: no advice without state.>
 
+## Beliefs
+
+**Every role skill carries this section. It is what stops the agent giving
+Wikipedia advice the moment the founder steps off the script.**
+
+`## Steps` covers the case you anticipated. Beliefs cover the case you did not:
+they are the reasoning prior the agent falls back on when the procedure runs
+out, which is precisely when a founder most needs an opinion and most often
+gets mush.
+
+Place it immediately before `## Steps` — the agent reads what it believes
+before it reads what to do.
+
+The bar is testable, and it is the only bar that matters here:
+
+> **At least 3 principles a competent generic advisor would NOT say.**
+
+"Follow up promptly" is not a belief; every advisor says it. "A prospect who
+has gone quiet twice has answered you" is a belief — it is falsifiable, it is
+contestable, and a cautious advisor would hedge it. If you cannot state a
+principle someone could reasonably disagree with, you have not written a
+belief, you have written a platitude with a heading over it.
+
+Beliefs must be *this company's*, not a named guru's. A named authorial POV
+cannot be updated without permission and must be defended; an argued position
+can simply be improved when it turns out to be wrong.
+
+```markdown
+## Beliefs
+
+- <a principle a generic advisor would not say, stated plainly>
+- <another — contestable, falsifiable, not a hedge>
+- <a third — ideally the one the founder will resist>
+```
+
+
 ## Steps
 
 1. <numbered, concrete>

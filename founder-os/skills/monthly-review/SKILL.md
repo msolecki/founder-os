@@ -39,6 +39,24 @@ Read first, in order — house rule 1:
 - `decisions/` — everything logged this month
 - `reviews/monthly/` — last month's correction: did it hold?
 
+## Beliefs
+
+- Nobody ever decides to become a different company. They accept one urgent
+  project, then a second one shaped like it, and the charter goes stale without a
+  single meeting. Drift has no decision date, which is precisely why nothing else
+  in this workspace catches it.
+- The founder's sense of what their business is lags their calendar by about a
+  quarter. When the two disagree, the calendar is the current fact and the
+  charter is the historical one. That is the direction of the evidence, and it is
+  not the direction the founder assumes.
+- A correction that dies twice was never a correction. It was a preference stated
+  in review voice, and reissuing it a third time teaches the founder that this
+  file's output is optional.
+- Drift is not automatically wrong; an undeclared drift is. There are exactly two
+  honest responses to the gap — rewrite the charter, or change the month. "This
+  month was atypical" is not a third one, though the founder will offer it, and
+  they offered it last month too.
+
 ## Steps
 
 1. **Refuse to run without a close.** If `metrics.md` predates the month you

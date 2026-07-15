@@ -92,3 +92,82 @@ agents:
           kind: path
           requirement: optional
           description: Workspace directory for company state. Defaults to ./founder-os/
+
+# Cadence schedules. TASK.md carries only `recurring: true` (portable, per
+# agentcompanies/v1 §10); the real trigger lives here in the vendor extension.
+#
+# Do NOT move these back into TASK.md as `schedule.recurrence`. The Paperclip
+# importer calls that field `legacyRecurrence` and hard-errors on any weekly,
+# monthly or yearly interval > 1 — which silently returned trigger:null and
+# killed the quarterly cadence before this was caught.
+#
+# catchUpPolicy: enqueue_missed_with_cap is set explicitly on every routine.
+# The runtime default is skip_missed, which means a closed laptop on Friday
+# makes the weekly review silently never happen. A cadence that vanishes when
+# you were busy is worse than no cadence: it is a promise that fails exactly
+# when it was needed.
+routines:
+  daily-brief:            # Weekdays 08:00
+    catchUpPolicy: enqueue_missed_with_cap
+    concurrencyPolicy: coalesce_if_active
+    triggers:
+      - kind: schedule
+        enabled: true
+        cronExpression: "0 8 * * 1-5"
+        timezone: UTC
+  week-plan:              # Mondays 08:30
+    catchUpPolicy: enqueue_missed_with_cap
+    concurrencyPolicy: coalesce_if_active
+    triggers:
+      - kind: schedule
+        enabled: true
+        cronExpression: "30 8 * * 1"
+        timezone: UTC
+  weekly-review:          # Fridays 16:00
+    catchUpPolicy: enqueue_missed_with_cap
+    concurrencyPolicy: coalesce_if_active
+    triggers:
+      - kind: schedule
+        enabled: true
+        cronExpression: "0 16 * * 5"
+        timezone: UTC
+  pipeline-review:        # Thursdays 10:00
+    catchUpPolicy: enqueue_missed_with_cap
+    concurrencyPolicy: coalesce_if_active
+    triggers:
+      - kind: schedule
+        enabled: true
+        cronExpression: "0 10 * * 4"
+        timezone: UTC
+  follow-up-sweep:        # Fridays 14:00
+    catchUpPolicy: enqueue_missed_with_cap
+    concurrencyPolicy: coalesce_if_active
+    triggers:
+      - kind: schedule
+        enabled: true
+        cronExpression: "0 14 * * 5"
+        timezone: UTC
+  content-plan:           # Wednesdays 10:00
+    catchUpPolicy: enqueue_missed_with_cap
+    concurrencyPolicy: coalesce_if_active
+    triggers:
+      - kind: schedule
+        enabled: true
+        cronExpression: "0 10 * * 3"
+        timezone: UTC
+  monthly-close:          # 1st of the month 09:00
+    catchUpPolicy: enqueue_missed_with_cap
+    concurrencyPolicy: coalesce_if_active
+    triggers:
+      - kind: schedule
+        enabled: true
+        cronExpression: "0 9 1 * *"
+        timezone: UTC
+  quarterly-planning:     # Jan/Apr/Jul/Oct 1st 11:00 — true calendar quarters
+    catchUpPolicy: enqueue_missed_with_cap
+    concurrencyPolicy: skip_if_active
+    triggers:
+      - kind: schedule
+        enabled: true
+        cronExpression: "0 11 1 1,4,7,10 *"
+        timezone: UTC

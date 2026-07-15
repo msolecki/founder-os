@@ -7,10 +7,12 @@ workspace_files:
   - offer.md
   - pipeline.md
   - week.md
+  - queue.md
   - clients/
   - network.md
   - skills.md
   - content.md
+  - voice.md
   - systems.md
   - decisions/
   - reviews/daily/
@@ -21,6 +23,7 @@ workspace_files:
 owns:
   chief-of-staff:
     - charter.md
+    - queue.md
     - decisions/
     - reviews/daily/
     - reviews/weekly/
@@ -44,6 +47,7 @@ owns:
     - skills.md
   brand-editor:
     - content.md
+    - voice.md
   ops-engineer:
     - systems.md
 
@@ -87,6 +91,12 @@ sections:
     - "## Dead"
     - "## Win/loss"
     - "## Last review"
+  queue.md:
+    - "## Doing"
+    - "## Queued"
+    - "## Blocked"
+    - "## Done"
+    - "## Dropped"
   week.md:
     - "## Arithmetic"
     - "## Shape"
@@ -108,6 +118,11 @@ sections:
     - "## Shipped"
     - "## Drafts"
     - "## Audience"
+  voice.md:
+    - "## Samples"
+    - "## Tells"
+    - "## Never"
+    - "## Register"
   systems.md:
     - "## Stack"
     - "## Automation decisions"

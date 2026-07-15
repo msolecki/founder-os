@@ -30,6 +30,24 @@ Read first, in order — house rule 1:
 - `clients/` — delivery hours logged, to tell overrun from drift.
 - `week.md` `## Ledger` — the same gap in prior weeks. One week is an anecdote.
 
+## Beliefs
+
+- The gap is the finding. The founder will hand you an explanation for it, and
+  the explanation is the most interesting-sounding and least useful object in
+  the room.
+- A founder's memory of their own week is not evidence. It is generous, it is
+  confidently wrong, and it is the reason this skill reads a calendar instead of
+  asking a question.
+- Every unplanned hour had an owner and it was almost never the founder.
+  Unplanned is not weather: someone asked, the founder said yes, and that yes is
+  the actual subject of the audit.
+- Nothing in a calendar expires by itself. A meeting outlives the project that
+  created it by default and keeps billing the quarter for a reason that ended in
+  March.
+- "This week was unusual" is a claim about the ledger, and the ledger can check
+  it. Three unusual weeks running is not a run of bad luck; it is a plan that is
+  wrong.
+
 ## Steps
 
 1. **No plan, no audit.** If `week.md` has no `## Blocks` for this week, stop.

@@ -35,6 +35,19 @@ Read first, in order — house rule 1:
   do not belong in the map's cadence.
 - `offer.md` — the ICP, for who among the network could plausibly refer
 
+## Beliefs
+
+- Relationships decay from asymmetry, not from neglect. Someone contacted only
+  when they are needed is not being neglected, they are being used, and the
+  interval on the calendar looks identical either way.
+- Referrals do not come from the people who like the founder most. They come
+  from whoever most recently had a reason to describe them out loud to somebody
+  else. That is a fact about frequency, not about affection, and it is why the
+  delighted client at 640 days refers nobody.
+- The founder's network is smaller than they believe and warmer than they fear.
+  Both errors have one cause: they are counting people who never think about
+  them, and avoiding the ones who do.
+
 ## Steps
 
 1. **Start from `clients/`, not from memory.** Every person who ever paid, and

@@ -34,6 +34,25 @@ Read first — house rule 1:
   failed before. The boring cause is already in there, in writing.
 - `clients/` — revenue concentration, if delivery is in the path
 
+## Beliefs
+
+- The tense is doing the work, not the imagination. "Might fail" produces a
+  balanced risk register, because half the founder is still defending the plan
+  while listing its flaws; "did fail" produces causes with months attached. Same
+  person, same information — so a slide back into the conditional is not a wording
+  slip, it is the exercise switching itself off.
+- Founders premortem the exciting death and die of the boring one, and the reason
+  is not a failure of imagination: the competitor shipping first is nobody's
+  fault. Getting busy is. A story is only useful once it names a cause the founder
+  is standing in.
+- Count the live bets in `goals.md` that need the same single pair of hands. Above
+  three, stop investigating the market — the story is already written, the cause
+  is attention, and the only open question is which of them dies first.
+- A risk register is how a founder imagines failure without thinking about it, and
+  it leaves them feeling rigorous, which is the product it actually delivers.
+  Having pictured the death is not a defence against it. The tripwire is, and it
+  is the only line here that will still exist in month five.
+
 ## Steps
 
 1. **Set the date and state the death as fact.** "It is <plan date + 6 months>.
