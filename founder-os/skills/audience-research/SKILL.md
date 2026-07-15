@@ -42,6 +42,11 @@ Read first, in order — house rule 1. The ranking is the method:
 
 - `offer.md` — the ICP. A quote from someone outside it is noise, and it is
   attractive noise, because there is much more of it.
+- `ingestion-gate` — every line this skill writes is a sentence a person said,
+  so the gate is not an extra step here, it is the ranking above restated as a
+  rule. Source 3 is where it bites: a public post is the ICP describing their own
+  situation, which is FACT, right up until it is a vendor describing a market,
+  which is paid speech and does not enter.
 
 ## Beliefs
 
@@ -103,19 +108,32 @@ Write to `content.md`, replacing `## Audience`:
     Sample: <n> quotes from <n> people (min 10 — below that, GUESS)
 
     ### What they say — verbatim
-    - "<exact quote, ugly phrasing intact>" — <role, ICP-fitting company> — <source>, YYYY-MM-DD
+    - "<exact quote, ugly phrasing intact>" (per <role, ICP-fitting company>,
+      <channel>, YYYY-MM-DD)
 
     ### Repeats — said 3+ times
-    - "<the question>" — heard <n>× → planned as <piece> | handed to Positioning Advisor
+    - "<the question>" — heard <n>× (per <role> <date>; <role> <date>; <role> <date>)
+      → planned as <piece> | handed to Positioning Advisor
 
     ### The sentence that works on calls
     "<the founder's own spoken explanation>" — published: <yes | NO>
+    (per the founder, <channel>, YYYY-MM-DD)
 
     ### Translation table
-    | founder says | they say |
-    |--------------|----------|
+    | founder says | they say | first heard from | when |
+    |--------------|----------|------------------|------|
 
-## Guardrails
+Every row in this file is a stamp with a sentence attached — that is not
+ceremony, it is the skill. **`Repeats` names all three speakers and all three
+dates, not just the count.** `heard 3×` is one integer standing in for three
+tiers, and the whole argument of step 4 is that three is a pattern: three people
+is a pattern, one person on three calls is a customer with a bugbear, and the
+integer cannot tell them apart. If the three dates are all one week, that is not a
+pattern either — it is a news cycle.
+
+The translation table gains `first heard from` and `when` for the same reason: a
+buyer vocabulary from 2023 is how a founder ends up carefully translating into
+words nobody uses any more.
 
 **Never invent a quote and never invent a person.** Not as an illustration, not
 as a placeholder, not "roughly what they'd say". A fabricated quote is

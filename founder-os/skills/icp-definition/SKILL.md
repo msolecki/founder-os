@@ -29,6 +29,10 @@ Read first, in order — house rule 1:
 - `offer.md` — the current ICP, if any, and when it was last touched
 - `pipeline.md` — who is currently in play, and who has been in play too long
 - `metrics.md` — effective rate per engagement, if the CFO has it
+- `ingestion-gate` — its third named failure mode is *the ICP from one flattering
+  call*, and it names this file. An attribute out of `clients/` is first-hand and
+  needs no gate; an attribute out of something a prospect said on a call is the
+  gate's job, and the answer is almost always that it does not enter.
 
 ## Beliefs
 
@@ -96,9 +100,10 @@ Write to `offer.md`, replacing the `## ICP` section entirely:
 
     ### Trigger
     <what just happened to them that makes this urgent now>
+    (per <person, role at client>, <channel>, YYYY-MM-DD)
 
     ### Attributes — all checkable before the first call ends
-    - <attribute> — I check it by: <the observable>
+    - <attribute> — I check it by: <the observable> — from: <client, who paid>
 
     ### Not this
     - <named exclusion> — because: <what it cost last time, from clients/>
@@ -107,6 +112,20 @@ Write to `offer.md`, replacing the `## ICP` section entirely:
     - <client> — fits/doesn't — margin <n>, paid in <n>d, <n>h over scope
     - Fits, by name: <company>, <company>, <company>
     - Clearly doesn't: <company>
+
+Two provenance slots, and they are different. **Attributes cite a client, not a
+speaker** — step 7 already says every attribute names the client it came from,
+and that client is in `clients/` with invoices behind them, which is first-hand
+and outranks anything anyone said. An attribute whose `from:` is a prospect
+rather than a payer has failed the gate and the Guardrails below, and the fix is
+deletion, not a stamp.
+
+**The trigger is the one thing here that can only come from a mouth.** Nothing in
+`clients/` records what broke the week before they called; a person told the
+founder that, once, on a date. So it is stamped. Unstamped, a trigger from a
+2024 client reads as a description of today's market — and every outreach,
+proposal and post downstream quotes `## ICP` as though it were current. The stamp
+is what makes it possible to notice the trigger expired.
 
 Narrowing the ICP is material and irreversible in practice — it changes what
 gets sold, published, and pursued for a quarter. Log it via `decision-log`

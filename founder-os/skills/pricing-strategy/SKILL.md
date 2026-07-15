@@ -104,7 +104,8 @@ Write to `offer.md`, replacing the `## Pricing` section entirely:
 
     ### Priced against
     Buyer's real alternative: <the actual one>
-    Their cost of not acting: <estimate> — LABELLED GUESS unless sourced
+    Their cost of not acting: <estimate> [VALIDATE] (per <speaker>, <channel>, <date>
+      — validate: <what would settle it>, <owner>, by <date>)
 
     ### Concession ladder — scope, not price
     1. Remove <deliverable> → <amount>

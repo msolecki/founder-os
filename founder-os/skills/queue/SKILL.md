@@ -8,8 +8,8 @@ metadata:
 
 # Queue
 
-Eight cadences produce obligations every week and not one of them holds one. The
-daily brief says *follow up with Anna* and closes. Tomorrow's brief says it again,
+Every cadence in this company produces obligations and not one of them holds one.
+The daily brief says *follow up with Anna* and closes. Tomorrow's brief says it again,
 or forgets — and neither the founder nor any agent can answer whether Anna was
 followed up with, because the only record is a sentence in a file indexed by date
 rather than by whether the thing happened.
@@ -43,11 +43,11 @@ Read first — house rule 1:
 - `goals.md` `## Bets` — every item names one bet or names `none`.
 
 **Two files, and this skill does not sweep for more.** `context-load` caps a
-cadence at its own file plus one, and names exactly one exemption — `triage` — and
-says it does not extend by analogy to other Chief of Staff cadences. This is one of
-those cadences, so the intake is not a sweep of eleven agents' files looking for
-work. It is the two doors below, and the cost of that is written down in
-`## Guardrails` rather than quietly paid.
+cadence at its own file plus one, and names its exemptions — `triage` and
+`daily-brief` — and says they do not extend by analogy to other Chief of Staff
+cadences. This is one of those cadences, so the intake is not a sweep of every
+agent's file looking for work. It is the two doors below, and the cost of that is
+written down in `## Guardrails` rather than quietly paid.
 
 ## What belongs here
 
@@ -241,15 +241,27 @@ Then give the caller one line, before anything else it writes:
 **The Chief of Staff writes this file. Nobody else** — house rule 4. Other agents
 propose: they hand the obligation to the Chief of Staff by name, in the handoff, and
 the Chief of Staff writes it here. An agent that writes `queue.md` itself has not
-saved an obligation, it has broken the one property that makes eleven colleagues
-safe to run against shared state.
+saved an obligation, it has broken the one property that makes a company of this
+many agents safe to run against shared state.
 
-And the honest cost of that, since the intake is two doors and not a sweep: an
-obligation produced by a Friday cadence with no founder in the room reaches this
-file on Monday, through the brief, or it does not reach it at all. That is a real
-hole and it is smaller than the one it replaces — today the obligation reaches
-nothing, ever. Do not patch it by having this skill read eleven files; that is the
-averaging failure `context-load` step 5 describes, and it would arrive here first.
+And the honest cost of that, since the intake is two doors and not a sweep.
+**Five cadences propose** — `pipeline-review` (Thu), `revenue-review` (1st),
+`content-plan` (Wed), `quarterly-planning` (1 Jan/Apr/Jul/Oct) and
+`follow-up-sweep` (Fri). Four of the five fire on a schedule with no founder and
+no Chief of Staff in the room, so their handoff has nobody to hand to. Each
+therefore leaves a `Proposed:` line in the section it owns, and the next
+`daily-brief` drains all five — step 0 there, and it is the receiving half of
+this guardrail.
+
+**The residual hole, stated at its real size:** a proposal made on Wednesday
+morning waits until Thursday 08:00, and one made on Friday afternoon waits until
+Monday. Up to three days, on one weekday cadence out of five. That is a real hole
+and it is smaller than the one it replaces — before the brief drained anything,
+the obligation reached nothing, ever, on all five. Do not patch the rest by having
+this skill read every agent's file; that is the averaging failure `context-load`
+step 5 describes, and it would arrive here first. The brief is allowed to read
+across books because ranking across books is its decision. This file's decision is
+one item's fate, and it needs two doors to make it.
 
 **Never mark a send done.** House rule 0: the founder sends. An item like `send Anna
 the retainer` may sit in this queue — the queue holds it, the founder does it — but

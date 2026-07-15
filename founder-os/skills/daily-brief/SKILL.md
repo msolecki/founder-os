@@ -18,17 +18,41 @@ Weekday mornings, before opening email. Triggered automatically by
 
 ## Inputs
 
-Read first, in order — house rule 1:
+Read first, in order — house rule 1. **This list is longer than `context-load`
+step 5 allows, and the exemption is written in that file as well as this one.**
+Read it there: the brief is the only cadence whose decision is the ranking
+*across* books, so it is the only one that cannot make its decision from two of
+them. The price is that only the first three below are read whole; everything
+else is one named section, read for one question.
 
+Read whole:
+
+- `charter.md` — what this business is, and therefore what to ignore. Mandatory
+  under `context-load`; the brief was skipping it and ranking a day against a
+  business nobody had described.
 - `goals.md` — what this quarter is actually for
 - `queue.md` — `## Doing` first: what the founder already has in flight, and how
   long it has been in flight. Yesterday's commitment is an item here, not a
   memory, and whether it closed is a fact rather than a conversation.
+- `reviews/daily/` — yesterday's brief: what did they commit to?
+
+Read for one named section only:
+
+- `metrics.md` — the receivable lines under `## Close`. An invoice past terms is
+  already in this skill's rotting definition, and until now it was rotting in a
+  file the brief never opened. Not the effective rate, not the concentration, not
+  the runway — those are the **CFO's** to narrate and reading them here is how a
+  brief becomes a monthly close nobody asked for.
 - `pipeline.md` — anything with a next action dated today or overdue
 - `clients/<client>.md` `## Health` — the latest `Verdict:` line on each active
   engagement. `at-risk` or `failing` is rotting; `healthy` is not. That is
   `client-health`'s vocabulary and those are the only three words it writes.
-- `reviews/daily/` — yesterday's brief: what did they commit to?
+- `offer.md` `## ICP` `### Not this` — who this company decided not to serve. A
+  client on the books that the offer excludes is rotting, and it is the one
+  rotting item no other file can see: `clients/` knows the engagement is healthy
+  and `pipeline.md` knows the deal was won. Only the exclusion knows it should
+  never have been taken.
+- `content.md` and `network.md` — the `Proposed:` line, and nothing else. Step 0.
 
 ## Beliefs
 
@@ -47,6 +71,31 @@ Read first, in order — house rule 1:
   before agreeing to the second.
 
 ## Steps
+
+0. **Drain the proposals, before you rank anything.** Five cadences produce
+   obligations and none of them may write `queue.md` — `pipeline-review`,
+   `revenue-review`, `content-plan`, `quarterly-planning` and `follow-up-sweep`
+   all hand to the **Chief of Staff** by name. Four of the five fire on a
+   schedule, at 10am on a Wednesday, with nobody in the room to hand to. **You are
+   the Chief of Staff and this is the room.** Each of them leaves a `Proposed:`
+   line in the section it owns; you read those five sections; you take the item or
+   you refuse it.
+
+   Run `queue` on each. Taking it means an id and a bet. **Refusing it is equally
+   a result and it must be said out loud** — name the owner whose file already
+   holds the thing, exactly as the intake rule requires. A proposal that is
+   neither taken nor refused has not been deferred, it has evaporated, which is
+   the failure `queue.md` was built to stop and the one it relocated one level up.
+
+   Every item you take carries `from: <file> <date>` — the proposal it came from.
+   That is not a field the founder can renew and it is not a priority: it is a
+   lookup, so tomorrow's brief can see this proposal was already answered and
+   leave it alone. Without it the Thursday pipeline proposal enters the queue
+   again on Friday, and again on Monday, under three ids.
+
+   **Then stop.** The proposals are an intake, not the brief. If draining them
+   fills `## Doing` to its cap of three, that is step 2's finding arriving early —
+   say it there, not here.
 
 1. **Check yesterday's commitment, in `## Doing`.** Did it happen? If it did,
    close it — run `queue`, which will ask what it emits, because *follow up with
@@ -67,7 +116,16 @@ Read first, in order — house rule 1:
    founder is about to do it again. Close one, block one, or drop one first.
 3. **Name what's rotting — at most three, ranked by days.** An overdue pipeline
    action, a client whose `Verdict:` is `at-risk` or `failing`, an invoice past
-   terms. One line each with the number of days attached, no editorializing.
+   terms, **a client on the books that `offer.md` `### Not this` excludes**. One
+   line each with the number of days attached, no editorializing.
+
+   The excluded client is the odd one out and it is the most valuable line this
+   brief ever produces. The other three rot on a clock — days past terms, days
+   since contact. That one has been wrong since the day it was signed and no
+   clock will ever fire on it, because the engagement is healthy, the invoices
+   clear, and every file in the workspace is content. Date it from the day the
+   exclusion was written, not from the engagement: the founder decided against
+   this client on that date and has been serving them every day since.
 
    **Ranked by age, not by anxiety.** The loudest item is rarely the oldest, and
    the oldest is the one that is actually rotting — the founder already knows
@@ -82,6 +140,18 @@ Read first, in order — house rule 1:
    unsorted pile, and the **Chief of Staff** has a skill for that.
 4. **Say what today costs.** If the founder does the one thing, what doesn't
    happen? Make the trade explicit — a plan with no cost is a wish.
+
+5. **On an empty input, say so in one line and do not fill the gap.** `clients/`
+   is empty on day one and stays empty until the first engagement; `reviews/daily/`
+   is empty until tomorrow; `pipeline.md` is empty until the Pipeline Coach has
+   run once. *"No clients on the books yet, so nothing to score"* is a true line
+   that costs four words. The brief that invents a rotting item to look useful on
+   a thin workspace has taught the founder on day one that this file is padded,
+   and they will read it accordingly for as long as they keep it.
+
+   This is not only onboarding's problem. Onboarding has `PROJECT.md` in the room
+   to explain the thinness; **day two's 08:00 cron brief has the same three empty
+   inputs and nothing to explain them.** The rule lives here for that morning.
 
 ## Output
 

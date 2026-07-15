@@ -106,10 +106,13 @@ scheduled Monday `week-plan` task with nowhere to write, and a `calendar-audit`
 skill with no baseline to compare against. If you add an agent that owns
 nothing, be able to say why — as the board can.
 
-**The five system skills are exempt** — `founder-os-init`, `founder-os-doctor`,
-`context-load`, `guardrails`, `state-integrity`. They are cross-cutting, and
-`founder-os-init` scaffolds the entire workspace regardless of owner. Do not add
-`metadata.writes` to them; the validator skips them by design.
+**The system skills are exempt** — `founder-os-init`, `founder-os-doctor`,
+`context-load`, `guardrails`, `state-integrity`, `ingestion-gate`. They are
+cross-cutting, they write no workspace file of their own, and `founder-os-init`
+scaffolds the entire workspace regardless of owner. Do not add `metadata.writes`
+to them; the validator skips them by design. `SYSTEM_SKILLS` in
+`scripts/validate_package.py` is the list that decides, not this sentence — if
+the two ever disagree, the code is right and this line is the stale copy.
 
 ## Sections
 

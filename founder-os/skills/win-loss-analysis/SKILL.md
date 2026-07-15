@@ -35,6 +35,11 @@ Read first, in order — house rule 1:
 - `offer.md` — what they were actually sold, and the ICP. A loss from outside
   the ICP is a qualification finding, not a sales one.
 - The prospect — a call, if they will take one.
+- `ingestion-gate` — this skill's entire raw material is a person explaining
+  their own decision after the fact, which is the gate's hardest tier call: FACT
+  that they said it, and something much weaker about why they did it. The gate
+  separates the two. Run it before the entry is written, not after the founder
+  has read it.
 
 ## Beliefs
 
@@ -97,11 +102,24 @@ Append to `pipeline.md` under `## Win/loss`:
 
     ## Win/loss
     ### <Prospect> — <won | lost> YYYY-MM-DD — <amount>
-    Stated reason: "<what they said, verbatim>"
+    Stated reason: "<what they said, verbatim>" (per <person, role at prospect>,
+      <channel>, YYYY-MM-DD)
     Record says: <n>d call→proposal | <n> follow-ups | <who> went quiet first, YYYY-MM-DD
     Actual cause: <the one you'd bet on> <— GUESS if unverified>
     Prospect spoke: <yes YYYY-MM-DD | declined | not asked>
     Pattern: <n>th <cause> this quarter → handed to <Agent Name>
+
+`Stated reason:` is a quote, so it is stamped: who said it, in what channel, on
+what date. **The stamp is doing more work here than anywhere else in the
+package**, because the whole thesis of this skill is that the stated reason is
+not the cause — and an unstamped `"they went with someone cheaper"` sitting in
+`pipeline.md` is exactly how it gets read as one three months later. Stamped, it
+stays what it is: a sentence one person chose to say to end a conversation, on a
+Tuesday, and the founder can see the date it was constructed.
+
+`Record says:` is dates out of this file and carries no stamp. `Actual cause:` is
+this skill's own conclusion — not an ingested claim, and it carries `GUESS` when
+the prospect never spoke, which is the label house rule 2 already requires.
 
 When a cluster reaches three, that is material — log it via `decision-log` with
 what would change your mind, so the next quarter can check whether the fix

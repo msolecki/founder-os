@@ -26,6 +26,10 @@ Read first, in order — house rule 1:
 - `metrics.md` — the invoice terms and this client's actual days-to-pay history
 - `pipeline.md` — is a renewal or expansion pending? It changes what silence
   means
+- `ingestion-gate` — the four signals are computed from dates in the log and need
+  no gate. What the client *said* about them does: "cashflow is tight this
+  quarter", "we're restructuring, it's not you". Those explain a red or excuse it,
+  and which one they are is the gate's question, not this skill's.
 
 ## Beliefs
 
@@ -95,6 +99,8 @@ Append to `clients/<client>.md` under `## Health`:
     Scope: <G/A/R> — <n> absorbed asks, trend <up/flat>
     Tone: <G/A/R> — latency <n>d vs <n>d baseline
     Effort: <G/A/R> — <n> h/unit vs <n> at start
+    What they said about it: <their explanation, verbatim> (per <person, role at
+      client>, <channel>, YYYY-MM-DD) | none — nobody has said anything
     Relief test: <panic | relief>
     Verdict: <healthy | at-risk | failing>
     Action this week: <the specific conversation, and who opens it>
@@ -102,6 +108,15 @@ Append to `clients/<client>.md` under `## Health`:
 `Verdict:` is this skill's only published output and `daily-brief` is its reader.
 Those three tokens, spelled exactly that way, or the morning brief goes quiet
 about a client that is on fire.
+
+The four signal lines are dates and counts out of the log, so they carry no
+stamp — there is no speaker to name. **`What they said about it:` is the one line
+here that came from a mouth, and it is the line that will be used to argue the
+verdict down**, so it carries who said it, where, and when, or it is not written.
+`none` is a real and common value, and a red with nobody explaining it is worse
+news than a red with an excuse, not better. The stamp is also what stops the
+excuse ageing into a fact: "cashflow is tight" from March is not a description of
+July, and in six weeks the stamp is the only thing that says so.
 
 ## Guardrails
 

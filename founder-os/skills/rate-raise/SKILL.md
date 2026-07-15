@@ -83,7 +83,12 @@ Read first, in order — house rule 1:
    - **new prospects get the new rate immediately.** No conversation exists, no
      relationship is at stake. This is free, and the founder has been postponing
      free.
-   - existing clients at renewal, 60 days' written notice.
+   - existing clients at renewal, with whatever written notice the agreement
+     requires — read it, or have it read. This skill does not know the number and
+     naming one here would be the guardrail below contradicted three paragraphs
+     early: a founder who gives 60 days because a skill said 60 days, under an
+     agreement requiring 90, has been handed a dispute by the thing that was
+     supposed to prevent one.
    - **never mid-project.** Repricing work in flight turns a scope disagreement
      into a dispute, and the CFO does not do disputes.
 5. **Hand over the script. One line, no justification:**

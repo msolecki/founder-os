@@ -158,14 +158,36 @@ Read first, in order — house rule 1:
 
 The messages go to the founder to send. This skill does not send.
 
+**If the founder edits one before sending, ask for the sent version and hand it to
+`voice-capture` (Brand Editor) — the same day.** That diff is the founder
+correcting you on their own name with a live deal at stake, and it is the best
+voice evidence this company will ever get. It also evaporates fastest: by
+tomorrow the founder remembers only that they "tweaked it a bit". You do not
+write `voice.md` — you hand over the text and let its owner decide what it means.
+
+**This sweep is the largest harvest surface in the company and it is the one most
+likely to be thrown away.** Five messages a week, every week, each one written to
+somebody the founder let go quiet — which is the register `voice.md` has the
+least evidence for and the one they will most reliably rewrite by hand. Five
+diffs a week beats three drafts a quarter. Ask for all five, not the interesting
+one.
+
 Append to `network.md` under `## Sweep`:
 
     ## Sweep — YYYY-MM-DD
     Due: <n> | Sent: <n>/5 | Deferred to <date>: <n> | Excluded (live deal): <n>
+    Proposed: <the giving the founder committed to> — bet: <B<n> | none> | none
 
     | person | days over | the real thing given | ask | sent | reply |
     |--------|-----------|----------------------|-----|------|-------|
     | <name> | <n> | <the specific thing> | <none | the one ask> | YYYY-MM-DD | |
+
+**`Proposed:` is how step 10's handoff survives a Friday 14:00 with nobody in the
+room.** This cadence fires on a schedule and the Chief of Staff is not there to
+take the handoff, so the line is the path — the next `daily-brief` drains it, and
+on a Friday afternoon that is Monday. Write `none` explicitly on the weeks there
+is nothing, which is most weeks; an absent line and a cadence that forgot look
+identical to the brief.
 
 Update each swept person's `last real contact` and `next contact` in `## Map`
 only when the founder confirms it went out. A sweep row is not contact; a

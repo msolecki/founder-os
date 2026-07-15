@@ -39,13 +39,45 @@ If `metrics.md` has no close for the quarter's final month, stop and hand to the
 **CFO** — the same rule `monthly-review` runs on. Step 1 has nothing to settle
 verdicts with and the rest of this skill is built on step 1.
 
+### The first run, which is not mid-quarter
+
+**On a workspace with no `reviews/quarterly/` and no bets in `goals.md`: skip
+steps 1, 2 and 7, say out loud that you skipped them and why, and write the
+plan.** Onboarding's `set-quarter-goals` runs this skill at install, and installs
+land mid-quarter roughly ninety-eight times in a hundred. Every rule above is a
+rule about a quarter that has already been played.
+
+- **Step 1 is not optional and it is not possible early — and on day one it is
+  not possible at all.** There are no bets to verdict and no close to verdict them
+  against. Skipping a step because it is empty is not the same act as skipping it
+  because it is inconvenient, and only the second one is what those sentences
+  forbid.
+- **Step 7 goes too.** `red-team` attacks a plan against a record; there is no
+  record. It also cannot fit — `founder-os-init` runs a hard twenty-minute budget
+  and the Board Member is a session, not a step. The first plan ships unattacked
+  and the second one does not; say that, so the founder knows a debt was taken
+  rather than a rule quietly bent.
+- **Step 6 stays.** `bet-sizing` needs no history — it needs hours and cash, which
+  step 4 of onboarding just collected. An unsized bet still does not enter
+  `goals.md`.
+- **"Never mid-quarter" governs reopening a plan, not writing the first one.**
+  There is nothing to reopen. A founder who installs on 12 August and is told to
+  come back on 1 October has been handed a `goals.md` with nothing in it, and
+  `daily-brief` — which ties its one thing to a bet — has nothing to tie to for
+  seven weeks. That is not discipline, it is the package refusing to start.
+- **Write the partial quarter as what it is.** Bets sized to the weeks that are
+  actually left, not to thirteen. `set-quarter-goals/TASK.md` names this branch
+  from its side.
+
 ## Inputs
 
 Read first, in order — house rule 1:
 
 - `goals.md` — the bets currently committed, and their thresholds
 - `metrics.md` — the numbers that settle each verdict, and the close date
-- `reviews/quarterly/` — the last two quarters: what was promised, twice
+- `reviews/quarterly/` — the last two quarters: what was promised, twice. Empty
+  on a first run, and that is a state rather than a fault — see the first-run
+  branch above.
 - `charter.md` — what the business is for, in case three quarters of drift have
   quietly answered that question differently
 
@@ -128,10 +160,18 @@ Replace `goals.md` with this quarter's bets:
 
     # Q<n> YYYY
     ## Bets
+    Proposed: <first move> — bet: B<n> | none
     ### Bet <n>: <name>
     Outcome: <metric that exists in metrics.md> reaches <value> by <date>
     Cost: <hours> h + <cash>   (from bet-sizing)
     Kill if: <metric> is below <value> on <date>
+
+**`Proposed:` is how step 9's handoff survives the 1st at 11:00 with nobody in
+the room.** One line per bet's first move, three maximum, under `## Bets` and
+above the bet blocks; the next `daily-brief` drains them — step 0 there. This is
+the cadence where losing the handoff costs most: a quarter whose three first
+moves never reached the queue is a quarter that was planned and not started, and
+nothing will notice until the verdicts in October.
 
 `## Bets` is the section `ownership.yaml` pins for `goals.md` and it is the one
 `founder-os-init` scaffolds; the bets are `###` blocks under it. `bet-sizing`

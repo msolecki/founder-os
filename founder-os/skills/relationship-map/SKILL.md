@@ -34,6 +34,10 @@ Read first, in order — house rule 1:
 - `pipeline.md` — who is a live deal. They are the **Pipeline Coach's**; they
   do not belong in the map's cadence.
 - `offer.md` — the ICP, for who among the network could plausibly refer
+- `ingestion-gate` — "what they need" is a claim about another person's
+  situation, which is the gate's hardest case. Heard from them, it is FACT.
+  Heard *about* them from a third party, it is hearsay and does not enter. Run
+  the gate on every cell before the row exists.
 
 ## Beliefs
 
@@ -99,8 +103,9 @@ Write to `network.md`, replacing `## Map`:
     <n> people (cap 40) | Overdue: <n>
 
     ### Past clients — quarterly
-    | person | company | last real contact | days | what they need | next contact |
-    |--------|---------|-------------------|------|----------------|--------------|
+    | person | company | last real contact | days | what they need | per | next contact |
+    |--------|---------|-------------------|------|----------------|-----|--------------|
+    |        |         |                   |      |                | <them, channel, YYYY-MM-DD> \| guess — last heard YYYY | |
 
     ### Referred once — quarterly
     ### Could refer, never has — 2×/year
@@ -113,6 +118,19 @@ Write to `network.md`, replacing `## Map`:
 `follow-up-sweep` reads the `days` and `next contact` columns. A row with a
 blank "what they need" cannot be swept, because there is nothing to send that
 isn't an ask.
+
+**The `per` column is what stops "what they need" ageing into fiction.** It is
+the only stamp slot in the table because it is the only cell that is a claim —
+`days` is arithmetic, `last real contact` is a date the founder can name or the
+row does not exist, and `next contact` is a decision. Two values are legal:
+either they told you themselves, in a channel, on a date, or it is `guess` with
+the year attached — the label the Guardrails below already demand, given a column
+so it cannot be dropped when the row is rewritten. A third party's account of
+what someone needs is hearsay and does not get a cell; it is not that the stamp
+would be ugly, it is that the row would be false. Unstamped, a `what they need`
+from 2024 reads exactly like one from last week, and `follow-up-sweep` will
+cheerfully draft against it — which is how the founder writes to someone about a
+job they left.
 
 ## Guardrails
 

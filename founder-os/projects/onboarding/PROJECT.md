@@ -73,9 +73,17 @@ in one line, rather than filling the gap.
 
 What it has is enough: bets from step 3, cash and burn and collected revenue
 from step 4, and the client from step 2 the founder said they would not take
-again. If that client is still on the books, that is day one's rotting item and
-the founder did not have to look it up. If the cash number came back unknown,
-that is the rotting item, and it outranks everything else in the file.
+again. Step 2 wrote that client into `offer.md` `## ICP` `### Not this`, which
+is one of the brief's inputs and is in its rotting definition for this exact
+reason — if they are still on the books, that is day one's rotting item and the
+founder did not have to look it up.
+
+If the cash number came back unknown, that is day one's **one thing**, and it
+outranks everything else in the file. `founder-os-init` files it straight into
+`queue.md` `## Doing` rather than `## Queued`, because the brief reads `## Doing`
+and is forbidden from reciting `## Queued` — and because it is not something the
+founder might get to in three weeks. A company of one that cannot say its cash
+number has exactly one job tomorrow.
 
 A first brief that invents a pipeline to look impressive is the laundering house
 rule 2 exists to stop, and it would be caught by the one person who knows — on
@@ -94,3 +102,11 @@ That includes the unknowns. "Find your cash number" said out loud is homework.
 `[q-MMDDx] find the cash number — bet: none` is an item the queue will chase, the
 brief can name, and Friday's sweep will drop with a reason if it turns out nobody
 meant it.
+
+**Where it lands is the whole of whether the brief can name it.** The cash
+unknown goes in `## Doing` — the brief reads that section and opens tomorrow by
+asking whether it closed. Every other unanswered question goes in `## Queued`,
+where its 21-day clock runs and Friday's sweep finds it. A cash unknown filed to
+`## Queued` is an item the brief is explicitly forbidden to read out, which would
+make it homework again — with an id, which is worse, because the id makes it look
+handled.

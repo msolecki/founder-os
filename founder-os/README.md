@@ -55,9 +55,9 @@ of them rather than a hundred and sixty-seven.
 
 ## It comes to you
 
-Most tools wait to be opened. Founder OS runs on a schedule: daily brief,
-Monday week-plan, Thursday pipeline, Friday review and follow-up sweep, monthly
-close, quarterly planning.
+Most tools wait to be opened. Founder OS runs on a schedule: a brief every
+weekday morning, and a cadence for every file that rots — the week, the
+pipeline, the content plan, the follow-ups, the review, the close, the quarter.
 
 A personal-development tool that only runs when you remember to run it is the
 failure mode of every productivity system ever shipped. That's the part this
@@ -83,13 +83,20 @@ nobody started in 15 working days was passed over by 15 daily briefs; the queue
 just writes down a decision you already made fifteen times. A queue that only
 grows is a to-do list, and you already have one of those.
 
-**Nothing is written just because someone said it.** Every claim arriving from
-outside — a call, an email, a prospect's enthusiasm — is tiered before it
-reaches a file: fact, validate, or disregard. What a counterparty says about
-their own situation is a fact; what you say to win the room is positioning.
-Provenance is stamped in the line itself (`per the customer call, 12 May`),
-because a file's timestamp tells you when someone touched it, not when the
-claim was last true.
+**Nothing is written just because someone said it.** The eight skills that write
+down what someone outside told you — pipeline, revenue, client health, win/loss,
+ICP, audience, network, profitability — tier the claim before it reaches a file:
+fact, validate, or disregard. What a counterparty says about their own situation
+is a fact; what you say to win the room is positioning; what someone tells you
+about a third party does not get written at all. Their output templates carry the
+stamp slot, so provenance lands in the line itself (`per Anna, buyer at Acme,
+call, 12 May`) — a file's timestamp tells you when someone touched it, not when
+the claim was last true, and those diverge exactly when it matters.
+
+Every other skill does not run the gate, because it does not ingest: a skill
+doing arithmetic over files already in the workspace has no speaker to name, and
+making it recite a tier anyway would be the ceremony this package exists to
+avoid.
 
 **It writes like you, or it says it can't.** `voice.md` holds real samples of
 your writing — not adjectives about it. "Friendly but professional" describes
@@ -117,10 +124,11 @@ trust is exactly what makes a confident wrong answer expensive. See
 
 ## It has opinions
 
-Every skill states at least three principles a competent generic advisor would
-not say — and the bar is enforced, not encouraged. Without them you get
-Wikipedia advice the moment you step off the script, which is precisely when
-you needed an opinion.
+Every role skill states at least three principles a competent generic advisor
+would not say. The section is required and machine-checked; the bar itself was
+held by review — no regex reaches "would a generic advisor say this?". Without
+them you get Wikipedia advice the moment you step off the script, which is
+precisely when you needed an opinion.
 
 A sample of what that means in practice:
 

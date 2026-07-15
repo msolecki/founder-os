@@ -27,6 +27,11 @@ Read first, in order — house rule 1:
 - `clients/` — every hour logged per engagement, including the absorbed scope
   `scope-guard` counted and the unbilled hours `delivery-retro` recovered
 - `offer.md` — what this work was supposed to be priced at
+- `ingestion-gate` — the ranking is arithmetic and needs no gate, but its
+  denominator is not. An hour logged as it happened is first-hand; an hour the
+  founder reconstructs at quarter end is a recollection, and the gate's own rule
+  is that derived claims inherit their weakest input. An effective rate computed
+  from remembered hours is a remembered rate however many decimals it has.
 
 ## Beliefs
 
@@ -87,14 +92,30 @@ Read first, in order — house rule 1:
 Replace the `## Profitability — YYYY-Qn` block in `metrics.md`:
 
     ## Profitability — YYYY-Qn  (before tax; see Guardrails)
-    | client | collected | all-in h | eff. rate | % of target | % hours | % revenue |
-    |---|---|---|---|---|---|---|
-    | <worst first> | | | | | | |
+    | client | collected | all-in h | hours from | eff. rate | % of target | % hours | % revenue |
+    |---|---|---|---|---|---|---|---|
+    | <worst first> | | | <logged \| reconstructed YYYY-MM-DD> | | | | |
     Target rate: <amount>/h
     Below 60% of target: <clients>
     Asymmetry flag: <client> — <n>% of hours for <n>% of revenue
     Founder's stated favourite: <client> — ranked <n> of <n>
+      (per the founder, asked before the table, YYYY-MM-DD)
     Action: <fix | fire | reprice> — <client> — by <YYYY-MM-DD>
+
+Two slots, and neither is decoration. **`hours from` is the stamp that matters**,
+because step 1 says the denominator is the entire skill and the denominator is
+the one column that can be fiction. `logged` means the hours were recorded while
+the work happened. `reconstructed` means the founder counted backwards at quarter
+end, and a reconstructed denominator is systematically too small — nobody
+remembers the fourth re-reading of a thread, which is exactly the time the
+Beliefs above say kills the margin. So a `reconstructed` row's effective rate is
+an upper bound and reads as one, and the fix is not a stamp, it is logging next
+quarter.
+
+`Founder's stated favourite` is stamped `asked before the table` because that
+ordering is the whole diagnostic in step 4. Asked afterwards it is worthless —
+they have seen the ranking — and six weeks later nothing but the stamp
+distinguishes the two.
 
 ## Guardrails
 

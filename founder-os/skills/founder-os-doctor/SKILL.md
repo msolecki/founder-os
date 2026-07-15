@@ -35,7 +35,7 @@ Monthly, and immediately after any of these:
 ## The checks
 
 Each has a threshold. Report the ones that trip and stay quiet about the rest —
-a health report that lists eleven green checks trains the founder to skim it.
+a health report that lists a screen of green checks trains the founder to skim it.
 
 | Check | Trips when | Why it matters |
 |---|---|---|

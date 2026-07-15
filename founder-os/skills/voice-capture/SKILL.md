@@ -8,8 +8,9 @@ metadata:
 
 # Voice Capture
 
-Three skills in this company draft text that goes out under the founder's name.
-Without this file they draft in the register every language model defaults to —
+Every skill in this company that drafts in the founder's name reads this file:
+`outreach-draft`, `proposal-draft`, `content-draft` and `follow-up-sweep`.
+Without it they draft in the register every language model defaults to —
 the fluent, agreeable, faintly promotional one that every recipient has now
 learned to recognise and delete unread. That register is not a style problem. It
 is the reason the founder believes their market is cold.
@@ -26,9 +27,10 @@ So this skill collects evidence, not opinions.
 
 ## When to use
 
-Before the first draft ships under the founder's name — `outreach-draft`,
-`proposal-draft` and `content-draft` all read `voice.md` and all announce its
-absence. During onboarding, ahead of any of the three.
+Before the first draft ships under the founder's name. Every skill that drafts in
+their name reads `voice.md` and every one of them announces its absence, so run
+this ahead of whichever of them runs first — in practice that is `outreach-draft`
+or `content-draft`, whichever the founder reaches for.
 
 **And every single time the founder edits a draft before sending.** That is not
 the maintenance case, it is the main one. See step 6.
@@ -144,11 +146,20 @@ Read first, in order — house rule 1:
    - What they cut goes to `## Never` — **on the second occurrence, not the
      first.** One cut is a mood or a fact about that recipient. The same cut
      twice is a rule, and now you can name it.
-7. **Fill `## Register` per context, and label the gaps.** Cold outreach, a
-   client of two years, a public post, a proposal. Founders do not have one
-   voice; they have a range, and a file with a single register makes every draft
-   sound like the same email sent to strangers and friends alike — which is its
-   own tell.
+7. **Fill `## Register` per context, and label the gaps.** One row per context a
+   drafting skill actually writes into: cold outreach, a client of two years, a
+   public post, a proposal, **and someone the founder has not spoken to in a
+   year**. Founders do not have one voice; they have a range, and a file with a
+   single register makes every draft sound like the same email sent to strangers
+   and friends alike — which is its own tell.
+
+   **The year-of-silence row is the one that gets forgotten and it is the hardest
+   one.** `follow-up-sweep` drafts into it every Friday, up to five times, and it
+   is neither of the two registers the founder has practice in: not cold, because
+   there is history, and not warm, because the silence is the first thing both
+   people will notice. Get the sample — ask for a message they actually sent to
+   someone they had let go quiet. If they have none, the row says `GUESS — no
+   sample` and the sweep gets to see that.
 
    **A register with no sample behind it is a guess and gets written as one.** If
    all three samples are cold outreach, the "client of two years" row says
@@ -202,17 +213,28 @@ Write to `voice.md`:
     | cold outreach | <the ask | context> | <n> sentences | <shift> | <context>, YYYY-MM-DD |
     | client, 2 years | <...> | <...> | <...> | GUESS — no sample |
     | public post | <...> | <...> | <...> | <context>, YYYY-MM-DD |
+    | proposal | <...> | <...> | <...> | <context>, YYYY-MM-DD |
+    | not spoken in a year | <...> | <...> | <...> | GUESS — no sample |
 
-**If there are no samples, write that, in the file, in those words:**
+**If you asked for samples and got none, write that, in the file, in those
+words:**
 
     ## Samples
     none — <n> requested YYYY-MM-DD, none supplied
 
-Leave it empty and let it be read. An empty section is a fact the three drafting
-skills can act on and announce; a paragraph of adjectives in its place is one
-they cannot, and they will draft on it as though it were evidence. That
-substitution is the single most expensive thing this skill can do, and it is the
-one that looks most like having done the work.
+That is not the same state as day one. `founder-os-init` scaffolds `voice.md`
+with its four headings and nothing under them, so a bare `## Samples` means this
+skill has never run — nobody has been asked. The line above means they were
+asked, on a date, and did not supply. Every drafting skill treats both as empty
+and says so, which is why this is a note to the next run of this skill rather
+than a signal to them: it is the difference between a gap and a refusal, and only
+one of those is worth asking about again.
+
+Leave it empty and let it be read. An empty section is a fact every drafting
+skill can act on and announce; a paragraph of adjectives in its place is one they
+cannot, and they will draft on it as though it were evidence. That substitution
+is the single most expensive thing this skill can do, and it is the one that
+looks most like having done the work.
 
 Every sample keeps the date it was sent. When the newest one passes six months,
 this skill runs again.
@@ -221,8 +243,9 @@ this skill runs again.
 
 **Never write a sample the founder did not write.** Not a paraphrase, not a
 reconstruction from memory, not a plausible email in their style. This is
-`content-draft`'s fabrication rule pointed at the file that three other skills
-read as ground truth: an invented anecdote produces one bad post, an invented
+`content-draft`'s fabrication rule pointed at the file every drafting skill in
+the company reads as ground truth: an invented anecdote produces one bad post, an
+invented
 sample teaches every future draft to be wrong, and once it is pasted in nothing
 distinguishes it from the real ones.
 

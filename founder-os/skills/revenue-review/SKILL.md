@@ -26,6 +26,11 @@ Read first, in order — house rule 1:
 - `clients/` — hours actually worked per engagement, including the unbilled ones
   `delivery-retro` recovered
 - `pipeline.md` — what closed this month, and when the cash for it actually lands
+- `ingestion-gate` — a bank credit is first-hand and needs no gate. Everything
+  else here arrived in a sentence: "we'll pay by the 30th", the founder's
+  recollection of a figure, a client's explanation for the delay. The gate's
+  first named failure mode is the promise written as a receivable, in this file,
+  by this skill. Run it before every expected-payment line.
 
 ## Beliefs
 
@@ -99,12 +104,43 @@ Replace the `## Close — YYYY-MM` block in `metrics.md`:
     ## Close — YYYY-MM
     Booked: <amount>
     Collected: <amount>  (<n>% of booked)
+    Receivables — one line per invoice, never rolled up before it is stamped:
+    - <client> — <amount> — invoiced YYYY-MM-DD — terms <n>d — <n> days past —
+      expected YYYY-MM-DD [VALIDATE] (per <person, role at client>, <channel>,
+      YYYY-MM-DD — validate: bank credit, CFO, by YYYY-MM-DD)
+    - <client> — <amount> — invoiced YYYY-MM-DD — terms <n>d — <n> days past —
+      no date given, nobody asked
     Past terms: <amount> across <n> clients — oldest <n> days
+      (sum of the lines above; carries the weakest tier among them)
     Hours worked: <n>  (delivery <n> / sales <n> / unbilled <n>)
     Effective rate: <amount>/h vs target <amount>/h  (prev month <amount>/h)
     Largest client: <n>% of collected
     Cash on hand: <amount>  (before any tax reserve)
+    Proposed: chase <client> — <n> days past terms — bet: none | none
     Handed to: Chief of Staff for reviews/monthly/
+
+**`Proposed:` is how step 7's handoff survives the 1st of the month at 09:00 with
+nobody in the room.** This cadence fires on a schedule and the Chief of Staff is
+not there to take the handoff, so it goes in the line, in the file you own, and
+the next `daily-brief` drains it. One line per client past terms, up to three;
+`none` written explicitly when there is nothing, because an absent line and a
+forgetful cadence look identical to the brief.
+
+`Booked`, `Collected`, `Hours worked`, `Effective rate`, `Largest client` and
+`Cash on hand` are computed from invoices, `clients/` and the bank, and carry no
+stamp because there is no speaker — they are arithmetic over artifacts, which is
+the case `ingestion-gate` explicitly exempts.
+
+**The receivable lines are the exception, and they are why the ageing is a list
+before it is a total.** Each one is a promise somebody made in a sentence, and
+each one is a different tier: an invoice with a signed PO behind it and an
+invoice with "we'll sort it next week" behind it are not the same object.
+`Past terms: 18k across 3 clients` is one integer that looks computed and is not
+— it is three tiers averaged into a number, which is the laundering
+`ingestion-gate` names outright: *averaging does not launder; it hides the tier
+inside a number that looks computed*. Write the lines, then sum them. The total
+is still useful — it is step 2's 30% test — and it now inherits its weakest line
+instead of hiding it.
 
 ## Guardrails
 

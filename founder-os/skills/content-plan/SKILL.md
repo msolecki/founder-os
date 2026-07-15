@@ -151,6 +151,14 @@ Write to `content.md`, replacing `## Plan`:
     | YYYY-MM-DD | <title> | "<the question, verbatim>" | <call with X, YYYY-MM-DD> | <channel> | planned |
 
     Speculative this window: <n>/1
+    Proposed: <the item> — bet: <B<n> | none> | none
+
+**`Proposed:` is how step 9's handoff survives a Wednesday 10:00 with nobody in
+the room.** This cadence fires on a schedule; the Chief of Staff is not there to
+hand to, and a handoff spoken into a closing session reaches nothing. The line is
+the path, and the next `daily-brief` drains it — step 0 there. Write `none`
+explicitly on the Wednesdays there is nothing, which is most of them: an absent
+line reads to the brief exactly like a cadence that forgot.
 
 Append to `## Shipped` as pieces go out — this is what the trailing-four-week
 cadence is computed from, so it is not optional bookkeeping:

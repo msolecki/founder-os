@@ -33,6 +33,11 @@ Read first, in order — house rule 1:
 - `goals.md` — this quarter's revenue bet. The gap is what the pipeline is
   measured against.
 - `metrics.md` — cash and burn, for what the gap actually means
+- `ingestion-gate` — every line in `## Live` is something a prospect said, and a
+  prospect is the counterparty. Run the gate on each before it goes in the file:
+  it decides the tier and the stamp, this skill decides whether the deal
+  survives. "They're keen" is its named failure mode and this is the file it
+  names.
 
 ## Beliefs
 
@@ -120,8 +125,10 @@ replace `## Last review`.
 
     ## Live
     ### <Prospect> — <offer> — <amount> — <stage>
-    Decision-maker: <name, role>
+    Decision-maker: <name, role> (per <speaker>, <channel>, <date>)
+    Amount: <amount> (per <speaker>, <channel>, <date>)
     Next action: <what the FOUNDER does> — YYYY-MM-DD
+    Stage basis: <what they did that puts it here> (per <speaker>, <channel>, <date>)
     Last contact: YYYY-MM-DD | In pipeline since: YYYY-MM-DD | Re-dated: <n>×
 
     ## Won
@@ -132,13 +139,35 @@ replace `## Last review`.
     Engagement: <live | closed YYYY-MM-DD>
 
     ## Dead
-    - <Prospect> — <amount> — died YYYY-MM-DD — <specific cause> — win/loss: <pending|done>
+    - <Prospect> — <amount> — died YYYY-MM-DD — <specific cause> (per <speaker>, <channel>, <date>) — win/loss: <pending|done>
 
     ## Last review
     Date: YYYY-MM-DD
     Live: <n> (<total value>) | Won: <n> | Killed today: <n> (<value>) | Handed to Network Manager: <n>
     Coverage: <n>× against a <amount> gap (goals.md YYYY-MM-DD)
     Median call→proposal: <n> days
+    Proposed: <the item, concrete enough to close> — bet: <B<n> | none> | none
+
+**`Proposed:` is how step 9's handoff survives a Thursday 10:00 with nobody in the
+room.** This cadence fires on a schedule; the Chief of Staff is not there to hand
+to; a handoff spoken into a closing session reaches nothing. So it goes in the
+line, in the file you own, and the next `daily-brief` drains it — step 0 there.
+Write `none` explicitly on the weeks there is nothing, which is most weeks: an
+absent line is indistinguishable from a cadence that forgot, and the brief cannot
+tell the difference either.
+
+You still hand off by name if the founder is in the room. The line is the path
+that works when they are not.
+
+The `(per …)` slots are not decoration and they are not optional: a line with no
+stamp is VALIDATE by `ingestion-gate`'s own rule, whatever it says. Decision-maker,
+amount and stage basis are all things a prospect told the founder, so they carry a
+speaker, a channel and a date, or they carry `[VALIDATE]` and a validation step.
+The unstamped lines are unstamped on purpose — `Next action` is the founder's
+decision rather than anyone's claim, `Last contact` and `Re-dated` are this file's
+own record, and `## Won` reads off a signed proposal, which is rank 1 on the
+ladder and the artifact itself. Stamp what came from a mouth; leave what came
+from a document or from arithmetic.
 
 `## Won` is the scope record, not the sales record. `win-loss-analysis` writes
 `## Win/loss` for the post-mortem on both wins and losses; `## Won` exists for one

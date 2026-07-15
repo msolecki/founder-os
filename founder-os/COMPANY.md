@@ -3,7 +3,7 @@ name: Founder OS
 description: The executive team you can't afford yet — strategy, offer, pipeline, delivery, money and focus for a company of one.
 slug: founder-os
 schema: agentcompanies/v1
-version: 1.0.0
+version: 1.1.0
 license: MIT
 authors:
   - name: Mateusz Solecki

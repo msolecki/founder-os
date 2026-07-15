@@ -1,6 +1,6 @@
 ---
 name: tool-stack-review
-description: Cancel what is paid for and unused — run quarterly, and 30 days before any annual renewal bills
+description: Decide what is paid for and unused, and hand the founder the cancel list — run quarterly, and 30 days before any annual renewal bills
 metadata:
   writes:
     - systems.md
@@ -59,12 +59,21 @@ Read first, in order — house rule 1:
 2. **Ask two questions per tool. Only two:**
    - **What breaks if this is cancelled today?**
    - **When was it last opened?**
-3. **Apply the rule: cannot answer either question → cancel it now.** Not
-   "evaluate", not "add it to the list", not "check with the team" — there is no
-   team. Cancel. **You can always resubscribe; you cannot un-pay.** "Let me think
-   about it" is the mechanism by which it renews.
-4. **Not opened in 30 days → cancel**, unless the answer to question one is
-   something concrete that breaks. "It runs the backups" is concrete. "I might
+3. **Apply the rule: cannot answer either question → it goes on the cancel list,
+   verdict `cancel`, today.** Not "evaluate", not "revisit next quarter", not
+   "check with the team" — there is no team. The verdict is `cancel` and it is
+   written down with the amount next to it. "Let me think about it" is the
+   mechanism by which it renews, and a verdict of `cancel` is what stops the
+   thinking from being free.
+
+   **You do not press the button.** House rule 0: cancelling is an outbound
+   account action on a live billing relationship, and it is not reversible the
+   way the pitch implies — it can drop backups, void grandfathered pricing, and
+   delete data on a timer you do not control. "You can always resubscribe" is
+   true of the *plan* and false of the *account*. The list is the product of this
+   skill; the founder spends the ten minutes.
+4. **Not opened in 30 days → verdict `cancel`**, unless the answer to question one
+   is something concrete that breaks. "It runs the backups" is concrete. "I might
    need it" is a subscription to a feeling.
 5. **Name the annual-plan trap out loud.** The annual plan bought to "save 20%" on
    a tool used twice is not a saving — it is a twelve-month commitment made in an
@@ -76,8 +85,8 @@ Read first, in order — house rule 1:
    spent shaving a bill smaller than one invoice is the same avoidance
    `automation-audit` exists to catch, just with a spreadsheet instead of a repo.
 7. **Sum the cancel list monthly *and* annually.** The annual figure is the one
-   that lands. "47/month" is ignorable. "564 a year — a week of runway" gets
-   cancelled that afternoon.
+   that lands. "47/month" is ignorable. "564 a year — a week of runway" is what
+   makes the founder work the list that afternoon.
 8. **Check for duplicates.** Two tools doing one job is normal and invisible: the
    second was bought during a project and never removed. Notes, task tracking and
    scheduling are where this always is.
@@ -96,6 +105,12 @@ Replace the `## Stack` block in `systems.md`:
     Next annual renewal to review: <tool> on <YYYY-MM-DD>
 
 ## Guardrails
+
+You do not cancel, downgrade, or change a plan. Not through the billing console,
+not through a support chat, not through an API key that happens to be in the
+environment — `guardrails`, house rule 0. You hand the founder the list with the
+amounts and the renewal dates on it and they press the buttons. The finding is
+the cancel list. The cancellation is theirs.
 
 Do not migrate the stack. A migration is a project with no revenue attached and it
 is always proposed on a Sunday. If one is genuinely warranted, it is irreversible

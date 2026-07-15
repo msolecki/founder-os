@@ -7,7 +7,19 @@ metadata:
 ---
 
 Run `revenue-review` against today. The numbers as they are, not as hoped:
-revenue, collected versus invoiced, effective rate, runway.
+revenue, collected versus invoiced, effective rate.
+
+**Then run `runway-forecast`, in the same session.** You hold both skills, it is
+one more invocation, and `## Runway` is the heading `founder-os-init` told the
+founder out loud twenty minutes ago would land here. Without it the heading is
+scaffolded and stays empty, and the one number the founder was promised is the
+one that never arrives.
+
+It is also the best thing this task produces. Revenue and effective rate are
+numbers the founder half-knew. Runway is cash on hand over real burn — two
+divisions away from data they gave you three minutes ago, and almost none of them
+have done it. It is the number that decides whether anything else in this
+workspace matters this quarter.
 
 This is the baseline every later claim gets measured against. House rule 2:
 evidence over vibes — and this task is where the evidence starts.
@@ -32,7 +44,8 @@ brief.
 The first one is thin in a specific, honest way: `pipeline.md` and `clients/` are
 empty, so there is no overdue next action to find and no yesterday to score, and
 the brief says that rather than inventing either. What it does have is enough. If
-your cash number came back unknown, that is what is rotting and it will outrank
+your cash number came back unknown, that is day one's **one thing** — filed to
+`queue.md` `## Doing`, which is the section the brief reads — and it outranks
 everything else in the file.
 
 Anything this step leaves you owing — an invoice to chase, a number to dig out of

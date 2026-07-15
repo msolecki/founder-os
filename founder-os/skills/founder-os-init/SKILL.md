@@ -13,12 +13,26 @@ directory can be advised on, because house rule 1 forbids advice without state,
 so the entire company is inert until this skill runs. The failure mode is not
 that onboarding is hard — it is that onboarding is *thorough*: forty questions,
 eighteen carefully scaffolded files, and a founder who closes the terminal and
-never opens it again. Get the four files that matter real, stub the rest, and
-let the cadences fill them in.
+never opens it again. Ask the four questions that matter, write the one file you
+own, scaffold the rest, and let the owners fill them in.
 
 This is step 1 of `projects/onboarding`, and onboarding ends by running the
 founder's first `daily-brief`. Everything you collect here is that brief's
 input. Collect nothing you cannot use in it.
+
+**You interview four files' worth and write one.** You run as the Chief of Staff,
+who owns `charter.md` — so the charter answers land in the charter. The other
+three answers are carried forward, in this session, to the owners whose tasks are
+already queued behind you: `define-icp` writes `offer.md`, `set-quarter-goals`
+writes `goals.md`, `baseline-metrics` writes `metrics.md`. That is not
+bureaucracy and it is not a smaller product: `state-integrity` gives this skill
+exactly one exemption — it may bring a file into existence across an ownership
+boundary, **as an empty stub, and never with a line of content in it**.
+Scaffolding is lifecycle; content is ownership.
+
+It would also be wasted work. `quarterly-planning` opens by replacing `goals.md`
+outright, so a bet written here is destroyed twenty minutes later by the agent
+that was always going to write it — and the founder answered the question twice.
 
 ## When to use
 
@@ -94,12 +108,19 @@ better afternoon. There is no better afternoon. There is this session.
    files is "we did a lot" theatre — it reads as effort, which is the currency
    this package specifically refuses.
 
-   Show the lines that prove it heard them, quoted from what you just wrote:
-   their own sentence under `charter.md` `## Business`; the client they would not
-   take again, named, under `offer.md` `## ICP`; the runway that falls out of the
-   cash and burn they gave you two minutes ago — a number they did not work out,
-   from two numbers they did. Say the runway; do not write it. `## Runway` is the
-   CFO's, and `baseline-metrics` is where it lands.
+   Show the lines that prove it heard them. One is quoted from what you wrote:
+   their own sentence under `charter.md` `## Business`. The rest are said, not
+   shown — the client they would not take again, by name, and the runway that
+   falls out of the cash and burn they gave you two minutes ago, a number they did
+   not work out from two numbers they did.
+
+   **Say them; do not write them.** `## ICP` is the Positioning Advisor's and
+   `define-icp` is where the excluded client lands. `## Runway` is the CFO's and
+   `baseline-metrics` is where it lands. Saying a number out loud is not a lesser
+   version of writing it — at this moment it is the better one. It proves the
+   thing was heard, which is all step 5 is for, and it costs the founder nothing
+   to hear a number that three minutes of a later task will make permanent and
+   owned.
 
    **If a line would be true for any other founder, cut it.** Generic output at
    this exact moment reads as a template, and a founder who concludes they have
@@ -149,32 +170,47 @@ better afternoon. There is no better afternoon. There is this session.
    The queue is swept every Friday. The TODO line is read by nobody, including
    the founder who watched you write it.
 
+   **The cash unknown goes in `## Doing`. Everything else goes in `## Queued`.**
+   Which section is not filing, it is whether tomorrow's brief can say the thing:
+   `daily-brief` reads `## Doing` and is forbidden from reciting `## Queued`, so a
+   cash unknown filed to `## Queued` is invisible on the exact morning it matters
+   most. It is also not a three-week item. A founder who cannot say their cash
+   number has one job tomorrow, and `## Doing` is the section that means that.
+
 ## The interview
 
 Four questions, one per file. They are chosen because each is one a founder is
 actively avoiding, and because each has a file that cannot be written without it.
-Each answer lands under a named heading `sections:` declares — write it there, not
-wherever the conversation ended up.
+
+**One answer you write. Three you carry.** The charter is yours; the other three
+belong to agents whose tasks run in the next twenty minutes and who will ask a
+sharper version of the same question. Hold those answers in the session and hand
+them over by name — a carried answer is not a lost one, it is one that arrives at
+its owner with the founder still in the room. Where each goes is on the arrow.
 
 - **What is this business, in one sentence, without the word "and"? Then: what
   does "won" look like — not this quarter, the thing that would make five years
   of this right?** The `and` is the tell: it is where two businesses are hiding in
   one calendar. The second half is where they will stall, and the stall is the
   finding — a founder who cannot say what winning looks like is optimising a
-  business they have not finished choosing. → `charter.md` `## Business` and
-  `## North star`
+  business they have not finished choosing. → **written**, `charter.md`
+  `## Business` and `## North star`
 - **Name two clients you would take again, and one you would not. What is
   different about them?** Founders cannot describe their ICP in the abstract and
   can always describe it by example. The one they would not take again is where
-  the actual answer is. → `offer.md` `## ICP`
+  the actual answer is. → **carried to `define-icp`**, which runs `icp-definition`
+  as the **Positioning Advisor** and writes `offer.md` `## ICP`
 - **What has to be true in 90 days for this quarter to have been worth it — and
   what number would tell you it wasn't?** A bet without a kill condition is a
-  hope; the second half of the question is the half that matters. → `goals.md`
-  `## Bets`
+  hope; the second half of the question is the half that matters. → **carried to
+  `set-quarter-goals`**, which runs `quarterly-planning` as the **Strategist** and
+  writes `goals.md` `## Bets`
 - **Cash on hand, revenue *collected* in the last three months, and monthly burn
   including paying yourself.** Collected, not booked — an invoice sent is not
   money. Burn that omits the founder's own pay describes a company that is
-  subsidised, not profitable. → `metrics.md` `## Close`
+  subsidised, not profitable. → **carried to `baseline-metrics`**, which runs
+  `revenue-review` and `runway-forecast` as the **CFO** and writes `metrics.md`
+  `## Close` and `## Runway`
 
 If the founder does not know their cash number, that is the most important
 finding of the onboarding. Write it down as unknown and hand to the **CFO**.
@@ -205,9 +241,14 @@ checks for this drift specifically.
 ## Output
 
 - `$FOUNDER_OS_HOME/` containing every entry from `workspace_files:`, each flat
-  file carrying the headings `sections:` declares for it — `charter.md`,
-  `offer.md`, `goals.md` and `metrics.md` with real content from the interview
-  filed under those headings; the rest as headings with nothing under them.
+  file carrying the headings `sections:` declares for it, **every one of them
+  empty** — except `charter.md`, which the Chief of Staff owns and which carries
+  the interview's first answer under `## Business`, `## North star` and
+  `## Timezone`.
+- The other three interview answers held in this session and handed by name to
+  `define-icp`, `set-quarter-goals` and `baseline-metrics`. Not written. Their
+  owners write them, three tasks from now, which is the whole reason those tasks
+  exist.
 - `.paperclip.yaml` with `timezone` set to the founder's zone on all 8
   `routines.<slug>.triggers[]`. Cron expressions and policies untouched.
 - Two or three lines, on screen, quoted from what you just wrote, that would be
@@ -216,7 +257,8 @@ checks for this drift specifically.
   `set-quarter-goals` → `baseline-metrics`, ending in their first daily brief.
   The brief is onboarding's output, not this skill's — step 6 says why.
 - `queue.md` carrying one item per unanswered question, each with an id and
-  `bet: none`. No `TODO` lines anywhere.
+  `bet: none` — the cash unknown in `## Doing`, the rest in `## Queued`. No
+  `TODO` lines anywhere.
 - `decisions/YYYY-MM-DD-founder-os-installed.md` — the timezone chosen, the
   workspace path, and any question the founder could not answer. This is the
   first entry in the decision log and it establishes the habit that makes
@@ -227,6 +269,14 @@ checks for this drift specifically.
 Never overwrite a workspace that has content. Never invent a number the founder
 did not give you — an empty `metrics.md` is a known gap, and a plausible one is
 a lie every agent downstream will quote as fact under house rule 2.
+
+**Never put a line of content in a file the Chief of Staff does not own.** You
+scaffold every path in the map and you write one file. The exemption `state-integrity`
+grants this skill is lifecycle — bringing a missing file into existence — and it
+is empty-stub only, on purpose, and it does not stretch to "but I have the answer
+right here and the founder is sitting in front of me". That sentence is exactly
+the pressure it was written against, and it arrives every single install. The
+answer goes to the owner, in the handoff, by name.
 
 Never scaffold beyond `workspace_files:`. Extra files are unowned files, and
 `state-integrity` will refuse to write them for the rest of the package's life.
