@@ -117,10 +117,12 @@ founder-os/
 ├── offer.md                # ICP + offer + pricing
 ├── pipeline.md             # prospects + next action each
 ├── week.md                 # current week's blocks, rewritten each Monday
+├── queue.md                # v1.1 — durable work: Doing/Queued/Blocked/Done/Dropped
 ├── clients/<slug>.md       # scope, health, revenue per client
 ├── network.md              # relationships + follow-up queue
 ├── skills.md               # capability map + learning plan
 ├── content.md              # content plan + backlog
+├── voice.md                # v1.1 — how the founder writes: samples, not adjectives
 ├── systems.md              # automation/tool inventory
 ├── decisions/YYYY-MM-DD-<slug>.md
 └── reviews/
@@ -142,6 +144,8 @@ founder-os/
 | `offer.md` | `positioning-advisor` |
 | `pipeline.md` | `pipeline-coach` |
 | `week.md` | `focus-coach` |
+| `queue.md` | `chief-of-staff` (v1.1) |
+| `voice.md` | `brand-editor` (v1.1) |
 | `clients/` | `delivery-lead` |
 | `network.md` | `network-manager` |
 | `skills.md` | `skills-mentor` |
@@ -233,12 +237,12 @@ Referenced by every agent body:
 
 ## 6. Skills catalog
 
-**44 skills.** All authored **inline** (`usage: vendored`, not `referenced`) — there is no upstream to point at, and vendoring is what makes the package self-contained and ownable.
+**47 skills** (v1.1; 44 at v1.0). All authored **inline** (`usage: vendored`, not `referenced`) — there is no upstream to point at, and vendoring is what makes the package self-contained and ownable.
 
 Ownership splits into two classes, and conflating them is a trap:
 
-- **39 role skills** — each owned by exactly one agent and listed only in that agent's `skills[]`.
-- **5 system skills** — `founder-os-init`, `founder-os-doctor`, `context-load`, `guardrails`, `state-integrity`. These are cross-cutting. `guardrails` and `state-integrity` **must** appear in every agent's `skills[]`, because a refusal rule that only one agent carries is not a rule. The remaining three (`founder-os-init`, `founder-os-doctor`, `context-load`) attach to `chief-of-staff`, which owns the workspace lifecycle.
+- **41 role skills** — each owned by exactly one agent and listed only in that agent's `skills[]`. (v1.1 added `queue` and `voice-capture`.)
+- **6 system skills** — `founder-os-init`, `founder-os-doctor`, `context-load`, `guardrails`, `state-integrity`, `ingestion-gate`. These are cross-cutting. `guardrails` and `state-integrity` **must** appear in every agent's `skills[]`, because a refusal rule that only one agent carries is not a rule. The remaining three (`founder-os-init`, `founder-os-doctor`, `context-load`) attach to `chief-of-staff`, which owns the workspace lifecycle.
 
 | Owner | Skills |
 |---|---|
@@ -290,7 +294,7 @@ founder-os/
 └── images/org-chart.png
 ```
 
-**Totals:** 12 agents · 4 teams · 44 skills (39 role + 5 system) · 1 project (4 tasks) · 8 scheduled tasks.
+**Totals (v1.1):** 12 agents · 4 teams · 47 skills (41 role + 6 system) · 18 workspace files · 1 project (4 tasks) · 8 scheduled cadences.
 
 ### Required frontmatter
 
@@ -339,8 +343,8 @@ Agent bodies follow: **What triggers you / What you do / What you produce / Who 
 - Every team `manager`/`includes` path resolves.
 - Every scheduled `TASK.md` `assignee` resolves to a real agent, and the skill it invokes is in that agent's `skills[]`.
 - The file-ownership map covers every workspace file, with exactly one owner each.
-- No **role** skill is listed under two agents. (System skills are exempt by design — `guardrails` and `state-integrity` appear under all 12.)
-- Every one of the 44 skills is reachable from at least one agent; no orphans.
+- No **role** skill is listed under two agents. (System skills are exempt by design — `guardrails`, `state-integrity` and `ingestion-gate` appear under all 12.)
+- Every one of the 47 skills is reachable from at least one agent; no orphans.
 
 ---
 

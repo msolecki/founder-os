@@ -12,7 +12,7 @@ A new installer faces twelve agents and an empty directory. Nothing in that
 directory can be advised on, because house rule 1 forbids advice without state,
 so the entire company is inert until this skill runs. The failure mode is not
 that onboarding is hard — it is that onboarding is *thorough*: forty questions,
-fifteen carefully scaffolded files, and a founder who closes the terminal and
+eighteen carefully scaffolded files, and a founder who closes the terminal and
 never opens it again. Get the four files that matter real, stub the rest, and
 let the cadences fill them in.
 

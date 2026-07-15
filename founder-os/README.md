@@ -29,7 +29,8 @@ yet:
 |---------|-------|
 | Agents  | 12    |
 | Teams   | 4     |
-| Skills  | 44    |
+| Skills  | 47    |
+| Cadences | 8    |
 
 ## The org
 
@@ -66,24 +67,74 @@ package refuses to repeat.
 
 State lives in a markdown workspace (`FOUNDER_OS_HOME`, default
 `./founder-os/`): charter, goals, metrics, offer, pipeline, clients, network,
-week — and a decision log that records *why*, not just what. Six months from
-now you will want to know why you raised rates or dropped a client. That's the
-file that answers.
+week, queue, voice — and a decision log that records *why*, not just what. Six
+months from now you will want to know why you raised rates or dropped a client.
+That's the file that answers.
 
 Every file has exactly one owner. Agents read anything and write only what they
-own — that's what makes a twelve-agent org safe to run against shared state,
-and it's enforced mechanically, not by good intentions.
+own — that's what makes a twelve-agent org safe to run against shared state.
+A validator enforces it at build time, so it's a contract rather than an
+intention.
+
+**Work doesn't evaporate.** A brief that says "follow up with Anna" leaves an
+item in `queue.md`, not a feeling. It has an id, a bet it serves, and a date —
+and if it sits for 21 days it is dropped automatically, with a reason. An item
+nobody started in 15 working days was passed over by 15 daily briefs; the queue
+just writes down a decision you already made fifteen times. A queue that only
+grows is a to-do list, and you already have one of those.
+
+**Nothing is written just because someone said it.** Every claim arriving from
+outside — a call, an email, a prospect's enthusiasm — is tiered before it
+reaches a file: fact, validate, or disregard. What a counterparty says about
+their own situation is a fact; what you say to win the room is positioning.
+Provenance is stamped in the line itself (`per the customer call, 12 May`),
+because a file's timestamp tells you when someone touched it, not when the
+claim was last true.
+
+**It writes like you, or it says it can't.** `voice.md` holds real samples of
+your writing — not adjectives about it. "Friendly but professional" describes
+90% of all business writing and constrains nothing; three real emails beat any
+adjective. Every draft is checked against it, and your edits before sending are
+harvested back, because that's you correcting the machine.
 
 ## What it won't do
 
-The CFO gives no tax or legal advice. The Focus Coach gives no medical advice.
-Both will tell you exactly which professional to see and what number or
+**It never sends. It never pays.** No email, no post, no invoice, no signature —
+whatever the agent, however obvious the send, however explicitly you asked
+mid-flow. It drafts; you press the button. If your setup connects a mailbox or
+a payment tool, the capability existing is not the permission — that is exactly
+when the rule matters. A wrong opinion costs an argument; a sent email costs a
+client.
+
+**The CFO gives no tax or legal advice. The Focus Coach gives no medical
+advice.** Both will tell you which professional to see and what number or
 observation to bring them, so the meeting takes fifteen minutes instead of an
 hour.
 
 This is deliberate. A founder OS is trusted because it is opinionated, and that
 trust is exactly what makes a confident wrong answer expensive. See
 `skills/guardrails/SKILL.md`.
+
+## It has opinions
+
+Every skill states at least three principles a competent generic advisor would
+not say — and the bar is enforced, not encouraged. Without them you get
+Wikipedia advice the moment you step off the script, which is precisely when
+you needed an opinion.
+
+A sample of what that means in practice:
+
+> *"Continuing has no invoice. Killing feels like the loss because it comes
+> with a date and a number attached, while a bet running at 20% for another
+> quarter costs more and never sends a bill."*
+
+> *"Your price is not low because you undervalue your work. It is low because a
+> low price is an effective way of not being rejected, and it is working."*
+
+> *"Over 40% of revenue is not a client, it is an employer."*
+
+You are meant to disagree with some of them. That is the point — an argued
+position can be improved, a platitude can only be nodded at.
 
 ## Extending it
 
