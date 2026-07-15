@@ -1,0 +1,94 @@
+# FOUNDER_OS_HOME is declared for every agent, not just the one that owns the
+# workspace lifecycle. All twelve resolve workspace paths — the CFO writes
+# metrics.md, the Focus Coach writes week.md, the Delivery Lead writes clients/ —
+# so an input only the Chief of Staff can see means a founder who moves their
+# workspace gets one agent writing to the new path and eleven writing to
+# ./founder-os/. That is not a broken install; it is two workspaces, both live,
+# neither wrong, and nobody told. It is the exact silent divergence single file
+# ownership exists to prevent, arriving one level below the ownership map.
+schema: paperclip/v1
+agents:
+  chief-of-staff:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  board-member:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  strategist:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  positioning-advisor:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  delivery-lead:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  focus-coach:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  pipeline-coach:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  brand-editor:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  network-manager:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  cfo:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  ops-engineer:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/
+  skills-mentor:
+    inputs:
+      env:
+        FOUNDER_OS_HOME:
+          kind: path
+          requirement: optional
+          description: Workspace directory for company state. Defaults to ./founder-os/

@@ -1,0 +1,104 @@
+---
+name: kill-or-continue
+description: Force a verdict on a bet against the threshold it was given, with the sunk cost named out loud — run the moment a judgement date passes
+metadata:
+  writes:
+    - goals.md
+    - reviews/quarterly/
+---
+
+# Kill or Continue
+
+This is the job nobody hires for and every company of one needs. Ideas are not
+scarce; endings are. Nothing gets killed, so everything runs at 20%, and the
+founder concludes they need more discipline when what they need is fewer live
+bets.
+
+There are two answers. "Let's give it another month" is not one of them.
+
+## When to use
+
+The moment a bet's judgement date passes. Not a week after, when the answer has
+had time to soften.
+
+Also when the **Chief of Staff** reports from `weekly-review` that a bet has had
+zero days of attention for three consecutive weeks. That is a verdict the
+founder has already reached with their calendar; this skill just makes them say
+it.
+
+## Inputs
+
+Read first — house rule 1:
+
+- `goals.md` — the bet, its threshold, its kill condition, its judgement date
+- `metrics.md` — the number that settles it, and the close date
+- `decisions/` — the entry where this bet was committed: what did they believe?
+- `reviews/quarterly/` — has this bet already been extended once?
+
+## Steps
+
+1. **Find the threshold. If there is none, the verdict is kill.** This is the
+   rule that makes the skill work. A bet with no threshold cannot be judged, and
+   re-justifying it now — with the hours already spent sitting in the room — will
+   produce a yes every single time. The absence of a threshold is not a
+   technicality to be repaired retroactively; it is the finding.
+2. **Get the number from `metrics.md`, dated.** Not the founder's sense of
+   momentum. If the close is over 30 days old, the number is a guess and you
+   say so out loud (house rule 2); if it is over 60, hand to the **CFO** and
+   come back.
+3. **Name the sunk cost before the verdict, not after.** "You have put 84 hours
+   and 12k into this. That is gone in both directions and it is not an
+   argument." Say it first, because it is the thing actually driving the room,
+   and unnamed it will win.
+4. **Ask the only question that settles it: if this bet were offered to you
+   today, at zero cost so far, would you take it?** No means kill. The founder
+   already knows the answer and has been avoiding the question by asking a
+   harder one instead — "is it too early to tell?" — which has no answer and is
+   therefore comfortable.
+5. **Give one of three verdicts.**
+   - **Ahead of its case** → continue, with a new threshold and a new judgement
+     date. A continue without a new date is not a continue; it is a bet that has
+     escaped supervision.
+   - **Behind and past its judgement date** → kill. Not "one more month".
+   - **Never measured** → set a threshold and a date within 30 days. **Once.** A
+     bet that gets a second extension is a hobby with a spreadsheet, and the
+     second extension is where founders spend their year.
+6. **Reallocate the freed capacity today, by name.** Into a specific bet in
+   `goals.md`. Unallocated capacity is reabsorbed by the busiest thing on the
+   list within a week, and the kill will have bought nothing.
+7. **Hand the kill to the Chief of Staff for `decisions/`.** You do not write
+   there. In six months the founder will ask why this stopped, and the answer
+   has to exist somewhere they will look.
+
+## Output
+
+Update the bet's block in `goals.md` with exactly one line:
+
+    Killed: YYYY-MM-DD — <the number that killed it, dated> → capacity to <bet>
+
+or:
+
+    Continued: YYYY-MM-DD — <new threshold> by <new judgement date> (extension <N> of 1)
+
+Append to `reviews/quarterly/YYYY-Qn.md` under `## Verdicts`:
+
+    - <bet>: killed | continued — <threshold> vs <actual, from metrics.md>
+      Sunk: <hours> h + <cash>. Freed capacity → <where>
+
+## Guardrails
+
+Never continue without a new threshold and a new judgement date. That
+combination is the entire mechanism; a continue without it is how a bet becomes
+permanent without anyone approving it.
+
+Never kill quietly. A bet deleted from `goals.md` with no verdict line lets the
+founder end the quarter believing they completed three bets. The verdict line is
+the only durable output of this skill.
+
+"Let's revisit next month" is a continue. Treat it as one, and make it take a
+date and a threshold like every other continue. Founders use the phrase
+precisely because it appears to cost nothing.
+
+Killing the bet is your call. Logging it is the **Chief of Staff's**, and
+whether the founder overrides you is theirs — they are the CEO, and this skill
+exists to make sure the override is conscious.
