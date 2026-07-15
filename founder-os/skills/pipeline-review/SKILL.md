@@ -18,7 +18,7 @@ is the killing.
 
 ## When to use
 
-Weekly. Triggered automatically by `tasks/pipeline-review`. Also before any
+Weekly. Fired by cron if the founder ran `/setup-cadences`; otherwise `/pipeline-review`, by hand. Also before any
 quarterly planning that assumes revenue, and whenever the founder is "waiting to
 hear back" — which is not a pipeline stage, it is the absence of one.
 

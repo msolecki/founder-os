@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Validate the Founder OS agentcompanies/v1 package."""
+"""Validate the Founder OS Claude Code plugin.
+
+v2 — retargeted from the paperclipai/agentcompanies format to Claude Code
+native. The checks that survived are the ones that were never about paperclip:
+one owner per file, one decision per agent, beliefs, guardrails. The ones that
+died with the old runtime (COMPANY.md, TEAM.md, .paperclip.yaml routines) are
+gone rather than kept "just in case" — a second map goes stale silently.
+"""
+import json
 import re
 import sys
 from pathlib import Path
@@ -7,13 +15,23 @@ from pathlib import Path
 import yaml
 
 SYSTEM_SKILLS = {"founder-os-init", "founder-os-doctor", "context-load",
-                 "guardrails", "state-integrity", "ingestion-gate"}
-# Paperclip runtime enums (packages/shared/src/constants.ts).
-CATCH_UP_POLICIES = {"skip_missed", "enqueue_missed_with_cap"}
-CONCURRENCY_POLICIES = {"coalesce_if_active", "always_enqueue", "skip_if_active"}
+                 "guardrails", "state-integrity", "ingestion-gate",
+                 "setup-cadences"}
 UNIVERSAL_SKILLS = {"guardrails", "state-integrity", "ingestion-gate"}
-REQUIRED_COMPANY_FIELDS = ["name", "description", "slug", "schema", "version",
-                           "license", "authors", "goals"]
+
+# Skills the founder runs directly; they belong to no agent by design.
+STANDALONE_SKILLS = {"setup-cadences"}
+
+# House Rule 0, enforced at the tool layer rather than requested in prose.
+# An agent with Bash can curl. An agent with WebFetch can POST. An agent with
+# an MCP mail tool can send. The rule says agents draft and the founder sends,
+# so no agent gets a tool that can reach the outside world — the capability
+# existing is the thing the rule is about.
+OUTBOUND_TOOLS = {"Bash", "WebFetch", "WebSearch", "NotebookEdit", "Task"}
+ALLOWED_AGENT_TOOLS = {"Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent"}
+
+AGENT_HEADINGS = ["## What triggers you", "## What you do",
+                  "## What you produce", "## Who you hand off to"]
 
 
 def parse_frontmatter(path):
@@ -29,48 +47,97 @@ def load_agents(root):
     adir = root / "agents"
     if not adir.is_dir():
         return agents
-    for d in sorted(adir.iterdir()):
-        if d.is_dir() and (d / "AGENTS.md").exists():
-            agents[d.name] = parse_frontmatter(d / "AGENTS.md")
+    for p in sorted(adir.glob("*.md")):
+        agents[p.stem] = parse_frontmatter(p)
     return agents
 
 
-def check_company(root):
+def _tool_names(tools):
+    """Split a `tools:` value into bare names. `Agent(a, b)` -> `Agent`."""
+    if not tools:
+        return []
+    if isinstance(tools, list):
+        raw = tools
+    else:
+        raw = re.split(r",\s*(?![^()]*\))", str(tools))
+    return [re.sub(r"\(.*\)", "", t).strip() for t in raw if t and t.strip()]
+
+
+def _agent_targets(tools):
+    m = re.search(r"Agent\(([^)]*)\)", str(tools or ""))
+    return [t.strip() for t in m.group(1).split(",") if t.strip()] if m else []
+
+
+def check_plugin(root, agents):
     errs = []
-    fm, _ = parse_frontmatter(root / "COMPANY.md")
-    for f in REQUIRED_COMPANY_FIELDS:
-        if not fm.get(f):
-            errs.append("COMPANY.md: missing required field '%s'" % f)
-    if fm.get("schema") != "agentcompanies/v1":
-        errs.append("COMPANY.md: schema must be 'agentcompanies/v1'")
-    if fm.get("slug") != "founder-os":
-        errs.append("COMPANY.md: slug must be 'founder-os'")
+    p = root / ".claude-plugin" / "plugin.json"
+    if not p.exists():
+        return [".claude-plugin/plugin.json: missing"]
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return [".claude-plugin/plugin.json: invalid JSON (%s)" % e]
+    if not d.get("name"):
+        errs.append("plugin.json: 'name' is the one required field and it is missing")
+    if d.get("name") and d["name"] != "founder-os":
+        errs.append("plugin.json: name must be 'founder-os'")
     return errs
 
 
 def check_agents(root, agents):
     errs = []
     for slug in sorted(agents):
-        fm, body = agents[slug]
-        for f in ("name", "title", "skills"):
+        fm, _ = agents[slug]
+        for f in ("name", "description", "skills"):
             if not fm.get(f):
-                errs.append("agents/%s: missing '%s'" % (slug, f))
-        if "reportsTo" not in fm:
-            errs.append("agents/%s: missing 'reportsTo'" % slug)
-        rt = fm.get("reportsTo")
-        if rt is not None and rt not in agents:
-            errs.append("agents/%s: reportsTo '%s' is not a real agent" % (slug, rt))
-        skills = fm.get("skills") or []
-        for s in skills:
+                errs.append("agents/%s.md: missing '%s'" % (slug, f))
+        if fm.get("name") and fm["name"] != slug:
+            errs.append("agents/%s.md: name '%s' does not match the filename"
+                        % (slug, fm["name"]))
+        for s in fm.get("skills") or []:
             if not (root / "skills" / s / "SKILL.md").exists():
-                errs.append("agents/%s: skill '%s' has no skills/%s/SKILL.md" % (slug, s, s))
+                errs.append("agents/%s.md: skill '%s' has no skills/%s/SKILL.md"
+                            % (slug, s, s))
         for req in sorted(UNIVERSAL_SKILLS):
-            if req not in skills:
-                errs.append("agents/%s: must list universal skill '%s'" % (slug, req))
+            if req not in (fm.get("skills") or []):
+                errs.append("agents/%s.md: must list universal skill '%s'" % (slug, req))
     return errs
 
 
-def check_role_skill_exclusivity(agents):
+def check_agent_tools(root, agents):
+    """No agent may hold a tool that can reach the outside world."""
+    errs = []
+    for slug in sorted(agents):
+        fm, _ = agents[slug]
+        if not fm.get("tools"):
+            errs.append("agents/%s.md: 'tools' must be an explicit allowlist — "
+                        "omitting it inherits every tool, including Bash, and an "
+                        "agent with Bash can send" % slug)
+            continue
+        for t in _tool_names(fm["tools"]):
+            if t in OUTBOUND_TOOLS:
+                errs.append("agents/%s.md: tool '%s' can reach the outside world — "
+                            "house rule 0 says agents draft and the founder sends"
+                            % (slug, t))
+            elif t not in ALLOWED_AGENT_TOOLS:
+                errs.append("agents/%s.md: unknown tool '%s'" % (slug, t))
+    return errs
+
+
+def check_agent_graph(root, agents):
+    """Every Agent(...) target is a real agent; nobody can summon themselves."""
+    errs = []
+    for slug in sorted(agents):
+        fm, _ = agents[slug]
+        for target in _agent_targets(fm.get("tools")):
+            if target not in agents:
+                errs.append("agents/%s.md: Agent(%s) is not a real agent" % (slug, target))
+            elif target == slug:
+                errs.append("agents/%s.md: may not summon itself" % slug)
+    return errs
+
+
+def check_role_skill_exclusivity(root, agents):
     errs, seen = [], {}
     for slug in sorted(agents):
         fm, _ = agents[slug]
@@ -78,7 +145,8 @@ def check_role_skill_exclusivity(agents):
             if s in SYSTEM_SKILLS:
                 continue
             if s in seen:
-                errs.append("role skill '%s' is owned by both '%s' and '%s'" % (s, seen[s], slug))
+                errs.append("role skill '%s' is held by both '%s' and '%s'"
+                            % (s, seen[s], slug))
             else:
                 seen[s] = slug
     return errs
@@ -93,77 +161,26 @@ def check_orphans(root, agents):
     if not sdir.is_dir():
         return errs
     for d in sorted(sdir.iterdir()):
-        if d.is_dir() and d.name not in referenced:
-            errs.append("skills/%s: orphan — not listed by any agent" % d.name)
-    return errs
-
-
-def check_teams(root):
-    errs = []
-    tdir = root / "teams"
-    if not tdir.is_dir():
-        return errs
-    for d in sorted(tdir.iterdir()):
-        if not (d.is_dir() and (d / "TEAM.md").exists()):
+        if not d.is_dir():
             continue
-        fm, _ = parse_frontmatter(d / "TEAM.md")
-        for f in ("name", "description", "slug"):
-            if not fm.get(f):
-                errs.append("teams/%s: missing '%s'" % (d.name, f))
-        # 'manager' must be declared, but null is a legitimate value: a board has
-        # no manager — the founder chairs it, and the founder is not an agent.
-        # Requiring truthiness here forced teams/board to name the very agent its
-        # reviewer exists to attack. Absent and null are different claims: absent
-        # is an omission, null is a decision.
-        if "manager" not in fm:
-            errs.append("teams/%s: missing 'manager' (use 'manager: null' for a "
-                        "manager-less team)" % d.name)
-        if fm.get("slug") and fm["slug"] != d.name:
-            errs.append("teams/%s: slug '%s' does not match directory" % (d.name, fm["slug"]))
-        for p in [fm.get("manager")] + list(fm.get("includes") or []):
-            if p and not (d / p).exists():
-                errs.append("teams/%s: path '%s' does not resolve" % (d.name, p))
-    return errs
-
-
-def check_tasks(root, agents):
-    errs = []
-    files = sorted(root.glob("tasks/*/TASK.md")) + sorted(root.glob("projects/*/tasks/*/TASK.md"))
-    for tfile in files:
-        fm, _ = parse_frontmatter(tfile)
-        rel = tfile.relative_to(root)
-        if not fm.get("name"):
-            errs.append("%s: missing 'name'" % rel)
-        a = fm.get("assignee")
-        if a not in agents:
-            errs.append("%s: assignee '%s' is not a real agent" % (rel, a))
+        if d.name in referenced or d.name in STANDALONE_SKILLS:
             continue
-        skill = (fm.get("metadata") or {}).get("skill")
-        if not skill:
-            errs.append("%s: metadata.skill is required" % rel)
-        elif skill not in (agents[a][0].get("skills") or []):
-            errs.append("%s: skill '%s' is not in agent '%s' skills[]" % (rel, skill, a))
+        errs.append("skills/%s: held by no agent and not declared standalone" % d.name)
     return errs
 
 
-def check_ownership(root, agents):
+def check_agent_headings(root, agents):
     errs = []
-    p = root / "references" / "ownership.yaml"
-    if not p.exists():
-        return ["references/ownership.yaml: missing"]
-    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-    seen = {}
-    for agent, files in (data.get("owns") or {}).items():
-        if agent not in agents:
-            errs.append("ownership.yaml: '%s' is not a real agent" % agent)
-        for f in files or []:
-            if f in seen:
-                errs.append("ownership.yaml: '%s' is owned by both '%s' and '%s'" % (f, seen[f], agent))
-            else:
-                seen[f] = agent
-    for f in data.get("workspace_files") or []:
-        if f not in seen:
-            errs.append("ownership.yaml: workspace file '%s' has no owner" % f)
+    for slug in sorted(agents):
+        _, body = agents[slug]
+        for h in AGENT_HEADINGS:
+            if h not in body:
+                errs.append("agents/%s.md: missing mandated heading '%s'" % (slug, h))
+        found = sorted((body.index(h), h) for h in AGENT_HEADINGS if h in body)
+        order = [h for _, h in found]
+        expected = [h for h in AGENT_HEADINGS if h in body]
+        if order != expected:
+            errs.append("agents/%s.md: headings out of order" % slug)
     return errs
 
 
@@ -179,13 +196,29 @@ def _ownership_by_path(root):
     return by_path
 
 
-def check_skill_writes(root, agents):
-    """A skill's declared output must be owned by the agent holding the skill.
+def check_ownership(root, agents):
+    errs = []
+    p = root / "references" / "ownership.yaml"
+    if not p.exists():
+        return ["references/ownership.yaml: missing"]
+    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    seen = {}
+    for agent, files in (data.get("owns") or {}).items():
+        if agent not in agents:
+            errs.append("ownership.yaml: '%s' is not a real agent" % agent)
+        for f in files or []:
+            if f in seen:
+                errs.append("ownership.yaml: '%s' is owned by both '%s' and '%s'"
+                            % (f, seen[f], agent))
+            else:
+                seen[f] = agent
+    for f in data.get("workspace_files") or []:
+        if f not in seen:
+            errs.append("ownership.yaml: workspace file '%s' has no owner" % f)
+    return errs
 
-    Catches the class of bug where an agent runs a skill whose output file
-    belongs to someone else — invisible to every other check, because
-    agent->skill and file->owner can both be valid while skill->file is not.
-    """
+
+def check_skill_writes(root, agents):
     errs = []
     sdir = root / "skills"
     if not sdir.is_dir():
@@ -198,9 +231,7 @@ def check_skill_writes(root, agents):
             if s not in SYSTEM_SKILLS:
                 holder[s] = slug
     for d in sorted(sdir.iterdir()):
-        if not (d.is_dir() and (d / "SKILL.md").exists()):
-            continue
-        if d.name in SYSTEM_SKILLS:
+        if not (d.is_dir() and (d / "SKILL.md").exists()) or d.name in SYSTEM_SKILLS:
             continue
         fm, _ = parse_frontmatter(d / "SKILL.md")
         writes = (fm.get("metadata") or {}).get("writes") or []
@@ -208,11 +239,10 @@ def check_skill_writes(root, agents):
             writes = [writes]
         agent = holder.get(d.name)
         if agent is None:
-            continue  # orphan skill — check_orphans reports it
+            continue
         for w in writes:
             if w not in own_path:
-                errs.append("skills/%s: writes '%s', which no agent owns in ownership.yaml"
-                            % (d.name, w))
+                errs.append("skills/%s: writes '%s', which no agent owns" % (d.name, w))
             elif own_path[w] != agent:
                 errs.append("skills/%s: held by '%s' but writes '%s', owned by '%s'"
                             % (d.name, agent, w, own_path[w]))
@@ -220,106 +250,54 @@ def check_skill_writes(root, agents):
 
 
 def check_sections(root, agents):
-    """Every workspace path a skill writes must declare its section contract.
-
-    `owns:` says who may write a file; `sections:` says what is inside it. Both
-    halves are load-bearing. Without the second, `founder-os-init` scaffolds a
-    bare heading, every skill invents its own spelling for the section it was
-    told to replace, and nothing catches it — `founder-os-doctor` checks that
-    files exist, so section rot is undetectable by design.
-
-    Two directions, because a map can drift on either side:
-      - a skill writes a path with no declared sections -> the contract is missing
-      - sections are declared for a path no agent owns   -> the contract is stale
-    """
     errs = []
     p = root / "references" / "ownership.yaml"
     if not p.exists():
-        return errs  # check_ownership reports the missing map
+        return errs
     data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
     sections = data.get("sections") or {}
     own_path = _ownership_by_path(root)
-
-    for path in sorted(sections):
+    for path in sections:
         if path not in own_path:
-            errs.append("ownership.yaml: sections declared for '%s', which no "
-                        "agent owns" % path)
-        if not sections[path]:
-            errs.append("ownership.yaml: sections for '%s' is empty" % path)
-
+            errs.append("ownership.yaml: sections declares '%s', which no agent owns" % path)
     sdir = root / "skills"
     if not sdir.is_dir():
         return errs
     for d in sorted(sdir.iterdir()):
-        if not (d.is_dir() and (d / "SKILL.md").exists()):
+        if not (d.is_dir() and (d / "SKILL.md").exists()) or d.name in SYSTEM_SKILLS:
             continue
         fm, _ = parse_frontmatter(d / "SKILL.md")
         writes = (fm.get("metadata") or {}).get("writes") or []
         if isinstance(writes, str):
             writes = [writes]
         for w in writes:
-            if w in own_path and w not in sections:
-                errs.append("skills/%s: writes '%s', which declares no sections "
-                            "in ownership.yaml" % (d.name, w))
-    return errs
-
-
-AGENT_HEADINGS = ["## What triggers you", "## What you do",
-                  "## What you produce", "## Who you hand off to"]
-
-
-def check_agent_headings(root, agents):
-    """Agent bodies keep the mandated four headings, in order.
-
-    Twelve agents are only legible if every one answers the same four questions
-    in the same order — a reader who has to hunt for "who do I hand off to"
-    stops handing off. This was review-only until a reviewer pointed out that
-    nothing would catch a regression. `## Refusals` and anything else may follow
-    the four; they may not interleave.
-    """
-    errs = []
-    for slug in sorted(agents):
-        _, body = agents[slug]
-        found = [(body.index(h), h) for h in AGENT_HEADINGS if h in body]
-        missing = [h for h in AGENT_HEADINGS if h not in body]
-        for h in missing:
-            errs.append("agents/%s: missing mandated heading '%s'" % (slug, h))
-        order = [h for _, h in sorted(found)]
-        expected = [h for h in AGENT_HEADINGS if h in body]
-        if order != expected:
-            errs.append("agents/%s: headings out of order — got %s, expected %s"
-                        % (slug, order, expected))
+            if w not in sections:
+                errs.append("skills/%s: writes '%s' but ownership.yaml declares no "
+                            "sections for it" % (d.name, w))
     return errs
 
 
 def check_beliefs(root, agents):
     """Every role skill states >=3 principles, before the steps that use them.
 
-    The validator cannot judge whether a belief is any good — the bar ("at least
-    3 principles a competent generic advisor would NOT say") is a judgement call
-    no regex reaches. It can enforce that the section exists, is populated, and
-    sits before `## Steps`, which is the difference between a contract and an
-    aspiration. System skills are exempt: they are mechanical procedure, and a
-    refusal rule does not get to have opinions about itself.
+    The bar ("at least 3 principles a competent generic advisor would NOT say")
+    is a judgement call no regex reaches. This enforces presence, count and
+    placement — the difference between a contract and an aspiration.
     """
     errs = []
     sdir = root / "skills"
     if not sdir.is_dir():
         return errs
     for d in sorted(sdir.iterdir()):
-        if not (d.is_dir() and (d / "SKILL.md").exists()):
-            continue
-        if d.name in SYSTEM_SKILLS:
+        if not (d.is_dir() and (d / "SKILL.md").exists()) or d.name in SYSTEM_SKILLS:
             continue
         _, body = parse_frontmatter(d / "SKILL.md")
         if "## Beliefs" not in body:
-            errs.append("skills/%s: missing '## Beliefs' — every role skill states at "
-                        "least 3 principles a generic advisor would not say" % d.name)
+            errs.append("skills/%s: missing '## Beliefs'" % d.name)
             continue
         b_at = body.index("## Beliefs")
         if "## Steps" in body and b_at > body.index("## Steps"):
-            errs.append("skills/%s: '## Beliefs' must come before '## Steps' — the agent "
-                        "reads what it believes before what to do" % d.name)
+            errs.append("skills/%s: '## Beliefs' must come before '## Steps'" % d.name)
         section = body[b_at + len("## Beliefs"):]
         nxt = re.search(r"\n## ", section)
         if nxt:
@@ -331,80 +309,24 @@ def check_beliefs(root, agents):
     return errs
 
 
-def check_routines(root, agents):
-    """Every recurring task must have a real, firing trigger.
-
-    The Paperclip importer parses TASK.md `schedule.recurrence` as
-    `legacyRecurrence` and hard-errors on weekly/monthly/yearly interval > 1,
-    returning trigger:null — the cadence silently does not exist. Our own
-    quarterly-planning (frequency: monthly, interval: 3) shipped that way and
-    nothing caught it, because a package that "validates" is not a package that
-    imports. This check is the difference.
-    """
-    errs = []
-    tasks = {}
-    for tfile in (sorted(root.glob("tasks/*/TASK.md"))
-                  + sorted(root.glob("projects/*/tasks/*/TASK.md"))):
-        fm, _ = parse_frontmatter(tfile)
-        rel = tfile.relative_to(root)
-        if "schedule" in fm:
-            errs.append("%s: uses legacy 'schedule:' — the importer treats this as "
-                        "legacyRecurrence and hard-errors on interval > 1. Use "
-                        "'recurring: true' + .paperclip.yaml routines.<slug>.triggers." % rel)
-        if fm.get("recurring"):
-            tasks[tfile.parent.name] = rel
-
-    p = root / ".paperclip.yaml"
-    data = (yaml.safe_load(p.read_text(encoding="utf-8")) or {}) if p.exists() else {}
-    routines = data.get("routines") or {}
-
-    for slug in sorted(tasks):
-        r = routines.get(slug)
-        if not r:
-            errs.append("%s: recurring task has no .paperclip.yaml routines.%s entry — "
-                        "it will never fire" % (tasks[slug], slug))
-            continue
-        if r.get("catchUpPolicy") not in CATCH_UP_POLICIES:
-            errs.append("routines.%s: catchUpPolicy must be set to one of %s — the runtime "
-                        "default (skip_missed) silently drops missed runs"
-                        % (slug, sorted(CATCH_UP_POLICIES)))
-        cc = r.get("concurrencyPolicy")
-        if cc is not None and cc not in CONCURRENCY_POLICIES:
-            errs.append("routines.%s: concurrencyPolicy '%s' is not one of %s"
-                        % (slug, cc, sorted(CONCURRENCY_POLICIES)))
-        scheduled = [t for t in (r.get("triggers") or []) if t.get("kind") == "schedule"]
-        if not scheduled:
-            errs.append("routines.%s: no trigger of kind 'schedule'" % slug)
-        for t in scheduled:
-            cron = t.get("cronExpression")
-            if not cron or len(str(cron).split()) != 5:
-                errs.append("routines.%s: cronExpression '%s' is not a 5-field expression"
-                            % (slug, cron))
-            if not t.get("timezone"):
-                errs.append("routines.%s: schedule trigger needs a timezone" % slug)
-
-    for slug in sorted(routines):
-        if slug not in tasks:
-            errs.append("routines.%s: no recurring task with that slug" % slug)
-    return errs
+CHECKS = [check_plugin, check_agents, check_agent_tools, check_agent_graph,
+          check_role_skill_exclusivity, check_orphans, check_agent_headings,
+          check_ownership, check_skill_writes, check_sections, check_beliefs]
 
 
 def main():
     root = Path(sys.argv[1] if len(sys.argv) > 1 else "founder-os")
     if not root.is_dir():
-        print("FAIL: package root '%s' not found" % root)
+        print("FAIL: plugin root '%s' not found" % root)
         return 1
     agents = load_agents(root)
-    errs = (check_company(root) + check_agents(root, agents)
-            + check_role_skill_exclusivity(agents) + check_orphans(root, agents)
-            + check_teams(root) + check_tasks(root, agents)
-            + check_ownership(root, agents) + check_skill_writes(root, agents)
-            + check_routines(root, agents) + check_beliefs(root, agents)
-            + check_agent_headings(root, agents)
-            + check_sections(root, agents))
+    errs = []
+    for fn in CHECKS:
+        errs += fn(root, agents)
     for e in errs:
         print("FAIL: %s" % e)
-    print("\n%d agent(s), %d error(s)" % (len(agents), len(errs)))
+    print("\n%d agent(s), %d skill(s), %d error(s)"
+          % (len(agents), len(list((root / "skills").glob("*/SKILL.md"))), len(errs)))
     return 1 if errs else 0
 
 

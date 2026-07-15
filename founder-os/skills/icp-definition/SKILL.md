@@ -17,7 +17,7 @@ single bad-fit call, which is the only job an ICP has.
 Before `offer-design`, always — an offer for nobody in particular is a service
 menu. Also when the founder describes their buyer with adjectives ("ambitious",
 "values quality", "gets it"), when every project is bespoke, or when a prospect
-says "this is interesting" and vanishes. Run in `projects/onboarding` as
+says "this is interesting" and vanishes. Run during `/founder-os-init` as
 `define-icp`.
 
 ## Inputs

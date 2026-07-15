@@ -16,7 +16,7 @@ against what the week actually contains.
 ## When to use
 
 Monday morning, before the first meeting. Triggered automatically by
-`tasks/week-plan`. Also whenever the founder says the week "got away from them"
+cron, if the founder ran `/setup-cadences`. Otherwise `/week-plan`, by hand. Also whenever the founder says the week "got away from them"
 — that week had no plan to get away from.
 
 ## Inputs

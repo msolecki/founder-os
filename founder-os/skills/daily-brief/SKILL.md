@@ -14,7 +14,7 @@ This is the fifteen minutes that decides whether today moved the quarter.
 ## When to use
 
 Weekday mornings, before opening email. Triggered automatically by
-`tasks/daily-brief`.
+cron, if the founder ran `/setup-cadences`. Otherwise `/daily-brief`, by hand.
 
 ## Inputs
 

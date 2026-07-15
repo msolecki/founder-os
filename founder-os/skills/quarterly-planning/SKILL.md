@@ -19,8 +19,8 @@ first step is the one that matters.
 ## When to use
 
 **The first days of the quarter**, once the CFO's close for the final month is in
-`metrics.md`. Triggered automatically by `tasks/quarterly-planning`, which fires
-on day 1 — 1 January, 1 April, 1 July, 1 October.
+`metrics.md`. If the founder ran `/setup-cadences`, a cron job fires this on day
+1 — 1 January, 1 April, 1 July, 1 October.
 
 At the start and not the end, because **step 1 is not optional and it is not
 possible early**. Verdicting a quarter in its last week means verdicting it
@@ -43,9 +43,9 @@ verdicts with and the rest of this skill is built on step 1.
 
 **On a workspace with no `reviews/quarterly/` and no bets in `goals.md`: skip
 steps 1, 2 and 7, say out loud that you skipped them and why, and write the
-plan.** Onboarding's `set-quarter-goals` runs this skill at install, and installs
-land mid-quarter roughly ninety-eight times in a hundred. Every rule above is a
-rule about a quarter that has already been played.
+plan.** `founder-os-init` hands to this skill at install, and installs land
+mid-quarter roughly ninety-eight times in a hundred. Every rule above is a rule
+about a quarter that has already been played.
 
 - **Step 1 is not optional and it is not possible early — and on day one it is
   not possible at all.** There are no bets to verdict and no close to verdict them
@@ -58,16 +58,15 @@ rule about a quarter that has already been played.
   and the second one does not; say that, so the founder knows a debt was taken
   rather than a rule quietly bent.
 - **Step 6 stays.** `bet-sizing` needs no history — it needs hours and cash, which
-  step 4 of onboarding just collected. An unsized bet still does not enter
-  `goals.md`.
+  `founder-os-init`'s fourth interview question just collected. An unsized bet
+  still does not enter `goals.md`.
 - **"Never mid-quarter" governs reopening a plan, not writing the first one.**
   There is nothing to reopen. A founder who installs on 12 August and is told to
   come back on 1 October has been handed a `goals.md` with nothing in it, and
   `daily-brief` — which ties its one thing to a bet — has nothing to tie to for
   seven weeks. That is not discipline, it is the package refusing to start.
 - **Write the partial quarter as what it is.** Bets sized to the weeks that are
-  actually left, not to thirteen. `set-quarter-goals/TASK.md` names this branch
-  from its side.
+  actually left, not to thirteen.
 
 ## Inputs
 

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Write|Edit|Bash|WebFetch|mcp__.*)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ownership-guard.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

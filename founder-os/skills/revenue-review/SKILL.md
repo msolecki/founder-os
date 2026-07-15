@@ -15,7 +15,7 @@ month — they have had a record month of paperwork.
 ## When to use
 
 The first working day of each month, covering the month just ended. Triggered
-automatically by `tasks/monthly-close`. Also before any decision that spends the
+by cron on the 1st if the founder ran `/setup-cadences`; otherwise `/revenue-review`, by hand. Also before any decision that spends the
 month's revenue: a contractor, a tool, a holiday.
 
 ## Inputs

@@ -13,8 +13,8 @@ with five things is what they can already do alone, badly, and it is why they
 are here. One survives. The other four get a named cost and an owner.
 
 This is also the company's front door. When the founder does not know who to
-ask, they ask you, and the routing below is the implementation of the promise
-in `COMPANY.md` — that a specialist owns every decision.
+ask, they ask you, and the routing below is where this package keeps its promise
+that a specialist owns every decision.
 
 ## When to use
 

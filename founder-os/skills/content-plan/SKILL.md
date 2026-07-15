@@ -18,7 +18,7 @@ year of silence is caused by the plan, not by the founder's discipline.
 
 ## When to use
 
-Weekly. Triggered automatically by `tasks/content-plan`, Wednesdays. Also when
+Weekly. Fired by cron on Wednesdays if the founder ran `/setup-cadences`; otherwise `/content-plan`, by hand. Also when
 the founder has gone quiet for a month, or has a plan and nothing to say — which
 means the plan was built from topics rather than from questions.
 
