@@ -103,9 +103,9 @@ Write to `network.md`, replacing `## Map`:
     <n> people (cap 40) | Overdue: <n>
 
     ### Past clients — quarterly
-    | person | company | last real contact | days | what they need | per | next contact |
-    |--------|---------|-------------------|------|----------------|-----|--------------|
-    |        |         |                   |      |                | <them, channel, YYYY-MM-DD> \| guess — last heard YYYY | |
+    | slug | person | company | last real contact | days | what they need | per | next contact |
+    |------|--------|---------|-------------------|------|----------------|-----|--------------|
+    |      |        |         |                   |      |                | <them, channel, YYYY-MM-DD> \| guess — last heard YYYY | |
 
     ### Referred once — quarterly
     ### Could refer, never has — 2×/year
@@ -118,6 +118,12 @@ Write to `network.md`, replacing `## Map`:
 `follow-up-sweep` reads the `days` and `next contact` columns. A row with a
 blank "what they need" cannot be swept, because there is nothing to send that
 isn't an ask.
+
+The `slug` column is this table's other job. Every `[[slug]]` in the workspace that
+is not a file resolves to a row here — house rule 6, procedure in
+`references/linking.md`. Lowercase, hyphenated, from the person's name:
+`anna-kowalska`. A row with a blank slug is unreachable: `pipeline.md` can point at
+it and nothing arrives.
 
 **The `per` column is what stops "what they need" ageing into fiction.** It is
 the only stamp slot in the table because it is the only cell that is a claim —
@@ -149,3 +155,9 @@ because nobody tells you they've written you off.
 Friends stay out. If the founder feels obliged to contact someone monthly, they
 are either a friend — in which case this system stays out of it entirely — or a
 deal, in which case they are not yours.
+
+**The slug is the identity and this skill owns it.** Every other file points at
+`## Map` with `[[slug]]`, so a slug you change is a link you broke somewhere you
+are not looking. Pick it once, from the person's name, lowercase and hyphenated,
+and leave it alone — the display name in the `person` column is free to change
+when they marry, rebrand or correct you.

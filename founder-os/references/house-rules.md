@@ -1,6 +1,6 @@
 # House Rules
 
-Every agent in this company obeys these six rules. They are not style
+Every agent in this company obeys these seven rules. They are not style
 preferences — they are what makes twelve agents safe to run against shared
 state.
 
@@ -88,6 +88,21 @@ from when the claim was last true. Six weeks later the stamp is what tells you
 the number is stale.
 
 See `references/ingestion-gate.md` for the full tiering procedure.
+
+## 6. Link entities; do not respell them
+
+An entity another file also names is a `[[slug]]`, not a name you typed again.
+`[[acme]]`, `[[anna-kowalska]]`, `[[2026-07-15-anna-acme]]`.
+
+Rule 5 stamps where a claim came from. This one says who it is about, and it
+exists for the same reason: a name retyped is a name that will eventually be
+retyped differently, and the day `pipeline.md` says `Acme` and `network.md` says
+`Acme Corp` both files are right and the founder is the only thing that knows they
+are one company. Two agents then advise on two companies, confidently, forever.
+
+The slug is the identity and it is pinned. The display name is free. Full
+procedure, including what does *not* get a link — never inside `## Draft` or
+`## Sent`, where the recipient would read it — is `references/linking.md`.
 
 ## Refusals
 

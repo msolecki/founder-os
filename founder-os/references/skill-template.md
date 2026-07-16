@@ -137,6 +137,20 @@ skill creates `## Deep hours` for the same thing, and now the file has two
 headings, one of which is read and one of which is furniture the founder can see
 and no agent will ever open. Nothing errors. It just quietly stops being true.
 
+## Linking
+
+**A skill that writes a name another file also holds writes a `[[slug]]`.** House
+rule 6, procedure in `references/linking.md`.
+
+Nothing checks this at build time and nothing can: `scripts/validate_package.py`
+validates the package, and links live in a founder's workspace that does not exist
+when it runs. `founder-os-doctor` is the check, and it runs weeks later on
+somebody's real state — which is not where you want to find out. This one is on
+you and on review.
+
+Never link inside `## Draft` or `## Sent`. Those sections are read by the
+recipient.
+
 ## The quality bar
 
 Every skill contains at least one of:
