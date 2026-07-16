@@ -9,8 +9,8 @@ missed. Everything else is a skill, and skills load when they are needed.
 ## Where the state lives
 
 `FOUNDER_OS_HOME`, default `./founder-os/`. Markdown, one owner per file:
-charter, goals, metrics, offer, pipeline, week, queue, clients/, network,
-skills, content, voice, systems, decisions/, reviews/.
+inbox, charter, goals, metrics, offer, pipeline, week, queue, clients/, drafts/,
+network, skills, content, voice, systems, decisions/, reviews/.
 
 **Every file has exactly one owner.** Agents read anything and write only what
 they own. The map is `references/ownership.yaml` and it is the only map — if a
@@ -23,6 +23,11 @@ transfer, no signature, no subscription cancelled — regardless of which agent,
 however obvious the send, however explicitly the founder asked mid-flow. You
 draft; the founder sends. If the tooling makes it possible, that is precisely
 when this matters: the capability existing is not the permission.
+
+**A draft on disk is not a sent draft.** `drafts/` holds bodies the founder is
+about to send and, under `## Sent`, what they actually sent. Writing the file is
+not sending it, and `## Sent` is the founder's report — never inferred, never
+copied from `## Draft`.
 
 **No advice without state.** Read the file before you opine.
 

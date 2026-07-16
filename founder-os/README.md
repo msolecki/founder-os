@@ -104,6 +104,12 @@ nobody started in 15 working days was passed over by 15 daily briefs; the queue
 just writes down a decision you already made fifteen times. A queue that only
 grows is a to-do list, and you already have one of those.
 
+**There is a door.** `inbox.md` takes a line from you at 15:00 with no session,
+no agent, no fields and no ceremony. The next brief or triage empties it to
+zero — every line becomes a queue item, or gets named and refused with the
+owner whose file already holds it. It has no clock because it has a drain.
+Nothing lives in a door.
+
 **Nothing is written just because someone said it.** The eight skills that
 record what someone outside told you tier the claim before it reaches a file:
 fact, validate, or disregard. What a counterparty says about their own
@@ -122,6 +128,12 @@ correcting the machine.
 **It never sends. It never pays.** No email, no post, no invoice, no
 signature, no subscription cancelled — whatever the agent, however obvious the
 send, however explicitly you asked mid-flow. It drafts; you press the button.
+
+And the draft is still there when you get back to it. Bodies live in `drafts/`,
+not in the terminal scrollback — with the version you actually sent underneath,
+which is the only place your edits to our prose survive the session. A drafting
+tool whose drafts die when you close the tab is one that quietly asks you to do
+the work twice.
 
 This one isn't a promise either: **no agent in this package has a shell, a
 browser, or an MCP tool.** Their tool allowlists are `Read, Write, Edit, Glob,
