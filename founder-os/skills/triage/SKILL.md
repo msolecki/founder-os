@@ -4,6 +4,7 @@ description: Take the founder's pile of unsorted obligations, keep one, cost the
 metadata:
   writes:
     - reviews/daily/
+    - inbox.md
 ---
 
 # Triage
@@ -29,6 +30,11 @@ running — the displacement is the pile, and it is unsorted.
 
 Read first — house rule 1:
 
+- `inbox.md` — **read it first, and empty it.** This is the pile. Until this file
+  existed the pile was constructed by interrogation — "make them list it" — which
+  works only for what the founder can recall while sitting in front of you at the
+  moment you ask. What they thought at 15:00 on Tuesday walking out of a meeting
+  was never in the room. This file is where that thought waits.
 - `goals.md` — the only ranking authority. Urgency is not one.
 - `reviews/daily/` — the last three briefs: has this pile already been triaged?
 - `queue.md` — `## Doing`, because a keep that cannot be started is not a keep;
@@ -73,10 +79,20 @@ averaging failure `context-load` warns about:
 
 ## Steps
 
-1. **Make them list it, written, five maximum.** If more than five arrive, the
-   list is the first finding: triage the first five in the founder's own order
-   and say plainly that the rest were cut without examination, which is what
-   was going to happen to them anyway.
+1. **Drain `inbox.md`, then make them list the rest, five maximum.** The inbox is
+   the pile the founder already wrote down; the interrogation is for what they did
+   not. Read the inbox, empty it to zero, and add the interview's items to it.
+
+   **The five-maximum is a cap on what you triage, not on what they wrote.** If the
+   inbox holds nine lines, the list is the first finding: triage the first five in
+   the founder's own order and say plainly that the rest were cut without
+   examination, which is what was going to happen to them anyway.
+
+   **Empty it even for the items you cut.** An inbox that keeps what triage did not
+   reach is a queue with no clock and no cap — the graveyard, arriving through the
+   one door built to have neither. A cut item is not deleted: it is a `Dropped:`
+   row in today's brief under `## Triage`, with its cost, where the next triage will
+   see it arrive again. The inbox is a door. Nothing lives in a door.
 2. **Give each item an owner and a next action with a date.** No next action
    means it is not a thing, it is a worry. Worries do not get triaged. Name it
    as a worry and drop it — this alone usually clears two of the five.

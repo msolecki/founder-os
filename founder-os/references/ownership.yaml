@@ -1,6 +1,7 @@
 # Workspace file ownership. Everyone reads; only the owner writes.
 # Enforced by the state-integrity skill and scripts/validate_package.py.
 workspace_files:
+  - inbox.md
   - charter.md
   - goals.md
   - metrics.md
@@ -26,6 +27,7 @@ workspace_files:
 owns:
   chief-of-staff:
     - charter.md
+    - inbox.md
     - queue.md
     - decisions/
     - reviews/daily/
@@ -82,6 +84,17 @@ owns:
 # the skill that owns the template, not at scaffold time. `clients/_capacity.md`
 # is an aggregate rather than a client file and carries none of these.
 sections:
+  # The founder's door. One section, no fields, no dates, no ids — every one of
+  # those is a reason not to write the thought down at 15:00 walking out of a
+  # meeting, and the whole value of this file is that it costs nothing to use.
+  #
+  # It has no clock, which is not an oversight and not an exception to `queue.md`.
+  # It has a drain: `triage` and `daily-brief` empty it to zero every time they
+  # run. A clock is what a file needs when nothing empties it. A non-empty inbox
+  # the morning after a brief is a bug in the brief, not an item that needs aging
+  # out — founder-os-doctor reports it as exactly that.
+  inbox.md:
+    - "## Inbox"
   charter.md:
     - "## Business"
     - "## North star"
