@@ -146,6 +146,7 @@ replace `## Last review`.
     Live: <n> (<total value>) | Won: <n> | Killed today: <n> (<value>) | Handed to Network Manager: <n>
     Coverage: <n>× against a <amount> gap (goals.md YYYY-MM-DD)
     Median call→proposal: <n> days
+    Win/loss pending: <n> (oldest <n> days) | none
     Proposed: <the item, concrete enough to close> — bet: <B<n> | none> | none
 
 **`Proposed:` is how step 9's handoff survives a Thursday 10:00 with nobody in the
@@ -158,6 +159,13 @@ tell the difference either.
 
 You still hand off by name if the founder is in the room. The line is the path
 that works when they are not.
+
+**`Win/loss pending:` is a counter, not a proposal, and that is deliberate.**
+The one `Proposed:` slot belongs to step 7's coverage finding; a second would
+start the queue-bloat this file's own intake rule refuses. The brief reads the
+counter in its rotting scan — a pending older than five days is past
+`win-loss-analysis`'s own window and gets named there, which is where the
+founder actually looks.
 
 The `(per …)` slots are not decoration and they are not optional: a line with no
 stamp is VALIDATE by `ingestion-gate`'s own rule, whatever it says. Decision-maker,

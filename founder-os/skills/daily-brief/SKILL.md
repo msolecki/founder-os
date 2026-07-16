@@ -141,8 +141,10 @@ Read for one named section only:
    founder is about to do it again. Close one, block one, or drop one first.
 3. **Name what's rotting — at most three, ranked by days.** An overdue pipeline
    action, a client whose `Verdict:` is `at-risk` or `failing`, an invoice past
-   terms, **a client on the books that `offer.md` `### Not this` excludes**. One
-   line each with the number of days attached, no editorializing.
+   terms, a `## Dead` deal whose `win/loss: pending` is older than 5 days (the
+   lesson is expiring — `win-loss-analysis`'s own window is five), **a client
+   on the books that `offer.md` `### Not this` excludes**. One line each with
+   the number of days attached, no editorializing.
 
    The excluded client is the odd one out and it is the most valuable line this
    brief ever produces. The other three rot on a clock — days past terms, days
