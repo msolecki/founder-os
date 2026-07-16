@@ -486,6 +486,15 @@ class TestCheckHooks(unittest.TestCase):
         for tool in ("NotebookEdit", "Bash", "WebFetch", "mcp__"):
             self.assertTrue(any(tool in e for e in errs), (tool, errs))
 
+    def test_edit_hidden_inside_notebookedit_is_detected(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher":
+                "^(Write|NotebookEdit|Bash|WebFetch|mcp__.*)$",
+                "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("'Edit'" in e for e in errs), errs)
+
     def test_guard_that_does_not_compile_is_an_error(self):
         write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
             "PreToolUse": [{"matcher":

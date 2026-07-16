@@ -339,7 +339,11 @@ def check_hooks(root, agents):
 
     A typo in the matcher or a syntax error in the guard ships silently today:
     every other check validates prose and map, and the one layer that acts at
-    runtime is the one layer nothing exercises at build time.
+    runtime is the one layer nothing exercises at build time. Coverage is
+    checked by matching each tool name against the matcher patterns (regex
+    fullmatch), not by substring search — "Edit" is a substring of
+    "NotebookEdit", so a substring check would pass a matcher that silently
+    dropped "Edit".
     """
     errs = []
     hj = root / "hooks" / "hooks.json"
@@ -349,12 +353,30 @@ def check_hooks(root, agents):
         data = json.loads(hj.read_text(encoding="utf-8"))
     except ValueError as e:
         return ["hooks/hooks.json: not valid JSON (%s)" % e]
-    matchers = " ".join(h.get("matcher", "")
-                        for h in (data.get("hooks") or {}).get("PreToolUse", []))
-    for tool in ("Write", "Edit", "NotebookEdit", "Bash", "WebFetch", "mcp__"):
-        if tool not in matchers:
-            errs.append("hooks/hooks.json: PreToolUse matcher does not cover "
-                        "'%s'" % tool)
+    patterns = [h.get("matcher", "")
+                for h in (data.get("hooks") or {}).get("PreToolUse", [])]
+
+    def covered(tool_name):
+        for pat in list(patterns):
+            if not pat:
+                continue
+            try:
+                if re.fullmatch(pat, tool_name):
+                    return True
+            except re.error:
+                errs.append("hooks/hooks.json: matcher %r is not a valid "
+                            "regex" % pat)
+                patterns.remove(pat)
+        return False
+
+    for tool in ("Write", "Edit", "NotebookEdit", "Bash", "WebFetch", "mcp__x"):
+        if not covered(tool):
+            if tool == "mcp__x":
+                errs.append("hooks/hooks.json: PreToolUse matcher does not "
+                            "cover mcp__ tools")
+            else:
+                errs.append("hooks/hooks.json: PreToolUse matcher does not "
+                            "cover '%s'" % tool)
     guard = root / "hooks" / "ownership-guard.py"
     if not guard.exists():
         errs.append("hooks/ownership-guard.py: missing")
