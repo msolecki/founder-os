@@ -135,6 +135,8 @@ The translation table gains `first heard from` and `when` for the same reason: a
 buyer vocabulary from 2023 is how a founder ends up carefully translating into
 words nobody uses any more.
 
+## Guardrails
+
 **Never invent a quote and never invent a person.** Not as an illustration, not
 as a placeholder, not "roughly what they'd say". A fabricated quote is
 indistinguishable from a real one in the file, and it will be published as

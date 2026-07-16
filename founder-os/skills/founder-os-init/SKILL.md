@@ -231,9 +231,14 @@ is.
   `bet: none` — the cash unknown in `## Doing`, the rest in `## Queued`. No
   `TODO` lines anywhere.
 - `decisions/YYYY-MM-DD-founder-os-installed.md` — the timezone chosen, the
-  workspace path, and any question the founder could not answer. This is the
-  first entry in the decision log and it establishes the habit that makes
-  `annual-review` possible twelve months from now.
+  workspace path, and any question the founder could not answer, **carrying the
+  four headings the map declares for `decisions/`**: the facts under
+  `## Context`, `none — install record` under `## Rejected` and
+  `## Supersedes`, and under `## What would change our mind` the one honest
+  answer — "the cadences stop being read". This is the first entry in the
+  decision log; the log's own vocabulary starting at entry one is what
+  establishes the habit that makes `annual-review` possible twelve months from
+  now — an entry zero that breaks the format licenses every entry after it.
 
 ## Guardrails
 

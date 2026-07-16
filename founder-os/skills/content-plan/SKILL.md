@@ -1,6 +1,6 @@
 ---
 name: content-plan
-description: Plan what gets published against the ICP and last month's actual shipped count — run monthly, and whenever the founder proposes a cadence they have never once hit
+description: Plan what gets published against the ICP and last month's actual shipped count — run weekly, and whenever the founder proposes a cadence they have never once hit
 metadata:
   writes:
     - content.md

@@ -122,7 +122,7 @@ Replace the `## Rate` block in `metrics.md`:
     New rate: <amount>/h  (+<n>%)
     Tolerable churn: <n>% of book = <n> of <n> clients
     Predicted leavers: <clients>  (ranked <n>, <n> on effective rate)
-    Sequence: new clients from <date>; existing at renewal, 60 days' notice
+    Sequence: new clients from <date>; existing at renewal, notice per the agreement
     Handed to: Chief of Staff for decisions/
 
 ## Guardrails

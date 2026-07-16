@@ -1,6 +1,6 @@
 ---
 name: revenue-review
-description: Close the month on booked, collected and effective rate — run on the first working day of the month, invoked by the monthly-close task
+description: Close the month on booked, collected and effective rate — run on the first of the month, fired by cron if the founder ran /setup-cadences
 metadata:
   writes:
     - metrics.md

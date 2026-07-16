@@ -114,6 +114,12 @@ to them; the validator skips them by design. `SYSTEM_SKILLS` in
 `scripts/validate_package.py` is the list that decides, not this sentence — if
 the two ever disagree, the code is right and this line is the stale copy.
 
+`setup-cadences` is a third kind: **standalone**. It edits the founder's
+crontab, which takes tools no agent may hold, so it belongs to no agent by
+design — `STANDALONE_SKILLS` in `scripts/validate_package.py` is that list. A
+skill in neither set that no agent lists is an orphan and the validator says
+so.
+
 ## Sections
 
 `owns:` says who may write a file. **`sections:` says what is inside it, and it is
