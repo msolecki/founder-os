@@ -4,6 +4,7 @@ description: Draft one planned piece around a single idea the founder learned by
 metadata:
   writes:
     - content.md
+    - drafts/content/
 ---
 
 # Content Draft
@@ -127,16 +128,38 @@ Read first, in order — house rule 1:
 
 ## Output
 
+**Write the post to `drafts/content/YYYY-MM-DD-<slug>.md`, in full, before you
+show it.**
+
+    # <title> — content — YYYY-MM-DD
+
+    ## Draft
+    <the whole post, verbatim, exactly as the founder would publish it>
+
+    ## Provenance
+    Card: content.md ## Drafts — <title>
+    Slot: YYYY-MM-DD
+
+    ## Sent
+
+`## Sent` stays empty. The founder fills it, or it stays empty forever — see
+`## Guardrails`.
+
+**`## Provenance` carries a back-link and nothing else — do not repeat the card
+here.** Channel, `Answers:`, `One idea:` and `Evidence:` live on the card in
+`content.md` and only there. Copying them into the draft file creates two records
+of the same four facts with two owners' worth of chances to drift, and by the time
+they disagree the founder believes whichever one they opened last. That is the
+duplication `queue.md`'s intake rule refuses on exactly these grounds, and this
+file does not get an exception for being new.
+
 The draft goes to the founder. This skill does not publish.
 
-**If the founder edits it before publishing, run `voice-capture` on the published
-version.** Both skills are the **Brand Editor's**, so this handoff costs one
-step and gets skipped for exactly that reason — it feels like bookkeeping. It is
-not: a piece the founder rewrote before publishing is a sample of their public
-register with their name permanently attached, which is the highest bar they
-write to and the one they actually meet.
-
-Record in `content.md` under `## Drafts`:
+**The card stays in `content.md` `## Drafts` and does not grow a body.**
+`content-plan` reads `content.md` whole to compute the cadence from the trailing
+four weeks; a file with three post bodies in it is a file that has stopped being
+scannable, and the cadence is what `content.md` exists to serve. The card is the
+index, the draft file is the thing:
 
     ## Drafts
     ### <title> — for the YYYY-MM-DD slot
@@ -144,12 +167,46 @@ Record in `content.md` under `## Drafts`:
     Answers: "<the source question, verbatim>"
     One idea: <the single sentence>
     Evidence: <what happened, when, the number>
+    Draft: [[YYYY-MM-DD-<slug>]]
     Status: draft | HELD for morning re-read | shipped YYYY-MM-DD
+    Proposed: publish "<title>" — [[YYYY-MM-DD-<slug>]] — bet: <B<n> | none> | none
 
-On publication, move it to `## Shipped` with its date, channel and link —
-`content-plan` computes the cadence from the trailing four weeks of that list,
-and a piece that shipped without being recorded makes the next plan smaller than
-the truth.
+The fields are the other five proposers' fields exactly, and `bet:` is not optional
+— `daily-brief` step 0 says taking an item "means an id and a bet". The line sits on
+the card rather than as one bounded line in a summary section, because the founder
+can draft two posts in an afternoon and a single line holds one of them.
+`content.md` `## Drafts` is already per-card, so the container already scales.
+
+**`Draft:` and `Proposed:` both carry the same `[[slug]]` and that is not
+duplication.** They answer different questions and have different lifetimes:
+`Draft:` is the card's pointer to its body and lives as long as the card, following
+it into `## Shipped`. `Proposed:` is an obligation with a clock. When `daily-brief`
+takes it, the queue item it creates carries `from: content.md <date>` so tomorrow's
+brief leaves the line alone — `daily-brief` cannot write `content.md`, and does not
+need to. The line is yours to clear when the card ships or you supersede it.
+Clearing `Proposed:` must never orphan the card from its body: `Draft:` is what
+joins them, and it stays.
+
+On publication, move the card to `## Shipped` with its date, channel and link —
+`content-plan` computes the cadence from the trailing four weeks of that list.
+**The draft file stays in `drafts/content/`.** It is not moved, not deleted, and
+not tidied: `## Sent` carries the published version, which is the only durable
+sample of the founder's public register this package will ever hold.
+
+**When the founder tells you what they published, write it verbatim under
+`## Sent`, then run `voice-capture` on that file.** Both skills are the **Brand
+Editor's**, so this costs one step — and it used to get skipped for exactly that
+reason, because it felt like bookkeeping and the moment passed.
+
+It is not bookkeeping: a piece the founder rewrote before publishing is a sample
+of their public register with their name permanently attached, which is the
+highest bar they write to and the one they actually meet. The draft is on disk
+now, so the diff survives the session and `voice-capture` can be run late. Being
+able to run it late is not permission to skip it.
+
+Ask once. If they do not answer, leave `## Sent` empty — an empty `## Sent` is a
+true statement about what you know, and a paraphrase of what you think shipped is a
+fabricated sample of their public voice.
 
 ## Guardrails
 
@@ -171,3 +228,15 @@ how the plan becomes decorative.
 Do not write `pipeline.md` or `offer.md`. A post that generates a lead goes to
 the **Pipeline Coach**; a message that will not hold together goes to the
 **Positioning Advisor**.
+
+**Never write `## Sent` from `## Draft`.** They are equal only when the founder
+changed nothing before publishing, and that is a fact about the founder that you do
+not have. This skill is the one most likely to be told the piece went out
+unedited — a post is short, it is theirs, and "I just published it" sounds like
+permission to copy. It is not. `voice-capture` reads `## Sent` as a sample of what
+the founder actually publishes under their own name; filling it from our own prose
+teaches `voice.md` that their public register is already ours, which is the one lie
+that makes that file worse than empty.
+
+**A post on disk is not a published post.** House rule 0 is untouched by this file
+existing. The founder publishes; you wrote a file.

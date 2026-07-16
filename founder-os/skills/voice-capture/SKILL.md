@@ -48,8 +48,19 @@ Read first, in order — house rule 1:
   actual pasted writing, or has someone filled it with prose about the writing?
   The second is worse than empty and it is the failure this skill exists to
   prevent.
+- `drafts/outreach/`, `drafts/proposals/`, `drafts/content/` — **every file whose
+  `## Sent` is non-empty.** This is the best voice evidence in the company and it
+  is now sitting still: `## Draft` is what we wrote, `## Sent` is what the founder
+  actually sent, and the diff is the founder correcting us on their own name with
+  something real at stake.
+
+  You read these; you do not write them. `drafts/outreach/` and
+  `drafts/proposals/` are the **Pipeline Coach's** and `drafts/content/` is the
+  **Brand Editor's** — you are the Brand Editor, so the third is yours to write
+  and the first two are not. Read all three; write `voice.md`.
 - **The founder's own sent mail and published posts** — pasted by them, verbatim.
-  This is the primary input and there is no substitute for it in the workspace.
+  The other real source, and the one to ask for directly in step 1 when there is
+  no draft-diff yet on disk to read.
 - `content.md` `## Shipped` — dates, channels and links for what actually went
   out. Use it to find samples worth asking for; the link is not the sample.
 - `pipeline.md` — outreach that was actually sent, and which of it got a reply.
@@ -130,22 +141,21 @@ Read first, in order — house rule 1:
 
    Every entry carries a tag: `FATAL`, `slop`, or `not theirs — absent from all
    <n> samples`.
-6. **Harvest the edit. This is the highest-value step in the skill.** When the
-   founder changes a draft before sending it, that diff is the best voice signal
-   that will ever exist in this workspace: it is the founder correcting you, in
-   their own name, with a real relationship at stake. Every other input is a
-   person describing themselves from memory.
+6. **Walk every draft with a non-empty `## Sent` and diff it against `## Draft`.**
+   That diff is the highest-signal input this skill has, and it no longer has to
+   be caught in the moment: both halves are in one file under `drafts/`, so a
+   week-old edit is as readable as this morning's.
 
-   So ask for the sent version, not for a verdict. The founder will say "yeah, I
-   tweaked it a bit and sent it" — the tweak is the entire product of this
-   conversation and they will throw it away unless asked within the day.
+   **What the founder deleted is the finding, not what they added.** An addition
+   is them saying something new; a deletion is them refusing to sound like the
+   thing you wrote, and that refusal is their register drawing a line. A hedge
+   cut, an adjective cut, a whole opening paragraph cut — those go to `## Never`,
+   and they are worth more than any sample in `## Samples`.
 
-   - What they wrote instead goes to `## Samples`, dated, marked `edit of a draft`.
-     It is a better sample than anything they will produce on request, because
-     nobody performs their voice when they are just trying to send an email.
-   - What they cut goes to `## Never` — **on the second occurrence, not the
-     first.** One cut is a mood or a fact about that recipient. The same cut
-     twice is a rule, and now you can name it.
+   **An unchanged `## Sent` is evidence too, and it is the one nobody records.**
+   The founder read it, sent it as written, and put their name on it. That is a
+   sample that met their bar with no correction — file it in `## Samples`, and
+   file nothing in `## Never`.
 7. **Fill `## Register` per context, and label the gaps.** One row per context a
    drafting skill actually writes into: cold outreach, a client of two years, a
    public post, a proposal, **and someone the founder has not spoken to in a
@@ -248,6 +258,12 @@ the company reads as ground truth: an invented anecdote produces one bad post, a
 invented
 sample teaches every future draft to be wrong, and once it is pasted in nothing
 distinguishes it from the real ones.
+
+**Never treat `## Draft` as a sample when `## Sent` is empty.** An empty
+`## Sent` means we do not know what was sent, or whether anything was.
+`## Draft` is our own prose; harvesting it into `voice.md` is this skill
+teaching itself its own voice and calling it the founder's, which corrupts the
+one file that exists to catch us being wrong about them. Empty means skip.
 
 Never edit, tidy or improve a sample.
 

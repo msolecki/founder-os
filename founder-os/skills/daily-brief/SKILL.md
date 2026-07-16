@@ -4,6 +4,7 @@ description: Open the day with the one thing that matters — run every weekday 
 metadata:
   writes:
     - reviews/daily/
+    - inbox.md
 ---
 
 # Daily Brief
@@ -52,7 +53,8 @@ Read for one named section only:
   rotting item no other file can see: `clients/` knows the engagement is healthy
   and `pipeline.md` knows the deal was won. Only the exclusion knows it should
   never have been taken.
-- `content.md` and `network.md` — the `Proposed:` line, and nothing else. Step 0.
+- `pipeline.md`, `content.md` and `network.md` — the `Proposed:` line, and
+  nothing else. Step 0.
 
 ## Beliefs
 
@@ -72,14 +74,35 @@ Read for one named section only:
 
 ## Steps
 
-0. **Drain the proposals, before you rank anything.** Five cadences produce
-   obligations and none of them may write `queue.md` — `pipeline-review`,
-   `revenue-review`, `content-plan`, `quarterly-planning` and `follow-up-sweep`
-   all hand to the **Chief of Staff** by name. Four of the five fire on a
-   schedule, at 10am on a Wednesday, with nobody in the room to hand to. **You are
-   the Chief of Staff and this is the room.** Each of them leaves a `Proposed:`
-   line in the section it owns; you read those five sections; you take the item or
-   you refuse it.
+0. **Drain the proposals, before you rank anything.**
+
+   **Drain `inbox.md` first, before the `Proposed:` lines.** The founder wrote those
+   lines themselves, which makes them the only input to this brief that is not an
+   agent talking to another agent. Empty the file to zero: every line becomes a
+   queue item under the `queue` intake rule, or it is named in the brief as refused
+   with the owner whose file already holds it. Nothing stays.
+
+   If the inbox holds more than the brief can rank, that is `triage`'s pile and this
+   is not the cadence for it — say so, hand to `triage`, and still empty the file.
+
+   Eight cadences produce obligations and none of them may write `queue.md` —
+   `pipeline-review`,
+   `revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`, and
+   the three draft skills, `outreach-draft`, `proposal-draft` and `content-draft`.
+   All eight hand to the **Chief of Staff** by name. Five of them fire on a
+   schedule, with nobody in the room to hand to; the three draft skills run with
+   the founder present, so those the founder can hand over directly. **You are
+   the Chief of Staff and this is the room.** Each leaves a `Proposed:` line in the
+   section it owns; you read those sections; you take the item or you refuse it.
+
+   **Eight cadences, still five sections, no new file.** `outreach-draft` and
+   `proposal-draft` propose into `pipeline.md`; `content-draft` proposes into
+   `content.md`. You already open both. This does not widen the `context-load`
+   exemption you run under, and that is not luck — the draft skills propose into
+   the file they already own precisely so that the brief's read set could stay
+   where it is. A draft skill that wanted a book of its own would have cost you the
+   exemption, and `context-load` step 5 is where that argument gets settled, not
+   here.
 
    Run `queue` on each. Taking it means an id and a bet. **Refusing it is equally
    a result and it must be said out loud** — name the owner whose file already

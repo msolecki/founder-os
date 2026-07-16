@@ -245,23 +245,42 @@ saved an obligation, it has broken the one property that makes a company of this
 many agents safe to run against shared state.
 
 And the honest cost of that, since the intake is two doors and not a sweep.
-**Five cadences propose** — `pipeline-review` (Thu), `revenue-review` (1st),
-`content-plan` (Wed), `quarterly-planning` (1 Jan/Apr/Jul/Oct) and
-`follow-up-sweep` (Fri). Four of the five fire on a schedule with no founder and
-no Chief of Staff in the room, so their handoff has nobody to hand to. Each
-therefore leaves a `Proposed:` line in the section it owns, and the next
-`daily-brief` drains all five — step 0 there, and it is the receiving half of
-this guardrail.
+**Eight cadences propose** — `pipeline-review` (Thu), `revenue-review` (1st),
+`content-plan` (Wed), `quarterly-planning` (1 Jan/Apr/Jul/Oct), `follow-up-sweep`
+(Fri), and the three draft skills — `outreach-draft`, `proposal-draft` and
+`content-draft` — whenever the founder runs one. Each leaves a `Proposed:` line
+in the section it owns, and the next `daily-brief` drains all eight — step 0
+there, and it is the receiving half of this guardrail.
+
+The three draft skills are the newest and the reason is worth stating: a draft is
+an obligation with a body attached. Before they proposed, running `outreach-draft`
+produced a finished message and **no obligation anywhere in the workspace** — the
+send existed only in the founder's memory, which is the precise failure this file
+exists to end, occurring at this file's own front door.
+
+**A draft item carries its draft.** `[[YYYY-MM-DD-slug]]` resolves to the file
+under `drafts/` — see `references/linking.md`. A link that lets the founder open
+the thing they are about to send is the difference between an obligation and a
+reminder about one.
+
+**This is a lookup, not a field, and the distinction is the one this file lives
+or dies on.** `daily-brief` step 0 already writes `from: <file> <date>` on every
+item it takes, and it is allowed for exactly one reason: the founder cannot renew
+it. A lookup answers a question — *which proposal was this, what am I sending* —
+and no amount of the founder looking at it keeps a dead item alive. `bumped:`,
+`priority:` and `waiting_on:` are refused below because each one is a lever the
+founder can pull on a Tuesday to avoid a decision, and this link is not one. Add
+nothing here that the founder can update.
 
 **The residual hole, stated at its real size:** a proposal made on Wednesday
 morning waits until Thursday 08:00, and one made on Friday afternoon waits until
-Monday. Up to three days, on one weekday cadence out of five. That is a real hole
-and it is smaller than the one it replaces — before the brief drained anything,
-the obligation reached nothing, ever, on all five. Do not patch the rest by having
-this skill read every agent's file; that is the averaging failure `context-load`
-step 5 describes, and it would arrive here first. The brief is allowed to read
-across books because ranking across books is its decision. This file's decision is
-one item's fate, and it needs two doors to make it.
+Monday. Up to three days, on the scheduled cadences.
+
+**The three draft skills are not in that hole and it is worth saying why.** They
+run with the founder in the room, so the founder can hand the obligation to the
+**Chief of Staff** in the same session and skip the wait entirely. The `Proposed:`
+line is their floor, not their path: it is what catches the send when the founder
+closes the terminal instead — which is the session this whole plan is about.
 
 **Never mark a send done.** House rule 0: the founder sends. An item like `send Anna
 the retainer` may sit in this queue — the queue holds it, the founder does it — but

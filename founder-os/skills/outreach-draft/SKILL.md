@@ -4,6 +4,7 @@ description: Draft a first contact or a follow-up written from the prospect's pr
 metadata:
   writes:
     - pipeline.md
+    - drafts/outreach/
 ---
 
 # Outreach Draft
@@ -112,14 +113,46 @@ Read first, in order — house rule 1:
 
 ## Output
 
-The draft goes to the founder to send. This skill does not send.
+**Write the draft body to `drafts/outreach/YYYY-MM-DD-<prospect-slug>.md`, in
+full, before you show it.** This file is the product. The record in `pipeline.md`
+is bookkeeping about it.
 
-**If the founder edits it before sending, ask for the sent version and hand it to
-`voice-capture` (Brand Editor) — the same day.** That diff is the founder
-correcting you on their own name with a live deal at stake, and it is the best
-voice evidence this company will ever get. It also evaporates fastest: by
-tomorrow the founder remembers only that they "tweaked it a bit". You do not
-write `voice.md` — you hand over the text and let its owner decide what it means.
+    # <Prospect> — outreach — YYYY-MM-DD
+
+    ## Draft
+    <the message, verbatim, exactly as the founder would send it>
+
+    ## Provenance
+    Prospect: [[<prospect-slug>]]
+
+    ## Sent
+
+`## Sent` stays empty. The founder fills it, or it stays empty forever — see
+`## Guardrails`.
+
+The draft then goes to the founder to send. This skill does not send.
+
+**When the founder tells you what they actually sent, write it verbatim under
+`## Sent` — and hand the file to `voice-capture` (Brand Editor) by path.** That
+diff is the founder correcting you on their own name with a live deal at stake,
+and it is the best voice evidence this company will ever get.
+
+It no longer has to be caught in the moment. The draft is on disk, so the diff is
+`## Draft` against `## Sent` and `voice-capture` can compute it a week later. What
+still evaporates is the founder *saying* what they sent — ask, once, and if they
+do not answer, leave `## Sent` empty. An empty `## Sent` is a true statement about
+what you know. A guess at what they sent is a fabricated writing sample in the one
+file whose entire job is to hold real ones.
+
+You do not write `voice.md`. You hand over the path and let its owner decide what
+it means.
+
+**Leave a `Proposed:` line under the prospect's entry in `pipeline.md`.** A draft
+that exists and is owed a send is an obligation, and until now this skill created
+none: it handed the founder a message and closed, and the only thing standing
+between that message and oblivion was the founder's memory. The Chief of Staff
+owns `queue.md` and you are not them, so you propose and `daily-brief` drains it
+— the same path `pipeline-review` already uses, for the same reason.
 
 Record it in `pipeline.md` under the prospect's entry in `## Live`:
 
@@ -127,6 +160,24 @@ Record it in `pipeline.md` under the prospect's entry in `## Live`:
     Next action: <what the founder does next> — YYYY-MM-DD
     Outreach: YYYY-MM-DD — angle: <the specific thing> — ask: <the one ask>
     Touch: <n> | Last reply: <YYYY-MM-DD | none>
+    Proposed: send the outreach to <Prospect> — [[YYYY-MM-DD-<prospect-slug>]] — bet: <B<n> | none> | none
+
+**The fields are the other five proposers' fields exactly** —
+`Proposed: <item> — bet: <B<n> | none> | none`, as `pipeline-review`,
+`revenue-review`, `content-plan`, `quarterly-planning` and `follow-up-sweep` all
+emit it. `bet:` is not optional: `daily-brief` step 0 says taking an item "means an
+id and a bet", and a proposal that arrives without one makes the brief work it out
+at 08:00 from a file it opened for one section.
+
+**The line is per-deal, under the prospect, and that is the one deliberate
+departure.** The other five are scheduled cadences that run once per period, so one
+bounded line in a summary section holds everything they can propose. You are not:
+the founder can run you at 10:00 for Anna and at 14:00 for Kowalski, and a single
+line holds one of them. The second write would silently drop the first — Anna's
+draft would sit on disk with an empty `## Sent` and no obligation anywhere, which is
+the exact failure this skill was changed to fix. `## Live` is already per-deal
+(`Outreach:`, `Touch:`, `Last reply:` all sit under the prospect), so the container
+already scales and the line goes where the rest of the deal's state lives.
 
 If this is the fourth touch with no reply, note it and let `pipeline-review`
 decide whether the deal is alive. Persistence is a virtue up to the point where
@@ -152,3 +203,13 @@ If the person is in `network.md` with no deal in play, hand to the **Network
 Manager** and let them run `follow-up-sweep` instead. Two agents contacting the
 same person in one week makes the founder look disorganised to the one audience
 that was already inclined to help.
+
+**Never write `## Sent` from `## Draft`.** They are equal only when the founder
+changed nothing, and that is a fact about the founder that you do not have. A
+copied `## Sent` teaches `voice-capture` that the founder's voice is already
+yours, which is the one lie that makes `voice.md` worse than empty — it is the
+file that exists to catch you being wrong about their register, and this would
+fill it with your own prose wearing their name.
+
+**A draft on disk is not a sent draft.** House rule 0 is untouched by this file
+existing. The founder sends; you wrote a file.

@@ -420,5 +420,37 @@ class TestBeliefs(ValidatorTestCase):
         self.assertFalse([e for e in self.check(V.check_beliefs) if "guardrails" in e])
 
 
+class TestWorkspaceFilesComplete(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        write(self.root / ".claude-plugin" / "plugin.json",
+              json.dumps({"name": "founder-os"}))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _write_ownership(self, data):
+        write(self.root / "references" / "ownership.yaml", yaml.safe_dump(data))
+
+    def test_owned_path_missing_from_workspace_files_is_an_error(self):
+        data = base_ownership()
+        data["owns"]["chief-of-staff"].append("drafts/outreach/")
+        self._write_ownership(data)
+        errs = V.check_workspace_files_complete(self.root, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("drafts/outreach/", errs[0])
+        self.assertIn("workspace_files", errs[0])
+
+    def test_owned_path_present_in_workspace_files_is_clean(self):
+        data = base_ownership()
+        data["workspace_files"].append("drafts/outreach/")
+        data["owns"]["chief-of-staff"].append("drafts/outreach/")
+        self._write_ownership(data)
+        self.assertEqual(V.check_workspace_files_complete(self.root, {}), [])
+
+    def test_missing_ownership_file_is_not_this_checks_problem(self):
+        self.assertEqual(V.check_workspace_files_complete(self.root, {}), [])
+
+
 if __name__ == "__main__":
     unittest.main()
