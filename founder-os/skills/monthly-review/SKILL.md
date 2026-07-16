@@ -29,6 +29,12 @@ two competing retrospectives and they would read neither. The close is the
 trigger. When `metrics.md` shows this month's close, run this — the founder
 invokes it, or the **Chief of Staff** does on the back of the close landing.
 
+Mechanically: the close leaves `Proposed: write the monthly review for
+<YYYY-MM>` in `metrics.md` `## Close`, and the next `daily-brief` drains it
+into the queue. That line is this skill's alarm clock; if it was refused, the
+refusal is in that morning's brief with a reason, which is more than a silent
+never-ran leaves behind.
+
 ## Inputs
 
 Read first, in order — house rule 1:

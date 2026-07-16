@@ -117,6 +117,7 @@ Replace the `## Close — YYYY-MM` block in `metrics.md`:
     Largest client: <n>% of collected
     Cash on hand: <amount>  (before any tax reserve)
     Proposed: chase <client> — <n> days past terms — bet: none | none
+    Proposed: write the monthly review for <YYYY-MM> — bet: none
     Handed to: Chief of Staff for reviews/monthly/
 
 **`Proposed:` is how step 7's handoff survives the 1st of the month at 09:00 with
@@ -125,6 +126,13 @@ not there to take the handoff, so it goes in the line, in the file you own, and
 the next `daily-brief` drains it. One line per client past terms, up to three;
 `none` written explicitly when there is nothing, because an absent line and a
 forgetful cadence look identical to the brief.
+
+The second `Proposed:` line is how `monthly-review` ever runs. Its trigger is
+"after the close lands", the close lands at 09:00 on the 1st with nobody in the
+room, and `Handed to:` is a fact, not an obligation — nothing drains it. The
+line makes the review an item the next brief must take or refuse; refusing it
+is allowed and recorded, which is the difference between a skipped ritual and a
+silently dead one.
 
 `Booked`, `Collected`, `Hours worked`, `Effective rate`, `Largest client` and
 `Cash on hand` are computed from invoices, `clients/` and the bank, and carry no

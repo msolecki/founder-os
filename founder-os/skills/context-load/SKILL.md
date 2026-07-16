@@ -74,8 +74,9 @@ Then, and only then, the one file your decision owns.
 
    **`daily-brief` (Chief of Staff) is the second exemption, and it is the last
    one.** It reads the three, its own `reviews/daily/`, `queue.md`, `pipeline.md`,
-   `clients/` `## Health`, `offer.md` `## ICP` `### Not this`, and the `Proposed:`
-   line in `content.md` and `network.md`. That is well past the cap and it is
+   `clients/` `## Health`, `offer.md` `## ICP` `### Not this`, `metrics.md`
+   `## Close` (the receivable lines and the `Proposed:` lines, nothing else), and
+   the `Proposed:` line in `content.md` and `network.md`. That is well past the cap and it is
    deliberate, because **the brief is the one cadence whose decision is the
    ranking across books.** Every other cadence answers a question inside one book
    — is this deal real, does this month clear, is this client dying — and for

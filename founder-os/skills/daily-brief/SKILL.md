@@ -53,8 +53,10 @@ Read for one named section only:
   rotting item no other file can see: `clients/` knows the engagement is healthy
   and `pipeline.md` knows the deal was won. Only the exclusion knows it should
   never have been taken.
-- `pipeline.md`, `content.md` and `network.md` — the `Proposed:` line, and
-  nothing else. Step 0.
+- `pipeline.md`, `content.md`, `network.md` and `metrics.md` `## Close` — the
+  `Proposed:` lines, and nothing else; `goals.md` is read whole above, so the
+  quarterly's line arrives on its own. Step 0. (`## Close` was already open for
+  the receivables, so this widens nothing.)
 
 ## Beliefs
 
