@@ -153,10 +153,11 @@ Read for one named section only:
    the number of days attached, no editorializing.
 
    The excluded client is the odd one out and it is the most valuable line this
-   brief ever produces. The other three rot on a clock — days past terms, days
-   since contact. That one has been wrong since the day it was signed and no
-   clock will ever fire on it, because the engagement is healthy, the invoices
-   clear, and every file in the workspace is content. Date it from the day the
+   brief ever produces. The others rot on a clock — days past terms, days
+   since contact, days since a verdict. That one has been wrong since the day
+   it was signed and no clock will ever fire on it, because the engagement is
+   healthy, the invoices clear, and every file in the workspace is content.
+   Date it from the day the
    exclusion was written, not from the engagement: the founder decided against
    this client on that date and has been serving them every day since.
 
