@@ -139,13 +139,22 @@ it used to survive only as long as the terminal tab.
 
     ## Sent
 
+`## Sent` stays empty. The founder fills it, or it stays empty forever — see
+`## Guardrails`.
+
 The proposal document goes to the founder to send. This skill does not send, does
 not sign, and does not invoice.
 
-**If the founder rewrites the prose before sending, hand the sent version to
-`voice-capture` (Brand Editor).** A proposal edit is the rarest voice sample in
-the company — it is the founder's formal register, under pressure, with money on
-it — and `## Register` cannot be filled from cold outreach alone.
+**When the founder tells you what they actually sent, write it verbatim under
+`## Sent`, then hand the file to `voice-capture` (Brand Editor) by path.** A
+proposal the founder rewrote before sending is the highest-stakes prose they
+produce, and the diff against `## Draft` is them correcting us with a deal on the
+table. It is also the founder's formal register, under pressure, with money on
+it, and `## Register` cannot be filled from cold outreach alone.
+
+Ask once. If they do not answer, leave `## Sent` empty — an empty `## Sent` is a
+true statement about what you know, and a guess at what they sent is a fabricated
+record of a contract.
 
 Its structure, in order:
 
