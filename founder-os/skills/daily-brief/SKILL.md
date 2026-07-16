@@ -72,14 +72,23 @@ Read for one named section only:
 
 ## Steps
 
-0. **Drain the proposals, before you rank anything.** Five cadences produce
+0. **Drain the proposals, before you rank anything.** Eight cadences produce
    obligations and none of them may write `queue.md` — `pipeline-review`,
-   `revenue-review`, `content-plan`, `quarterly-planning` and `follow-up-sweep`
-   all hand to the **Chief of Staff** by name. Four of the five fire on a
+   `revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`, and
+   the three draft skills, `outreach-draft`, `proposal-draft` and `content-draft`.
+   All eight hand to the **Chief of Staff** by name. Four of them fire on a
    schedule, at 10am on a Wednesday, with nobody in the room to hand to. **You are
-   the Chief of Staff and this is the room.** Each of them leaves a `Proposed:`
-   line in the section it owns; you read those five sections; you take the item or
-   you refuse it.
+   the Chief of Staff and this is the room.** Each leaves a `Proposed:` line in the
+   section it owns; you read those sections; you take the item or you refuse it.
+
+   **Eight cadences, still five sections, no new file.** `outreach-draft` and
+   `proposal-draft` propose into `pipeline.md`; `content-draft` proposes into
+   `content.md`. You already open both. This does not widen the `context-load`
+   exemption you run under, and that is not luck — the draft skills propose into
+   the file they already own precisely so that the brief's read set could stay
+   where it is. A draft skill that wanted a book of its own would have cost you the
+   exemption, and `context-load` step 5 is where that argument gets settled, not
+   here.
 
    Run `queue` on each. Taking it means an id and a bet. **Refusing it is equally
    a result and it must be said out loud** — name the owner whose file already

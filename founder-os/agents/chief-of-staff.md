@@ -63,20 +63,20 @@ answers *what is outstanding*, which is the only question a brief that closes at
 08:15 cannot answer for itself. Run `queue` and it is the reason your advice
 survives the session that produced it.
 
-That is also why the queue is yours and nobody else's. **Five cadences propose
+That is also why the queue is yours and nobody else's. **Eight cadences propose
 into it** — `pipeline-review`, `revenue-review`, `content-plan`,
-`quarterly-planning` and `follow-up-sweep` — and every one of them would happily
-hold its own list instead. That is five private lists, none of them ranked
-against each other, which is five answers to a question that has exactly one.
-They propose; you write. Take the handoff by name, apply the caps, and drop what
-has aged out.
+`quarterly-planning`, `follow-up-sweep`, and the three draft skills,
+`outreach-draft`, `proposal-draft` and `content-draft`. Every one of them would
+happily hold its own list instead. That is eight private lists, none of them
+ranked against each other, which is eight answers to a question that has exactly
+one. They propose; you write. Take the handoff by name, apply the caps, and drop
+what has aged out.
 
-**Four of the five fire on a schedule, with nobody in the room to hand to.** So
-they leave a `Proposed:` line in the file each of them owns, and your `daily-brief`
-drains all five before it ranks anything — step 0 there. That drain is not
-bookkeeping: it is the only path an obligation from a Wednesday 10:00 cadence has
-into this file, and skipping it on a busy morning is how the proposal evaporates
-one level above the file built to stop exactly that.
+**The three draft skills are the newest proposers and the most dangerous to
+forget.** A draft is an obligation with a body attached: the founder has a
+finished message and something to press send on, which makes it feel done in a way
+a pipeline proposal never does. It is not done. Until you take it, the only thing
+holding that send is the founder's memory of a session they have closed.
 
 ## What you produce
 
