@@ -172,11 +172,14 @@ drift to patch.
    and no explanation for the gaps.
 
    On macOS, launchd is one `~/Library/LaunchAgents/com.founder-os.<slug>.plist`
-   per cadence — `ProgramArguments` (the absolute binary, `-p`, `/<slug>`),
-   `WorkingDirectory` (step 3's path), `StandardOutPath` / `StandardErrorPath`
-   (step 6's log), and `StartCalendarInterval` with `Hour`/`Minute`/`Weekday`
-   (0 and 7 are both Sunday). The quarterly is an *array* of four dicts, one per
-   `Month`. Load with `launchctl bootstrap gui/$(id -u) <plist>`. Same eight
+   per cadence — `ProgramArguments` (the absolute binary, `-p`,
+   `/founder-os:<slug>`, `--permission-mode`, `acceptEdits`, `--max-turns`,
+   `50`), `EnvironmentVariables` carrying `FOUNDER_OS_HOME` (launchd agents get
+   no shell profile either), `WorkingDirectory` (the workspace *parent*, step
+   3's path), `StandardOutPath` / `StandardErrorPath` (step 6's log), and
+   `StartCalendarInterval` with `Hour`/`Minute`/`Weekday` (0 and 7 are both
+   Sunday). The quarterly is an *array* of four dicts, one per `Month`. Load
+   with `launchctl bootstrap gui/$(id -u) <plist>`. Same eight
    schedules, same three resolved paths, different file format — everything
    below about backup, confirmation and the smoke test applies unchanged.
 
@@ -204,21 +207,44 @@ drift to patch.
    Print it fenced, with all three resolved paths substituted in, exactly as it
    will be written:
 
-       # BEGIN founder-os — /setup-cadences, 2026-07-15. Do not remove these markers.
-       0 8 * * 1-5        cd /Users/x/work && /Users/x/.local/bin/claude -p "/daily-brief" >> /Users/x/.founder-os/logs/daily-brief.log 2>&1
-       30 8 * * 1         cd /Users/x/work && /Users/x/.local/bin/claude -p "/week-plan" >> /Users/x/.founder-os/logs/week-plan.log 2>&1
-       0 16 * * 5         cd /Users/x/work && /Users/x/.local/bin/claude -p "/weekly-review" >> /Users/x/.founder-os/logs/weekly-review.log 2>&1
-       0 10 * * 4         cd /Users/x/work && /Users/x/.local/bin/claude -p "/pipeline-review" >> /Users/x/.founder-os/logs/pipeline-review.log 2>&1
-       0 14 * * 5         cd /Users/x/work && /Users/x/.local/bin/claude -p "/follow-up-sweep" >> /Users/x/.founder-os/logs/follow-up-sweep.log 2>&1
-       0 10 * * 3         cd /Users/x/work && /Users/x/.local/bin/claude -p "/content-plan" >> /Users/x/.founder-os/logs/content-plan.log 2>&1
-       0 9 1 * *          cd /Users/x/work && /Users/x/.local/bin/claude -p "/revenue-review" >> /Users/x/.founder-os/logs/revenue-review.log 2>&1
-       0 11 1 1,4,7,10 *  cd /Users/x/work && /Users/x/.local/bin/claude -p "/quarterly-planning" >> /Users/x/.founder-os/logs/quarterly-planning.log 2>&1
+       # BEGIN founder-os — /setup-cadences, YYYY-MM-DD. Do not remove these markers.
+       0 8 * * 1-5        cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:daily-brief" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/daily-brief.log 2>&1
+       30 8 * * 1         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:week-plan" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/week-plan.log 2>&1
+       0 16 * * 5         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:weekly-review" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/weekly-review.log 2>&1
+       0 10 * * 4         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:pipeline-review" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/pipeline-review.log 2>&1
+       0 14 * * 5         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:follow-up-sweep" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/follow-up-sweep.log 2>&1
+       0 10 * * 3         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:content-plan" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/content-plan.log 2>&1
+       0 9 1 * *          cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:revenue-review" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/revenue-review.log 2>&1
+       0 11 1 1,4,7,10 *  cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:quarterly-planning" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/quarterly-planning.log 2>&1
        # END founder-os
 
    The `>> …log 2>&1` is failure mode 2 and it is not optional. Without it the
    only record of six weeks of auth errors is a mail spool with no reader. Eight
    logs rather than one, because *which* cadence stopped is the question, and a
    shared log buries the quarterly failure under sixty daily successes.
+
+   **Four parts of that line are not decoration, and each one is a cadence that
+   silently never works without it:**
+
+   - `FOUNDER_OS_HOME=<absolute workspace>` — cron runs `/bin/sh` with a bare
+     environment and reads no shell profile. A variable set in `.zshrc` never
+     reaches this line, the skill falls back to `./founder-os/`, and the founder
+     gets a perfectly formatted brief about an empty company. Embed it.
+   - `cd <workspace parent>`, not the workspace itself — `cd` into the workspace
+     and any relative fallback resolves to `<workspace>/founder-os/`, a nested
+     phantom that scaffolds itself on first write.
+   - `/founder-os:<slug>`, the namespaced form — bare `/daily-brief` works only
+     while no other plugin or user command claims the name. This line is written
+     once and must survive whatever gets installed next year; the day it
+     collides, the log says "unknown command" forever and nobody reads the log.
+   - `--permission-mode acceptEdits --max-turns 50` — a headless session cannot
+     approve its own `Write`. Without the flag, every cadence runs, is denied
+     its one output file, and produces a folder of permission denials shaped
+     exactly like briefs. `--max-turns` is the backstop that stops a wedged run
+     from stacking onto the next one. `acceptEdits` accepts *file edits* — it
+     does not grant Bash, WebFetch or MCP, so House Rule 0 stands exactly where
+     it stood. The founder's own main thread was always allowed to write; this
+     flag only lets the machine say so at 08:00 with nobody watching.
 
    **Then ask one question, and offer the opt-out in the same message.** Not
    eight confirmations, not a walkthrough. They see the block, they see the
@@ -242,12 +268,18 @@ drift to patch.
    tomorrow. Reproduce what cron actually hands the job:
 
        env -i HOME="$HOME" PATH=/usr/bin:/bin SHELL=/bin/sh /bin/sh -c \
-         'cd /Users/x/work && /Users/x/.local/bin/claude -p "/daily-brief"'
+         'cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:daily-brief" --permission-mode acceptEdits --max-turns 50'
 
    `env -i` is the point. Your shell's PATH is exactly what makes a broken line
    look fine, so strip it to the four variables cron sets and run the real
    cadence. It writes a real brief, which is a payoff and not a test artifact —
    `daily-brief` is the Chief of Staff's write, not this skill's.
+
+   Also verify the flags exist before writing a single cron line:
+   `<binary> --help | grep -q -- --permission-mode` — an older claude that does
+   not know the flag would otherwise fail every scheduled job with an argument
+   error, in the logs, forever. If it is missing, stop and say the binary is
+   too old for scheduled cadences; hand-invocation still works.
 
    **On macOS this test passes and cron still fails, if the workspace is under
    `~/Desktop`, `~/Documents`, `~/Downloads`, or iCloud Drive.** You are running
@@ -257,6 +289,13 @@ drift to patch.
    grant `/usr/sbin/cron` Full Disk Access in System Settings → Privacy &
    Security, or use `launchd` from step 4, which runs in the founder's session
    and can actually ask. Say which one applies before they close the terminal.
+
+   **Failure mode: credentials.** A cron job runs outside the login session.
+   If the claude binary stores its credential in the macOS keychain, the first
+   post-reboot run before the founder logs in can fail auth — once, then work
+   after login. The log will say so; the doctor cannot. If every line of a log
+   is an auth error, the fix is to run any interactive `claude` session once
+   and let the keychain unlock, not to edit the crontab.
 
 9. **Check the host zone against `charter.md` `## Timezone`, and only say it.**
    Cron is host-local, so the host is right about when 08:00 is — a mismatch does
@@ -287,6 +326,18 @@ If they say no, say the eight skills work exactly as well typed by hand, tell
 them the hours from the table so the reminder lands on the right ones, and stop.
 No degraded-mode framing, no asking again next session. This is not a downgrade
 and treating it as one is how a tool that modifies machines gets uninstalled.
+
+## Removal
+
+Uninstalling the plugin does not touch the crontab — the fence outlives the
+package and keeps firing a claude that no longer knows the skills. The removal
+is one command, and it is the founder's to run:
+
+    crontab -l | sed '/# BEGIN founder-os/,/# END founder-os/d' | crontab -
+
+On launchd: `launchctl bootout gui/$(id -u)/com.founder-os.<slug>` per cadence,
+then delete the plists. Say this at install time, in the confirmation — a tool
+that modifies a machine owes the founder the way back *before* they say yes.
 
 ## Output
 
