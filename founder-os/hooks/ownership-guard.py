@@ -64,11 +64,12 @@ except ImportError:  # PyYAML is not stdlib and this runs on strangers' machines
 # ones that can actually reach the outside world in one call. An agent with Bash
 # can curl, an agent with WebFetch can POST, an agent with a mail MCP can send.
 #
-# Note this is NARROWER than OUTBOUND_TOOLS in scripts/validate_package.py, which
-# also bars WebSearch, NotebookEdit and Task. That is the right call for a build
-# check (an allowlist should be tight) and the wrong call here: those three are
-# not sends, and denying a live agent mid-run over a WebSearch is a false deny
-# for no gain. The validator already refuses to ship an agent holding them.
+# Note this is NARROWER than OUTBOUND_TOOLS in scripts/validate_package.py,
+# which also bars WebSearch and Task. That is the right call for a build check
+# (an allowlist should be tight) and the wrong call here: neither is a send,
+# and denying a live agent mid-run over a WebSearch is a false deny for no
+# gain. NotebookEdit is different — it writes files — so it goes through
+# check_ownership below like Write and Edit do, not through this set.
 OUTBOUND_TOOLS = {"Bash", "WebFetch"}
 MCP_TOOL = re.compile(r"^mcp__")
 
@@ -303,9 +304,9 @@ def check_outbound(agent_type, tool_name):
 
 
 def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
-    if tool_name not in ("Write", "Edit"):
+    if tool_name not in ("Write", "Edit", "NotebookEdit"):
         return
-    file_path = tool_input.get("file_path")
+    file_path = tool_input.get("file_path") or tool_input.get("notebook_path")
     if not isinstance(file_path, str) or not file_path:
         allow("%s has no file_path" % tool_name)
     rel = relative_to_workspace(file_path, hook_cwd)
