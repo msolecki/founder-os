@@ -46,8 +46,12 @@ Read for one named section only:
   brief becomes a monthly close nobody asked for.
 - `pipeline.md` — anything with a next action dated today or overdue
 - `clients/<client>.md` `## Health` — the latest `Verdict:` line on each active
-  engagement. `at-risk` or `failing` is rotting; `healthy` is not. That is
-  `client-health`'s vocabulary and those are the only three words it writes.
+  engagement, **with its date**. `at-risk` or `failing` is rotting; `healthy`
+  is not. That is `client-health`'s vocabulary and those are the only three
+  words it writes. A verdict older than 45 days is not a verdict — it is a
+  memory of one, and quoting it as current is how a client dies between
+  check-ups. Read it as "no current verdict — `client-health` overdue", which
+  is itself a rotting item, dated from the stale verdict.
 - `offer.md` `## ICP` `### Not this` — who this company decided not to serve. A
   client on the books that the offer excludes is rotting, and it is the one
   rotting item no other file can see: `clients/` knows the engagement is healthy
@@ -141,7 +145,9 @@ Read for one named section only:
    founder is about to do it again. Close one, block one, or drop one first.
 3. **Name what's rotting — at most three, ranked by days.** An overdue pipeline
    action, a client whose `Verdict:` is `at-risk` or `failing`, an invoice past
-   terms, a `## Dead` deal whose `win/loss: pending` is older than 5 days (the
+   terms, a client whose latest `Verdict:` is older than 45 days (`client-health`
+   overdue — an unexamined client is not a healthy one, it is an unexamined
+   one), a `## Dead` deal whose `win/loss: pending` is older than 5 days (the
    lesson is expiring — `win-loss-analysis`'s own window is five), **a client
    on the books that `offer.md` `### Not this` excludes**. One line each with
    the number of days attached, no editorializing.
