@@ -38,7 +38,7 @@ Then, if you want the company to come to you rather than wait to be opened:
 |---------|-------|
 | Agents  | 12    |
 | Skills  | 48    |
-| Cadences | 8    |
+| Cadences | 9    |
 
 ## The org
 

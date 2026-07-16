@@ -1,15 +1,15 @@
 ---
 name: setup-cadences
-description: Turn the eight cadences into real scheduled jobs on the founder's own machine — run once, after their first brief, so the package stops waiting to be opened
+description: Turn the nine cadences into real scheduled jobs on the founder's own machine — run once, after their first brief, so the package stops waiting to be opened
 ---
 
 # Setup Cadences
 
 Every skill in this package is inert until somebody types its name. That is the
-whole problem. The eight cadences are the only thing that makes this an OS
+whole problem. The nine cadences are the only thing that makes this an OS
 rather than a folder of prompts, and a cadence that fires when the founder
 remembers to fire it is not a cadence — it is a reminder they are already
-ignoring. This skill is how eight skills become a schedule on the founder's own
+ignoring. This skill is how nine skills become a schedule on the founder's own
 machine, once, in one confirmation.
 
 **Claude Code cannot ship a schedule inside a plugin.** Not a gap to work around
@@ -33,7 +33,7 @@ own DST changes. That was the old runtime's problem. It is not inherited.
 ## When to use
 
 Once, **after** onboarding has ended on the founder's first `daily-brief` — not
-during it. A founder who has never seen a brief has no reason to want eight of
+during it. A founder who has never seen a brief has no reason to want nine of
 them, and onboarding is arranged to end on a payoff. A machine-modification
 confirmation is not a payoff.
 
@@ -96,15 +96,18 @@ five days late and it cannot say why.
 | `/pipeline-review` | Thursday 10:00 | `0 10 * * 4` |
 | `/follow-up-sweep` | Friday 14:00 | `0 14 * * 5` |
 | `/content-plan` | Wednesday 10:00 | `0 10 * * 3` |
+| `/calendar-audit` | Friday 15:00 | `0 15 * * 5` |
 | `/revenue-review` | 1st of month 09:00 | `0 9 1 * *` |
 | `/quarterly-planning` | Jan/Apr/Jul/Oct 1st 11:00 | `0 11 1 1,4,7,10 *` |
 
-Eight, and not nine. `monthly-review` and `annual-review` are deliberately
+Nine, and not ten. `monthly-review` and `annual-review` are deliberately
 unscheduled and adding them is not an improvement: `revenue-review` is already
 the monthly close, and scheduling a second monthly ritual gives the founder two
 competing ones and a reason to skip both. `annual-review` firing unprompted
 eleven months after install is noise — the founder invokes that one on purpose
-or not at all.
+or not at all. `calendar-audit` is the newest row and the cheapest: it feeds
+`week-plan`'s ledger and `energy-audit`'s four-week minimum, and unscheduled it
+starved both.
 
 `0 11 1 1,4,7,10 *` names the months, so the quarterly lands on 1 Jan / 1 Apr /
 1 Jul / 1 Oct from any install date. There is no start date to carry and no
@@ -116,7 +119,7 @@ drift to patch.
    `uname -s` → `Darwin` is macOS, `Linux` is Linux. Both get a crontab.
 
    Anything else — `MINGW*`, `MSYS*`, `CYGWIN*`, or no `crontab` binary at all —
-   is where you stop guessing. Print the eight lines from the table, say plainly
+   is where you stop guessing. Print the nine lines from the table, say plainly
    that Windows Task Scheduler is where they go and that you cannot write them
    from here, and stop. A wrong cron line on a machine you guessed at is the
    silent failure in section 1, installed by the tool that promised to prevent it.
@@ -129,7 +132,7 @@ drift to patch.
 
 2. **Resolve `claude` to an absolute path — or write nothing.**
    `command -v claude`. Empty means Claude Code is not on this PATH under this
-   shell, and the correct move is to stop and say so. Eight cron lines pointing
+   shell, and the correct move is to stop and say so. Nine cron lines pointing
    at a binary that does not exist is not a partial success, it is failure mode 1
    pre-installed.
 
@@ -179,7 +182,7 @@ drift to patch.
    3's path), `StandardOutPath` / `StandardErrorPath` (step 6's log), and
    `StartCalendarInterval` with `Hour`/`Minute`/`Weekday` (0 and 7 are both
    Sunday). The quarterly is an *array* of four dicts, one per `Month`. Load
-   with `launchctl bootstrap gui/$(id -u) <plist>`. Same eight
+   with `launchctl bootstrap gui/$(id -u) <plist>`. Same nine
    schedules, same three resolved paths, different file format — everything
    below about backup, confirmation and the smoke test applies unchanged.
 
@@ -203,7 +206,7 @@ drift to patch.
    dropping it in `$FOUNDER_OS_HOME` would create an unowned file that
    `state-integrity` refuses to write for the rest of the package's life.
 
-6. **Show the exact block. Ask once. One question, not eight.**
+6. **Show the exact block. Ask once. One question, not nine.**
    Print it fenced, with all three resolved paths substituted in, exactly as it
    will be written:
 
@@ -214,12 +217,13 @@ drift to patch.
        0 10 * * 4         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:pipeline-review" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/pipeline-review.log 2>&1
        0 14 * * 5         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:follow-up-sweep" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/follow-up-sweep.log 2>&1
        0 10 * * 3         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:content-plan" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/content-plan.log 2>&1
+       0 15 * * 5         cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:calendar-audit" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/calendar-audit.log 2>&1
        0 9 1 * *          cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:revenue-review" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/revenue-review.log 2>&1
        0 11 1 1,4,7,10 *  cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:quarterly-planning" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/quarterly-planning.log 2>&1
        # END founder-os
 
    The `>> …log 2>&1` is failure mode 2 and it is not optional. Without it the
-   only record of six weeks of auth errors is a mail spool with no reader. Eight
+   only record of six weeks of auth errors is a mail spool with no reader. Nine
    logs rather than one, because *which* cadence stopped is the question, and a
    shared log buries the quarterly failure under sixty daily successes.
 
@@ -247,7 +251,7 @@ drift to patch.
      flag only lets the machine say so at 08:00 with nobody watching.
 
    **Then ask one question, and offer the opt-out in the same message.** Not
-   eight confirmations, not a walkthrough. They see the block, they see the
+   nine confirmations, not a walkthrough. They see the block, they see the
    backup path, they say yes or they don't.
 
 7. **Write it. The fence is what makes a second run safe.**
@@ -322,7 +326,7 @@ has the one property cron structurally lacks: **it fails loudly.** A founder who
 ignores a calendar alert knows they ignored it. A founder whose cron broke in
 week two believes for a month that the system is running.
 
-If they say no, say the eight skills work exactly as well typed by hand, tell
+If they say no, say the nine skills work exactly as well typed by hand, tell
 them the hours from the table so the reminder lands on the right ones, and stop.
 No degraded-mode framing, no asking again next session. This is not a downgrade
 and treating it as one is how a tool that modifies machines gets uninstalled.
@@ -341,13 +345,13 @@ that modifies a machine owes the founder the way back *before* they say yes.
 
 ## Output
 
-- The founder's crontab (or eight LaunchAgent plists), carrying the eight lines
+- The founder's crontab (or nine LaunchAgent plists), carrying the nine lines
   fenced by `# BEGIN founder-os` / `# END founder-os`, with the absolute binary
   path, the absolute workspace path, and a per-cadence log redirect. Everything
   outside the fence untouched.
 - `~/.founder-os/crontab-backup-<timestamp>.txt` — the crontab as it was, named
   out loud before the founder said yes.
-- `~/.founder-os/logs/` — eight append-only logs, the only place a failure will
+- `~/.founder-os/logs/` — nine append-only logs, the only place a failure will
   ever be visible. When `founder-os-doctor` reports *cadence gone quiet*, this
   is what answers *why*.
 - One line on screen naming the next cadence and its hour. Nothing else.
@@ -381,7 +385,7 @@ is the exact outcome this skill exists to prevent — and shipping it under this
 skill's name is worse than never running, because the founder now believes it is
 handled.
 
-Do not schedule a ninth cadence. Do not schedule `monthly-review` or
+Do not schedule a tenth cadence. Do not schedule `monthly-review` or
 `annual-review`. See *The schedule*.
 
 **A `%` in a crontab line is a newline, not a percent sign.** Everything after
@@ -391,7 +395,7 @@ working line into two broken ones. Escape it as `\%` or leave it out.
 
 **Do not restrict day-of-month and day-of-week in the same line.** Cron ORs them
 rather than ANDing them — the one trap in the syntax that a competent person
-walks into. The eight lines above dodge it by never constraining both, but the
+walks into. The nine lines above dodge it by never constraining both, but the
 edit that breaks it is the obvious one: *first Monday of the month* written as
 `0 9 1-7 * 1` fires every day of the first week **and** every Monday of the year,
 which is a monthly close that runs eleven times a month.
