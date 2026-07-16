@@ -123,8 +123,6 @@ is bookkeeping about it.
     <the message, verbatim, exactly as the founder would send it>
 
     ## Provenance
-    Angle: <the specific thing>
-    Ask: <the one ask>
     Prospect: [[<prospect-slug>]]
 
     ## Sent

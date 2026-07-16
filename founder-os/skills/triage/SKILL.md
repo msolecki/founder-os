@@ -81,7 +81,8 @@ averaging failure `context-load` warns about:
 
 1. **Drain `inbox.md`, then make them list the rest, five maximum.** The inbox is
    the pile the founder already wrote down; the interrogation is for what they did
-   not. Read the inbox, empty it to zero, and add the interview's items to it.
+   not. Read the inbox, empty it to zero, and add the interview's items to the
+   same working list.
 
    **The five-maximum is a cap on what you triage, not on what they wrote.** If the
    inbox holds nine lines, the list is the first finding: triage the first five in

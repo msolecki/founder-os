@@ -59,7 +59,8 @@ Read first, in order — house rule 1:
   **Brand Editor's** — you are the Brand Editor, so the third is yours to write
   and the first two are not. Read all three; write `voice.md`.
 - **The founder's own sent mail and published posts** — pasted by them, verbatim.
-  This is the primary input and there is no substitute for it in the workspace.
+  The other real source, and the one to ask for directly in step 1 when there is
+  no draft-diff yet on disk to read.
 - `content.md` `## Shipped` — dates, channels and links for what actually went
   out. Use it to find samples worth asking for; the link is not the sample.
 - `pipeline.md` — outreach that was actually sent, and which of it got a reply.

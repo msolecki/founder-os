@@ -53,7 +53,8 @@ Read for one named section only:
   rotting item no other file can see: `clients/` knows the engagement is healthy
   and `pipeline.md` knows the deal was won. Only the exclusion knows it should
   never have been taken.
-- `content.md` and `network.md` — the `Proposed:` line, and nothing else. Step 0.
+- `pipeline.md`, `content.md` and `network.md` — the `Proposed:` line, and
+  nothing else. Step 0.
 
 ## Beliefs
 
@@ -88,8 +89,9 @@ Read for one named section only:
    `pipeline-review`,
    `revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`, and
    the three draft skills, `outreach-draft`, `proposal-draft` and `content-draft`.
-   All eight hand to the **Chief of Staff** by name. Four of them fire on a
-   schedule, at 10am on a Wednesday, with nobody in the room to hand to. **You are
+   All eight hand to the **Chief of Staff** by name. Five of them fire on a
+   schedule, with nobody in the room to hand to; the three draft skills run with
+   the founder present, so those the founder can hand over directly. **You are
    the Chief of Staff and this is the room.** Each leaves a `Proposed:` line in the
    section it owns; you read those sections; you take the item or you refuse it.
 

@@ -85,10 +85,10 @@ package refuses to repeat, and it won't pretend the plumbing is magic.
 ## Memory
 
 State lives in a markdown workspace (`FOUNDER_OS_HOME`, default
-`./founder-os/`): charter, goals, metrics, offer, pipeline, week, queue,
-clients, network, skills, content, voice, systems — and a decision log that
-records *why*, not just what. Six months from now you will want to know why you
-raised rates or dropped a client. That's the file that answers.
+`./founder-os/`): inbox, charter, goals, metrics, offer, pipeline, week, queue,
+clients, drafts, network, skills, content, voice, systems — and a decision log
+that records *why*, not just what. Six months from now you will want to know
+why you raised rates or dropped a client. That's the file that answers.
 
 **Every file has exactly one owner.** Agents read anything and write only what
 they own. A `PreToolUse` hook checks every write against

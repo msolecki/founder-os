@@ -134,8 +134,6 @@ it used to survive only as long as the terminal tab.
 
     ## Provenance
     Client: [[<client-slug>]]
-    Price: <amount>
-    Expires: YYYY-MM-DD
 
     ## Sent
 

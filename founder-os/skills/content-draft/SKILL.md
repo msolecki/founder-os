@@ -180,9 +180,12 @@ can draft two posts in an afternoon and a single line holds one of them.
 **`Draft:` and `Proposed:` both carry the same `[[slug]]` and that is not
 duplication.** They answer different questions and have different lifetimes:
 `Draft:` is the card's pointer to its body and lives as long as the card, following
-it into `## Shipped`. `Proposed:` is an obligation with a clock, and `daily-brief`
-step 0 removes it the moment it is taken or refused. Deleting `Proposed:` must never
-orphan the card from its body.
+it into `## Shipped`. `Proposed:` is an obligation with a clock. When `daily-brief`
+takes it, the queue item it creates carries `from: content.md <date>` so tomorrow's
+brief leaves the line alone — `daily-brief` cannot write `content.md`, and does not
+need to. The line is yours to clear when the card ships or you supersede it.
+Clearing `Proposed:` must never orphan the card from its body: `Draft:` is what
+joins them, and it stays.
 
 On publication, move the card to `## Shipped` with its date, channel and link —
 `content-plan` computes the cadence from the trailing four weeks of that list.
