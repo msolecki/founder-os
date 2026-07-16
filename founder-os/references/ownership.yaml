@@ -9,6 +9,9 @@ workspace_files:
   - week.md
   - queue.md
   - clients/
+  - drafts/outreach/
+  - drafts/proposals/
+  - drafts/content/
   - network.md
   - skills.md
   - content.md
@@ -37,6 +40,8 @@ owns:
     - offer.md
   pipeline-coach:
     - pipeline.md
+    - drafts/outreach/
+    - drafts/proposals/
   focus-coach:
     - week.md
   delivery-lead:
@@ -48,6 +53,7 @@ owns:
   brand-editor:
     - content.md
     - voice.md
+    - drafts/content/
   ops-engineer:
     - systems.md
 
@@ -136,6 +142,27 @@ sections:
     - "## Scope"
     - "## Health"
     - "## Retro"
+  # The three draft directories carry one vocabulary between them, because they
+  # hold one kind of thing: a body the founder is about to send, and the record
+  # of what they actually sent. `## Sent` is why these files exist at all — it is
+  # the only place in the workspace where the founder's own edit to our draft
+  # survives the session, and voice-capture reads exactly that diff.
+  #
+  # House rule 0 is untouched by this. A body on disk is not a sent body. `## Sent`
+  # is written when the founder reports what went out; no agent may fill it in,
+  # and no agent may infer it from `## Draft`.
+  drafts/outreach/:
+    - "## Draft"
+    - "## Provenance"
+    - "## Sent"
+  drafts/proposals/:
+    - "## Draft"
+    - "## Provenance"
+    - "## Sent"
+  drafts/content/:
+    - "## Draft"
+    - "## Provenance"
+    - "## Sent"
   decisions/:
     - "## Context"
     - "## Rejected"
