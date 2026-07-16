@@ -263,13 +263,21 @@ def owner_of(rel, by_path):
     An uncovered path returns None and is allowed. The map governs the files it
     names; a scratch file someone dropped in the workspace has no owner to be
     stolen from, and inventing one is how you block a founder's own note.
+
+    Comparison is case-folded: the workspace ships lowercase, but APFS is
+    case-insensitive by default, so `Goals.md` and `goals.md` are one file on a
+    Mac — matched exactly, the map is dodged by a shift key. On a case-sensitive
+    filesystem this can deny a legitimately distinct `Goals.md`; a workspace
+    that distinguishes files by case alone has worse problems than this deny.
     """
     best, best_owner = None, None
+    rel_cmp = rel.casefold()
     for entry, agent in by_path.items():
+        entry_cmp = entry.casefold()
         if entry.endswith("/"):
-            if not rel.startswith(entry):
+            if not rel_cmp.startswith(entry_cmp):
                 continue
-        elif rel != entry:
+        elif rel_cmp != entry_cmp:
             continue
         if best is None or len(entry) > len(best):
             best, best_owner = entry, agent
