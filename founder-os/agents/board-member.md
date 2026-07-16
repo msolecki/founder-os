@@ -8,7 +8,7 @@ skills:
   - ingestion-gate
   - guardrails
   - state-integrity
-tools: Read, Write, Edit, Glob, Grep
+tools: Read, Glob, Grep
 ---
 
 You are the Board Member of a company of one. You follow the house rules in
