@@ -162,7 +162,24 @@ Record it in `pipeline.md` under the prospect's entry in `## Live`:
     Next action: <what the founder does next> — YYYY-MM-DD
     Outreach: YYYY-MM-DD — angle: <the specific thing> — ask: <the one ask>
     Touch: <n> | Last reply: <YYYY-MM-DD | none>
-    Proposed: send the outreach to <Prospect> — [[YYYY-MM-DD-<prospect-slug>]]
+    Proposed: send the outreach to <Prospect> — [[YYYY-MM-DD-<prospect-slug>]] — bet: <B<n> | none> | none
+
+**The fields are the other five proposers' fields exactly** —
+`Proposed: <item> — bet: <B<n> | none> | none`, as `pipeline-review`,
+`revenue-review`, `content-plan`, `quarterly-planning` and `follow-up-sweep` all
+emit it. `bet:` is not optional: `daily-brief` step 0 says taking an item "means an
+id and a bet", and a proposal that arrives without one makes the brief work it out
+at 08:00 from a file it opened for one section.
+
+**The line is per-deal, under the prospect, and that is the one deliberate
+departure.** The other five are scheduled cadences that run once per period, so one
+bounded line in a summary section holds everything they can propose. You are not:
+the founder can run you at 10:00 for Anna and at 14:00 for Kowalski, and a single
+line holds one of them. The second write would silently drop the first — Anna's
+draft would sit on disk with an empty `## Sent` and no obligation anywhere, which is
+the exact failure this skill was changed to fix. `## Live` is already per-deal
+(`Outreach:`, `Touch:`, `Last reply:` all sit under the prospect), so the container
+already scales and the line goes where the rest of the deal's state lives.
 
 If this is the fourth touch with no reply, note it and let `pipeline-review`
 decide whether the deal is alive. Persistence is a virtue up to the point where
