@@ -142,6 +142,9 @@ show it.**
 
     ## Sent
 
+`## Sent` stays empty. The founder fills it, or it stays empty forever — see
+`## Guardrails`.
+
 **`## Provenance` carries a back-link and nothing else — do not repeat the card
 here.** Channel, `Answers:`, `One idea:` and `Evidence:` live on the card in
 `content.md` and only there. Copying them into the draft file creates two records
@@ -198,6 +201,10 @@ highest bar they write to and the one they actually meet. The draft is on disk
 now, so the diff survives the session and `voice-capture` can be run late. Being
 able to run it late is not permission to skip it.
 
+Ask once. If they do not answer, leave `## Sent` empty — an empty `## Sent` is a
+true statement about what you know, and a paraphrase of what you think shipped is a
+fabricated sample of their public voice.
+
 ## Guardrails
 
 Never publish. The founder publishes.
@@ -218,3 +225,15 @@ how the plan becomes decorative.
 Do not write `pipeline.md` or `offer.md`. A post that generates a lead goes to
 the **Pipeline Coach**; a message that will not hold together goes to the
 **Positioning Advisor**.
+
+**Never write `## Sent` from `## Draft`.** They are equal only when the founder
+changed nothing before publishing, and that is a fact about the founder that you do
+not have. This skill is the one most likely to be told the piece went out
+unedited — a post is short, it is theirs, and "I just published it" sounds like
+permission to copy. It is not. `voice-capture` reads `## Sent` as a sample of what
+the founder actually publishes under their own name; filling it from our own prose
+teaches `voice.md` that their public register is already ours, which is the one lie
+that makes that file worse than empty.
+
+**A post on disk is not a published post.** House rule 0 is untouched by this file
+existing. The founder publishes; you wrote a file.
