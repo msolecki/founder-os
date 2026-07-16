@@ -334,10 +334,63 @@ def check_beliefs(root, agents):
     return errs
 
 
+def check_hooks(root, agents):
+    """The write-time layer is one JSON file and one script; prove both load.
+
+    A typo in the matcher or a syntax error in the guard ships silently today:
+    every other check validates prose and map, and the one layer that acts at
+    runtime is the one layer nothing exercises at build time.
+    """
+    errs = []
+    hj = root / "hooks" / "hooks.json"
+    if not hj.exists():
+        return ["hooks/hooks.json: missing — the write-time layer is gone"]
+    try:
+        data = json.loads(hj.read_text(encoding="utf-8"))
+    except ValueError as e:
+        return ["hooks/hooks.json: not valid JSON (%s)" % e]
+    matchers = " ".join(h.get("matcher", "")
+                        for h in (data.get("hooks") or {}).get("PreToolUse", []))
+    for tool in ("Write", "Edit", "NotebookEdit", "Bash", "WebFetch", "mcp__"):
+        if tool not in matchers:
+            errs.append("hooks/hooks.json: PreToolUse matcher does not cover "
+                        "'%s'" % tool)
+    guard = root / "hooks" / "ownership-guard.py"
+    if not guard.exists():
+        errs.append("hooks/ownership-guard.py: missing")
+    else:
+        try:
+            compile(guard.read_text(encoding="utf-8"), str(guard), "exec")
+        except SyntaxError as e:
+            errs.append("hooks/ownership-guard.py: does not compile (%s)" % e)
+    return errs
+
+
 CHECKS = [check_plugin, check_agents, check_agent_tools, check_agent_graph,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,
-          check_sections, check_beliefs]
+          check_sections, check_beliefs, check_hooks]
+
+
+def run_checks(root):
+    """Load agents and run every check, containing per-file parse failures.
+
+    One malformed SKILL.md used to kill the whole run with a traceback — the
+    difference between "FAIL: skills/x: missing YAML frontmatter" and a
+    stack trace is whether the author reads the other forty findings.
+    """
+    try:
+        agents = load_agents(root)
+    except (ValueError, yaml.YAMLError) as e:
+        return {}, [str(e)]
+    errs = []
+    for fn in CHECKS:
+        try:
+            errs += fn(root, agents)
+        except (ValueError, yaml.YAMLError) as e:
+            errs.append("%s (check '%s' aborted at first bad file)"
+                        % (e, fn.__name__))
+    return agents, errs
 
 
 def main():
@@ -345,10 +398,7 @@ def main():
     if not root.is_dir():
         print("FAIL: plugin root '%s' not found" % root)
         return 1
-    agents = load_agents(root)
-    errs = []
-    for fn in CHECKS:
-        errs += fn(root, agents)
+    agents, errs = run_checks(root)
     for e in errs:
         print("FAIL: %s" % e)
     print("\n%d agent(s), %d skill(s), %d error(s)"
