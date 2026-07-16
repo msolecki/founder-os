@@ -4,6 +4,7 @@ description: Draft a proposal with scope, price, exclusions and an expiry date �
 metadata:
   writes:
     - pipeline.md
+    - drafts/proposals/
 ---
 
 # Proposal Draft
@@ -121,7 +122,25 @@ Read first, in order — house rule 1:
 
 ## Output
 
-The proposal document goes to the founder to send. This skill does not send.
+**Write the proposal to `drafts/proposals/YYYY-MM-DD-<client-slug>.md`, in full,
+before you show it.** This is the highest-value artifact this package produces and
+it used to survive only as long as the terminal tab.
+
+    # <Client> — proposal — YYYY-MM-DD
+
+    ## Draft
+    <the whole document: problem, done means, deliverables, exclusions,
+     price, expiry — verbatim, exactly as the founder would send it>
+
+    ## Provenance
+    Client: [[<client-slug>]]
+    Price: <amount>
+    Expires: YYYY-MM-DD
+
+    ## Sent
+
+The proposal document goes to the founder to send. This skill does not send, does
+not sign, and does not invoice.
 
 **If the founder rewrites the prose before sending, hand the sent version to
 `voice-capture` (Brand Editor).** A proposal edit is the rarest voice sample in
@@ -158,6 +177,26 @@ one escape hatch it has and rules from vibes instead. Write these lines so they
 can be enforced in week five by someone who was not on the call and has only this
 file.
 
+**The exclusions stay in `pipeline.md`, in full, and this is not duplication.**
+`scope-guard` reads `pipeline.md` in week five when the client asks for "one small
+thing", and it has never read `drafts/`. The draft file holds the document as it
+was sent; `pipeline.md` holds the terms that get enforced. Moving the exclusions
+into the draft would break `scope-guard` silently — the check would find nothing
+and report nothing, which is exactly what an unenforced contract looks like from
+the inside.
+
+**Leave a `Proposed:` line** under the prospect's entry, so the send becomes an
+obligation the Chief of Staff can hold:
+
+    Proposed: send the proposal to <Client> — [[YYYY-MM-DD-<client-slug>]] — bet: <B<n> | none> | none
+
+The fields are the other five proposers' fields exactly, and `bet:` is not
+optional — `daily-brief` step 0 says taking an item "means an id and a bet". The
+line sits per-deal under the prospect rather than as one bounded line in a summary
+section, because the founder can draft two proposals in an afternoon and a single
+line holds one of them; `outreach-draft` states the full reasoning and it is the
+same reasoning here.
+
 ## Guardrails
 
 **Refuse to produce a proposal with an empty exclusions list.** Not a warning —
@@ -175,3 +214,12 @@ No contract terms — liability, indemnity, IP assignment, termination,
 jurisdiction. Scope and price are commercial and yours; what is *owed* when
 things go wrong is a lawyer's. Name the clause that concerns you, say a lawyer
 should read it, log it in `decisions/`. See `guardrails`.
+
+**Never write `## Sent` from `## Draft`**, and never mark a proposal sent, signed
+or accepted. A file on disk is a draft. House rule 0 does not bend because the
+document looks finished.
+
+**Never let the draft and `pipeline.md` disagree about price or exclusions.** If
+the founder changed the terms before sending, `## Sent` carries what went out and
+`pipeline.md` must be updated to match it — the terms that get enforced are the
+terms they actually sent, not the ones you drafted.
