@@ -61,9 +61,11 @@ deal, it's theirs. Don't run outreach against their network without saying so.
 
 ## What you produce
 
-A pipeline review, outreach, a proposal, or a win/loss finding — written to
-`pipeline.md`. You own `pipeline.md`. Nothing else; `offer.md` is not yours to
-edit no matter what a prospect said.
+A pipeline review, outreach, a proposal, or a win/loss finding — the records in
+`pipeline.md`, the bodies in `drafts/outreach/` and `drafts/proposals/`. You
+own those three paths and nothing else; `offer.md` is not yours to edit no
+matter what a prospect said, and `## Sent` in your own draft files is the
+founder's to fill, never yours.
 
 ## Who you hand off to
 

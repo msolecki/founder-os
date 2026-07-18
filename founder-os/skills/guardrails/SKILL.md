@@ -1,6 +1,6 @@
 ---
 name: guardrails
-description: Hard refusals every agent obeys — nothing outbound and nothing paid, ever; tax, legal, and medical questions get escalated to a real professional, never answered
+description: Enforce the hard refusals every agent obeys — nothing outbound and nothing paid, ever; tax, legal, and medical questions get escalated to a real professional, never answered
 ---
 
 # Guardrails

@@ -116,6 +116,7 @@ class ValidatorTestCase(unittest.TestCase):
                          tools=DEFAULT_TOOLS + ", Agent(cfo)")
         self.write_agent("cfo", skills=list(UNIVERSALS))
         self.write_ownership(base_ownership())
+        self.write_hooks()
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -136,6 +137,13 @@ class ValidatorTestCase(unittest.TestCase):
     def write_ownership(self, data):
         write(self.root / "references" / "ownership.yaml",
               yaml.safe_dump(data, sort_keys=False))
+
+    def write_hooks(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher":
+                "^(Write|Edit|NotebookEdit|Bash|WebFetch|mcp__.*)$",
+                "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
 
     def check(self, fn):
         return fn(self.root, V.load_agents(self.root))
@@ -450,6 +458,122 @@ class TestWorkspaceFilesComplete(unittest.TestCase):
 
     def test_missing_ownership_file_is_not_this_checks_problem(self):
         self.assertEqual(V.check_workspace_files_complete(self.root, {}), [])
+
+
+class TestCheckHooks(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        write(self.root / ".claude-plugin" / "plugin.json",
+              json.dumps({"name": "founder-os"}))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_missing_hooks_json_is_an_error(self):
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("hooks.json" in e for e in errs), errs)
+
+    def test_unparseable_hooks_json_is_an_error(self):
+        write(self.root / "hooks" / "hooks.json", "{not json")
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("valid JSON" in e for e in errs), errs)
+
+    def test_matcher_must_cover_every_guarded_tool(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": "^(Write|Edit)$", "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        errs = V.check_hooks(self.root, {})
+        for tool in ("NotebookEdit", "Bash", "WebFetch", "mcp__"):
+            self.assertTrue(any(tool in e for e in errs), (tool, errs))
+
+    def test_edit_hidden_inside_notebookedit_is_detected(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher":
+                "^(Write|NotebookEdit|Bash|WebFetch|mcp__.*)$",
+                "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("'Edit'" in e for e in errs), errs)
+
+    def test_guard_that_does_not_compile_is_an_error(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher":
+                "^(Write|Edit|NotebookEdit|Bash|WebFetch|mcp__.*)$",
+                "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "def broken(:\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("compile" in e for e in errs), errs)
+
+    def test_real_plugin_is_clean(self):
+        real = Path(__file__).resolve().parents[1] / "founder-os"
+        self.assertEqual(V.check_hooks(real, {}), [])
+
+    def test_invalid_regex_matcher_is_an_error_not_a_crash(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": "([", "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("not a valid regex" in e for e in errs), errs)
+
+
+class TestReadmeCounts(ValidatorTestCase):
+    """The README table is a count of a growing set — the exact object the
+    package's own philosophy says goes stale silently. Now it fails the build
+    instead."""
+
+    README = ("# X\n\n| Content | Count |\n|---|---|\n"
+              "| Agents  | %d    |\n| Skills  | %d    |\n")
+
+    def test_matching_counts_are_clean(self):
+        # Fixture: 2 agents, 4 skills (3 universals + daily-brief), no
+        # setup-cadences so the cadence row is not required.
+        write(self.root / "README.md", self.README % (2, 4))
+        self.assertEqual(self.check(V.check_readme_counts), [])
+
+    def test_stale_agent_count_is_caught(self):
+        write(self.root / "README.md", self.README % (12, 4))
+        errs = self.check(V.check_readme_counts)
+        self.assertTrue(any("claims 12 agents, the package has 2" in e
+                            for e in errs), errs)
+
+    def test_missing_readme_is_not_this_checks_problem(self):
+        self.assertEqual(self.check(V.check_readme_counts), [])
+
+
+class TestRealPackage(unittest.TestCase):
+    def test_shipped_package_passes_every_check(self):
+        """The '12 agents, 48 skills, 0 errors' acceptance line, executable.
+
+        Every other test here validates a synthetic fixture; this is the only
+        one that would catch a regression in the package actually shipped.
+        """
+        real = Path(__file__).resolve().parents[1] / "founder-os"
+        agents, errs = V.run_checks(real)
+        self.assertEqual(errs, [])
+        self.assertEqual(len(agents), 12)
+        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 48)
+
+
+class TestRunChecksContainment(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        write(self.root / ".claude-plugin" / "plugin.json",
+              json.dumps({"name": "founder-os"}))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_malformed_skill_frontmatter_is_a_fail_line_not_a_traceback(self):
+        write(self.root / "skills" / "broken" / "SKILL.md",
+              "no frontmatter here\n")
+        agents, errs = V.run_checks(self.root)
+        self.assertTrue(any("frontmatter" in e for e in errs), errs)
+
+    def test_malformed_agent_is_a_fail_line_not_a_traceback(self):
+        write(self.root / "agents" / "broken.md", "no frontmatter here\n")
+        agents, errs = V.run_checks(self.root)
+        self.assertEqual(agents, {})
+        self.assertTrue(any("frontmatter" in e for e in errs), errs)
 
 
 if __name__ == "__main__":

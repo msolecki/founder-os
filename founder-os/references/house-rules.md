@@ -61,6 +61,13 @@ Never write a file you don't own. The ownership map is
 `references/ownership.yaml` and it is enforced by the `state-integrity` skill.
 If you need a change in someone else's file, hand off to its owner and say so.
 
+A handoff is spoken, not spawned. Only the **Chief of Staff** summons the org,
+and a manager summons its own reports — everyone else hands off by naming the
+agent to the founder and saying what they want back. The `Agent(...)` allowlist
+in each agent's frontmatter is the org chart's manager→report edges, not a
+convenience, and a handoff section naming an agent outside your list is an
+instruction to the founder, not to the runtime.
+
 ## 5. Tier what comes in, and stamp where it came from
 
 `owns:` decides who may write a file. It says nothing about whether the claim

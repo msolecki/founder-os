@@ -9,8 +9,9 @@ missed. Everything else is a skill, and skills load when they are needed.
 ## Where the state lives
 
 `FOUNDER_OS_HOME`, default `./founder-os/`. Markdown, one owner per file:
-inbox, charter, goals, metrics, offer, pipeline, week, queue, clients/, drafts/,
-network, skills, content, voice, systems, decisions/, reviews/.
+inbox, charter, goals, metrics, offer, pipeline, week, queue, clients/,
+drafts/{outreach,proposals,content}/, network, skills, content, voice, systems,
+decisions/, reviews/{daily,weekly,monthly,quarterly}/.
 
 **Every file has exactly one owner.** Agents read anything and write only what
 they own. The map is `references/ownership.yaml` and it is the only map — if a

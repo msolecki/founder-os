@@ -74,8 +74,9 @@ Then, and only then, the one file your decision owns.
 
    **`daily-brief` (Chief of Staff) is the second exemption, and it is the last
    one.** It reads the three, its own `reviews/daily/`, `queue.md`, `pipeline.md`,
-   `clients/` `## Health`, `offer.md` `## ICP` `### Not this`, and the `Proposed:`
-   line in `content.md` and `network.md`. That is well past the cap and it is
+   `clients/` `## Health`, `offer.md` `## ICP` `### Not this`, `metrics.md`
+   `## Close` (the receivable lines and the `Proposed:` lines, nothing else), and
+   the `Proposed:` line in `content.md` and `network.md`. That is well past the cap and it is
    deliberate, because **the brief is the one cadence whose decision is the
    ranking across books.** Every other cadence answers a question inside one book
    — is this deal real, does this month clear, is this client dying — and for
@@ -92,9 +93,13 @@ Then, and only then, the one file your decision owns.
    and become the averager this step describes. `daily-brief` states the same
    bounds on its own side; neither file may widen this alone.
 
-   **No other skill has either exemption**, and neither gets extended by analogy
-   to any other cadence the Chief of Staff runs. `week-plan`, `weekly-review`,
-   `monthly-review` and `triage` beyond its own bounds all live under step 5.
+   **No other skill grants itself an exemption at run time.** The period reviews
+   (`week-plan`, `weekly-review`, `monthly-review`) read past the cap by design —
+   closing a period is a decision across books — and their licence is the
+   `## Inputs` list in their own SKILL.md: fixed in the package, never widened in
+   the moment. A cadence reads exactly what its `## Inputs` names and nothing
+   else. Anything beyond that list lives under step 5, as does `triage` beyond
+   its own bounds.
 6. **Stamp the context before your first sentence.** The founder sees what you
    read and how old it was, every time, before they read your conclusion.
 

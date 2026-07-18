@@ -334,10 +334,131 @@ def check_beliefs(root, agents):
     return errs
 
 
+def check_hooks(root, agents):
+    """The write-time layer is one JSON file and one script; prove both load.
+
+    A typo in the matcher or a syntax error in the guard ships silently today:
+    every other check validates prose and map, and the one layer that acts at
+    runtime is the one layer nothing exercises at build time. Coverage is
+    checked by matching each tool name against the matcher patterns (regex
+    fullmatch), not by substring search — "Edit" is a substring of
+    "NotebookEdit", so a substring check would pass a matcher that silently
+    dropped "Edit".
+    """
+    errs = []
+    hj = root / "hooks" / "hooks.json"
+    if not hj.exists():
+        return ["hooks/hooks.json: missing — the write-time layer is gone"]
+    try:
+        data = json.loads(hj.read_text(encoding="utf-8"))
+    except ValueError as e:
+        return ["hooks/hooks.json: not valid JSON (%s)" % e]
+    patterns = [h.get("matcher", "")
+                for h in (data.get("hooks") or {}).get("PreToolUse", [])]
+
+    def covered(tool_name):
+        for pat in list(patterns):
+            if not pat:
+                continue
+            try:
+                if re.fullmatch(pat, tool_name):
+                    return True
+            except re.error:
+                errs.append("hooks/hooks.json: matcher %r is not a valid "
+                            "regex" % pat)
+                patterns.remove(pat)
+        return False
+
+    for tool in ("Write", "Edit", "NotebookEdit", "Bash", "WebFetch", "mcp__x"):
+        if not covered(tool):
+            if tool == "mcp__x":
+                errs.append("hooks/hooks.json: PreToolUse matcher does not "
+                            "cover mcp__ tools")
+            else:
+                errs.append("hooks/hooks.json: PreToolUse matcher does not "
+                            "cover '%s'" % tool)
+    guard = root / "hooks" / "ownership-guard.py"
+    if not guard.exists():
+        errs.append("hooks/ownership-guard.py: missing")
+    else:
+        try:
+            compile(guard.read_text(encoding="utf-8"), str(guard), "exec")
+        except SyntaxError as e:
+            errs.append("hooks/ownership-guard.py: does not compile (%s)" % e)
+    return errs
+
+
+def check_readme_counts(root, agents):
+    """README's counts must match the package, or the README is a second map.
+
+    The package's own philosophy (stated in ownership.yaml's comment block) is
+    that a hardcoded count of a growing set goes stale silently — the last one
+    said "ten" and stayed at ten. The README table (Agents/Skills/Cadences) is
+    exactly such a count, and until now it was the one map nothing checked:
+    v2.2 shipped with founder-os-init still saying "eight cadences" a full
+    version after the ninth landed. This check makes the drift a build failure
+    instead of a review finding.
+
+    A package without a README (the test fixtures) is skipped: the README is
+    the storefront, not the structure, and its absence is a packaging question
+    rather than a coherence one. Same for the cadence row when setup-cadences
+    is absent.
+    """
+    errs = []
+    readme = root / "README.md"
+    if not readme.exists():
+        return errs
+    text = readme.read_text(encoding="utf-8")
+
+    def table_count(label):
+        m = re.search(r"^\|\s*%s\s*\|\s*(\d+)\s*\|" % label, text,
+                      re.M | re.I)
+        return int(m.group(1)) if m else None
+
+    actual = {
+        "Agents": len(agents),
+        "Skills": len(list((root / "skills").glob("*/SKILL.md"))),
+    }
+    cadences = root / "skills" / "setup-cadences" / "SKILL.md"
+    if cadences.exists():
+        rows = re.findall(r"^\|\s*`/[a-z0-9-]+`\s*\|[^|]*\|\s*`[^`]+`\s*\|\s*$",
+                          cadences.read_text(encoding="utf-8"), re.M)
+        actual["Cadences"] = len(rows)
+    for label, real in actual.items():
+        claimed = table_count(label)
+        if claimed is None:
+            errs.append("README.md: 'What's inside' table has no '%s' row" % label)
+        elif claimed != real:
+            errs.append("README.md: claims %d %s, the package has %d — a count "
+                        "that drifts is a second map" % (claimed, label.lower(), real))
+    return errs
+
+
 CHECKS = [check_plugin, check_agents, check_agent_tools, check_agent_graph,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,
-          check_sections, check_beliefs]
+          check_sections, check_beliefs, check_hooks, check_readme_counts]
+
+
+def run_checks(root):
+    """Load agents and run every check, containing per-file parse failures.
+
+    One malformed SKILL.md used to kill the whole run with a traceback — the
+    difference between "FAIL: skills/x: missing YAML frontmatter" and a
+    stack trace is whether the author reads the other forty findings.
+    """
+    try:
+        agents = load_agents(root)
+    except (ValueError, yaml.YAMLError) as e:
+        return {}, [str(e)]
+    errs = []
+    for fn in CHECKS:
+        try:
+            errs += fn(root, agents)
+        except (ValueError, yaml.YAMLError) as e:
+            errs.append("%s (check '%s' aborted at first bad file)"
+                        % (e, fn.__name__))
+    return agents, errs
 
 
 def main():
@@ -345,10 +466,7 @@ def main():
     if not root.is_dir():
         print("FAIL: plugin root '%s' not found" % root)
         return 1
-    agents = load_agents(root)
-    errs = []
-    for fn in CHECKS:
-        errs += fn(root, agents)
+    agents, errs = run_checks(root)
     for e in errs:
         print("FAIL: %s" % e)
     print("\n%d agent(s), %d skill(s), %d error(s)"

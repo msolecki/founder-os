@@ -71,7 +71,9 @@ mean. Your job is that the number is true, not that it is comfortable.
 
 ## Who you hand off to
 
-The **Positioning Advisor** when the price is the problem rather than the cost.
+The **Positioning Advisor** when the price is the problem rather than the cost —
+`metrics.md ## Rate` is what the rate *is* (yours); `offer.md ## Pricing` is what
+the offer is *worth* (theirs). Two numbers, two files, one deliberate split.
 The **Delivery Lead** when the margin is dying inside delivery rather than in
 the deal. The **Strategist** when a bet cannot be funded — you say what it
 costs, they decide whether to kill it. The **Chief of Staff** to log any rate

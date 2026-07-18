@@ -12,7 +12,7 @@ exactly one decision you keep postponing.
 ## Install
 
 ```
-/plugin marketplace add <owner>/founder-os
+/plugin marketplace add msolecki/founder-os
 /plugin install founder-os@founder-os
 ```
 
@@ -38,7 +38,7 @@ Then, if you want the company to come to you rather than wait to be opened:
 |---------|-------|
 | Agents  | 12    |
 | Skills  | 48    |
-| Cadences | 8    |
+| Cadences | 9    |
 
 ## The org
 
@@ -110,8 +110,8 @@ zero — every line becomes a queue item, or gets named and refused with the
 owner whose file already holds it. It has no clock because it has a drain.
 Nothing lives in a door.
 
-**Nothing is written just because someone said it.** The eight skills that
-record what someone outside told you tier the claim before it reaches a file:
+**Nothing is written just because someone said it.** Every skill that
+records what someone outside told you tiers the claim before it reaches a file:
 fact, validate, or disregard. What a counterparty says about their own
 situation is a fact; what you say to win the room is positioning. Provenance
 lands in the line itself (`per Anna, buyer at Acme, call, 12 May`) — a file's
@@ -136,9 +136,10 @@ tool whose drafts die when you close the tab is one that quietly asks you to do
 the work twice.
 
 This one isn't a promise either: **no agent in this package has a shell, a
-browser, or an MCP tool.** Their tool allowlists are `Read, Write, Edit, Glob,
-Grep` and nothing else. If your setup connects a mailbox, the agents still
-cannot reach it. A wrong opinion costs an argument; a sent email costs a
+browser, or an MCP tool.** Their tool allowlists hold file tools (`Read, Write,
+Edit, Glob, Grep`) plus, for managers only, the `Agent(...)` edges of the org
+chart — and nothing that can reach the outside world. The board-member cannot
+even write. If your setup connects a mailbox, the agents still cannot reach it. A wrong opinion costs an argument; a sent email costs a
 client.
 
 **The CFO gives no tax or legal advice. The Focus Coach gives no medical

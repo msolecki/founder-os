@@ -143,11 +143,11 @@ better afternoon. There is no better afternoon. There is this session.
    failure this flow is arranged to avoid.
 
    **Name `/setup-cadences` as what comes after the brief. Do not run it here.**
-   The eight cadences are cron jobs on the founder's own machine, and nothing in
+   The cadences are cron jobs on the founder's own machine, and nothing in
    this package writes one until they say yes to that skill. Until they do, every
    cadence is a command they have to remember to type — which is the state this
    package exists to end. It goes after the brief for the same reason the brief
-   goes last: a founder who has never seen one has no reason to schedule eight.
+   goes last: a founder who has never seen one has no reason to schedule any.
 
 6. **Stop at twenty minutes.** Hard rule, not a target. Past twenty minutes you
    are conducting an interview, not onboarding, and the founder is answering to
@@ -231,9 +231,14 @@ is.
   `bet: none` — the cash unknown in `## Doing`, the rest in `## Queued`. No
   `TODO` lines anywhere.
 - `decisions/YYYY-MM-DD-founder-os-installed.md` — the timezone chosen, the
-  workspace path, and any question the founder could not answer. This is the
-  first entry in the decision log and it establishes the habit that makes
-  `annual-review` possible twelve months from now.
+  workspace path, and any question the founder could not answer, **carrying the
+  four headings the map declares for `decisions/`**: the facts under
+  `## Context`, `none — install record` under `## Rejected` and
+  `## Supersedes`, and under `## What would change our mind` the one honest
+  answer — "the cadences stop being read". This is the first entry in the
+  decision log; the log's own vocabulary starting at entry one is what
+  establishes the habit that makes `annual-review` possible twelve months from
+  now — an entry zero that breaks the format licenses every entry after it.
 
 ## Guardrails
 
