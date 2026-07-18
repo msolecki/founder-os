@@ -91,6 +91,16 @@ better afternoon. There is no better afternoon. There is this session.
    different name each time. By month three no two files agree and the map is
    fiction. The headings are the contract; you are laying it down.
 
+   **One exception to empty: `voice.md`, if the founder already has a voice.**
+   Ask one question — "do you have a style guide, a banned-phrases list, or a
+   few emails you'd send again?" — and if the answer names a file, pull it in:
+   real samples into `## Samples`, banned phrases into `## Never`, register
+   notes into `## Register`, each line stamped with where it came from
+   (`per <path>, imported at init`). A founder who has already written down
+   "never say 'reasumując'" should not teach it to `voice-capture` again one
+   harvested edit at a time. If the answer is no, leave it empty — empty is
+   honest, and three real drafts will fill it faster than an interview would.
+
 4. **Show them what was built while they talked. Two or three lines, not a file
    listing.** The workspace appeared during the interview and the founder did
    not see it happen. Show it now, at the one moment they are still deciding

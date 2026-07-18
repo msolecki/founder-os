@@ -117,6 +117,13 @@ situation is a fact; what you say to win the room is positioning. Provenance
 lands in the line itself (`per Anna, buyer at Acme, call, 12 May`) — a file's
 timestamp tells you when someone touched it, not when the claim was last true.
 
+**It speaks your language.** The section headings are pinned English — they are
+the machine contract — but everything under them is yours: a Polish founder gets
+a Polish workspace under English headings, and no skill will translate your
+pipeline at you. If you already keep a style guide or a banned-phrases list,
+init will offer to import it into `voice.md` instead of making you teach it
+twice.
+
 **It writes like you, or it says it can't.** `voice.md` holds real samples of
 your writing — not adjectives about it. "Friendly but professional" describes
 90% of business writing and constrains nothing; three real emails beat any
