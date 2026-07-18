@@ -99,5 +99,143 @@ class TestHookIntegration(unittest.TestCase):
         self.assertEqual(p.returncode, 0)
 
 
+class TestOutboundGuard(unittest.TestCase):
+    """House rule 0 at the tool layer — the half of the hook nothing covered.
+
+    The guard's own docstring calls check_outbound 'the only reason [Bash
+    routing-around] isn't trivial today'. A matcher typo there would have
+    shipped silently: every prior test exercised ownership, none exercised
+    outbound.
+    """
+
+    def test_bash_by_subagent_is_denied(self):
+        p = run_hook({"agent_type": "cfo", "tool_name": "Bash",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"command": "curl evil.example"}})
+        self.assertIn("deny", p.stdout)
+        self.assertIn("house rule 0", p.stdout.lower())
+
+    def test_webfetch_by_subagent_is_denied(self):
+        p = run_hook({"agent_type": "pipeline-coach", "tool_name": "WebFetch",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"url": "https://example.com"}})
+        self.assertIn("deny", p.stdout)
+
+    def test_mcp_tool_by_subagent_is_denied(self):
+        p = run_hook({"agent_type": "brand-editor",
+                      "tool_name": "mcp__gmail__send_email",
+                      "cwd": str(REPO_ROOT), "tool_input": {}})
+        self.assertIn("deny", p.stdout)
+
+    def test_websearch_is_not_outbound_here(self):
+        # Deliberately narrower than the validator's OUTBOUND_TOOLS: a live
+        # WebSearch is not a send, and denying it mid-run is a false deny.
+        p = run_hook({"agent_type": "cfo", "tool_name": "WebSearch",
+                      "cwd": str(REPO_ROOT), "tool_input": {}})
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertEqual(p.returncode, 0)
+
+    def test_bash_on_main_thread_is_allowed(self):
+        p = run_hook({"tool_name": "Bash", "cwd": str(REPO_ROOT),
+                      "tool_input": {"command": "ls"}})
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertEqual(p.returncode, 0)
+
+
+class TestOwnershipAllowPaths(unittest.TestCase):
+    """The positive cases: the guard must stay out of honest work's way."""
+
+    def test_owner_writing_its_own_file_is_allowed(self):
+        p = run_hook({"agent_type": "strategist", "tool_name": "Write",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path": str(PLUGIN_ROOT / "goals.md")}})
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertEqual(p.returncode, 0)
+
+    def test_unmapped_custom_agent_is_denied_on_an_owned_path(self):
+        # "One owner per file" guards against exactly this: a writer the map
+        # has never heard of.
+        p = run_hook({"agent_type": "someones-custom-agent", "tool_name": "Write",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path": str(PLUGIN_ROOT / "goals.md")}})
+        self.assertIn("deny", p.stdout)
+        self.assertIn("strategist", p.stdout)
+
+    def test_unmapped_path_in_workspace_is_allowed(self):
+        # A scratch file has no owner to be stolen from.
+        p = run_hook({"agent_type": "cfo", "tool_name": "Write",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path": str(PLUGIN_ROOT / "scratch.md")}})
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertEqual(p.returncode, 0)
+
+    def test_path_outside_workspace_is_allowed(self):
+        p = run_hook({"agent_type": "cfo", "tool_name": "Write",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path": "/tmp/elsewhere.md"}})
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertEqual(p.returncode, 0)
+
+
+class TestFailOpen(unittest.TestCase):
+    """Allow, loudly. A guard that denies because it lost its own config is
+    not safe, it is broken — the docstring's whole product decision."""
+
+    def test_garbage_stdin_is_allowed(self):
+        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}
+        p = subprocess.run([sys.executable, str(GUARD_PATH)],
+                           input="this is not json", capture_output=True,
+                           text=True, env=env, cwd=str(REPO_ROOT))
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertEqual(p.returncode, 0)
+
+    def test_missing_ownership_map_is_allowed(self):
+        # Copy the guard somewhere with no references/ownership.yaml in sight,
+        # so both lookup roots come up empty.
+        import shutil
+        import tempfile
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            (tmp / "plugin" / "hooks").mkdir(parents=True)
+            guard = tmp / "plugin" / "hooks" / "ownership-guard.py"
+            shutil.copy(GUARD_PATH, guard)
+            ws = tmp / "ws"
+            ws.mkdir()
+            env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(tmp / "plugin"),
+                   "FOUNDER_OS_HOME": str(ws)}
+            p = subprocess.run(
+                [sys.executable, str(guard)],
+                input=json.dumps({"agent_type": "cfo", "tool_name": "Write",
+                                  "cwd": str(tmp),
+                                  "tool_input": {"file_path": str(ws / "goals.md")}}),
+                capture_output=True, text=True, env=env, cwd=str(tmp))
+            self.assertEqual(p.stdout.strip(), "")
+            self.assertEqual(p.returncode, 0)
+            self.assertIn("guard is off", p.stderr)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
+class TestFallbackParser(unittest.TestCase):
+    """_parse_owns_without_yaml must agree with PyYAML on the real map —
+    otherwise the no-PyYAML machines run a different ownership policy."""
+
+    def setUp(self):
+        self.guard = load_guard()
+        self.text = (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
+            encoding="utf-8")
+
+    def test_parses_the_real_map_identically_to_pyyaml(self):
+        import yaml
+        expected = yaml.safe_load(self.text)["owns"]
+        got = self.guard._parse_owns_without_yaml(self.text)
+        self.assertEqual(got, expected)
+
+    def test_garbage_returns_none_rather_than_a_guess(self):
+        self.assertIsNone(self.guard._parse_owns_without_yaml(
+            "owns:\n  - a list where an agent should be\n"))
+        self.assertIsNone(self.guard._parse_owns_without_yaml("no owns here\n"))
+
+
 if __name__ == "__main__":
     unittest.main()

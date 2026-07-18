@@ -508,6 +508,51 @@ class TestCheckHooks(unittest.TestCase):
         real = Path(__file__).resolve().parents[1] / "founder-os"
         self.assertEqual(V.check_hooks(real, {}), [])
 
+    def test_invalid_regex_matcher_is_an_error_not_a_crash(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": "([", "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("not a valid regex" in e for e in errs), errs)
+
+
+class TestReadmeCounts(ValidatorTestCase):
+    """The README table is a count of a growing set — the exact object the
+    package's own philosophy says goes stale silently. Now it fails the build
+    instead."""
+
+    README = ("# X\n\n| Content | Count |\n|---|---|\n"
+              "| Agents  | %d    |\n| Skills  | %d    |\n")
+
+    def test_matching_counts_are_clean(self):
+        # Fixture: 2 agents, 4 skills (3 universals + daily-brief), no
+        # setup-cadences so the cadence row is not required.
+        write(self.root / "README.md", self.README % (2, 4))
+        self.assertEqual(self.check(V.check_readme_counts), [])
+
+    def test_stale_agent_count_is_caught(self):
+        write(self.root / "README.md", self.README % (12, 4))
+        errs = self.check(V.check_readme_counts)
+        self.assertTrue(any("claims 12 agents, the package has 2" in e
+                            for e in errs), errs)
+
+    def test_missing_readme_is_not_this_checks_problem(self):
+        self.assertEqual(self.check(V.check_readme_counts), [])
+
+
+class TestRealPackage(unittest.TestCase):
+    def test_shipped_package_passes_every_check(self):
+        """The '12 agents, 48 skills, 0 errors' acceptance line, executable.
+
+        Every other test here validates a synthetic fixture; this is the only
+        one that would catch a regression in the package actually shipped.
+        """
+        real = Path(__file__).resolve().parents[1] / "founder-os"
+        agents, errs = V.run_checks(real)
+        self.assertEqual(errs, [])
+        self.assertEqual(len(agents), 12)
+        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 48)
+
 
 class TestRunChecksContainment(unittest.TestCase):
     def setUp(self):

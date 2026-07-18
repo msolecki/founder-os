@@ -388,10 +388,56 @@ def check_hooks(root, agents):
     return errs
 
 
+def check_readme_counts(root, agents):
+    """README's counts must match the package, or the README is a second map.
+
+    The package's own philosophy (stated in ownership.yaml's comment block) is
+    that a hardcoded count of a growing set goes stale silently — the last one
+    said "ten" and stayed at ten. The README table (Agents/Skills/Cadences) is
+    exactly such a count, and until now it was the one map nothing checked:
+    v2.2 shipped with founder-os-init still saying "eight cadences" a full
+    version after the ninth landed. This check makes the drift a build failure
+    instead of a review finding.
+
+    A package without a README (the test fixtures) is skipped: the README is
+    the storefront, not the structure, and its absence is a packaging question
+    rather than a coherence one. Same for the cadence row when setup-cadences
+    is absent.
+    """
+    errs = []
+    readme = root / "README.md"
+    if not readme.exists():
+        return errs
+    text = readme.read_text(encoding="utf-8")
+
+    def table_count(label):
+        m = re.search(r"^\|\s*%s\s*\|\s*(\d+)\s*\|" % label, text,
+                      re.M | re.I)
+        return int(m.group(1)) if m else None
+
+    actual = {
+        "Agents": len(agents),
+        "Skills": len(list((root / "skills").glob("*/SKILL.md"))),
+    }
+    cadences = root / "skills" / "setup-cadences" / "SKILL.md"
+    if cadences.exists():
+        rows = re.findall(r"^\|\s*`/[a-z0-9-]+`\s*\|[^|]*\|\s*`[^`]+`\s*\|\s*$",
+                          cadences.read_text(encoding="utf-8"), re.M)
+        actual["Cadences"] = len(rows)
+    for label, real in actual.items():
+        claimed = table_count(label)
+        if claimed is None:
+            errs.append("README.md: 'What's inside' table has no '%s' row" % label)
+        elif claimed != real:
+            errs.append("README.md: claims %d %s, the package has %d — a count "
+                        "that drifts is a second map" % (claimed, label.lower(), real))
+    return errs
+
+
 CHECKS = [check_plugin, check_agents, check_agent_tools, check_agent_graph,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,
-          check_sections, check_beliefs, check_hooks]
+          check_sections, check_beliefs, check_hooks, check_readme_counts]
 
 
 def run_checks(root):
