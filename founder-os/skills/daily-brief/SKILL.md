@@ -147,8 +147,8 @@ Read for one named section only:
    action, a client whose `Verdict:` is `at-risk` or `failing`, an invoice past
    terms, a client whose latest `Verdict:` is older than 45 days (`client-health`
    overdue — an unexamined client is not a healthy one, it is an unexamined
-   one), a `## Dead` deal whose `win/loss: pending` is older than 5 days (the
-   lesson is expiring — `win-loss-analysis`'s own window is five), **a client
+   one), a `## Dead` deal whose `win/loss: pending` is older than 5 business days (the
+   lesson is expiring — `win-loss-analysis`'s own window is five business days), **a client
    on the books that `offer.md` `### Not this` excludes**. One line each with
    the number of days attached, no editorializing.
 

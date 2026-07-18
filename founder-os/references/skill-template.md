@@ -74,6 +74,16 @@ can simply be improved when it turns out to be wrong.
 <What this skill refuses to do. Omit only if genuinely nothing.>
 ```
 
+## Optional heading: `## Named failure modes`
+
+One heading may be added beyond the template, and only this one. About a third
+of the role skills carry `## Named failure modes` — the concrete ways this
+decision goes wrong, each with a name. The quality bar below asks for "a named
+failure mode"; this heading is where they live when Beliefs and Steps are not
+the natural home. It is optional and its absence is fine — folding failure
+modes into `## Beliefs` or `## Steps` is the other sanctioned place. Any other
+extra heading is drift, and review should say so.
+
 ## `metadata.writes`
 
 **Role skills must declare every workspace path they write.** Each path must

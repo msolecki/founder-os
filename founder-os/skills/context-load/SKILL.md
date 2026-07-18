@@ -93,9 +93,13 @@ Then, and only then, the one file your decision owns.
    and become the averager this step describes. `daily-brief` states the same
    bounds on its own side; neither file may widen this alone.
 
-   **No other skill has either exemption**, and neither gets extended by analogy
-   to any other cadence the Chief of Staff runs. `week-plan`, `weekly-review`,
-   `monthly-review` and `triage` beyond its own bounds all live under step 5.
+   **No other skill grants itself an exemption at run time.** The period reviews
+   (`week-plan`, `weekly-review`, `monthly-review`) read past the cap by design —
+   closing a period is a decision across books — and their licence is the
+   `## Inputs` list in their own SKILL.md: fixed in the package, never widened in
+   the moment. A cadence reads exactly what its `## Inputs` names and nothing
+   else. Anything beyond that list lives under step 5, as does `triage` beyond
+   its own bounds.
 6. **Stamp the context before your first sentence.** The founder sees what you
    read and how old it was, every time, before they read your conclusion.
 

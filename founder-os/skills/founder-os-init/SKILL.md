@@ -143,11 +143,11 @@ better afternoon. There is no better afternoon. There is this session.
    failure this flow is arranged to avoid.
 
    **Name `/setup-cadences` as what comes after the brief. Do not run it here.**
-   The eight cadences are cron jobs on the founder's own machine, and nothing in
+   The cadences are cron jobs on the founder's own machine, and nothing in
    this package writes one until they say yes to that skill. Until they do, every
    cadence is a command they have to remember to type — which is the state this
    package exists to end. It goes after the brief for the same reason the brief
-   goes last: a founder who has never seen one has no reason to schedule eight.
+   goes last: a founder who has never seen one has no reason to schedule any.
 
 6. **Stop at twenty minutes.** Hard rule, not a target. Past twenty minutes you
    are conducting an interview, not onboarding, and the founder is answering to

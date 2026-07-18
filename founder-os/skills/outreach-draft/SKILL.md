@@ -170,10 +170,11 @@ id and a bet", and a proposal that arrives without one makes the brief work it o
 at 08:00 from a file it opened for one section.
 
 **The line is per-deal, under the prospect, and that is the one deliberate
-departure.** The other five are scheduled cadences that run once per period, so one
-bounded line in a summary section holds everything they can propose. You are not:
-the founder can run you at 10:00 for Anna and at 14:00 for Kowalski, and a single
-line holds one of them. The second write would silently drop the first — Anna's
+departure.** The other five are scheduled cadences: each runs once per period and
+writes its proposals in a single pass, so a bounded block in a summary section
+survives the period intact — however many lines the pass emits. You are
+on-demand and repeatable: the founder can run you at 10:00 for Anna and at 14:00
+for Kowalski, and a summary block rewritten per run holds only the last run. The second write would silently drop the first — Anna's
 draft would sit on disk with an empty `## Sent` and no obligation anywhere, which is
 the exact failure this skill was changed to fix. `## Live` is already per-deal
 (`Outreach:`, `Touch:`, `Last reply:` all sit under the prospect), so the container

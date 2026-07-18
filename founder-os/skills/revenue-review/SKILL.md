@@ -14,7 +14,8 @@ month — they have had a record month of paperwork.
 
 ## When to use
 
-The first working day of each month, covering the month just ended. Triggered
+The first of the month, covering the month just ended — the cron line fires on
+the calendar 1st, weekend or not, and a close does not mind running on a Saturday. Triggered
 by cron on the 1st if the founder ran `/setup-cadences`; otherwise `/revenue-review`, by hand. Also before any decision that spends the
 month's revenue: a contractor, a tool, a holiday.
 
