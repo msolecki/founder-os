@@ -96,7 +96,7 @@ founder-os/                       # the plugin (what gets installed)
                                   # ingestion-gate, linking
   images/                         # org chart (mermaid + png)
 scripts/validate_package.py       # build-time validator (14 checks)
-tests/                            # 75 tests: validator mutations + hook subprocess
+tests/                            # validator mutations + hook subprocess + registry roots
 docs/superpowers/                 # design specs and implementation plans (v2.1, v2.2)
 founder-os-review.md              # full project audit, 2026-07-18
 ```
