@@ -8,7 +8,7 @@ description: Resolve every workspace write against the ownership map before maki
 Every agent in this company carries this skill. It is house rule 4 — *stay in
 your lane* — turned from a preference into a check that runs before the write.
 
-Twelve agents sharing one markdown workspace has exactly one failure mode worth
+An org of agents sharing one markdown workspace has exactly one failure mode worth
 engineering against, and it is not conflict. It is silence: two agents write the
 same file, the second one wins, and nobody notices until the founder acts on a
 number that was quietly replaced three weeks ago. There is no merge conflict, no

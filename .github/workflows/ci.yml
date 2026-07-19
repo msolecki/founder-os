@@ -15,5 +15,7 @@ jobs:
       - run: pip install pyyaml
       - name: Validate the package
         run: python3 scripts/validate_package.py founder-os
+      - name: Check COMMANDS.md is current
+        run: python3 scripts/generate_commands.py founder-os --check
       - name: Run the tests
         run: python3 -m unittest discover -s tests -v

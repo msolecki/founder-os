@@ -8,7 +8,7 @@ description: Run first-install onboarding — interview the founder, scaffold th
 This runs once, at install, and it decides whether the founder is still using
 this package in three weeks.
 
-A new installer faces twelve agents and an empty directory. Nothing in that
+A new installer faces an org of agents and an empty directory. Nothing in that
 directory can be advised on, because house rule 1 forbids advice without state,
 so the entire company is inert until this skill runs. The failure mode is not
 that onboarding is hard — it is that onboarding is *thorough*: forty questions,
@@ -54,6 +54,10 @@ Do not run it to "refresh" a live workspace. That is `founder-os-doctor`.
   memory or from this skill. The map changes and this file does not.
 - `$FOUNDER_OS_HOME`, default `./founder-os/`.
 - Existing `charter.md`, if any — the abort check in step 1.
+- `~/.founder-os/businesses.yaml`, if it exists — the multi-business registry
+  (`references/multi-business.md`). Its presence, or a live workspace at a
+  different path, is what routes step 1 into the second-business flow instead
+  of an abort.
 
 ## Steps
 
@@ -64,9 +68,23 @@ nothing, and it hands them the first convenient moment to defer this to a
 better afternoon. There is no better afternoon. There is this session.
 
 1. **Refuse to init over a live workspace.** If `charter.md` exists and has
-   content, stop and say so. Re-running init over real state is the one way this
+   content **at the target path**, stop and say so. Re-running init over real
+   state is the one way this
    skill can destroy something irreplaceable, and "it looked empty" is not a
    defence. Route to `founder-os-doctor`, which repairs without clobbering.
+
+   **A live workspace at a *different* path is not an abort — it is a second
+   business.** Ask one question to confirm that is what the founder means, then
+   follow `references/multi-business.md`: ask for a slug for each business
+   (`[a-z0-9-]`), write or update `~/.founder-os/businesses.yaml` — the
+   existing workspace registered under its slug, the new one under its own,
+   `default:` chosen by the founder — and scaffold the new workspace exactly as
+   below. If this registration makes it two **active** businesses, also
+   scaffold the portfolio workspace at the registry's `portfolio:` path from
+   `portfolio_files:` in `ownership.yaml` (same rule: headings from
+   `sections:`, every one empty), and name `/portfolio-review` in the closing
+   line as the cadence that now exists for a reason. The interview below runs
+   for the **new** business only — the existing one already answered it.
 
 2. **Ask the timezone first.** The founder is never more willing to answer
    questions than in the first minute. IANA form — `Europe/Warsaw`,

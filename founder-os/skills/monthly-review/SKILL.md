@@ -83,6 +83,17 @@ Read first, in order — house rule 1:
    checkable against the weeks — or decisions are being made and not logged,
    which is the usual answer. Say which one it was. Two consecutive months at
    zero means the log is dead; naming that is the whole value of this step.
+
+   **Then revisit what is old enough to judge.** Every entry in `decisions/`
+   dated 90 or more days ago and not yet revisited: read its
+   `## What would change our mind` and answer it — did it fire? One line per
+   decision under `## Decisions`: **held** (the falsifier stayed quiet),
+   **fired-and-ignored** (it happened and nothing changed — this is the
+   month's finding, name it above the fold), or **overtaken** (superseded, or
+   the falsifier can no longer be evaluated). This is the only place the log
+   closes its loop: `annual-review` scores twelve months of judgement, and it
+   can only score falsifiers somebody bothered to check. A decision log nobody
+   revisits is a diary.
 4. **Mark each bet: moved, drifted, or untouched.** Against the threshold in
    `goals.md`, using the number from `metrics.md`. A bet the founder "thought
    about" is untouched.
@@ -105,6 +116,7 @@ Append to `reviews/monthly/YYYY-MM.md`:
     - <bet>: moved | drifted | untouched — <number from metrics.md, dated>
     ## Decisions
     <N logged> — <made-and-unlogged, if any>
+    revisits (90d+): <decision slug> — held | fired-and-ignored | overtaken
     ## Last month's correction
     <held | died>
     ## The correction

@@ -237,5 +237,94 @@ class TestFallbackParser(unittest.TestCase):
         self.assertIsNone(self.guard._parse_owns_without_yaml("no owns here\n"))
 
 
+class TestRegistryRoots(unittest.TestCase):
+    """Multi-business: the registry's workspace roots are guarded too.
+
+    references/multi-business.md: `~/.founder-os/businesses.yaml` lists every
+    business workspace plus the portfolio workspace, and a write into any of
+    them must be checked against the map — not only the workspace this
+    session's FOUNDER_OS_HOME happens to name. Fail-open applies in full: a
+    broken registry costs coverage, never a write.
+    """
+
+    def _home_with_registry(self, tmp, text):
+        home = tmp / "home"
+        (home / ".founder-os").mkdir(parents=True)
+        (home / ".founder-os" / "businesses.yaml").write_text(
+            text, encoding="utf-8")
+        return home
+
+    def test_registry_roots_are_candidate_workspaces(self):
+        import tempfile
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            acme = tmp / "acme" / "founder-os"
+            portfolio = tmp / "portfolio"
+            acme.mkdir(parents=True)
+            portfolio.mkdir(parents=True)
+            home = self._home_with_registry(tmp, (
+                "businesses:\n"
+                "  acme:\n"
+                "    home: %s\n"
+                "    status: active\n"
+                "default: acme\n"
+                "portfolio: %s\n" % (acme, portfolio)))
+            guard = load_guard()
+            with mock.patch.dict(os.environ, {"HOME": str(home)}):
+                roots = guard.workspace_roots(None)
+            self.assertIn(str(acme.resolve()), roots)
+            self.assertIn(str(portfolio.resolve()), roots)
+
+    def test_broken_registry_fails_open(self):
+        import tempfile
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            home = self._home_with_registry(tmp, ":\nnot yaml: [unclosed\n")
+            guard = load_guard()
+            with mock.patch.dict(os.environ, {"HOME": str(home)}):
+                self.assertEqual(guard._registry_roots(), [])
+                # and the overall resolution still stands on env/cwd guesses
+                self.assertTrue(guard.workspace_roots(None))
+
+    def test_cross_owner_write_in_registered_workspace_is_denied(self):
+        """FOUNDER_OS_HOME points at business A; the write lands in business B.
+
+        Without the registry the guard would not recognise B as a workspace at
+        all and would allow — which is exactly the multi-business hole this
+        closes.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            a = tmp / "a" / "founder-os"
+            b = tmp / "b" / "founder-os"
+            a.mkdir(parents=True)
+            b.mkdir(parents=True)
+            (b / "metrics.md").write_text("# metrics\n", encoding="utf-8")
+            home = self._home_with_registry(tmp, (
+                "businesses:\n"
+                "  a:\n"
+                "    home: %s\n"
+                "    status: active\n"
+                "  b:\n"
+                "    home: %s\n"
+                "    status: active\n"
+                "default: a\n" % (a, b)))
+            env = {**os.environ,
+                   "HOME": str(home),
+                   "FOUNDER_OS_HOME": str(a),
+                   "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}
+            payload = {"agent_type": "strategist", "tool_name": "Write",
+                       "tool_input": {"file_path": str(b / "metrics.md")},
+                       "cwd": str(tmp)}
+            r = subprocess.run([sys.executable, str(GUARD_PATH)],
+                               input=json.dumps(payload), capture_output=True,
+                               text=True, env=env, cwd=str(tmp))
+            self.assertIn("deny", r.stdout)
+            self.assertIn("cfo", r.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

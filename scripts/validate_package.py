@@ -215,6 +215,9 @@ def check_ownership(root, agents):
     for f in data.get("workspace_files") or []:
         if f not in seen:
             errs.append("ownership.yaml: workspace file '%s' has no owner" % f)
+    for f in data.get("portfolio_files") or []:
+        if f not in seen:
+            errs.append("ownership.yaml: portfolio file '%s' has no owner" % f)
     return errs
 
 
@@ -234,12 +237,16 @@ def check_workspace_files_complete(root, agents):
         return errs
     data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
     declared = set(data.get("workspace_files") or [])
+    # portfolio_files: is the second scaffold promise — the portfolio workspace,
+    # scaffolded by founder-os-init when the registry gains a second business.
+    # A path in either list has a scaffolder; a path in neither has none.
+    declared |= set(data.get("portfolio_files") or [])
     for agent, files in (data.get("owns") or {}).items():
         for f in files or []:
             if f not in declared:
                 errs.append("ownership.yaml: '%s' is owned by '%s' but is not in "
-                            "workspace_files: — founder-os-init will never "
-                            "scaffold it" % (f, agent))
+                            "workspace_files: or portfolio_files: — "
+                            "founder-os-init will never scaffold it" % (f, agent))
     return errs
 
 

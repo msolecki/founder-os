@@ -1,7 +1,12 @@
+%% Solid edges are the manager→report lines (the Agent(...) graph, minus the
+%% Chief of Staff's skip-level reach: COS may summon every agent, not only its
+%% five solid reports). The Portfolio Manager exists on multi-business
+%% installs and ranks between businesses; everyone else lives inside one.
 graph TD
     F[YOU — Founder]
     F --> COS[Chief of Staff]
     F --> BM[Board Member]
+    COS --> PM[Portfolio Manager]
     COS --> ST[Strategist]
     COS --> PA[Positioning Advisor]
     COS --> DL[Delivery Lead]

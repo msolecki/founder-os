@@ -17,7 +17,7 @@ Two guards, both scoped to subagents:
 ## What this is not
 
 This is **not a security boundary**, and the Claude Code docs are explicit that
-hooks are not one. Everything here is operational policy — it keeps twelve
+hooks are not one. Everything here is operational policy — it keeps an org of
 agents from corrupting each other's state during honest work. It does not
 contain an adversary:
 
@@ -200,6 +200,45 @@ def load_ownership():
     return None
 
 
+def _registry_roots():
+    """Workspace roots from the multi-business registry, or [].
+
+    `~/.founder-os/businesses.yaml` (references/multi-business.md) lists every
+    business workspace plus the portfolio workspace. A multi-business session
+    routinely writes a workspace other than the one `FOUNDER_OS_HOME` names —
+    the portfolio-manager writing `portfolio.md` is the everyday case — and a
+    root this function doesn't return is a workspace this guard doesn't guard.
+
+    Fail-open posture applies in full: no registry, unreadable YAML, PyYAML
+    missing, unexpected shape — return [] and let the env/cwd roots carry on.
+    A parse failure here must never cost anyone a write; it costs coverage,
+    which the build-time validator does not depend on.
+    """
+    path = os.path.expanduser(os.path.join("~", ".founder-os", "businesses.yaml"))
+    if yaml is None or not os.path.isfile(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = yaml.safe_load(fh.read()) or {}
+    except (OSError, yaml.YAMLError) as e:
+        log("could not read registry %s (%s)" % (path, e))
+        return []
+    if not isinstance(data, dict):
+        return []
+    roots = []
+    businesses = data.get("businesses")
+    if isinstance(businesses, dict):
+        for entry in businesses.values():
+            if isinstance(entry, dict):
+                home = entry.get("home")
+                if isinstance(home, str) and os.path.isabs(home):
+                    roots.append(home)
+    portfolio = data.get("portfolio")
+    if isinstance(portfolio, str) and os.path.isabs(portfolio):
+        roots.append(portfolio)
+    return roots
+
+
 def workspace_roots(hook_cwd):
     """Candidate absolute workspace roots, best guess first.
 
@@ -208,6 +247,11 @@ def workspace_roots(hook_cwd):
     we try several bases and test the target against all of them. Over-guessing
     here is cheap: a root that doesn't hold the target simply never matches, and
     a target under none of them is allowed.
+
+    On a multi-business install the registry's roots are appended, so a write
+    into *any* registered business workspace — or the portfolio workspace — is
+    checked against the map, not only the workspace this session happens to be
+    homed on.
     """
     bases = [os.environ.get("CLAUDE_PROJECT_DIR"), hook_cwd, os.getcwd()]
     home = os.environ.get("FOUNDER_OS_HOME")
@@ -219,6 +263,7 @@ def workspace_roots(hook_cwd):
         for b in bases:
             if b:
                 roots.append(os.path.join(b, leaf))
+    roots.extend(_registry_roots())
     out = []
     for r in roots:
         for v in (os.path.realpath(r), os.path.normpath(os.path.abspath(r))):

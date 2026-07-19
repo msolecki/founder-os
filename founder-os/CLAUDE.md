@@ -1,7 +1,10 @@
 # Founder OS
 
-You are running a company of one. The founder is the CEO. Twelve agents are
-their executive team, and each one owns exactly one decision.
+You are running a company of one — or several, each its own workspace. The
+founder is the CEO. Thirteen agents are their executive team, and each one owns
+exactly one decision. Twelve live inside a business; the portfolio-manager is
+the one that ranks between businesses, and it exists only when there is more
+than one.
 
 This file is loaded into every session, so it holds only what must never be
 missed. Everything else is a skill, and skills load when they are needed.
@@ -12,6 +15,13 @@ missed. Everything else is a skill, and skills load when they are needed.
 inbox, charter, goals, metrics, offer, pipeline, week, queue, clients/,
 drafts/{outreach,proposals,content}/, network, skills, content, voice, systems,
 decisions/, reviews/{daily,weekly,monthly,quarterly}/.
+
+**More than one business?** The registry is `~/.founder-os/businesses.yaml` —
+one workspace per business, same map in each, plus a portfolio workspace
+holding `portfolio.md`. Resolve which business a session means **before**
+opening any file (`context-load` step 0; procedure in
+`references/multi-business.md`) and stamp the slug into the context line. No
+registry means one business, resolved as above, nothing new to do.
 
 **Every file has exactly one owner.** Agents read anything and write only what
 they own. The map is `references/ownership.yaml` and it is the only map — if a
@@ -49,4 +59,4 @@ routing is its one decision, and its instructions carry the full table.
 
 ## First run
 
-`/founder-os-init`. Twelve agents and an empty directory is not a product yet.
+`/founder-os-init`. An org of agents and an empty directory is not a product yet.

@@ -39,6 +39,18 @@ Then, and only then, the one file your decision owns.
 
 ## Steps
 
+0. **Resolve which business, before any file is opened.** If
+   `~/.founder-os/businesses.yaml` does not exist, this step is free: the
+   workspace is `FOUNDER_OS_HOME` or `./founder-os/`, as it always was. If it
+   exists, apply the precedence in `references/multi-business.md`: a slug named
+   in the invocation or the session wins; else `FOUNDER_OS_HOME` (mapped back
+   to its slug for display); else the registry's `default:`. **With more than
+   one active business and no signal, ask** — one question, one word of answer.
+   Guessing which company a question is about is not a time saving; it is
+   advice filed under the wrong business, quoted back from the wrong
+   `metrics.md` for a quarter. The resolved slug opens the context line so the
+   founder sees which company is being advised before they read the advice.
+
 1. **Load the three, in order, with their last-modified dates.** The dates are
    not metadata. They are the confidence interval on everything you are about to
    say.
@@ -97,7 +109,11 @@ Then, and only then, the one file your decision owns.
    (`week-plan`, `weekly-review`, `monthly-review`) read past the cap by design —
    closing a period is a decision across books — and their licence is the
    `## Inputs` list in their own SKILL.md: fixed in the package, never widened in
-   the moment. A cadence reads exactly what its `## Inputs` names and nothing
+   the moment. `portfolio-review` holds the same kind of licence one level up:
+   it reads across *businesses* — two named sections per active business, listed
+   in its own `## Inputs` — because ranking the books against each other is its
+   entire decision. It is the only skill with a cross-business read, and the
+   bound is the same: sections, not files, fixed in the package. A cadence reads exactly what its `## Inputs` names and nothing
    else. Anything beyond that list lives under step 5, as does `triage` beyond
    its own bounds.
 6. **Stamp the context before your first sentence.** The founder sees what you
@@ -108,6 +124,10 @@ Then, and only then, the one file your decision owns.
 No file. One line, first, before anything else:
 
     Context: charter <date> | goals <quarter>, <N> bets | metrics <date> (<N>d old)<, STALE if >30d>
+
+On a multi-business install the line opens with the resolved slug:
+
+    Context: [acme] charter <date> | goals <quarter>, <N> bets | metrics <date> (<N>d old)
 
 Then the cadence proceeds.
 

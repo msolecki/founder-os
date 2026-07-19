@@ -6,8 +6,10 @@
 
 Most AI setups hire you staff. This one is the org that holds you accountable.
 
-You are the Founder. These twelve agents are your exec team, and each one owns
-exactly one decision you keep postponing.
+You are the Founder. These thirteen agents are your exec team, and each one owns
+exactly one decision you keep postponing. Run one business or several — each
+business is its own workspace, and the thirteenth agent exists to rank between
+them.
 
 ## Install
 
@@ -22,7 +24,7 @@ Then, once:
 /founder-os-init
 ```
 
-Twelve agents and an empty directory is not a product yet. Onboarding takes
+An org of agents and an empty directory is not a product yet. Onboarding takes
 about twenty minutes and ends by handing you your first brief — not a filing
 cabinet.
 
@@ -36,9 +38,12 @@ Then, if you want the company to come to you rather than wait to be opened:
 
 | Content | Count |
 |---------|-------|
-| Agents  | 12    |
-| Skills  | 48    |
-| Cadences | 9    |
+| Agents  | 13    |
+| Skills  | 49    |
+| Cadences | 10   |
+
+The full catalogue — every skill, its agent, and its schedule — is
+[`COMMANDS.md`](COMMANDS.md), generated from the package so it cannot drift.
 
 ## The org
 
@@ -56,14 +61,40 @@ Then, if you want the company to come to you rather than wait to be opened:
 | Brand Editor | What to publish, and where |
 | Network Manager | Who to talk to, and when to follow up |
 | Ops Engineer | What to automate vs. tolerate |
+| Portfolio Manager | How your hours and cash split across businesses (multi-business installs) |
 
-Twelve agents only works if each owns a decision no other agent can make. That
-was the test every agent had to pass to ship — and the reason there are twelve
+Thirteen agents only works if each owns a decision no other agent can make. That
+was the test every agent had to pass to ship — and the reason there are thirteen
 of them rather than a hundred and sixty-seven.
 
 Ask the **chief-of-staff** when you don't know who to ask. Routing is its one
-decision, and it can summon the other eleven; they cannot summon each other
+decision, and it can summon the rest of the org; they cannot summon each other
 sideways. The org chart is the agent graph, not a diagram in a README.
+
+## A day with Founder OS
+
+Morning: the brief is already there — `/daily-brief` ran at 08:00 and named the
+one thing that matters today (or you type it yourself). A thought at 15:00 with
+no session open: append one line to `inbox.md`, no fields, no ceremony — the
+next brief or `/triage` drains it. A prospect to move: `/pipeline-review`. A
+draft to send: `/outreach-draft` writes it to `drafts/`, you press send.
+Friday: `/weekly-review` compares committed to done and sweeps the queue.
+Month-end: `/revenue-review` closes the books. Don't know who to ask? Ask the
+chief-of-staff — routing is its decision, not yours. The full catalogue with
+schedules is [`COMMANDS.md`](COMMANDS.md).
+
+## More than one business
+
+One workspace per business — each a complete, ordinary Founder OS — and a
+registry (`~/.founder-os/businesses.yaml`) that names them. Every cadence takes
+the business slug as an argument; cron lines carry it per fence, so two
+businesses hold two schedules in one crontab without touching each other. What
+multi-business adds is exactly one decision: **how your hours and cash split
+across businesses** — the Portfolio Manager owns it, `/portfolio-review` makes
+it weekly, and `portfolio.md` records it. Everything else deliberately stays
+per-business: no agent reads across books except the portfolio-manager, and it
+reads two sections per business, not the books. Full procedure:
+`references/multi-business.md`.
 
 ## It comes to you
 

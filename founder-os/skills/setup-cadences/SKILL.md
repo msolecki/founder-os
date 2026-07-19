@@ -1,16 +1,17 @@
 ---
 name: setup-cadences
-description: Turn the nine cadences into real scheduled jobs on the founder's own machine — run once, after their first brief, so the package stops waiting to be opened
+description: Turn the cadences into real scheduled jobs on the founder's own machine — run once, after their first brief, so the package stops waiting to be opened
 ---
 
 # Setup Cadences
 
 Every skill in this package is inert until somebody types its name. That is the
-whole problem. The nine cadences are the only thing that makes this an OS
+whole problem. The cadences are the only thing that makes this an OS
 rather than a folder of prompts, and a cadence that fires when the founder
 remembers to fire it is not a cadence — it is a reminder they are already
-ignoring. This skill is how nine skills become a schedule on the founder's own
-machine, once, in one confirmation.
+ignoring. This skill is how those skills become a schedule on the founder's own
+machine, once, in one confirmation — once **per business**, on a multi-business
+install, because each business's cadences carry that business's workspace.
 
 **Claude Code cannot ship a schedule inside a plugin.** Not a gap to work around
 later — a fact to design against now:
@@ -60,6 +61,11 @@ every other skill here, and it is why it reads almost nothing you own:
   when there is nothing, which is not an error, it is an empty answer.
 - The **absolute** path of `$FOUNDER_OS_HOME`, default `./founder-os/`. Resolve
   it with `pwd`. Step 3 is about why a relative default is a landmine here.
+- `~/.founder-os/businesses.yaml`, if it exists — the multi-business registry
+  (`references/multi-business.md`). It decides the fence marker (slugged or
+  legacy), which workspace these lines carry, and whether `/portfolio-review`
+  gets a line at all. No registry means the classic single-business install and
+  the legacy markers, unchanged.
 - `charter.md` `## Timezone` — read only, to compare against the host's zone. The
   Chief of Staff owns that file. You do not edit it.
 
@@ -91,6 +97,7 @@ five days late and it cannot say why.
 | skill | when | cron |
 |---|---|---|
 | `/daily-brief` | weekdays 08:00 | `0 8 * * 1-5` |
+| `/portfolio-review` | Monday 08:15, multi-business installs only | `15 8 * * 1` |
 | `/week-plan` | Monday 08:30 | `30 8 * * 1` |
 | `/weekly-review` | Friday 16:00 | `0 16 * * 5` |
 | `/pipeline-review` | Thursday 10:00 | `0 10 * * 4` |
@@ -100,12 +107,21 @@ five days late and it cannot say why.
 | `/revenue-review` | 1st of month 09:00 | `0 9 1 * *` |
 | `/quarterly-planning` | Jan/Apr/Jul/Oct 1st 11:00 | `0 11 1 1,4,7,10 *` |
 
-Nine, and not ten. `monthly-review` and `annual-review` are deliberately
+Ten rows, and the tenth is conditional. `/portfolio-review` is written only
+when the registry lists two or more **active** businesses — a portfolio of one
+has nothing to allocate, and the skill itself says so and exits, so scheduling
+it anyway buys a weekly log line about nothing. It sits at 08:15 on purpose:
+after the day's briefs have surfaced what is rotting, before any business's
+`week-plan` commits hours the split has not granted. It is scheduled **once**,
+in its own `founder-os:portfolio` fence — it is a cadence of the install, not
+of any one business.
+
+`monthly-review` and `annual-review` are deliberately
 unscheduled and adding them is not an improvement: `revenue-review` is already
 the monthly close, and scheduling a second monthly ritual gives the founder two
 competing ones and a reason to skip both. `annual-review` firing unprompted
 eleven months after install is noise — the founder invokes that one on purpose
-or not at all. `calendar-audit` is the newest row and the cheapest: it feeds
+or not at all. `calendar-audit` feeds
 `week-plan`'s ledger and `energy-audit`'s four-week minimum, and unscheduled it
 starved both.
 
@@ -208,7 +224,25 @@ drift to patch.
 
 6. **Show the exact block. Ask once. One question, not nine.**
    Print it fenced, with all three resolved paths substituted in, exactly as it
-   will be written:
+   will be written.
+
+   **The fence marker depends on the install, and getting it wrong deletes a
+   sibling's schedule.** No registry → the legacy markers, exactly as below.
+   Registry present → the business's slug is in both markers:
+   `# BEGIN founder-os:<slug>` … `# END founder-os:<slug>` — and the log paths
+   gain the slug too: `~/.founder-os/logs/<slug>/<cadence>.log`. The slug is
+   what lets two businesses hold two schedules in one crontab: an unslugged
+   fence written on a multi-business install is the bug where the second
+   `setup-cadences` run silently erases the first business's cadences.
+
+   With two or more active businesses, also append the portfolio fence — once,
+   not per business:
+
+       # BEGIN founder-os:portfolio — /setup-cadences, YYYY-MM-DD. Do not remove these markers.
+       15 8 * * 1         cd /Users/x/.founder-os && FOUNDER_OS_HOME=/Users/x/.founder-os/portfolio /Users/x/.local/bin/claude -p "/founder-os:portfolio-review" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/portfolio/portfolio-review.log 2>&1
+       # END founder-os:portfolio
+
+   The single-business block, unchanged since before the registry existed:
 
        # BEGIN founder-os — /setup-cadences, YYYY-MM-DD. Do not remove these markers.
        0 8 * * 1-5        cd /Users/x/work && FOUNDER_OS_HOME=/Users/x/work/founder-os /Users/x/.local/bin/claude -p "/founder-os:daily-brief" --permission-mode acceptEdits --max-turns 50 >> /Users/x/.founder-os/logs/daily-brief.log 2>&1
@@ -256,9 +290,28 @@ drift to patch.
 
 7. **Write it. The fence is what makes a second run safe.**
 
-       crontab -l 2>/dev/null | sed '/# BEGIN founder-os/,/# END founder-os/d' > "$tmp"
+   Single-business (no registry):
+
+       crontab -l 2>/dev/null | sed '/# BEGIN founder-os$\|# BEGIN founder-os /,/# END founder-os$\|# END founder-os /d' > "$tmp"
        cat block >> "$tmp"
        crontab "$tmp"
+
+   Multi-business: the sed strips **only this business's fence**, anchored to
+   the slug so no other fence can match:
+
+       crontab -l 2>/dev/null | sed '/# BEGIN founder-os:acme\b/,/# END founder-os:acme\b/d' > "$tmp"
+
+   The anchor matters twice over. `founder-os` is a prefix of
+   `founder-os:acme`, so the *legacy* pattern matches every slugged fence — a
+   bare-prefix strip on a multi-business crontab deletes all of them. And
+   `founder-os:a` would match `founder-os:acme`: the `\b` (or matching the
+   marker to end-of-word) is what keeps slugs from shadowing each other.
+
+   **Migration, said out loud:** if the crontab holds a legacy unslugged fence
+   and a registry now exists, this run removes the legacy fence and rewrites
+   those lines under the business's slug — one fence becomes one fence, renamed.
+   Show that in the step-6 diff and say it in the confirmation; a founder who
+   sees their old markers vanish deserves to have been told first.
 
    Strip the old fence, append the new one, install. Everything outside the
    markers survives byte for byte, which is what the diff in step 6 promised.
@@ -326,7 +379,7 @@ has the one property cron structurally lacks: **it fails loudly.** A founder who
 ignores a calendar alert knows they ignored it. A founder whose cron broke in
 week two believes for a month that the system is running.
 
-If they say no, say the nine skills work exactly as well typed by hand, tell
+If they say no, say the cadences work exactly as well typed by hand, tell
 them the hours from the table so the reminder lands on the right ones, and stop.
 No degraded-mode framing, no asking again next session. This is not a downgrade
 and treating it as one is how a tool that modifies machines gets uninstalled.
@@ -339,19 +392,29 @@ is one command, and it is the founder's to run:
 
     crontab -l | sed '/# BEGIN founder-os/,/# END founder-os/d' | crontab -
 
+That prefix match removes **every** founder-os fence — legacy, per-business
+and portfolio alike — which for a full uninstall is exactly right. To remove
+one business's cadences and keep the rest, anchor the slug:
+
+    crontab -l | sed '/# BEGIN founder-os:acme\b/,/# END founder-os:acme\b/d' | crontab -
+
 On launchd: `launchctl bootout gui/$(id -u)/com.founder-os.<slug>` per cadence,
 then delete the plists. Say this at install time, in the confirmation — a tool
 that modifies a machine owes the founder the way back *before* they say yes.
 
 ## Output
 
-- The founder's crontab (or nine LaunchAgent plists), carrying the nine lines
-  fenced by `# BEGIN founder-os` / `# END founder-os`, with the absolute binary
-  path, the absolute workspace path, and a per-cadence log redirect. Everything
-  outside the fence untouched.
+- The founder's crontab (or one LaunchAgent plist per cadence), carrying this
+  business's lines fenced by its markers — legacy `# BEGIN founder-os` /
+  `# END founder-os` on a single-business install, `# BEGIN founder-os:<slug>`
+  / `# END founder-os:<slug>` when the registry exists — with the absolute
+  binary path, the absolute workspace path, and a per-cadence log redirect.
+  Plus the `founder-os:portfolio` fence, once, when two or more businesses are
+  active. Everything outside the fences untouched.
 - `~/.founder-os/crontab-backup-<timestamp>.txt` — the crontab as it was, named
   out loud before the founder said yes.
-- `~/.founder-os/logs/` — nine append-only logs, the only place a failure will
+- `~/.founder-os/logs/` — one append-only log per cadence (under `<slug>/` on a
+  multi-business install), the only place a failure will
   ever be visible. When `founder-os-doctor` reports *cadence gone quiet*, this
   is what answers *why*.
 - One line on screen naming the next cadence and its hour. Nothing else.
@@ -385,8 +448,13 @@ is the exact outcome this skill exists to prevent — and shipping it under this
 skill's name is worse than never running, because the founder now believes it is
 handled.
 
-Do not schedule a tenth cadence. Do not schedule `monthly-review` or
-`annual-review`. See *The schedule*.
+Do not schedule beyond the table. Do not schedule `monthly-review` or
+`annual-review`, and do not write the `/portfolio-review` line on an install
+whose registry lists fewer than two active businesses. See *The schedule*.
+
+**Never touch another business's fence.** On a multi-business install every
+sed is anchored to this business's slug; a fence you did not write this run is
+a line outside the markers, whatever its markers say.
 
 **A `%` in a crontab line is a newline, not a percent sign.** Everything after
 the first unescaped one becomes stdin to the command. This matters the day

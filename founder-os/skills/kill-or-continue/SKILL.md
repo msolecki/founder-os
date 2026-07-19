@@ -73,7 +73,18 @@ Read first — house rule 1:
    already knows the answer and has been avoiding the question by asking a
    harder one instead — "is it too early to tell?" — which has no answer and is
    therefore comfortable.
-5. **Give one of three verdicts.**
+5. **For a kill that frees more than a month of capacity, convene before the
+   verdict.** Ask the **Chief of Staff** to summon the two or three agents whose
+   files the bet touches — the **CFO** on its economics, the **Delivery Lead**
+   on its hours, the **Pipeline Coach** if revenue hangs on it — and have each
+   state its position in writing: two or three sentences, from its own book,
+   with numbers and dates. Then the **Board Member** red-teams the leading
+   verdict. A specialist who commits a position in writing cannot quietly agree
+   with the outcome afterwards, and the written debate goes into the decision
+   record via step 8 — six months from now "who argued for keeping it" is a
+   question with an answer. Below that threshold, skip this: convening the org
+   over a small kill is deliberation costing more than the mistake.
+6. **Give one of three verdicts.**
    - **Ahead of its case** → continue, with a new threshold and a new judgement
      date. A continue without a new date is not a continue; it is a bet that has
      escaped supervision.
@@ -81,12 +92,13 @@ Read first — house rule 1:
    - **Never measured** → set a threshold and a date within 30 days. **Once.** A
      bet that gets a second extension is a hobby with a spreadsheet, and the
      second extension is where founders spend their year.
-6. **Reallocate the freed capacity today, by name.** Into a specific bet in
+7. **Reallocate the freed capacity today, by name.** Into a specific bet in
    `goals.md`. Unallocated capacity is reabsorbed by the busiest thing on the
    list within a week, and the kill will have bought nothing.
-7. **Hand the kill to the Chief of Staff for `decisions/`.** You do not write
+8. **Hand the kill to the Chief of Staff for `decisions/`.** You do not write
    there. In six months the founder will ask why this stopped, and the answer
-   has to exist somewhere they will look.
+   has to exist somewhere they will look — including the written positions from
+   step 5, when it ran.
 
 ## Output
 

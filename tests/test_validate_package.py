@@ -542,7 +542,7 @@ class TestReadmeCounts(ValidatorTestCase):
 
 class TestRealPackage(unittest.TestCase):
     def test_shipped_package_passes_every_check(self):
-        """The '12 agents, 48 skills, 0 errors' acceptance line, executable.
+        """The '13 agents, 49 skills, 0 errors' acceptance line, executable.
 
         Every other test here validates a synthetic fixture; this is the only
         one that would catch a regression in the package actually shipped.
@@ -550,8 +550,8 @@ class TestRealPackage(unittest.TestCase):
         real = Path(__file__).resolve().parents[1] / "founder-os"
         agents, errs = V.run_checks(real)
         self.assertEqual(errs, [])
-        self.assertEqual(len(agents), 12)
-        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 48)
+        self.assertEqual(len(agents), 13)
+        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 49)
 
 
 class TestRunChecksContainment(unittest.TestCase):

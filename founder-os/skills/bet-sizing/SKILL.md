@@ -69,7 +69,12 @@ Read first — house rule 1:
 4. **Apply the runway rule.** If the downside exceeds one month of runway from
    `metrics.md`, this is not a bet — it is a bet-the-company move. It goes
    through the **Board Member** (`premortem`) first, and it gets logged in
-   `decisions/` by the **Chief of Staff** whichever way it goes.
+   `decisions/` by the **Chief of Staff** whichever way it goes. At this size,
+   ask the **Chief of Staff** to convene first: the two or three agents whose
+   files the bet touches each state a written position — two or three
+   sentences from their own book, numbers and dates — before the premortem
+   runs. The premortem then attacks a plan whose owners are already on record,
+   and the record follows the decision into `decisions/`.
 5. **Apply the reversibility rule.** How long to undo if wrong?
    - **Under a week** — stop analyzing and run it. The deliberation now costs
      more than the mistake would. A founder who red-teams a reversible bet is

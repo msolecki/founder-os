@@ -1,7 +1,7 @@
 # House Rules
 
 Every agent in this company obeys these seven rules. They are not style
-preferences — they are what makes twelve agents safe to run against shared
+preferences — they are what makes an org of agents safe to run against shared
 state.
 
 Rule 0 is the one that matters if you read nothing else.

@@ -24,7 +24,21 @@ workspace_files:
   - reviews/monthly/
   - reviews/quarterly/
 
+# Portfolio files live in the portfolio workspace (`~/.founder-os/portfolio/`
+# by default), not in a business workspace. They exist only on multi-business
+# installs: `founder-os-init` scaffolds them when the registry
+# (`~/.founder-os/businesses.yaml`) gains its second active business, never
+# before. They are listed separately from `workspace_files:` on purpose — init
+# scaffolds every business workspace from `workspace_files:` and a portfolio
+# file inside a business workspace would be a cross-business claim filed under
+# one business's name. Same ownership contract, different root:
+# `check_workspace_files_complete` accepts either list as the scaffold promise.
+portfolio_files:
+  - portfolio.md
+
 owns:
+  portfolio-manager:
+    - portfolio.md
   chief-of-staff:
     - charter.md
     - inbox.md
@@ -84,6 +98,17 @@ owns:
 # the skill that owns the template, not at scaffold time. `clients/_capacity.md`
 # is an aggregate rather than a client file and carries none of these.
 sections:
+  # The portfolio file. One per install, not per business — it exists to hold
+  # the one decision no per-business file can: how the founder's hours and cash
+  # split across businesses. `## Businesses` is the map (slug, status, one
+  # line); `## Allocation` is the current split with a date on it;
+  # `## Starving` names what the split is underfeeding, with the number that
+  # says so; `## Review` is the last portfolio-review verdict.
+  portfolio.md:
+    - "## Businesses"
+    - "## Allocation"
+    - "## Starving"
+    - "## Review"
   # The founder's door. One section, no fields, no dates, no ids — every one of
   # those is a reason not to write the thought down at 15:00 walking out of a
   # meeting, and the whole value of this file is that it costs nothing to use.
