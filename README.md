@@ -89,16 +89,17 @@ founder-os/                       # the plugin (what gets installed)
   .claude-plugin/plugin.json
   CLAUDE.md                       # loaded into every session; the never-miss rules
   README.md                       # the product: org, philosophy, refusals
+  COMMANDS.md                     # generated catalogue: every command, owner, schedule
   agents/           (13)
   skills/           (49)
   hooks/                          # hooks.json + ownership-guard.py
   references/                     # ownership.yaml, house-rules, skill-template,
-                                  # ingestion-gate, linking
+                                  # ingestion-gate, linking, multi-business
   images/                         # org chart (mermaid + png)
 scripts/validate_package.py       # build-time validator (14 checks)
+scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it
 tests/                            # validator mutations + hook subprocess + registry roots
-docs/superpowers/                 # design specs and implementation plans (v2.1, v2.2)
-founder-os-review.md              # full project audit, 2026-07-18
+CHANGELOG.md                      # what shipped in each version
 ```
 
 ## Development
@@ -110,7 +111,7 @@ python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md (CI ch
 python3 -m unittest discover -s tests            # expect: OK
 ```
 
-CI (`.github/workflows/ci.yml`) runs both on every push and PR.
+CI (`.github/workflows/ci.yml`) runs all three on every push and PR.
 
 ### Adding a skill
 
@@ -146,6 +147,12 @@ content — that's the product. One caveat for code repos: the outbound guard
 denies subagents `Bash`, which engineering subagents need; scope
 `check_outbound` to mapped agents, or drop it and keep the ownership half.
 
+## Contributing & history
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) is the short version; the sections above
+are the long one. [`CHANGELOG.md`](CHANGELOG.md) records what shipped in each
+version.
+
 ## License
 
-MIT — see [`founder-os/LICENSE`](founder-os/LICENSE).
+MIT — see [`LICENSE`](LICENSE).
