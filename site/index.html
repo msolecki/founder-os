@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Founder OS zamienia Claude Code w zespół wykonawczy dla firmy jednoosobowej: 13 agentów, 49 workflowów i rytm, który pilnuje decyzji.">
+  <meta name="description" content="Founder OS turns Claude Code into an executive team for a company of one: 13 agents, 49 workflows, and a cadence that keeps decisions moving.">
   <meta name="theme-color" content="#f2eee4">
-  <title>Founder OS — zespół wykonawczy dla firmy jednoosobowej</title>
+  <title>Founder OS — the executive team for a company of one</title>
   <script>document.documentElement.classList.add('js');</script>
   <style>
     :root {
@@ -382,7 +382,7 @@
       right: 2rem;
       padding: 0.55rem 0.9rem;
       color: var(--ink);
-      content: "TO NIE JEST CHAT";
+      content: "THIS ISN'T A CHAT";
       background: var(--orange);
       border: 1px solid var(--ink);
       font-size: 0.68rem;
@@ -1905,25 +1905,25 @@
   </style>
 </head>
 <body>
-  <a class="skip-link" href="#main">Przejdź do treści</a>
+  <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
-    <nav class="nav container" aria-label="Główna nawigacja">
-      <a class="brand" href="#top" aria-label="Founder OS — strona główna">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Founder OS — home">
         <span class="brand-mark" aria-hidden="true">F/OS</span>
         <span>Founder OS</span>
       </a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Otwórz menu">
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
           <path d="M3 6h14M3 10h14M3 14h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
       </button>
       <div class="nav-links" id="nav-links">
-        <a href="#jak-dziala">Jak działa</a>
-        <a href="#zespol">Zespół</a>
-        <a href="#bezpieczenstwo">Granice</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#team">The team</a>
+        <a href="#guardrails">Guardrails</a>
         <a href="#faq">FAQ</a>
-        <a class="button button-dark" href="#instalacja">Zainstaluj <span class="arrow" aria-hidden="true">→</span></a>
+        <a class="button button-dark" href="#install">Install <span class="arrow" aria-hidden="true">→</span></a>
       </div>
     </nav>
   </header>
@@ -1933,74 +1933,74 @@
       <div class="container">
         <div class="hero-grid">
           <div class="hero-copy reveal">
-            <p class="eyebrow">System operacyjny foundera</p>
-            <h1>Firma solo. Decyzje jak z <span class="accent">zarządem.</span></h1>
+            <p class="eyebrow">The founder operating system</p>
+            <h1>Company of one. Decisions backed by an <span class="accent">exec team.</span></h1>
             <p class="hero-lead">
-              Founder OS zamienia Claude Code w <strong>13-osobowy zespół wykonawczy</strong>, który zna stan firmy, pilnuje rytmu i nie pozwala ważnym decyzjom umrzeć w historii czatu.
+              Founder OS turns Claude Code into a <strong>13-agent executive team</strong> that knows the state of your business, keeps its rhythm, and stops important decisions from dying in chat history.
             </p>
             <div class="hero-actions">
-              <a class="button button-dark" href="#jak-dziala">Zobacz, jak pracuje <span class="arrow" aria-hidden="true">↓</span></a>
-              <a class="button button-light" href="#instalacja">Przejdź do instalacji</a>
+              <a class="button button-dark" href="#how-it-works">See it at work <span class="arrow" aria-hidden="true">↓</span></a>
+              <a class="button button-light" href="#install">Skip to installation</a>
             </div>
-            <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Open source · lokalne pliki Markdown · wymaga Claude Code</p>
+            <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Open source · local Markdown files · built for Claude Code</p>
           </div>
 
-          <div class="command-center reveal" aria-label="Przykładowy dzienny brief Founder OS">
+          <div class="command-center reveal" aria-label="Example Founder OS daily brief">
             <div class="window-bar">
               <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
               <span class="window-title">founder-os / studio-north</span>
-              <span class="status-pill">stan aktualny</span>
+              <span class="status-pill">state loaded</span>
             </div>
-            <div class="demo-tabs" role="tablist" aria-label="Przykładowe widoki Founder OS">
-              <button class="demo-tab" id="tab-today" type="button" role="tab" aria-selected="true" aria-controls="panel-today" data-demo="today">Dzisiaj</button>
+            <div class="demo-tabs" role="tablist" aria-label="Example Founder OS views">
+              <button class="demo-tab" id="tab-today" type="button" role="tab" aria-selected="true" aria-controls="panel-today" data-demo="today">Today</button>
               <button class="demo-tab" id="tab-pipeline" type="button" role="tab" aria-selected="false" aria-controls="panel-pipeline" tabindex="-1" data-demo="pipeline">Pipeline</button>
-              <button class="demo-tab" id="tab-friday" type="button" role="tab" aria-selected="false" aria-controls="panel-friday" tabindex="-1" data-demo="friday">Piątek</button>
+              <button class="demo-tab" id="tab-friday" type="button" role="tab" aria-selected="false" aria-controls="panel-friday" tabindex="-1" data-demo="friday">Friday</button>
             </div>
 
             <div class="demo-panel" id="panel-today" role="tabpanel" aria-labelledby="tab-today" data-panel="today">
               <p class="demo-label">08:00 / Daily brief</p>
-              <h2>Jedna rzecz, która dziś ma znaczenie</h2>
-              <p class="demo-meta"><span>BET: B2 — oferta premium</span><span>OWNER: founder</span></p>
+              <h2>The one thing that matters today</h2>
+              <p class="demo-meta"><span>BET: B2 — premium offer</span><span>OWNER: founder</span></p>
               <div class="demo-rule"></div>
               <ul class="demo-list">
-                <li><span class="index">01</span><span>Domknij zakres propozycji dla Acme. Nie zaczynaj redesignu strony.</span></li>
-                <li><span class="index">02</span><span>Zablokuj 90 minut przed pierwszym call'em. W kalendarzu jest miejsce.</span></li>
-                <li><span class="index">03</span><span>Ryzyko: projekt Delta jest już 18% ponad estymacją.</span></li>
+                <li><span class="index">01</span><span>Finish the Acme proposal scope. Do not start the website redesign.</span></li>
+                <li><span class="index">02</span><span>Block 90 minutes before the first call. Your calendar has room.</span></li>
+                <li><span class="index">03</span><span>Risk: Project Delta is already 18% over estimate.</span></li>
               </ul>
             </div>
 
             <div class="demo-panel" id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" data-panel="pipeline" hidden>
-              <p class="demo-label">Czwartek / Pipeline review</p>
-              <h2>Każdy deal ma następny ruch albo wypada</h2>
-              <p class="demo-meta"><span>4 AKTYWNE</span><span>1 BEZ DATY</span></p>
+              <p class="demo-label">Thursday / Pipeline review</p>
+              <h2>Every deal gets a next move or leaves</h2>
+              <p class="demo-meta"><span>4 ACTIVE</span><span>1 WITH NO DATE</span></p>
               <div class="demo-rule"></div>
               <ul class="demo-list">
-                <li><span class="index">01</span><span>Acme — proposal draft, termin dziś 16:00.</span></li>
-                <li><span class="index">02</span><span>Northwind — decyzja kupującego do 24 lipca.</span></li>
-                <li><span class="index">03</span><span>Delta — brak realnej akcji. Usuń z pipeline'u.</span></li>
+                <li><span class="index">01</span><span>Acme — proposal draft due today at 16:00.</span></li>
+                <li><span class="index">02</span><span>Northwind — buyer decision due July 24.</span></li>
+                <li><span class="index">03</span><span>Delta — no real next action. Remove it from the pipeline.</span></li>
               </ul>
             </div>
 
             <div class="demo-panel" id="panel-friday" role="tabpanel" aria-labelledby="tab-friday" data-panel="friday" hidden>
               <p class="demo-label">16:00 / Weekly review</p>
-              <h2>Tydzień oceniony po tym, co się wydarzyło</h2>
-              <p class="demo-meta"><span>2/3 DOWIEZIONE</span><span>WZORZEC: ZA DUŻO WIP</span></p>
+              <h2>The week scored by what actually happened</h2>
+              <p class="demo-meta"><span>2/3 SHIPPED</span><span>PATTERN: TOO MUCH WIP</span></p>
               <div class="demo-rule"></div>
               <ul class="demo-list">
-                <li><span class="index">01</span><span>Oferta wyszła. Case study nie — trzeci tydzień z rzędu.</span></li>
-                <li><span class="index">02</span><span>Nie przenoś automatycznie. Zmniejsz przyszły plan.</span></li>
-                <li><span class="index">03</span><span>Jedna decyzja na poniedziałek: publikujemy albo zabijamy.</span></li>
+                <li><span class="index">01</span><span>The proposal went out. The case study did not — third week running.</span></li>
+                <li><span class="index">02</span><span>Do not roll it forward automatically. Make next week's plan smaller.</span></li>
+                <li><span class="index">03</span><span>One decision for Monday: publish it or kill it.</span></li>
               </ul>
             </div>
             <div class="demo-foot"><span>chief-of-staff</span><span>queue.md · metrics.md · goals.md</span></div>
           </div>
         </div>
 
-        <div class="hero-stats reveal" aria-label="Founder OS w liczbach">
-          <div class="stat"><strong>13</strong><span>agentów</span></div>
-          <div class="stat"><strong>49</strong><span>workflowów</span></div>
-          <div class="stat"><strong>10</strong><span>kadencji</span></div>
-          <div class="stat"><strong>1</strong><span>źródło prawdy</span></div>
+        <div class="hero-stats reveal" aria-label="Founder OS in numbers">
+          <div class="stat"><strong>13</strong><span>agents</span></div>
+          <div class="stat"><strong>49</strong><span>workflows</span></div>
+          <div class="stat"><strong>10</strong><span>cadences</span></div>
+          <div class="stat"><strong>1</strong><span>source of truth</span></div>
         </div>
       </div>
     </section>
@@ -2008,185 +2008,185 @@
     <section class="section problem" id="problem">
       <div class="container problem-grid">
         <div class="sticky-copy reveal">
-          <p class="eyebrow">Prawdziwy problem</p>
-          <h2 class="section-title">Nie brakuje Ci <span class="serif">porad.</span></h2>
-          <p class="section-copy">Brakuje systemu, który pamięta, co ustaliłeś, widzi sprzeczności i wraca do Ciebie wtedy, kiedy decyzja faktycznie dojrzewa.</p>
+          <p class="eyebrow">The real problem</p>
+          <h2 class="section-title">You do not need more <span class="serif">advice.</span></h2>
+          <p class="section-copy">You need a system that remembers what you decided, spots contradictions, and brings the decision back when it is actually due.</p>
         </div>
         <div class="pain-list">
           <article class="pain-card reveal">
             <span class="pain-number">01</span>
-            <h3>Każda rozmowa zaczyna się od zera</h3>
-            <p>Strategia, pipeline i klienci żyją w innych notatkach. AI odpowiada na ostatni prompt, nie na stan Twojej firmy.</p>
+            <h3>Every conversation starts from zero</h3>
+            <p>Strategy, pipeline, and clients live in different notes. AI answers your latest prompt, not the state of your business.</p>
           </article>
           <article class="pain-card reveal">
             <span class="pain-number">02</span>
-            <h3>Ważne rzeczy kończą jako akapit</h3>
-            <p>Brief brzmi mądrze, ale nie ma właściciela, daty ani kolejnego ruchu. Tydzień później nikt do niego nie wraca.</p>
+            <h3>Important work ends as a paragraph</h3>
+            <p>The brief sounds smart, but has no owner, date, or next move. A week later, nobody comes back to it.</p>
           </article>
           <article class="pain-card reveal">
             <span class="pain-number">03</span>
-            <h3>Jesteś jednocześnie CEO i wąskim gardłem</h3>
-            <p>Sam wybierasz priorytet, pilnujesz sprzedaży, liczysz marżę i oceniasz własny plan. To nie brak ambicji. To brak struktury.</p>
+            <h3>You are the CEO and the bottleneck</h3>
+            <p>You set the priority, chase the sale, calculate the margin, and judge your own plan. That is not a lack of ambition. It is a lack of structure.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <aside class="manifesto" aria-label="Główna zasada Founder OS">
+    <aside class="manifesto" aria-label="The core Founder OS principle">
       <div class="container reveal">
-        <p>Nie potrzebujesz AI, które zawsze się zgadza. Potrzebujesz systemu, który <em>pamięta, liczy i mówi „nie”.</em></p>
+        <p>You do not need AI that always agrees. You need a system that <em>remembers, counts, and says no.</em></p>
       </div>
     </aside>
 
-    <section class="section" id="roznica">
+    <section class="section" id="difference">
       <div class="container">
         <div class="section-kicker reveal">
-          <p class="eyebrow">Co jest inne</p>
-          <h2 class="section-title">Z rozmów powstaje <span class="serif">firma.</span></h2>
-          <p class="section-copy">Founder OS nie udaje magicznego autopilota. Buduje ciągłość: stan, odpowiedzialność, rytm i twarde granice.</p>
+          <p class="eyebrow">What makes it different</p>
+          <h2 class="section-title">Conversations become <span class="serif">company memory.</span></h2>
+          <p class="section-copy">Founder OS does not pretend to be a magic autopilot. It builds continuity: shared state, clear ownership, operating cadence, and hard boundaries.</p>
         </div>
         <div class="features-grid">
           <article class="feature-card reveal">
             <span class="feature-icon" aria-hidden="true">MEM</span>
             <div>
-              <h3>Pamięć, która przeżywa sesję</h3>
-              <p>Cele, metryki, pipeline, klienci, decyzje i drafty żyją w lokalnym workspace Markdown. Jutro zaczynasz od stanu firmy, nie od opowiadania jej historii.</p>
+              <h3>Memory that outlives the session</h3>
+              <p>Goals, metrics, pipeline, clients, decisions, and drafts live in a local Markdown workspace. Tomorrow starts with business state, not another retelling.</p>
             </div>
           </article>
           <article class="feature-card reveal">
             <span class="feature-icon" aria-hidden="true">OWN</span>
             <div>
-              <h3>Jeden właściciel każdej decyzji</h3>
-              <p>CFO nie przepisuje pipeline'u, a Brand Editor nie zmienia strategii. Guard pilnuje granic także przy zapisie.</p>
+              <h3>One owner for every decision</h3>
+              <p>The CFO does not rewrite the pipeline, and the Brand Editor does not change strategy. A write-time guard keeps every role in its lane.</p>
             </div>
           </article>
           <article class="feature-card reveal">
             <span class="feature-icon" aria-hidden="true">RUN</span>
             <div>
-              <h3>Rytm, który przychodzi do Ciebie</h3>
-              <p>Brief rano, pipeline w czwartek, review w piątek, finanse po zamknięciu miesiąca. Ręcznie albo z lokalnego harmonogramu.</p>
+              <h3>A cadence that comes to you</h3>
+              <p>A brief in the morning, pipeline review on Thursday, weekly review on Friday, and financials after month-end. Run it by hand or on a local schedule.</p>
             </div>
           </article>
           <article class="feature-card reveal">
             <span class="feature-icon" aria-hidden="true">NO</span>
             <div>
-              <h3>Opinie zamiast biznesowych horoskopów</h3>
-              <p>Każda rola ma zasady, z którymi możesz się nie zgodzić. Plan dostaje werdykt, bet ma warunek zabicia, a „brak czasu” trafia na audyt kalendarza.</p>
+              <h3>Opinions, not business horoscopes</h3>
+              <p>Every role has principles you may disagree with. A plan gets a verdict, a bet gets a kill condition, and “no time” gets a calendar audit.</p>
             </div>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="section how" id="jak-dziala">
+    <section class="section how" id="how-it-works">
       <div class="container">
         <div class="section-kicker reveal">
-          <p class="eyebrow">Jak zacząć</p>
-          <h2 class="section-title">20 minut do pierwszego <span class="serif">briefu.</span></h2>
-          <p class="section-copy">Instalujesz plugin, przechodzisz onboarding i od razu pracujesz na realnym stanie swojej firmy.</p>
+          <p class="eyebrow">How to start</p>
+          <h2 class="section-title">20 minutes to your first <span class="serif">brief.</span></h2>
+          <p class="section-copy">Install the plugin, complete onboarding, and start working from the real state of your business.</p>
         </div>
         <div class="steps">
           <article class="step-card reveal">
             <span class="step-number">1</span>
             <div>
-              <h3>Dodajesz Founder OS</h3>
-              <p>Dwie komendy w Claude Code. Bez frameworka, panelu i kolejnego konta SaaS.</p>
-              <div class="code-line"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Skopiuj komendę instalacji">⧉</button></div>
+              <h3>Add Founder OS</h3>
+              <p>Two commands in Claude Code. No framework, no dashboard, no extra SaaS account.</p>
+              <div class="code-line"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy installation command">⧉</button></div>
             </div>
           </article>
           <article class="step-card reveal">
             <span class="step-number">2</span>
             <div>
-              <h3>Opisujesz firmę raz</h3>
-              <p>Onboarding porządkuje charter, cele, metryki, ofertę i głos. Kończy się pierwszym briefem, nie pustym folderem.</p>
-              <div class="code-line"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Skopiuj komendę onboardingu">⧉</button></div>
+              <h3>Describe the business once</h3>
+              <p>Onboarding structures your charter, goals, metrics, offer, and voice. It ends with your first brief, not an empty folder.</p>
+              <div class="code-line"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy onboarding command">⧉</button></div>
             </div>
           </article>
           <article class="step-card reveal">
             <span class="step-number">3</span>
             <div>
-              <h3>Włączasz rytm</h3>
-              <p>Opcjonalne kadencje uruchamiają briefy i review na Twojej maszynie. Każdy workflow działa też na żądanie.</p>
-              <div class="code-line"><code>/setup-cadences</code><button class="copy-button" type="button" data-copy="/setup-cadences" aria-label="Skopiuj komendę konfiguracji rytmu">⧉</button></div>
+              <h3>Turn on the rhythm</h3>
+              <p>Optional cadences run briefs and reviews on your machine. Every workflow also works on demand.</p>
+              <div class="code-line"><code>/setup-cadences</code><button class="copy-button" type="button" data-copy="/setup-cadences" aria-label="Copy cadence setup command">⧉</button></div>
             </div>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="section rhythm" id="rytm">
+    <section class="section rhythm" id="rhythm">
       <div class="container">
         <div class="section-kicker reveal">
-          <p class="eyebrow">Firma w ruchu</p>
-          <h2 class="section-title">Tak wygląda tydzień, który ma <span class="serif">kręgosłup.</span></h2>
-          <p class="section-copy">Founder OS nie tworzy więcej pracy. Łączy momenty, w których i tak musisz podjąć decyzję.</p>
+          <p class="eyebrow">The business in motion</p>
+          <h2 class="section-title">A week with a <span class="serif">backbone.</span></h2>
+          <p class="section-copy">Founder OS does not create more work. It connects the moments when you already need to make a decision.</p>
         </div>
         <div class="timeline">
           <article class="timeline-item reveal">
-            <span class="timeline-day">Codziennie · 08:00</span>
-            <h3>Jedna rzecz na dziś</h3>
-            <p>Chief of Staff czyta cele, metryki i tydzień. Wybiera najważniejszy ruch.</p>
+            <span class="timeline-day">Weekdays · 08:00</span>
+            <h3>One thing for today</h3>
+            <p>The Chief of Staff reads your goals, metrics, and weekly plan, then names the most important move.</p>
             <span class="timeline-command">/daily-brief</span>
           </article>
           <article class="timeline-item reveal">
-            <span class="timeline-day">Poniedziałek</span>
-            <h3>Bety trafiają w kalendarz</h3>
-            <p>Focus Coach zamienia kwartalne zakłady na konkretne bloki pracy.</p>
+            <span class="timeline-day">Monday</span>
+            <h3>Bets enter the calendar</h3>
+            <p>The Focus Coach turns quarterly bets into concrete blocks of work.</p>
             <span class="timeline-command">/week-plan</span>
           </article>
           <article class="timeline-item reveal">
-            <span class="timeline-day">Środa</span>
-            <h3>Content wynika z ICP</h3>
-            <p>Plan publikacji zaczyna się od realnych pytań odbiorców, nie od pustego slotu.</p>
+            <span class="timeline-day">Wednesday</span>
+            <h3>Content starts with the ICP</h3>
+            <p>The publishing plan starts with real audience questions, not an empty content slot.</p>
             <span class="timeline-command">/content-plan</span>
           </article>
           <article class="timeline-item reveal">
-            <span class="timeline-day">Czwartek</span>
-            <h3>Każdy deal ma datę</h3>
-            <p>Pipeline Coach wymusza kolejny ruch. Rozmowy bez akcji wypadają.</p>
+            <span class="timeline-day">Thursday</span>
+            <h3>Every deal gets a date</h3>
+            <p>The Pipeline Coach forces a next move. Conversations without action leave the pipeline.</p>
             <span class="timeline-command">/pipeline-review</span>
           </article>
           <article class="timeline-item reveal">
-            <span class="timeline-day">Piątek · 16:00</span>
-            <h3>Tydzień dostaje ocenę</h3>
-            <p>Commitment kontra wynik. Bez przepisywania wszystkiego na następny tydzień.</p>
+            <span class="timeline-day">Friday · 16:00</span>
+            <h3>The week gets a score</h3>
+            <p>Commitments against outcomes. No copying everything into next week by default.</p>
             <span class="timeline-command">/weekly-review</span>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="section team" id="zespol">
+    <section class="section team" id="team">
       <div class="container team-layout">
         <div class="team-intro reveal">
-          <p class="eyebrow">Twój executive team</p>
-          <h2 class="section-title">13 ról. Zero <span class="serif">tłoku.</span></h2>
-          <p class="section-copy">Każdy agent ma dokładnie jedną decyzję, której nikt inny nie podejmuje. Gdy nie wiesz, od czego zacząć, Chief of Staff kieruje sprawę do właściwej roli.</p>
-          <p class="team-note"><strong>1</strong><span>rola = jedna odpowiedzialność = jeden właściciel stanu</span></p>
+          <p class="eyebrow">Your executive team</p>
+          <h2 class="section-title">13 roles. Zero <span class="serif">overlap.</span></h2>
+          <p class="section-copy">Every agent owns exactly one decision nobody else can make. When you do not know where to start, the Chief of Staff routes the question to the right role.</p>
+          <p class="team-note"><strong>1</strong><span>role = one decision = one owner of state</span></p>
         </div>
         <ol class="agent-list">
-          <li class="agent reveal"><strong>Chief of Staff</strong><span>Co zasługuje na uwagę teraz i kto ma się tym zająć.</span></li>
-          <li class="agent reveal"><strong>Board Member</strong><span>Czy plan wytrzyma kontakt z rzeczywistością.</span></li>
-          <li class="agent reveal"><strong>Strategist</strong><span>Jaki bet robimy w tym kwartale — i co zabijamy.</span></li>
-          <li class="agent reveal"><strong>Positioning Advisor</strong><span>Komu dokładnie służysz i co właściwie sprzedajesz.</span></li>
-          <li class="agent reveal"><strong>Pipeline Coach</strong><span>Co wydarzy się dalej z każdym prospektem.</span></li>
-          <li class="agent reveal"><strong>Delivery Lead</strong><span>Czy możesz przyjąć pracę i czy jest gotowa do wysyłki.</span></li>
-          <li class="agent reveal"><strong>CFO</strong><span>Czy firmę na to stać i czy praca naprawdę zarabia.</span></li>
-          <li class="agent reveal"><strong>Focus Coach</strong><span>Co trafia do kalendarza — i co z niego wypada.</span></li>
-          <li class="agent reveal"><strong>Skills Mentor</strong><span>Jaką kompetencję zbudować jako następną i po co.</span></li>
-          <li class="agent reveal"><strong>Brand Editor</strong><span>Co publikować, gdzie i jak zachować Twój głos.</span></li>
-          <li class="agent reveal"><strong>Network Manager</strong><span>Z kim porozmawiać i kiedy wrócić do kontaktu.</span></li>
-          <li class="agent reveal"><strong>Ops Engineer</strong><span>Co automatyzować, a co po prostu tolerować.</span></li>
-          <li class="agent reveal"><strong>Portfolio Manager</strong><span>Jak dzielić czas i gotówkę między kilka biznesów.</span></li>
+          <li class="agent reveal"><strong>Chief of Staff</strong><span>What deserves your attention now, and who should handle it.</span></li>
+          <li class="agent reveal"><strong>Board Member</strong><span>Whether a plan survives contact with reality.</span></li>
+          <li class="agent reveal"><strong>Strategist</strong><span>What bet to make this quarter — and what to kill.</span></li>
+          <li class="agent reveal"><strong>Positioning Advisor</strong><span>Exactly who you serve and what you sell them.</span></li>
+          <li class="agent reveal"><strong>Pipeline Coach</strong><span>What happens next with every prospect.</span></li>
+          <li class="agent reveal"><strong>Delivery Lead</strong><span>Whether you can take the work and whether it is good enough to ship.</span></li>
+          <li class="agent reveal"><strong>CFO</strong><span>Whether the company can afford it and whether the work makes money.</span></li>
+          <li class="agent reveal"><strong>Focus Coach</strong><span>What enters the calendar — and what comes out.</span></li>
+          <li class="agent reveal"><strong>Skills Mentor</strong><span>Which capability to build next and why.</span></li>
+          <li class="agent reveal"><strong>Brand Editor</strong><span>What to publish, where, and how to keep your voice.</span></li>
+          <li class="agent reveal"><strong>Network Manager</strong><span>Who to talk to and when to follow up.</span></li>
+          <li class="agent reveal"><strong>Ops Engineer</strong><span>What to automate and what to tolerate.</span></li>
+          <li class="agent reveal"><strong>Portfolio Manager</strong><span>How to split time and cash across multiple businesses.</span></li>
         </ol>
       </div>
     </section>
 
-    <section class="section ownership" id="pamiec">
+    <section class="section ownership" id="memory">
       <div class="container ownership-grid">
-        <div class="ownership-map reveal" aria-label="Schemat wspólnego stanu firmy">
+        <div class="ownership-map reveal" aria-label="Shared business state diagram">
           <div class="map-orbit" aria-hidden="true"></div>
-          <div class="map-core">Stan Twojej firmy</div>
+          <div class="map-core">Your business state</div>
           <span class="map-node">goals.md</span>
           <span class="map-node">pipeline.md</span>
           <span class="map-node">metrics.md</span>
@@ -2194,89 +2194,89 @@
           <span class="map-node">queue.md</span>
         </div>
         <div class="reveal">
-          <p class="eyebrow">Jedno źródło prawdy</p>
-          <h2 class="section-title">Twoja firma nie mieszka w <span class="serif">promptach.</span></h2>
-          <p class="section-copy">Mieszka w prostych plikach, które możesz otworzyć, poprawić, zarchiwizować i wersjonować. Agenci czytają ten sam stan, ale zapisują tylko w swoim obszarze.</p>
+          <p class="eyebrow">One source of truth</p>
+          <h2 class="section-title">Your business does not live in <span class="serif">prompts.</span></h2>
+          <p class="section-copy">It lives in simple files you can open, edit, archive, and version. Agents read the same state, but write only inside their own area.</p>
           <ul class="check-list">
-            <li>Decyzje pamiętają nie tylko „co”, ale też „dlaczego” i co może je odwrócić.</li>
-            <li>Drafty zostają na dysku; Twoja wersja po wysyłce uczy system realnego głosu.</li>
-            <li>Kolejka ma limit, daty i wygaszanie — nie rośnie jak kolejna lista życzeń.</li>
-            <li>Przy kilku firmach każda ma osobny workspace i osobny rytm.</li>
+            <li>Decisions remember not only what, but why — and what evidence would reverse them.</li>
+            <li>Drafts stay on disk; the version you actually sent teaches the system your real voice.</li>
+            <li>The queue has a cap, dates, and expiry — it does not grow into another wish list.</li>
+            <li>With multiple companies, each business keeps its own workspace and cadence.</li>
           </ul>
         </div>
       </div>
     </section>
 
-    <section class="section" id="efekty">
+    <section class="section" id="outcomes">
       <div class="container">
         <div class="section-kicker reveal">
-          <p class="eyebrow">Co realnie dostajesz</p>
-          <h2 class="section-title">Mniej zarządzania <span class="serif">z pamięci.</span></h2>
-          <p class="section-copy">Founder OS nie obiecuje, że zrobi firmę za Ciebie. Sprawia, że prowadzisz ją na podstawie zapisanego stanu, a nie nastroju z danego dnia.</p>
+          <p class="eyebrow">What you actually get</p>
+          <h2 class="section-title">Less management <span class="serif">from memory.</span></h2>
+          <p class="section-copy">Founder OS does not promise to run the company for you. It helps you run it from recorded state, not whatever feels urgent today.</p>
         </div>
         <div class="outcomes-grid">
           <article class="benefit reveal">
-            <span class="benefit-label">Priorytety</span>
-            <h3>Wiesz, co dziś ma znaczenie</h3>
-            <p>Daily brief wiąże pracę z kwartalnym betem i pokazuje koszt robienia czegoś innego.</p>
+            <span class="benefit-label">Priorities</span>
+            <h3>Know what matters today</h3>
+            <p>The daily brief ties today's work to a quarterly bet and shows the cost of doing something else.</p>
           </article>
           <article class="benefit reveal">
-            <span class="benefit-label">Decyzje</span>
-            <h3>Kończysz z wiecznym „zobaczymy”</h3>
-            <p>Plany mają warunki, bety mają downside, a data oceny prowadzi do werdyktu: kill albo continue.</p>
+            <span class="benefit-label">Decisions</span>
+            <h3>Stop living in “we'll see”</h3>
+            <p>Plans have assumptions, bets have downside, and every judgment date forces a verdict: kill or continue.</p>
           </article>
           <article class="benefit reveal">
-            <span class="benefit-label">Ciągłość</span>
-            <h3>Nie płacisz drugi raz za ten sam kontekst</h3>
-            <p>Nowa sesja zaczyna się od charteru, celów i metryk. Poprzednia praca zostaje w systemie.</p>
+            <span class="benefit-label">Continuity</span>
+            <h3>Stop paying twice for context</h3>
+            <p>A new session starts with your charter, goals, and metrics. The work from the last one stays in the system.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="section safety" id="bezpieczenstwo">
+    <section class="section safety" id="guardrails">
       <div class="container safety-grid">
         <div class="reveal">
-          <p class="eyebrow">Twarde granice</p>
-          <h2 class="section-title">AI doradza. <span class="serif">Ty decydujesz.</span></h2>
-          <p class="section-copy">Żaden agent nie ma przeglądarki, shella ani narzędzia, którym może sięgnąć poza workspace. To celowa granica, nie brak funkcji.</p>
+          <p class="eyebrow">Hard boundaries</p>
+          <h2 class="section-title">AI advises. <span class="serif">You decide.</span></h2>
+          <p class="section-copy">No agent has a browser, shell, or tool that can reach beyond the workspace. That is a deliberate boundary, not a missing feature.</p>
         </div>
         <article class="safety-card reveal">
-          <div class="safety-card-top"><span>Human in control</span><span>zawsze aktywne</span></div>
-          <h3>Nigdy nie wysyła. Nigdy nie płaci.</h3>
-          <p>System przygotuje propozycję, follow-up albo plan podwyżki. Ty naciskasz przycisk, podpisujesz i bierzesz odpowiedzialność.</p>
+          <div class="safety-card-top"><span>Human in control</span><span>always on</span></div>
+          <h3>Never sends. Never pays.</h3>
+          <p>The system can prepare a proposal, follow-up, or rate-raise plan. You press the button, sign the document, and own the decision.</p>
           <ul class="safety-list">
-            <li><span>Wiadomości i posty</span><span>tylko draft</span></li>
-            <li><span>Faktury i przelewy</span><span>brak dostępu</span></li>
-            <li><span>Porady prawne i podatkowe</span><span>eskalacja</span></li>
+            <li><span>Messages and posts</span><span>draft only</span></li>
+            <li><span>Invoices and transfers</span><span>no access</span></li>
+            <li><span>Legal and tax advice</span><span>escalate</span></li>
           </ul>
         </article>
       </div>
     </section>
 
-    <section class="section" id="dla-kogo">
+    <section class="section" id="fit">
       <div class="container">
         <div class="section-kicker reveal">
-          <p class="eyebrow">Uczciwy filtr</p>
-          <h2 class="section-title">To jest dla Ciebie — albo <span class="serif">nie.</span></h2>
+          <p class="eyebrow">An honest filter</p>
+          <h2 class="section-title">This is for you — or <span class="serif">it isn't.</span></h2>
         </div>
         <div class="fit-grid">
           <article class="fit-card reveal">
-            <h3>Founder OS ma sens, jeśli…</h3>
+            <h3>Founder OS fits if…</h3>
             <ul>
-              <li>prowadzisz firmę solo lub mały biznes usługowy i decyzje zbiegają się u Ciebie,</li>
-              <li>korzystasz z Claude Code i chcesz, żeby rozmowy budowały wspólny stan,</li>
-              <li>potrzebujesz rytmu dla sprzedaży, delivery, finansów i focusu,</li>
-              <li>prowadzisz kilka biznesów i musisz uczciwie dzielić między nie zasoby.</li>
+              <li>you run a company of one or a small service business where every decision lands with you,</li>
+              <li>you use Claude Code and want every conversation to build shared business state,</li>
+              <li>you need a rhythm across pipeline, delivery, money, and focus,</li>
+              <li>you run multiple businesses and need to divide resources honestly.</li>
             </ul>
           </article>
           <article class="fit-card reveal">
-            <h3>Nie instaluj go, jeśli…</h3>
+            <h3>Do not install it if…</h3>
             <ul>
-              <li>szukasz autonomicznego bota, który sam wysyła wiadomości i zarządza pieniędzmi,</li>
-              <li>nie chcesz utrzymywać żadnego stanu firmy w plikach,</li>
-              <li>potrzebujesz rozbudowanego CRM-u z panelem dla całego zespołu,</li>
-              <li>chcesz asystenta, który potwierdzi każdą decyzję bez stawiania oporu.</li>
+              <li>you want an autonomous bot that sends messages and moves money for you,</li>
+              <li>you refuse to maintain any business state in files,</li>
+              <li>you need a full CRM with a shared dashboard for a large team,</li>
+              <li>you want an assistant that validates every decision without pushing back.</li>
             </ul>
           </article>
         </div>
@@ -2287,55 +2287,55 @@
       <div class="container faq-layout">
         <div class="section-kicker reveal">
           <p class="eyebrow">FAQ</p>
-          <h2 class="section-title">Zanim <span class="serif">zainstalujesz.</span></h2>
+          <h2 class="section-title">Before you <span class="serif">install.</span></h2>
         </div>
         <div class="faq-list reveal">
           <details>
-            <summary>Czy Founder OS jest osobną aplikacją?</summary>
-            <p>Nie. To plugin do Claude Code. Agenci, workflowy i reguły instalują się w tym środowisku, a stan firmy zostaje w lokalnym workspace Markdown.</p>
+            <summary>Is Founder OS a separate app?</summary>
+            <p>No. It is a Claude Code plugin. The agents, workflows, and rules install inside that environment, while your business state stays in a local Markdown workspace.</p>
           </details>
           <details>
-            <summary>Ile trwa uruchomienie?</summary>
-            <p>Sam plugin instalujesz dwiema komendami. Pierwszy onboarding trwa około 20 minut i kończy się gotowym workspace'em oraz pierwszym briefem.</p>
+            <summary>How long does setup take?</summary>
+            <p>The plugin installs with two commands. Initial onboarding takes about 20 minutes and ends with a working workspace and your first brief.</p>
           </details>
           <details>
-            <summary>Czy muszę znać wszystkie 49 komend?</summary>
-            <p>Nie. Gdy nie wiesz, czego użyć, pytasz Chief of Staff. Routing jest jego odpowiedzialnością — kieruje sprawę do właściwego agenta.</p>
+            <summary>Do I need to learn all 49 commands?</summary>
+            <p>No. When you do not know what to use, ask the Chief of Staff. Routing is its job — it sends the question to the right agent.</p>
           </details>
           <details>
-            <summary>Czy działa po polsku?</summary>
-            <p>Tak. Nagłówki techniczne plików są stałe, ale cała treść workspace'u i praca agentów może być po polsku. System może też uczyć się Twojego stylu z realnych próbek pisania.</p>
+            <summary>Can it work in my language?</summary>
+            <p>Yes. The technical section headings stay in English, but the workspace content and the agents' work can use your language. The system can also learn your style from real writing samples.</p>
           </details>
           <details>
-            <summary>Co, jeśli prowadzę więcej niż jedną firmę?</summary>
-            <p>Każdy biznes dostaje osobny workspace i kadencje. Portfolio Manager jako jedyny patrzy między biznesami, żeby rozdzielić czas i gotówkę bez mieszania ich operacyjnego stanu.</p>
+            <summary>What if I run more than one business?</summary>
+            <p>Each business gets its own workspace and cadences. The Portfolio Manager is the only role that looks across businesses, dividing time and cash without mixing operational state.</p>
           </details>
           <details>
-            <summary>Czy moje dane trafiają do kolejnego SaaS-a?</summary>
-            <p>Founder OS sam nie dodaje zewnętrznej bazy ani panelu — stan zapisuje w plikach na Twojej maszynie. Nadal obowiązują zasady przetwarzania danych środowiska Claude Code, z którego korzystasz.</p>
+            <summary>Does my data go into another SaaS?</summary>
+            <p>Founder OS adds no external database or dashboard of its own — state is stored in files on your machine. The data-handling terms of the Claude Code environment you use still apply.</p>
           </details>
           <details>
-            <summary>Czy system naprawdę działa automatycznie?</summary>
-            <p>Po opcjonalnym <code>/setup-cadences</code> lokalny harmonogram uruchamia dziesięć rytuałów na Twojej maszynie. Każdy z nich możesz też wywołać ręcznie. To automatyzuje moment przeglądu, nie Twoją odpowiedzialność.</p>
+            <summary>Does the system really run automatically?</summary>
+            <p>After the optional <code>/setup-cadences</code>, a local scheduler runs ten cadences on your machine. You can also invoke every one by hand. It automates the moment of review, not your responsibility.</p>
           </details>
         </div>
       </div>
     </section>
 
-    <section class="closing" id="instalacja">
+    <section class="closing" id="install">
       <div class="container closing-grid">
         <div class="reveal">
-          <p class="eyebrow">Zacznij od stanu, nie od promptu</p>
-          <h2>Twój zarząd jest <em>gotowy.</em></h2>
+          <p class="eyebrow">Start with state, not another prompt</p>
+          <h2>Your executive team is <em>ready.</em></h2>
         </div>
         <div class="install-box reveal">
-          <div class="install-box-top"><span>Claude Code</span><span>3 kroki</span></div>
+          <div class="install-box-top"><span>Claude Code</span><span>3 steps</span></div>
           <ol>
-            <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Skopiuj pierwszą komendę instalacji">⧉</button></li>
-            <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Skopiuj drugą komendę instalacji">⧉</button></li>
-            <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Skopiuj komendę onboardingu">⧉</button></li>
+            <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy the first installation command">⧉</button></li>
+            <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy the second installation command">⧉</button></li>
+            <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command">⧉</button></li>
           </ol>
-          <p class="install-note"><strong>Potem:</strong> onboarding prowadzi Cię krok po kroku i kończy pierwszym dziennym briefem.</p>
+          <p class="install-note"><strong>Then:</strong> onboarding walks you through the business and ends with your first daily brief.</p>
         </div>
       </div>
     </section>
@@ -2343,11 +2343,11 @@
 
   <footer class="site-footer">
     <div class="container footer-inner">
-      <span>Founder OS · Executive team dla firmy jednoosobowej</span>
+      <span>Founder OS · The executive team for a company of one</span>
       <div class="footer-links">
         <a href="https://github.com/msolecki/founder-os">GitHub</a>
         <a href="https://github.com/msolecki/founder-os/blob/main/LICENSE">MIT License</a>
-        <a href="#top">Wróć na górę ↑</a>
+        <a href="#top">Back to top ↑</a>
       </div>
     </div>
   </footer>
@@ -2362,14 +2362,14 @@
       navToggle?.addEventListener('click', () => {
         const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
         navToggle.setAttribute('aria-expanded', String(!isOpen));
-        navToggle.setAttribute('aria-label', isOpen ? 'Otwórz menu' : 'Zamknij menu');
+        navToggle.setAttribute('aria-label', isOpen ? 'Open menu' : 'Close menu');
         navLinks?.classList.toggle('is-open', !isOpen);
       });
 
       navLinks?.querySelectorAll('a').forEach((link) => {
         link.addEventListener('click', () => {
           navToggle?.setAttribute('aria-expanded', 'false');
-          navToggle?.setAttribute('aria-label', 'Otwórz menu');
+          navToggle?.setAttribute('aria-label', 'Open menu');
           navLinks.classList.remove('is-open');
         });
       });
@@ -2423,10 +2423,10 @@
             await copyText(button.dataset.copy);
             const original = button.textContent;
             button.textContent = '✓';
-            if (copyStatus) copyStatus.textContent = 'Komenda skopiowana do schowka.';
+            if (copyStatus) copyStatus.textContent = 'Command copied to clipboard.';
             window.setTimeout(() => { button.textContent = original; }, 1400);
           } catch {
-            if (copyStatus) copyStatus.textContent = 'Nie udało się skopiować komendy.';
+            if (copyStatus) copyStatus.textContent = 'Could not copy the command.';
           }
         });
       });

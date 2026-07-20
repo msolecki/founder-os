@@ -5,15 +5,15 @@ Data: 2026-07-20
 
 ## Cel
 
-Zbudować samodzielną polską stronę HTML, która wyjaśnia osobie prowadzącej
+Zbudować samodzielną anglojęzyczną stronę HTML, która wyjaśnia osobie prowadzącej
 firmę solo, czym jest Founder OS, jak używa się go w praktyce i dlaczego jest
 czymś więcej niż kolejnym czatem z AI.
 
 ## Decyzje
 
 - Format: jeden plik `site/index.html`, bez buildu i zależności.
-- Odbiorca: founder firmy usługowej, konsultant lub właściciel kilku małych
-  biznesów, który pracuje w Claude Code.
+- Odbiorca: globalny founder firmy usługowej, konsultant lub właściciel kilku
+  małych biznesów, który pracuje w Claude Code.
 - Główna obietnica: Founder OS zamienia rozproszone rozmowy z AI w pamiętający
   stan firmy zespół wykonawczy, który pilnuje decyzji i rytmu pracy.
 - Dowody produktowe: 13 agentów, 49 workflowów, 10 kadencji, lokalny stan w
@@ -99,3 +99,6 @@ a następnie przekazać stronę do świeżego review.
   `ownership-guard.py`, który w Codex klasyfikuje read-only terminal jako
   outbound `Bash`. Nie obchodzono guarda ani nie modyfikowano hooków; wykonano
   końcowy audyt lokalny, a ograniczenie pozostaje jawne w handoffie.
+- 2026-07-20: po feedbacku użytkownika przepisano całą warstwę treści,
+  metadane, anchory, komunikaty JavaScript i etykiety dostępności na naturalny
+  sprzedażowy angielski; layout oraz mechanika pozostały bez zmian.
