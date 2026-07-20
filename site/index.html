@@ -1,0 +1,2450 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Founder OS zamienia Claude Code w zespół wykonawczy dla firmy jednoosobowej: 13 agentów, 49 workflowów i rytm, który pilnuje decyzji.">
+  <meta name="theme-color" content="#f2eee4">
+  <title>Founder OS — zespół wykonawczy dla firmy jednoosobowej</title>
+  <script>document.documentElement.classList.add('js');</script>
+  <style>
+    :root {
+      --paper: #f2eee4;
+      --paper-strong: #fffaf0;
+      --paper-muted: #e8e2d5;
+      --ink: #122127;
+      --ink-soft: #4d5a5e;
+      --line: rgba(18, 33, 39, 0.16);
+      --line-strong: rgba(18, 33, 39, 0.32);
+      --orange: #f15a35;
+      --orange-dark: #ba351c;
+      --lime: #d7f36b;
+      --night: #102025;
+      --night-soft: #1a3036;
+      --white: #fffdf7;
+      --shadow: 0 24px 70px rgba(18, 33, 39, 0.12);
+      --radius-sm: 0.75rem;
+      --radius-md: 1.2rem;
+      --radius-lg: 2rem;
+      --container: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 6rem;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 90% 4%, rgba(215, 243, 107, 0.34), transparent 24rem),
+        var(--paper);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+      opacity: 0.28;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+    }
+
+    ::selection {
+      color: var(--white);
+      background: var(--orange);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    img,
+    svg {
+      display: block;
+      max-width: 100%;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: 0.75rem;
+      left: 0.75rem;
+      z-index: 1000;
+      padding: 0.75rem 1rem;
+      color: var(--white);
+      background: var(--ink);
+      border-radius: 0.5rem;
+      transform: translateY(-150%);
+      transition: transform 160ms ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--orange);
+      outline-offset: 4px;
+    }
+
+    .container {
+      width: min(calc(100% - 2rem), var(--container));
+      margin-inline: auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid transparent;
+      background: rgba(242, 238, 228, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .site-header::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+    }
+
+    .nav {
+      min-height: 5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-weight: 850;
+      letter-spacing: -0.04em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      width: 2rem;
+      height: 2rem;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      background: var(--ink);
+      border-radius: 0.45rem;
+      box-shadow: 4px 4px 0 var(--orange);
+      font-size: 0.75rem;
+      letter-spacing: -0.06em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.65rem;
+      margin-left: auto;
+    }
+
+    .nav-links a:not(.button) {
+      color: var(--ink-soft);
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .nav-links a:not(.button):hover {
+      color: var(--ink);
+    }
+
+    .nav-toggle {
+      width: 2.8rem;
+      height: 2.8rem;
+      display: none;
+      place-items: center;
+      padding: 0;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .button {
+      min-height: 3rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      padding: 0.8rem 1.15rem;
+      border: 1px solid var(--ink);
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      line-height: 1;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button-dark {
+      color: var(--white);
+      background: var(--ink);
+      box-shadow: 4px 4px 0 var(--orange);
+    }
+
+    .button-dark:hover {
+      box-shadow: 6px 6px 0 var(--orange);
+    }
+
+    .button-light {
+      color: var(--ink);
+      background: rgba(255, 250, 240, 0.6);
+    }
+
+    .button-light:hover {
+      background: var(--paper-strong);
+    }
+
+    .button-orange {
+      color: var(--ink);
+      background: var(--orange);
+      border-color: var(--orange);
+      box-shadow: 5px 5px 0 var(--lime);
+    }
+
+    .button-orange:hover {
+      box-shadow: 7px 7px 0 var(--lime);
+    }
+
+    .arrow {
+      font-size: 1.15em;
+      transition: transform 160ms ease;
+    }
+
+    .button:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0 0 1.35rem;
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+      font-weight: 850;
+      letter-spacing: 0.14em;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 1.7rem;
+      height: 0.55rem;
+      content: "";
+      background: var(--orange);
+      border-radius: 999px 0 999px 0;
+    }
+
+    .hero {
+      min-height: calc(100vh - 5rem);
+      display: grid;
+      align-items: center;
+      padding: clamp(4rem, 8vw, 7.5rem) 0 4rem;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(28rem, 0.92fr);
+      align-items: center;
+      gap: clamp(2.5rem, 5vw, 5.5rem);
+    }
+
+    .hero h1,
+    .section-title,
+    .closing h2 {
+      margin: 0;
+      font-size: clamp(3.2rem, 7.4vw, 7rem);
+      font-weight: 880;
+      letter-spacing: -0.075em;
+      line-height: 0.92;
+      text-wrap: balance;
+    }
+
+    .hero h1 {
+      max-width: 12ch;
+    }
+
+    .hero h1 .accent {
+      position: relative;
+      z-index: 0;
+      display: inline-block;
+      color: var(--orange-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: -0.08em;
+    }
+
+    .hero h1 .accent::after {
+      position: absolute;
+      right: -0.05em;
+      bottom: 0.05em;
+      left: -0.03em;
+      z-index: -1;
+      height: 0.14em;
+      content: "";
+      background: var(--lime);
+      transform: rotate(-1deg);
+    }
+
+    .hero-lead {
+      max-width: 38rem;
+      margin: 1.75rem 0 0;
+      color: var(--ink-soft);
+      font-size: clamp(1.08rem, 1.6vw, 1.28rem);
+      line-height: 1.55;
+    }
+
+    .hero-lead strong {
+      color: var(--ink);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.9rem;
+      margin-top: 2rem;
+    }
+
+    .micro-proof {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.55rem;
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+      font-weight: 650;
+    }
+
+    .micro-proof .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      display: inline-block;
+      background: #3c9c61;
+      border: 3px solid rgba(60, 156, 97, 0.18);
+      border-radius: 50%;
+      box-sizing: content-box;
+    }
+
+    .command-center {
+      position: relative;
+      color: #e8f0ed;
+      background: var(--night);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      box-shadow: 1.2rem 1.2rem 0 var(--lime), var(--shadow);
+      transform: rotate(1.2deg);
+    }
+
+    .command-center::before {
+      position: absolute;
+      top: -1.9rem;
+      right: 2rem;
+      padding: 0.55rem 0.9rem;
+      color: var(--ink);
+      content: "TO NIE JEST CHAT";
+      background: var(--orange);
+      border: 1px solid var(--ink);
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      transform: rotate(3deg);
+    }
+
+    .window-bar {
+      min-height: 3.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 0.38rem;
+    }
+
+    .window-dots span {
+      width: 0.55rem;
+      height: 0.55rem;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+    }
+
+    .window-dots span:first-child {
+      background: var(--orange);
+      border-color: var(--orange);
+    }
+
+    .window-title {
+      color: #9db0ab;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .status-pill {
+      padding: 0.25rem 0.55rem;
+      color: var(--lime);
+      background: rgba(215, 243, 107, 0.08);
+      border: 1px solid rgba(215, 243, 107, 0.24);
+      border-radius: 999px;
+      font-size: 0.61rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .demo-tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem 1.15rem 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .demo-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .demo-tab {
+      padding: 0.55rem 0.8rem;
+      color: #91a49f;
+      background: transparent;
+      border: 0;
+      border-radius: 0.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .demo-tab[aria-selected="true"] {
+      color: var(--white);
+      background: var(--night-soft);
+    }
+
+    .demo-panel {
+      min-height: 25rem;
+      padding: 1.5rem;
+    }
+
+    .demo-panel[hidden] {
+      display: none;
+    }
+
+    .demo-label {
+      margin: 0 0 0.65rem;
+      color: var(--orange);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .demo-panel h2 {
+      max-width: 15ch;
+      margin: 0;
+      color: var(--white);
+      font-size: clamp(1.6rem, 3vw, 2.25rem);
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+    }
+
+    .demo-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 1.2rem;
+      margin: 1.2rem 0 0;
+      color: #8fa29d;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+    }
+
+    .demo-rule {
+      height: 1px;
+      margin: 1.35rem 0;
+      background: linear-gradient(90deg, rgba(215, 243, 107, 0.5), transparent);
+    }
+
+    .demo-list {
+      display: grid;
+      gap: 0.75rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .demo-list li {
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.65rem;
+      color: #c8d3d0;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .demo-list .index {
+      color: var(--lime);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .demo-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1.2rem;
+      color: #849994;
+      background: #0a181c;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.64rem;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: clamp(3.5rem, 7vw, 6rem);
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .stat {
+      padding: 1.2rem clamp(0.8rem, 2.5vw, 1.8rem);
+      border-right: 1px solid var(--line);
+    }
+
+    .stat:last-child {
+      border-right: 0;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: clamp(1.65rem, 3vw, 2.4rem);
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 0.35rem;
+      color: var(--ink-soft);
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .section {
+      padding: clamp(5.5rem, 10vw, 9rem) 0;
+    }
+
+    .section-kicker {
+      max-width: 52rem;
+      margin-bottom: clamp(2.75rem, 5vw, 5rem);
+    }
+
+    .section-title {
+      font-size: clamp(2.6rem, 5.8vw, 5.6rem);
+      line-height: 0.96;
+    }
+
+    .section-title .serif {
+      color: var(--orange-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-weight: 500;
+    }
+
+    .section-copy {
+      max-width: 42rem;
+      margin: 1.4rem 0 0;
+      color: var(--ink-soft);
+      font-size: clamp(1.05rem, 1.7vw, 1.25rem);
+    }
+
+    .problem {
+      background: var(--paper-strong);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: clamp(3rem, 8vw, 8rem);
+      align-items: start;
+    }
+
+    .sticky-copy {
+      position: sticky;
+      top: 8rem;
+    }
+
+    .pain-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .pain-card {
+      position: relative;
+      min-height: 11rem;
+      padding: 1.6rem 1.6rem 1.6rem 5rem;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+    }
+
+    .pain-card:nth-child(2) {
+      margin-left: 2rem;
+    }
+
+    .pain-card:nth-child(3) {
+      margin-left: 4rem;
+    }
+
+    .pain-number {
+      position: absolute;
+      top: 1.35rem;
+      left: 1.35rem;
+      width: 2.45rem;
+      height: 2.45rem;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      background: var(--ink);
+      border-radius: 50%;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+    }
+
+    .pain-card h3,
+    .feature-card h3,
+    .step-card h3,
+    .benefit h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+    }
+
+    .pain-card p,
+    .feature-card p,
+    .step-card p,
+    .benefit p {
+      margin: 0.7rem 0 0;
+      color: var(--ink-soft);
+      font-size: 0.94rem;
+    }
+
+    .manifesto {
+      position: relative;
+      padding: clamp(4rem, 8vw, 7rem) 0;
+      color: var(--ink);
+      background: var(--orange);
+      overflow: hidden;
+    }
+
+    .manifesto::before {
+      position: absolute;
+      top: -6rem;
+      right: -4rem;
+      width: 22rem;
+      height: 22rem;
+      content: "";
+      border: 4rem solid rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+    }
+
+    .manifesto p {
+      position: relative;
+      max-width: 1100px;
+      margin: 0;
+      font-size: clamp(2.5rem, 6.5vw, 6.6rem);
+      font-weight: 850;
+      letter-spacing: -0.07em;
+      line-height: 0.97;
+      text-wrap: balance;
+    }
+
+    .manifesto em {
+      color: var(--white);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 500;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1rem;
+    }
+
+    .feature-card {
+      min-height: 20rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1.6rem;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .feature-card:nth-child(1),
+    .feature-card:nth-child(4) {
+      grid-column: span 7;
+    }
+
+    .feature-card:nth-child(2),
+    .feature-card:nth-child(3) {
+      grid-column: span 5;
+    }
+
+    .feature-card:nth-child(1) {
+      color: var(--white);
+      background: var(--night);
+    }
+
+    .feature-card:nth-child(1) p {
+      color: #afbfbb;
+    }
+
+    .feature-card:nth-child(2) {
+      background: var(--lime);
+    }
+
+    .feature-card:nth-child(3) {
+      background: var(--paper-strong);
+    }
+
+    .feature-card:nth-child(4) {
+      color: var(--ink);
+      background: var(--orange);
+      border-color: var(--orange);
+    }
+
+    .feature-card:nth-child(4) p {
+      color: var(--ink);
+    }
+
+    .feature-icon {
+      width: 3.2rem;
+      height: 3.2rem;
+      display: grid;
+      place-items: center;
+      color: currentColor;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .feature-card:nth-child(1) .feature-icon {
+      color: var(--lime);
+    }
+
+    .feature-card h3 {
+      max-width: 14ch;
+      margin-top: 2rem;
+      font-size: clamp(1.55rem, 3vw, 2.45rem);
+    }
+
+    .feature-card p {
+      max-width: 34rem;
+      font-size: 1rem;
+    }
+
+    .how {
+      color: var(--white);
+      background: var(--night);
+    }
+
+    .how .eyebrow,
+    .how .section-copy {
+      color: #aebcb8;
+    }
+
+    .how .eyebrow::before {
+      background: var(--lime);
+    }
+
+    .how .section-title .serif {
+      color: var(--lime);
+    }
+
+    .steps {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .steps::before {
+      position: absolute;
+      top: 2rem;
+      right: 16%;
+      left: 16%;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, var(--orange), var(--lime));
+    }
+
+    .step-card {
+      position: relative;
+      z-index: 1;
+      padding: 1.5rem;
+      background: var(--night-soft);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+    }
+
+    .step-number {
+      width: 4rem;
+      height: 4rem;
+      display: grid;
+      place-items: center;
+      margin-bottom: 2.8rem;
+      color: var(--ink);
+      background: var(--lime);
+      border: 0.6rem solid var(--night);
+      border-radius: 50%;
+      font-size: 1.05rem;
+      font-weight: 900;
+      box-sizing: content-box;
+    }
+
+    .step-card:nth-child(2) .step-number {
+      color: var(--white);
+      background: var(--orange);
+    }
+
+    .step-card p {
+      color: #aebcb8;
+    }
+
+    .code-line {
+      position: relative;
+      margin-top: 1.3rem;
+      padding: 0.8rem 2.9rem 0.8rem 0.9rem;
+      color: #d5e1de;
+      background: #091519;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.65rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .copy-button {
+      position: absolute;
+      top: 50%;
+      right: 0.5rem;
+      width: 2rem;
+      height: 2rem;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      color: #aebcb8;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 0.45rem;
+      cursor: pointer;
+      transform: translateY(-50%);
+    }
+
+    .copy-button:hover {
+      color: var(--white);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .rhythm {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      margin-top: 3.5rem;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .timeline-item {
+      position: relative;
+      min-height: 18rem;
+      padding: 2.2rem 1.2rem 1.2rem;
+      border-right: 1px solid var(--line);
+    }
+
+    .timeline-item:last-child {
+      border-right: 0;
+    }
+
+    .timeline-item::before {
+      position: absolute;
+      top: -0.48rem;
+      left: 1.2rem;
+      width: 0.85rem;
+      height: 0.85rem;
+      content: "";
+      background: var(--paper);
+      border: 2px solid var(--orange);
+      border-radius: 50%;
+    }
+
+    .timeline-item:nth-child(3)::before,
+    .timeline-item:nth-child(5)::before {
+      background: var(--lime);
+      border-color: var(--ink);
+    }
+
+    .timeline-day {
+      color: var(--orange-dark);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .timeline-item h3 {
+      margin: 0.8rem 0 0;
+      font-size: 1.15rem;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+    }
+
+    .timeline-item p {
+      margin: 0.75rem 0 0;
+      color: var(--ink-soft);
+      font-size: 0.84rem;
+    }
+
+    .timeline-command {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.35rem 0.55rem;
+      color: var(--ink);
+      background: var(--paper-muted);
+      border-radius: 0.35rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.65rem;
+    }
+
+    .team {
+      overflow: hidden;
+    }
+
+    .team-layout {
+      display: grid;
+      grid-template-columns: 0.78fr 1.22fr;
+      gap: clamp(2rem, 7vw, 7rem);
+      align-items: start;
+    }
+
+    .team-intro {
+      position: sticky;
+      top: 8rem;
+    }
+
+    .team-intro .section-title {
+      font-size: clamp(2.8rem, 5.3vw, 5rem);
+    }
+
+    .team-note {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-top: 2rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--line-strong);
+      color: var(--ink-soft);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .team-note strong {
+      color: var(--orange-dark);
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .agent-list {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0;
+      padding: 0;
+      counter-reset: agents;
+      list-style: none;
+    }
+
+    .agent {
+      display: grid;
+      grid-template-columns: 2.4rem minmax(8rem, 0.75fr) 1.25fr;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+      background: rgba(255, 250, 240, 0.55);
+      border: 1px solid var(--line);
+      border-radius: 0.8rem;
+      counter-increment: agents;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .agent:hover {
+      background: var(--paper-strong);
+      transform: translateX(-0.35rem);
+    }
+
+    .agent::before {
+      color: var(--orange-dark);
+      content: counter(agents, decimal-leading-zero);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.7rem;
+    }
+
+    .agent strong {
+      font-size: 0.9rem;
+      letter-spacing: -0.02em;
+    }
+
+    .agent span {
+      color: var(--ink-soft);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .ownership {
+      background: var(--paper-strong);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .ownership-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(2.5rem, 6vw, 6rem);
+      align-items: center;
+    }
+
+    .ownership-map {
+      position: relative;
+      min-height: 32rem;
+      display: grid;
+      place-items: center;
+    }
+
+    .map-orbit {
+      position: absolute;
+      width: 24rem;
+      height: 24rem;
+      border: 1px dashed var(--line-strong);
+      border-radius: 50%;
+      animation: rotate 32s linear infinite;
+    }
+
+    .map-orbit::after {
+      position: absolute;
+      top: 2rem;
+      right: 1.8rem;
+      width: 1rem;
+      height: 1rem;
+      content: "";
+      background: var(--orange);
+      border: 4px solid var(--paper-strong);
+      border-radius: 50%;
+    }
+
+    .map-core {
+      position: relative;
+      z-index: 2;
+      width: 12rem;
+      height: 12rem;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      color: var(--white);
+      text-align: center;
+      background: var(--ink);
+      border-radius: 50%;
+      box-shadow: 0 0 0 1rem rgba(18, 33, 39, 0.08);
+      font-weight: 850;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+    }
+
+    .map-node {
+      position: absolute;
+      z-index: 3;
+      min-width: 8.4rem;
+      padding: 0.75rem;
+      text-align: center;
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      border-radius: 0.65rem;
+      box-shadow: 0 10px 30px rgba(18, 33, 39, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.69rem;
+      font-weight: 700;
+    }
+
+    .map-node:nth-of-type(1) { top: 1rem; left: 50%; transform: translateX(-50%) rotate(-2deg); }
+    .map-node:nth-of-type(2) { top: 27%; right: 0; transform: rotate(2deg); }
+    .map-node:nth-of-type(3) { right: 7%; bottom: 8%; transform: rotate(-2deg); }
+    .map-node:nth-of-type(4) { bottom: 1rem; left: 13%; transform: rotate(2deg); }
+    .map-node:nth-of-type(5) { top: 28%; left: 0; transform: rotate(-2deg); }
+
+    @keyframes rotate {
+      to { transform: rotate(360deg); }
+    }
+
+    .check-list {
+      display: grid;
+      gap: 1rem;
+      margin: 2rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      position: relative;
+      padding-left: 2rem;
+      color: var(--ink-soft);
+    }
+
+    .check-list li::before {
+      position: absolute;
+      top: 0.15rem;
+      left: 0;
+      width: 1.25rem;
+      height: 1.25rem;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      content: "✓";
+      background: var(--orange);
+      border-radius: 50%;
+      font-size: 0.68rem;
+      font-weight: 900;
+    }
+
+    .outcomes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .benefit {
+      min-height: 18rem;
+      padding: 1.5rem;
+      border-top: 3px solid var(--ink);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .benefit:nth-child(2) {
+      border-top-color: var(--orange);
+    }
+
+    .benefit:nth-child(3) {
+      border-top-color: #91ad22;
+    }
+
+    .benefit-label {
+      display: block;
+      margin-bottom: 4.5rem;
+      color: var(--ink-soft);
+      font-size: 0.7rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .benefit h3 {
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+    }
+
+    .safety {
+      color: var(--white);
+      background:
+        linear-gradient(rgba(16, 32, 37, 0.94), rgba(16, 32, 37, 0.94)),
+        radial-gradient(circle at 80% 40%, var(--orange), transparent 22rem),
+        var(--night);
+    }
+
+    .safety-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: clamp(3rem, 8vw, 8rem);
+      align-items: center;
+    }
+
+    .safety .section-title {
+      max-width: 11ch;
+    }
+
+    .safety .section-copy {
+      color: #aebcb8;
+    }
+
+    .safety-card {
+      padding: 1.8rem;
+      color: var(--ink);
+      background: var(--lime);
+      border-radius: var(--radius-lg);
+      box-shadow: 1rem 1rem 0 var(--orange);
+      transform: rotate(-1.5deg);
+    }
+
+    .safety-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(18, 33, 39, 0.25);
+      font-size: 0.7rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .safety-card h3 {
+      margin: 1.6rem 0 0;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      letter-spacing: -0.065em;
+      line-height: 0.98;
+    }
+
+    .safety-card p {
+      margin: 1rem 0 0;
+      color: #314046;
+    }
+
+    .safety-list {
+      display: grid;
+      gap: 0.7rem;
+      margin: 1.5rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .safety-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.7rem 0;
+      border-top: 1px solid rgba(18, 33, 39, 0.18);
+      font-size: 0.85rem;
+      font-weight: 750;
+    }
+
+    .safety-list span:last-child {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+    }
+
+    .fit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .fit-card {
+      padding: 1.8rem;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+    }
+
+    .fit-card:first-child {
+      background: var(--paper-strong);
+    }
+
+    .fit-card:last-child {
+      color: var(--white);
+      background: var(--ink);
+    }
+
+    .fit-card h3 {
+      margin: 0;
+      font-size: 1.6rem;
+      letter-spacing: -0.045em;
+    }
+
+    .fit-card ul {
+      display: grid;
+      gap: 0.8rem;
+      margin: 1.5rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .fit-card li {
+      position: relative;
+      padding: 0.7rem 0 0.7rem 2rem;
+      border-top: 1px solid currentColor;
+      border-color: rgba(18, 33, 39, 0.14);
+      font-size: 0.9rem;
+    }
+
+    .fit-card:last-child li {
+      color: #b7c5c1;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .fit-card li::before {
+      position: absolute;
+      left: 0.25rem;
+      content: "+";
+      color: var(--orange-dark);
+      font-weight: 900;
+    }
+
+    .fit-card:last-child li::before {
+      content: "−";
+      color: var(--lime);
+    }
+
+    .faq {
+      background: var(--paper-strong);
+      border-top: 1px solid var(--line);
+    }
+
+    .faq-layout {
+      display: grid;
+      grid-template-columns: 0.72fr 1.28fr;
+      gap: clamp(3rem, 8vw, 8rem);
+      align-items: start;
+    }
+
+    .faq .section-kicker {
+      position: sticky;
+      top: 8rem;
+      margin-bottom: 0;
+    }
+
+    .faq-list {
+      border-top: 1px solid var(--line-strong);
+    }
+
+    details {
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    summary {
+      position: relative;
+      padding: 1.5rem 3rem 1.5rem 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      list-style: none;
+      cursor: pointer;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::after {
+      position: absolute;
+      top: 50%;
+      right: 0.25rem;
+      width: 1.9rem;
+      height: 1.9rem;
+      display: grid;
+      place-items: center;
+      content: "+";
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
+
+    details[open] summary::after {
+      content: "−";
+      color: var(--white);
+      background: var(--orange);
+      border-color: var(--orange);
+    }
+
+    details p {
+      max-width: 42rem;
+      margin: -0.4rem 3rem 1.5rem 0;
+      color: var(--ink-soft);
+      font-size: 0.94rem;
+    }
+
+    .closing {
+      position: relative;
+      padding: clamp(5rem, 10vw, 9rem) 0;
+      color: var(--ink);
+      background: var(--orange);
+      overflow: hidden;
+    }
+
+    .closing::after {
+      position: absolute;
+      right: -12rem;
+      bottom: -15rem;
+      width: 38rem;
+      height: 38rem;
+      content: "";
+      border: 6rem solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+    }
+
+    .closing-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: clamp(3rem, 8vw, 8rem);
+      align-items: end;
+    }
+
+    .closing h2 {
+      max-width: 10ch;
+      font-size: clamp(3.2rem, 7vw, 6.7rem);
+    }
+
+    .closing .eyebrow {
+      color: var(--ink);
+    }
+
+    .closing h2 em {
+      color: var(--white);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 500;
+    }
+
+    .install-box {
+      padding: 1.5rem;
+      color: #dce7e4;
+      background: var(--night);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: var(--radius-md);
+      box-shadow: 1rem 1rem 0 var(--lime);
+    }
+
+    .install-box-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      color: #91a49f;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+    }
+
+    .install-box ol {
+      display: grid;
+      gap: 0.75rem;
+      margin: 1.25rem 0 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: install;
+    }
+
+    .install-row {
+      position: relative;
+      padding: 0.95rem 3rem 0.95rem 2.7rem;
+      background: #091519;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 0.65rem;
+      counter-increment: install;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      overflow-wrap: anywhere;
+    }
+
+    .install-row::before {
+      position: absolute;
+      top: 0.83rem;
+      left: 0.75rem;
+      width: 1.45rem;
+      height: 1.45rem;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      content: counter(install);
+      background: var(--lime);
+      border-radius: 50%;
+      font-family: Inter, ui-sans-serif, sans-serif;
+      font-size: 0.65rem;
+      font-weight: 900;
+    }
+
+    .install-row .copy-button {
+      right: 0.55rem;
+    }
+
+    .install-note {
+      margin: 1rem 0 0;
+      color: #91a49f;
+      font-size: 0.76rem;
+    }
+
+    .install-note strong {
+      color: var(--white);
+    }
+
+    .site-footer {
+      padding: 2rem 0;
+      color: #aebcb8;
+      background: var(--night);
+      font-size: 0.78rem;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+
+    .footer-links a:hover {
+      color: var(--white);
+    }
+
+    .js .reveal {
+      opacity: 0;
+      transform: translateY(1.5rem);
+      transition: opacity 600ms ease, transform 600ms ease;
+    }
+
+    .js .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      .hero {
+        min-height: auto;
+      }
+
+      .hero-grid,
+      .problem-grid,
+      .team-layout,
+      .ownership-grid,
+      .safety-grid,
+      .faq-layout,
+      .closing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-grid {
+        gap: 5rem;
+      }
+
+      .hero h1 {
+        max-width: 13ch;
+      }
+
+      .command-center {
+        max-width: 38rem;
+        margin-inline: auto;
+      }
+
+      .sticky-copy,
+      .team-intro,
+      .faq .section-kicker {
+        position: static;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .feature-card:nth-child(n) {
+        grid-column: auto;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .steps::before {
+        display: none;
+      }
+
+      .step-card {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0 1.2rem;
+        align-items: start;
+      }
+
+      .step-number {
+        grid-row: span 3;
+        margin-bottom: 0;
+      }
+
+      .timeline {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .timeline-item {
+        min-height: 15rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .timeline-item:nth-child(2n) {
+        border-right: 0;
+      }
+
+      .timeline-item:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .ownership-map {
+        order: 2;
+      }
+    }
+
+    @media (max-width: 760px) {
+      html {
+        scroll-padding-top: 5rem;
+      }
+
+      .nav {
+        min-height: 4.5rem;
+      }
+
+      .nav-toggle {
+        display: grid;
+      }
+
+      .nav-links {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 1rem;
+        left: 1rem;
+        display: none;
+        align-items: stretch;
+        padding: 1rem;
+        background: var(--paper-strong);
+        border: 1px solid var(--line-strong);
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+      }
+
+      .nav-links.is-open {
+        display: grid;
+      }
+
+      html:not(.js) .nav {
+        flex-wrap: wrap;
+        padding-block: 0.75rem;
+      }
+
+      html:not(.js) .nav-toggle {
+        display: none;
+      }
+
+      html:not(.js) .nav-links {
+        position: static;
+        width: 100%;
+        display: grid;
+        order: 3;
+      }
+
+      .nav-links a:not(.button) {
+        padding: 0.65rem;
+      }
+
+      .nav-links .button {
+        margin-top: 0.35rem;
+      }
+
+      .hero {
+        padding-top: 4rem;
+      }
+
+      .hero h1,
+      .section-title,
+      .closing h2 {
+        letter-spacing: -0.06em;
+      }
+
+      .hero-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .hero-actions .button {
+        width: 100%;
+      }
+
+      .command-center {
+        margin-right: 0.7rem;
+        box-shadow: 0.7rem 0.7rem 0 var(--lime), var(--shadow);
+        transform: none;
+      }
+
+      .command-center::before {
+        right: 1rem;
+      }
+
+      .demo-panel {
+        min-height: 27rem;
+        padding: 1.2rem;
+      }
+
+      .hero-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .stat:nth-child(2) {
+        border-right: 0;
+      }
+
+      .stat:nth-child(-n + 2) {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .problem-grid {
+        gap: 2.5rem;
+      }
+
+      .pain-card:nth-child(n) {
+        margin-left: 0;
+      }
+
+      .features-grid,
+      .outcomes-grid,
+      .fit-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .feature-card,
+      .benefit {
+        min-height: auto;
+      }
+
+      .feature-card {
+        gap: 3rem;
+      }
+
+      .step-card {
+        grid-template-columns: 1fr;
+      }
+
+      .step-number {
+        grid-row: auto;
+        margin-bottom: 1.5rem;
+      }
+
+      .timeline {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline-item,
+      .timeline-item:last-child {
+        min-height: auto;
+        grid-column: auto;
+        padding-bottom: 2rem;
+        border-right: 0;
+      }
+
+      .agent {
+        grid-template-columns: 2rem 1fr;
+        gap: 0.35rem 0.75rem;
+      }
+
+      .agent span {
+        grid-column: 2;
+      }
+
+      .ownership-map {
+        min-height: 27rem;
+        transform: scale(0.82);
+      }
+
+      .map-node:nth-of-type(2) { right: -2rem; }
+      .map-node:nth-of-type(5) { left: -2rem; }
+
+      .safety-card {
+        margin-right: 0.7rem;
+        box-shadow: 0.7rem 0.7rem 0 var(--orange);
+        transform: none;
+      }
+
+      .benefit-label {
+        margin-bottom: 2.5rem;
+      }
+
+      .closing-grid {
+        gap: 3.5rem;
+      }
+
+      .install-box {
+        margin-right: 0.7rem;
+        box-shadow: 0.7rem 0.7rem 0 var(--lime);
+      }
+
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .container {
+        width: min(calc(100% - 1.25rem), var(--container));
+      }
+
+      .hero h1 {
+        font-size: clamp(2.8rem, 14vw, 4rem);
+      }
+
+      .command-center::before {
+        top: -1.55rem;
+        font-size: 0.58rem;
+      }
+
+      .window-title {
+        display: none;
+      }
+
+      .micro-proof {
+        align-items: flex-start;
+      }
+
+      .ownership-map {
+        min-height: 23rem;
+        transform: scale(0.7);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      .js .reveal {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Przejdź do treści</a>
+
+  <header class="site-header">
+    <nav class="nav container" aria-label="Główna nawigacja">
+      <a class="brand" href="#top" aria-label="Founder OS — strona główna">
+        <span class="brand-mark" aria-hidden="true">F/OS</span>
+        <span>Founder OS</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Otwórz menu">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M3 6h14M3 10h14M3 14h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="nav-links" id="nav-links">
+        <a href="#jak-dziala">Jak działa</a>
+        <a href="#zespol">Zespół</a>
+        <a href="#bezpieczenstwo">Granice</a>
+        <a href="#faq">FAQ</a>
+        <a class="button button-dark" href="#instalacja">Zainstaluj <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="container">
+        <div class="hero-grid">
+          <div class="hero-copy reveal">
+            <p class="eyebrow">System operacyjny foundera</p>
+            <h1>Firma solo. Decyzje jak z <span class="accent">zarządem.</span></h1>
+            <p class="hero-lead">
+              Founder OS zamienia Claude Code w <strong>13-osobowy zespół wykonawczy</strong>, który zna stan firmy, pilnuje rytmu i nie pozwala ważnym decyzjom umrzeć w historii czatu.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-dark" href="#jak-dziala">Zobacz, jak pracuje <span class="arrow" aria-hidden="true">↓</span></a>
+              <a class="button button-light" href="#instalacja">Przejdź do instalacji</a>
+            </div>
+            <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Open source · lokalne pliki Markdown · wymaga Claude Code</p>
+          </div>
+
+          <div class="command-center reveal" aria-label="Przykładowy dzienny brief Founder OS">
+            <div class="window-bar">
+              <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <span class="window-title">founder-os / studio-north</span>
+              <span class="status-pill">stan aktualny</span>
+            </div>
+            <div class="demo-tabs" role="tablist" aria-label="Przykładowe widoki Founder OS">
+              <button class="demo-tab" id="tab-today" type="button" role="tab" aria-selected="true" aria-controls="panel-today" data-demo="today">Dzisiaj</button>
+              <button class="demo-tab" id="tab-pipeline" type="button" role="tab" aria-selected="false" aria-controls="panel-pipeline" tabindex="-1" data-demo="pipeline">Pipeline</button>
+              <button class="demo-tab" id="tab-friday" type="button" role="tab" aria-selected="false" aria-controls="panel-friday" tabindex="-1" data-demo="friday">Piątek</button>
+            </div>
+
+            <div class="demo-panel" id="panel-today" role="tabpanel" aria-labelledby="tab-today" data-panel="today">
+              <p class="demo-label">08:00 / Daily brief</p>
+              <h2>Jedna rzecz, która dziś ma znaczenie</h2>
+              <p class="demo-meta"><span>BET: B2 — oferta premium</span><span>OWNER: founder</span></p>
+              <div class="demo-rule"></div>
+              <ul class="demo-list">
+                <li><span class="index">01</span><span>Domknij zakres propozycji dla Acme. Nie zaczynaj redesignu strony.</span></li>
+                <li><span class="index">02</span><span>Zablokuj 90 minut przed pierwszym call'em. W kalendarzu jest miejsce.</span></li>
+                <li><span class="index">03</span><span>Ryzyko: projekt Delta jest już 18% ponad estymacją.</span></li>
+              </ul>
+            </div>
+
+            <div class="demo-panel" id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" data-panel="pipeline" hidden>
+              <p class="demo-label">Czwartek / Pipeline review</p>
+              <h2>Każdy deal ma następny ruch albo wypada</h2>
+              <p class="demo-meta"><span>4 AKTYWNE</span><span>1 BEZ DATY</span></p>
+              <div class="demo-rule"></div>
+              <ul class="demo-list">
+                <li><span class="index">01</span><span>Acme — proposal draft, termin dziś 16:00.</span></li>
+                <li><span class="index">02</span><span>Northwind — decyzja kupującego do 24 lipca.</span></li>
+                <li><span class="index">03</span><span>Delta — brak realnej akcji. Usuń z pipeline'u.</span></li>
+              </ul>
+            </div>
+
+            <div class="demo-panel" id="panel-friday" role="tabpanel" aria-labelledby="tab-friday" data-panel="friday" hidden>
+              <p class="demo-label">16:00 / Weekly review</p>
+              <h2>Tydzień oceniony po tym, co się wydarzyło</h2>
+              <p class="demo-meta"><span>2/3 DOWIEZIONE</span><span>WZORZEC: ZA DUŻO WIP</span></p>
+              <div class="demo-rule"></div>
+              <ul class="demo-list">
+                <li><span class="index">01</span><span>Oferta wyszła. Case study nie — trzeci tydzień z rzędu.</span></li>
+                <li><span class="index">02</span><span>Nie przenoś automatycznie. Zmniejsz przyszły plan.</span></li>
+                <li><span class="index">03</span><span>Jedna decyzja na poniedziałek: publikujemy albo zabijamy.</span></li>
+              </ul>
+            </div>
+            <div class="demo-foot"><span>chief-of-staff</span><span>queue.md · metrics.md · goals.md</span></div>
+          </div>
+        </div>
+
+        <div class="hero-stats reveal" aria-label="Founder OS w liczbach">
+          <div class="stat"><strong>13</strong><span>agentów</span></div>
+          <div class="stat"><strong>49</strong><span>workflowów</span></div>
+          <div class="stat"><strong>10</strong><span>kadencji</span></div>
+          <div class="stat"><strong>1</strong><span>źródło prawdy</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section problem" id="problem">
+      <div class="container problem-grid">
+        <div class="sticky-copy reveal">
+          <p class="eyebrow">Prawdziwy problem</p>
+          <h2 class="section-title">Nie brakuje Ci <span class="serif">porad.</span></h2>
+          <p class="section-copy">Brakuje systemu, który pamięta, co ustaliłeś, widzi sprzeczności i wraca do Ciebie wtedy, kiedy decyzja faktycznie dojrzewa.</p>
+        </div>
+        <div class="pain-list">
+          <article class="pain-card reveal">
+            <span class="pain-number">01</span>
+            <h3>Każda rozmowa zaczyna się od zera</h3>
+            <p>Strategia, pipeline i klienci żyją w innych notatkach. AI odpowiada na ostatni prompt, nie na stan Twojej firmy.</p>
+          </article>
+          <article class="pain-card reveal">
+            <span class="pain-number">02</span>
+            <h3>Ważne rzeczy kończą jako akapit</h3>
+            <p>Brief brzmi mądrze, ale nie ma właściciela, daty ani kolejnego ruchu. Tydzień później nikt do niego nie wraca.</p>
+          </article>
+          <article class="pain-card reveal">
+            <span class="pain-number">03</span>
+            <h3>Jesteś jednocześnie CEO i wąskim gardłem</h3>
+            <p>Sam wybierasz priorytet, pilnujesz sprzedaży, liczysz marżę i oceniasz własny plan. To nie brak ambicji. To brak struktury.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <aside class="manifesto" aria-label="Główna zasada Founder OS">
+      <div class="container reveal">
+        <p>Nie potrzebujesz AI, które zawsze się zgadza. Potrzebujesz systemu, który <em>pamięta, liczy i mówi „nie”.</em></p>
+      </div>
+    </aside>
+
+    <section class="section" id="roznica">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">Co jest inne</p>
+          <h2 class="section-title">Z rozmów powstaje <span class="serif">firma.</span></h2>
+          <p class="section-copy">Founder OS nie udaje magicznego autopilota. Buduje ciągłość: stan, odpowiedzialność, rytm i twarde granice.</p>
+        </div>
+        <div class="features-grid">
+          <article class="feature-card reveal">
+            <span class="feature-icon" aria-hidden="true">MEM</span>
+            <div>
+              <h3>Pamięć, która przeżywa sesję</h3>
+              <p>Cele, metryki, pipeline, klienci, decyzje i drafty żyją w lokalnym workspace Markdown. Jutro zaczynasz od stanu firmy, nie od opowiadania jej historii.</p>
+            </div>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon" aria-hidden="true">OWN</span>
+            <div>
+              <h3>Jeden właściciel każdej decyzji</h3>
+              <p>CFO nie przepisuje pipeline'u, a Brand Editor nie zmienia strategii. Guard pilnuje granic także przy zapisie.</p>
+            </div>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon" aria-hidden="true">RUN</span>
+            <div>
+              <h3>Rytm, który przychodzi do Ciebie</h3>
+              <p>Brief rano, pipeline w czwartek, review w piątek, finanse po zamknięciu miesiąca. Ręcznie albo z lokalnego harmonogramu.</p>
+            </div>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon" aria-hidden="true">NO</span>
+            <div>
+              <h3>Opinie zamiast biznesowych horoskopów</h3>
+              <p>Każda rola ma zasady, z którymi możesz się nie zgodzić. Plan dostaje werdykt, bet ma warunek zabicia, a „brak czasu” trafia na audyt kalendarza.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section how" id="jak-dziala">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">Jak zacząć</p>
+          <h2 class="section-title">20 minut do pierwszego <span class="serif">briefu.</span></h2>
+          <p class="section-copy">Instalujesz plugin, przechodzisz onboarding i od razu pracujesz na realnym stanie swojej firmy.</p>
+        </div>
+        <div class="steps">
+          <article class="step-card reveal">
+            <span class="step-number">1</span>
+            <div>
+              <h3>Dodajesz Founder OS</h3>
+              <p>Dwie komendy w Claude Code. Bez frameworka, panelu i kolejnego konta SaaS.</p>
+              <div class="code-line"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Skopiuj komendę instalacji">⧉</button></div>
+            </div>
+          </article>
+          <article class="step-card reveal">
+            <span class="step-number">2</span>
+            <div>
+              <h3>Opisujesz firmę raz</h3>
+              <p>Onboarding porządkuje charter, cele, metryki, ofertę i głos. Kończy się pierwszym briefem, nie pustym folderem.</p>
+              <div class="code-line"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Skopiuj komendę onboardingu">⧉</button></div>
+            </div>
+          </article>
+          <article class="step-card reveal">
+            <span class="step-number">3</span>
+            <div>
+              <h3>Włączasz rytm</h3>
+              <p>Opcjonalne kadencje uruchamiają briefy i review na Twojej maszynie. Każdy workflow działa też na żądanie.</p>
+              <div class="code-line"><code>/setup-cadences</code><button class="copy-button" type="button" data-copy="/setup-cadences" aria-label="Skopiuj komendę konfiguracji rytmu">⧉</button></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section rhythm" id="rytm">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">Firma w ruchu</p>
+          <h2 class="section-title">Tak wygląda tydzień, który ma <span class="serif">kręgosłup.</span></h2>
+          <p class="section-copy">Founder OS nie tworzy więcej pracy. Łączy momenty, w których i tak musisz podjąć decyzję.</p>
+        </div>
+        <div class="timeline">
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Codziennie · 08:00</span>
+            <h3>Jedna rzecz na dziś</h3>
+            <p>Chief of Staff czyta cele, metryki i tydzień. Wybiera najważniejszy ruch.</p>
+            <span class="timeline-command">/daily-brief</span>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Poniedziałek</span>
+            <h3>Bety trafiają w kalendarz</h3>
+            <p>Focus Coach zamienia kwartalne zakłady na konkretne bloki pracy.</p>
+            <span class="timeline-command">/week-plan</span>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Środa</span>
+            <h3>Content wynika z ICP</h3>
+            <p>Plan publikacji zaczyna się od realnych pytań odbiorców, nie od pustego slotu.</p>
+            <span class="timeline-command">/content-plan</span>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Czwartek</span>
+            <h3>Każdy deal ma datę</h3>
+            <p>Pipeline Coach wymusza kolejny ruch. Rozmowy bez akcji wypadają.</p>
+            <span class="timeline-command">/pipeline-review</span>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Piątek · 16:00</span>
+            <h3>Tydzień dostaje ocenę</h3>
+            <p>Commitment kontra wynik. Bez przepisywania wszystkiego na następny tydzień.</p>
+            <span class="timeline-command">/weekly-review</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section team" id="zespol">
+      <div class="container team-layout">
+        <div class="team-intro reveal">
+          <p class="eyebrow">Twój executive team</p>
+          <h2 class="section-title">13 ról. Zero <span class="serif">tłoku.</span></h2>
+          <p class="section-copy">Każdy agent ma dokładnie jedną decyzję, której nikt inny nie podejmuje. Gdy nie wiesz, od czego zacząć, Chief of Staff kieruje sprawę do właściwej roli.</p>
+          <p class="team-note"><strong>1</strong><span>rola = jedna odpowiedzialność = jeden właściciel stanu</span></p>
+        </div>
+        <ol class="agent-list">
+          <li class="agent reveal"><strong>Chief of Staff</strong><span>Co zasługuje na uwagę teraz i kto ma się tym zająć.</span></li>
+          <li class="agent reveal"><strong>Board Member</strong><span>Czy plan wytrzyma kontakt z rzeczywistością.</span></li>
+          <li class="agent reveal"><strong>Strategist</strong><span>Jaki bet robimy w tym kwartale — i co zabijamy.</span></li>
+          <li class="agent reveal"><strong>Positioning Advisor</strong><span>Komu dokładnie służysz i co właściwie sprzedajesz.</span></li>
+          <li class="agent reveal"><strong>Pipeline Coach</strong><span>Co wydarzy się dalej z każdym prospektem.</span></li>
+          <li class="agent reveal"><strong>Delivery Lead</strong><span>Czy możesz przyjąć pracę i czy jest gotowa do wysyłki.</span></li>
+          <li class="agent reveal"><strong>CFO</strong><span>Czy firmę na to stać i czy praca naprawdę zarabia.</span></li>
+          <li class="agent reveal"><strong>Focus Coach</strong><span>Co trafia do kalendarza — i co z niego wypada.</span></li>
+          <li class="agent reveal"><strong>Skills Mentor</strong><span>Jaką kompetencję zbudować jako następną i po co.</span></li>
+          <li class="agent reveal"><strong>Brand Editor</strong><span>Co publikować, gdzie i jak zachować Twój głos.</span></li>
+          <li class="agent reveal"><strong>Network Manager</strong><span>Z kim porozmawiać i kiedy wrócić do kontaktu.</span></li>
+          <li class="agent reveal"><strong>Ops Engineer</strong><span>Co automatyzować, a co po prostu tolerować.</span></li>
+          <li class="agent reveal"><strong>Portfolio Manager</strong><span>Jak dzielić czas i gotówkę między kilka biznesów.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section ownership" id="pamiec">
+      <div class="container ownership-grid">
+        <div class="ownership-map reveal" aria-label="Schemat wspólnego stanu firmy">
+          <div class="map-orbit" aria-hidden="true"></div>
+          <div class="map-core">Stan Twojej firmy</div>
+          <span class="map-node">goals.md</span>
+          <span class="map-node">pipeline.md</span>
+          <span class="map-node">metrics.md</span>
+          <span class="map-node">decisions/</span>
+          <span class="map-node">queue.md</span>
+        </div>
+        <div class="reveal">
+          <p class="eyebrow">Jedno źródło prawdy</p>
+          <h2 class="section-title">Twoja firma nie mieszka w <span class="serif">promptach.</span></h2>
+          <p class="section-copy">Mieszka w prostych plikach, które możesz otworzyć, poprawić, zarchiwizować i wersjonować. Agenci czytają ten sam stan, ale zapisują tylko w swoim obszarze.</p>
+          <ul class="check-list">
+            <li>Decyzje pamiętają nie tylko „co”, ale też „dlaczego” i co może je odwrócić.</li>
+            <li>Drafty zostają na dysku; Twoja wersja po wysyłce uczy system realnego głosu.</li>
+            <li>Kolejka ma limit, daty i wygaszanie — nie rośnie jak kolejna lista życzeń.</li>
+            <li>Przy kilku firmach każda ma osobny workspace i osobny rytm.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="efekty">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">Co realnie dostajesz</p>
+          <h2 class="section-title">Mniej zarządzania <span class="serif">z pamięci.</span></h2>
+          <p class="section-copy">Founder OS nie obiecuje, że zrobi firmę za Ciebie. Sprawia, że prowadzisz ją na podstawie zapisanego stanu, a nie nastroju z danego dnia.</p>
+        </div>
+        <div class="outcomes-grid">
+          <article class="benefit reveal">
+            <span class="benefit-label">Priorytety</span>
+            <h3>Wiesz, co dziś ma znaczenie</h3>
+            <p>Daily brief wiąże pracę z kwartalnym betem i pokazuje koszt robienia czegoś innego.</p>
+          </article>
+          <article class="benefit reveal">
+            <span class="benefit-label">Decyzje</span>
+            <h3>Kończysz z wiecznym „zobaczymy”</h3>
+            <p>Plany mają warunki, bety mają downside, a data oceny prowadzi do werdyktu: kill albo continue.</p>
+          </article>
+          <article class="benefit reveal">
+            <span class="benefit-label">Ciągłość</span>
+            <h3>Nie płacisz drugi raz za ten sam kontekst</h3>
+            <p>Nowa sesja zaczyna się od charteru, celów i metryk. Poprzednia praca zostaje w systemie.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section safety" id="bezpieczenstwo">
+      <div class="container safety-grid">
+        <div class="reveal">
+          <p class="eyebrow">Twarde granice</p>
+          <h2 class="section-title">AI doradza. <span class="serif">Ty decydujesz.</span></h2>
+          <p class="section-copy">Żaden agent nie ma przeglądarki, shella ani narzędzia, którym może sięgnąć poza workspace. To celowa granica, nie brak funkcji.</p>
+        </div>
+        <article class="safety-card reveal">
+          <div class="safety-card-top"><span>Human in control</span><span>zawsze aktywne</span></div>
+          <h3>Nigdy nie wysyła. Nigdy nie płaci.</h3>
+          <p>System przygotuje propozycję, follow-up albo plan podwyżki. Ty naciskasz przycisk, podpisujesz i bierzesz odpowiedzialność.</p>
+          <ul class="safety-list">
+            <li><span>Wiadomości i posty</span><span>tylko draft</span></li>
+            <li><span>Faktury i przelewy</span><span>brak dostępu</span></li>
+            <li><span>Porady prawne i podatkowe</span><span>eskalacja</span></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="dla-kogo">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">Uczciwy filtr</p>
+          <h2 class="section-title">To jest dla Ciebie — albo <span class="serif">nie.</span></h2>
+        </div>
+        <div class="fit-grid">
+          <article class="fit-card reveal">
+            <h3>Founder OS ma sens, jeśli…</h3>
+            <ul>
+              <li>prowadzisz firmę solo lub mały biznes usługowy i decyzje zbiegają się u Ciebie,</li>
+              <li>korzystasz z Claude Code i chcesz, żeby rozmowy budowały wspólny stan,</li>
+              <li>potrzebujesz rytmu dla sprzedaży, delivery, finansów i focusu,</li>
+              <li>prowadzisz kilka biznesów i musisz uczciwie dzielić między nie zasoby.</li>
+            </ul>
+          </article>
+          <article class="fit-card reveal">
+            <h3>Nie instaluj go, jeśli…</h3>
+            <ul>
+              <li>szukasz autonomicznego bota, który sam wysyła wiadomości i zarządza pieniędzmi,</li>
+              <li>nie chcesz utrzymywać żadnego stanu firmy w plikach,</li>
+              <li>potrzebujesz rozbudowanego CRM-u z panelem dla całego zespołu,</li>
+              <li>chcesz asystenta, który potwierdzi każdą decyzję bez stawiania oporu.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq">
+      <div class="container faq-layout">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">FAQ</p>
+          <h2 class="section-title">Zanim <span class="serif">zainstalujesz.</span></h2>
+        </div>
+        <div class="faq-list reveal">
+          <details>
+            <summary>Czy Founder OS jest osobną aplikacją?</summary>
+            <p>Nie. To plugin do Claude Code. Agenci, workflowy i reguły instalują się w tym środowisku, a stan firmy zostaje w lokalnym workspace Markdown.</p>
+          </details>
+          <details>
+            <summary>Ile trwa uruchomienie?</summary>
+            <p>Sam plugin instalujesz dwiema komendami. Pierwszy onboarding trwa około 20 minut i kończy się gotowym workspace'em oraz pierwszym briefem.</p>
+          </details>
+          <details>
+            <summary>Czy muszę znać wszystkie 49 komend?</summary>
+            <p>Nie. Gdy nie wiesz, czego użyć, pytasz Chief of Staff. Routing jest jego odpowiedzialnością — kieruje sprawę do właściwego agenta.</p>
+          </details>
+          <details>
+            <summary>Czy działa po polsku?</summary>
+            <p>Tak. Nagłówki techniczne plików są stałe, ale cała treść workspace'u i praca agentów może być po polsku. System może też uczyć się Twojego stylu z realnych próbek pisania.</p>
+          </details>
+          <details>
+            <summary>Co, jeśli prowadzę więcej niż jedną firmę?</summary>
+            <p>Każdy biznes dostaje osobny workspace i kadencje. Portfolio Manager jako jedyny patrzy między biznesami, żeby rozdzielić czas i gotówkę bez mieszania ich operacyjnego stanu.</p>
+          </details>
+          <details>
+            <summary>Czy moje dane trafiają do kolejnego SaaS-a?</summary>
+            <p>Founder OS sam nie dodaje zewnętrznej bazy ani panelu — stan zapisuje w plikach na Twojej maszynie. Nadal obowiązują zasady przetwarzania danych środowiska Claude Code, z którego korzystasz.</p>
+          </details>
+          <details>
+            <summary>Czy system naprawdę działa automatycznie?</summary>
+            <p>Po opcjonalnym <code>/setup-cadences</code> lokalny harmonogram uruchamia dziesięć rytuałów na Twojej maszynie. Każdy z nich możesz też wywołać ręcznie. To automatyzuje moment przeglądu, nie Twoją odpowiedzialność.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="closing" id="instalacja">
+      <div class="container closing-grid">
+        <div class="reveal">
+          <p class="eyebrow">Zacznij od stanu, nie od promptu</p>
+          <h2>Twój zarząd jest <em>gotowy.</em></h2>
+        </div>
+        <div class="install-box reveal">
+          <div class="install-box-top"><span>Claude Code</span><span>3 kroki</span></div>
+          <ol>
+            <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Skopiuj pierwszą komendę instalacji">⧉</button></li>
+            <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Skopiuj drugą komendę instalacji">⧉</button></li>
+            <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Skopiuj komendę onboardingu">⧉</button></li>
+          </ol>
+          <p class="install-note"><strong>Potem:</strong> onboarding prowadzi Cię krok po kroku i kończy pierwszym dziennym briefem.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>Founder OS · Executive team dla firmy jednoosobowej</span>
+      <div class="footer-links">
+        <a href="https://github.com/msolecki/founder-os">GitHub</a>
+        <a href="https://github.com/msolecki/founder-os/blob/main/LICENSE">MIT License</a>
+        <a href="#top">Wróć na górę ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="sr-only" id="copy-status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const navToggle = document.querySelector('.nav-toggle');
+      const navLinks = document.querySelector('.nav-links');
+
+      navToggle?.addEventListener('click', () => {
+        const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', String(!isOpen));
+        navToggle.setAttribute('aria-label', isOpen ? 'Otwórz menu' : 'Zamknij menu');
+        navLinks?.classList.toggle('is-open', !isOpen);
+      });
+
+      navLinks?.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => {
+          navToggle?.setAttribute('aria-expanded', 'false');
+          navToggle?.setAttribute('aria-label', 'Otwórz menu');
+          navLinks.classList.remove('is-open');
+        });
+      });
+
+      const tabs = [...document.querySelectorAll('[data-demo]')];
+      const panels = [...document.querySelectorAll('[data-panel]')];
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => {
+          const selected = tab.dataset.demo;
+          tabs.forEach((item) => {
+            const isSelected = item === tab;
+            item.setAttribute('aria-selected', String(isSelected));
+            item.tabIndex = isSelected ? 0 : -1;
+          });
+          panels.forEach((panel) => { panel.hidden = panel.dataset.panel !== selected; });
+        });
+
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+          event.preventDefault();
+          const direction = event.key === 'ArrowRight' ? 1 : -1;
+          const next = (index + direction + tabs.length) % tabs.length;
+          tabs[next].focus();
+          tabs[next].click();
+        });
+      });
+
+      const copyStatus = document.querySelector('#copy-status');
+
+      async function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+      }
+
+      document.querySelectorAll('[data-copy]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          try {
+            await copyText(button.dataset.copy);
+            const original = button.textContent;
+            button.textContent = '✓';
+            if (copyStatus) copyStatus.textContent = 'Komenda skopiowana do schowka.';
+            window.setTimeout(() => { button.textContent = original; }, 1400);
+          } catch {
+            if (copyStatus) copyStatus.textContent = 'Nie udało się skopiować komendy.';
+          }
+        });
+      });
+
+      const reveals = document.querySelectorAll('.reveal');
+      if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+        reveals.forEach((item) => observer.observe(item));
+      } else {
+        reveals.forEach((item) => item.classList.add('is-visible'));
+      }
+    })();
+  </script>
+</body>
+</html>
