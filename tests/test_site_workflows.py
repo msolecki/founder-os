@@ -1,0 +1,191 @@
+"""Contract tests for the dependency-free workflow catalogue landing section."""
+import re
+import subprocess
+import unittest
+from collections import Counter
+from html.parser import HTMLParser
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+HTML = (REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+SECTION_START = HTML.index(
+    '<section class="section workflow-library" id="workflows">')
+SECTION = HTML[SECTION_START:HTML.index("</section>", SECTION_START)]
+
+EXPECTED_ENTRIES = {
+    "plan": (10, "Set direction"),
+    "sell": (4, "Move a deal"),
+    "deliver": (4, "Deliver well"),
+    "money": (5, "Know the numbers"),
+    "focus": (9, "Protect focus"),
+    "grow": (8, "Grow deliberately"),
+    "run": (9, "Run operations"),
+}
+
+
+class DocumentContractParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.ids = []
+        self.references = []
+
+    def handle_starttag(self, _tag, attrs):
+        attributes = dict(attrs)
+        if attributes.get("id"):
+            self.ids.append(attributes["id"])
+        href = attributes.get("href", "")
+        if href.startswith("#") and len(href) > 1:
+            self.references.append(href[1:])
+        for name in ("aria-controls", "aria-labelledby", "aria-describedby"):
+            self.references.extend(attributes.get(name, "").split())
+
+
+class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_problem_first_entries_are_complete(self):
+        entries = re.findall(
+            r'<a class="workflow-entry"[^>]*data-workflow-filter="([^"]+)"'
+            r'[^>]*>\s*<strong>([^<]+)</strong>', SECTION)
+        self.assertEqual(len(entries), 7)
+        self.assertEqual(len({category for category, _ in entries}), 7)
+        self.assertEqual(dict(entries), {
+            category: label for category, (_, label) in EXPECTED_ENTRIES.items()
+        })
+
+    def test_category_counts_still_partition_all_49_workflows(self):
+        counts = Counter()
+        groups = re.findall(
+                r'<details class="workflow-group"[^>]*data-category="([^"]+)"'
+                r'[^>]*>(.*?)</details>', SECTION, re.S)
+        self.assertEqual(len(groups), 14)
+        for category, body in groups:
+            counts[category] += body.count('class="workflow-item"')
+        self.assertEqual(dict(counts), {
+            category: count for category, (count, _) in EXPECTED_ENTRIES.items()
+        })
+        self.assertEqual(sum(counts.values()), 49)
+
+    def test_complete_catalogue_and_cadence_contract_survives(self):
+        commands = re.findall(
+            r'<article class="workflow-item".*?<code>(/[^<]+)</code>',
+            SECTION, re.S)
+        self.assertEqual(len(commands), 49)
+        self.assertEqual(len(set(commands)), 49)
+        self.assertEqual(SECTION.count('class="workflow-badge"'), 10)
+
+    def test_catalogue_is_native_and_available_without_javascript(self):
+        compact = re.sub(r"\s+", " ", HTML)
+        self.assertRegex(
+            SECTION,
+            r'<details class="workflow-catalogue" id="workflow-catalogue" open>')
+        entry_tags = re.findall(r'<a class="workflow-entry"[^>]*>', SECTION)
+        self.assertEqual(len(entry_tags), 7)
+        self.assertTrue(all('href="#workflow-catalogue"' in tag
+                            for tag in entry_tags))
+        self.assertTrue(all('aria-controls="workflow-groups"' in tag
+                            for tag in entry_tags))
+        self.assertIn('data-show-all-workflows', SECTION)
+        self.assertNotIn('class="workflow-proof"', SECTION)
+        self.assertRegex(
+            compact, r"\.workflow-controls \{[^}]*display: none")
+        self.assertRegex(
+            compact, r"\.js \.workflow-controls \{[^}]*display: block")
+        self.assertRegex(
+            compact, r"\.workflow-results-toolbar \{[^}]*display: none")
+        self.assertRegex(
+            compact, r"\.js \.workflow-results-toolbar \{[^}]*display: flex")
+
+    def test_readability_contract_is_single_column_and_larger(self):
+        compact = re.sub(r"\s+", " ", HTML)
+        self.assertRegex(
+            compact, r"\.workflow-catalogue \{[^}]*max-width: 60rem")
+        self.assertRegex(
+            compact, r"\.workflow-groups \{[^}]*grid-template-columns: 1fr")
+        self.assertRegex(
+            compact, r"\.workflow-item p \{[^}]*font-size: 0\.875rem")
+        self.assertRegex(
+            compact, r"\.workflow-entry \{[^}]*flex: 1 1 16rem")
+        self.assertRegex(
+            compact, r"\.workflow-entry strong \{[^}]*font-size: 1rem")
+        self.assertRegex(
+            compact, r"\.workflow-entry span \{[^}]*font-size: 0\.8125rem")
+        self.assertRegex(
+            compact,
+            r"\.workflow-group-title strong \{[^}]*font-size: 1rem",
+        )
+        self.assertRegex(
+            compact,
+            r"\.workflow-group-title small \{[^}]*font-size: 0\.8125rem",
+        )
+        self.assertRegex(
+            compact, r"\.workflow-group-meta \{[^}]*font-size: 0\.75rem")
+        self.assertRegex(
+            compact, r"\.workflow-item \{[^}]*grid-template-columns: 13rem")
+        self.assertRegex(
+            compact,
+            r"\.workflow-command-line code \{[^}]*font-size: 0\.8125rem",
+        )
+        self.assertRegex(
+            compact,
+            r"@media \(max-width: 980px\).*?\.workflow-entry "
+            r"\{ flex-basis: calc\(50% - 0\.375rem\)",
+        )
+        self.assertRegex(
+            compact,
+            r"@media \(max-width: 760px\).*?\.workflow-entry "
+            r"\{ flex-basis: 100%",
+        )
+        self.assertRegex(
+            compact,
+            r"@media \(max-width: 760px\).*?\.workflow-item "
+            r"\{ grid-template-columns: 1fr",
+        )
+        self.assertIn("#c3cfcc", HTML)
+        self.assertIn(".workflow-search input:focus-visible", HTML)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", HTML)
+
+    def test_all_fragment_and_aria_references_resolve_to_unique_ids(self):
+        parser = DocumentContractParser()
+        parser.feed(HTML)
+        duplicates = sorted(
+            identifier for identifier, count in Counter(parser.ids).items()
+            if count > 1
+        )
+        self.assertEqual(duplicates, [])
+        missing = sorted(set(parser.references) - set(parser.ids))
+        self.assertEqual(missing, [])
+
+    def test_controllers_execute_the_approved_interactions(self):
+        behavior_test = REPO_ROOT / "tests" / "site_workflows.behavior.test.js"
+        result = subprocess.run(
+            ["node", "--test", str(behavior_test)],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(
+            result.returncode,
+            0,
+            result.stdout + result.stderr,
+        )
+
+    def test_demo_previews_are_available_without_javascript(self):
+        compact = re.sub(r"\s+", " ", HTML)
+        panel_tags = re.findall(
+            r'<div class="demo-panel[^"]*"[^>]*data-panel="[^"]+"[^>]*>',
+            HTML,
+        )
+        self.assertEqual(len(panel_tags), 3)
+        self.assertTrue(all(" hidden" not in tag for tag in panel_tags))
+        self.assertEqual(sum("is-active" in tag for tag in panel_tags), 1)
+        self.assertRegex(compact, r"\.demo-tabs \{[^}]*display: none")
+        self.assertRegex(compact, r"\.js \.demo-tabs \{[^}]*display: flex")
+        self.assertRegex(compact, r"\.js \.demo-panel \{[^}]*display: none")
+        self.assertRegex(
+            compact,
+            r"\.js \.demo-panel\.is-active \{[^}]*display: block",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,4627 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Founder OS turns Claude Code into an executive team for a company of one: 13 agents, 49 workflows, and a cadence that keeps decisions moving.">
+  <meta name="theme-color" content="#f2eee4">
+  <title>Founder OS — the executive team for a company of one</title>
+  <script>document.documentElement.classList.add('js');</script>
+  <style>
+    :root {
+      --paper: #f2eee4;
+      --paper-strong: #fffaf0;
+      --paper-muted: #e8e2d5;
+      --ink: #122127;
+      --ink-soft: #4d5a5e;
+      --line: rgba(18, 33, 39, 0.16);
+      --line-strong: rgba(18, 33, 39, 0.32);
+      --orange: #f15a35;
+      --orange-dark: #ba351c;
+      --lime: #d7f36b;
+      --night: #102025;
+      --night-soft: #1a3036;
+      --white: #fffdf7;
+      --shadow: 0 24px 70px rgba(18, 33, 39, 0.12);
+      --radius-sm: 0.75rem;
+      --radius-md: 1.2rem;
+      --radius-lg: 2rem;
+      --container: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 6rem;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 90% 4%, rgba(215, 243, 107, 0.34), transparent 24rem),
+        var(--paper);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+      opacity: 0.28;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+    }
+
+    ::selection {
+      color: var(--white);
+      background: var(--orange);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    img,
+    svg {
+      display: block;
+      max-width: 100%;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: 0.75rem;
+      left: 0.75rem;
+      z-index: 1000;
+      padding: 0.75rem 1rem;
+      color: var(--white);
+      background: var(--ink);
+      border-radius: 0.5rem;
+      transform: translateY(-150%);
+      transition: transform 160ms ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--orange);
+      outline-offset: 4px;
+    }
+
+    .container {
+      width: min(calc(100% - 2rem), var(--container));
+      margin-inline: auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid transparent;
+      background: rgba(242, 238, 228, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .site-header::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+    }
+
+    .nav {
+      min-height: 5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-weight: 850;
+      letter-spacing: -0.04em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      width: 2rem;
+      height: 2rem;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      background: var(--ink);
+      border-radius: 0.45rem;
+      box-shadow: 4px 4px 0 var(--orange);
+      font-size: 0.75rem;
+      letter-spacing: -0.06em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.65rem;
+      margin-left: auto;
+    }
+
+    .nav-links a:not(.button) {
+      color: var(--ink-soft);
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .nav-links a:not(.button):hover {
+      color: var(--ink);
+    }
+
+    .nav-toggle {
+      width: 2.8rem;
+      height: 2.8rem;
+      display: none;
+      place-items: center;
+      padding: 0;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .button {
+      min-height: 3rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      padding: 0.8rem 1.15rem;
+      border: 1px solid var(--ink);
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      line-height: 1;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button-dark {
+      color: var(--white);
+      background: var(--ink);
+      box-shadow: 4px 4px 0 var(--orange);
+    }
+
+    .button-dark:hover {
+      box-shadow: 6px 6px 0 var(--orange);
+    }
+
+    .button-light {
+      color: var(--ink);
+      background: rgba(255, 250, 240, 0.6);
+    }
+
+    .button-light:hover {
+      background: var(--paper-strong);
+    }
+
+    .button-orange {
+      color: var(--ink);
+      background: var(--orange);
+      border-color: var(--orange);
+      box-shadow: 5px 5px 0 var(--lime);
+    }
+
+    .button-orange:hover {
+      box-shadow: 7px 7px 0 var(--lime);
+    }
+
+    .arrow {
+      font-size: 1.15em;
+      transition: transform 160ms ease;
+    }
+
+    .button:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0 0 1.35rem;
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+      font-weight: 850;
+      letter-spacing: 0.14em;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 1.7rem;
+      height: 0.55rem;
+      content: "";
+      background: var(--orange);
+      border-radius: 999px 0 999px 0;
+    }
+
+    .hero {
+      min-height: calc(100vh - 5rem);
+      display: grid;
+      align-items: center;
+      padding: clamp(4rem, 8vw, 7.5rem) 0 4rem;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(28rem, 0.92fr);
+      align-items: center;
+      gap: clamp(2.5rem, 5vw, 5.5rem);
+    }
+
+    .hero h1,
+    .section-title,
+    .closing h2 {
+      margin: 0;
+      font-size: clamp(3.2rem, 7.4vw, 7rem);
+      font-weight: 880;
+      letter-spacing: -0.075em;
+      line-height: 0.92;
+      text-wrap: balance;
+    }
+
+    .hero h1 {
+      max-width: 12ch;
+    }
+
+    .hero h1 .accent {
+      position: relative;
+      z-index: 0;
+      display: inline-block;
+      color: var(--orange-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: -0.08em;
+    }
+
+    .hero h1 .accent::after {
+      position: absolute;
+      right: -0.05em;
+      bottom: 0.05em;
+      left: -0.03em;
+      z-index: -1;
+      height: 0.14em;
+      content: "";
+      background: var(--lime);
+      transform: rotate(-1deg);
+    }
+
+    .hero-lead {
+      max-width: 38rem;
+      margin: 1.75rem 0 0;
+      color: var(--ink-soft);
+      font-size: clamp(1.08rem, 1.6vw, 1.28rem);
+      line-height: 1.55;
+    }
+
+    .hero-lead strong {
+      color: var(--ink);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.9rem;
+      margin-top: 2rem;
+    }
+
+    .micro-proof {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.55rem;
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+      font-weight: 650;
+    }
+
+    .micro-proof .dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      display: inline-block;
+      background: #3c9c61;
+      border: 3px solid rgba(60, 156, 97, 0.18);
+      border-radius: 50%;
+      box-sizing: content-box;
+    }
+
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1.2rem;
+      margin-top: 0.9rem;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .proof-links a {
+      text-underline-offset: 0.22rem;
+      text-decoration-thickness: 1px;
+    }
+
+    .proof-links a:hover {
+      color: var(--orange-dark);
+    }
+
+    .command-center {
+      position: relative;
+      color: #e8f0ed;
+      background: var(--night);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      box-shadow: 1.2rem 1.2rem 0 var(--lime), var(--shadow);
+      transform: rotate(1.2deg);
+    }
+
+    .command-center::before {
+      position: absolute;
+      top: -1.9rem;
+      right: 2rem;
+      padding: 0.55rem 0.9rem;
+      color: var(--ink);
+      content: "THIS ISN'T A CHAT";
+      background: var(--orange);
+      border: 1px solid var(--ink);
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      transform: rotate(3deg);
+    }
+
+    .window-bar {
+      min-height: 3.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 0.38rem;
+    }
+
+    .window-dots span {
+      width: 0.55rem;
+      height: 0.55rem;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+    }
+
+    .window-dots span:first-child {
+      background: var(--orange);
+      border-color: var(--orange);
+    }
+
+    .window-title {
+      color: #9db0ab;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .status-pill {
+      padding: 0.25rem 0.55rem;
+      color: var(--lime);
+      background: rgba(215, 243, 107, 0.08);
+      border: 1px solid rgba(215, 243, 107, 0.24);
+      border-radius: 999px;
+      font-size: 0.61rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .demo-tabs {
+      display: none;
+      gap: 0.5rem;
+      padding: 1rem 1.15rem 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .js .demo-tabs {
+      display: flex;
+    }
+
+    .demo-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .demo-tab {
+      padding: 0.55rem 0.8rem;
+      color: #91a49f;
+      background: transparent;
+      border: 0;
+      border-radius: 0.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .demo-tab[aria-selected="true"] {
+      color: var(--white);
+      background: var(--night-soft);
+    }
+
+    .demo-panel {
+      min-height: 25rem;
+      padding: 1.5rem;
+    }
+
+    .js .demo-panel {
+      display: none;
+    }
+
+    .js .demo-panel.is-active {
+      display: block;
+    }
+
+    .demo-label {
+      margin: 0 0 0.65rem;
+      color: var(--orange);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .demo-panel h2 {
+      max-width: 15ch;
+      margin: 0;
+      color: var(--white);
+      font-size: clamp(1.6rem, 3vw, 2.25rem);
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+    }
+
+    .demo-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 1.2rem;
+      margin: 1.2rem 0 0;
+      color: #8fa29d;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+    }
+
+    .demo-rule {
+      height: 1px;
+      margin: 1.35rem 0;
+      background: linear-gradient(90deg, rgba(215, 243, 107, 0.5), transparent);
+    }
+
+    .demo-list {
+      display: grid;
+      gap: 0.75rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .demo-list li {
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.65rem;
+      color: #c8d3d0;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .demo-list .index {
+      color: var(--lime);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .demo-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1.2rem;
+      color: #849994;
+      background: #0a181c;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.64rem;
+    }
+
+    .demo-foot a {
+      color: var(--lime);
+      text-underline-offset: 0.18rem;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: clamp(3.5rem, 7vw, 6rem);
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .stat {
+      padding: 1.2rem clamp(0.8rem, 2.5vw, 1.8rem);
+      border-right: 1px solid var(--line);
+    }
+
+    .stat:last-child {
+      border-right: 0;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: clamp(1.65rem, 3vw, 2.4rem);
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 0.35rem;
+      color: var(--ink-soft);
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .section {
+      padding: clamp(5.5rem, 10vw, 9rem) 0;
+    }
+
+    .section-kicker {
+      max-width: 52rem;
+      margin-bottom: clamp(2.75rem, 5vw, 5rem);
+    }
+
+    .section-title {
+      font-size: clamp(2.6rem, 5.8vw, 5.6rem);
+      line-height: 0.96;
+    }
+
+    .section-title .serif {
+      color: var(--orange-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-weight: 500;
+    }
+
+    .section-copy {
+      max-width: 42rem;
+      margin: 1.4rem 0 0;
+      color: var(--ink-soft);
+      font-size: clamp(1.05rem, 1.7vw, 1.25rem);
+    }
+
+    .problem {
+      background: var(--paper-strong);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: clamp(3rem, 8vw, 8rem);
+      align-items: start;
+    }
+
+    .sticky-copy {
+      position: sticky;
+      top: 8rem;
+    }
+
+    .pain-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .pain-card {
+      position: relative;
+      min-height: 11rem;
+      padding: 1.6rem 1.6rem 1.6rem 5rem;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+    }
+
+    .pain-card:nth-child(2) {
+      margin-left: 2rem;
+    }
+
+    .pain-card:nth-child(3) {
+      margin-left: 4rem;
+    }
+
+    .pain-number {
+      position: absolute;
+      top: 1.35rem;
+      left: 1.35rem;
+      width: 2.45rem;
+      height: 2.45rem;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      background: var(--ink);
+      border-radius: 50%;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+    }
+
+    .pain-card h3,
+    .feature-card h3,
+    .step-card h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+    }
+
+    .pain-card p,
+    .feature-card p,
+    .step-card p {
+      margin: 0.7rem 0 0;
+      color: var(--ink-soft);
+      font-size: 0.94rem;
+    }
+
+    .manifesto {
+      position: relative;
+      padding: clamp(4rem, 8vw, 7rem) 0;
+      color: var(--ink);
+      background: var(--orange);
+      overflow: hidden;
+    }
+
+    .manifesto::before {
+      position: absolute;
+      top: -6rem;
+      right: -4rem;
+      width: 22rem;
+      height: 22rem;
+      content: "";
+      border: 4rem solid rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+    }
+
+    .manifesto p {
+      position: relative;
+      max-width: 1100px;
+      margin: 0;
+      font-size: clamp(2.5rem, 6.5vw, 6.6rem);
+      font-weight: 850;
+      letter-spacing: -0.07em;
+      line-height: 0.97;
+      text-wrap: balance;
+    }
+
+    .manifesto em {
+      color: var(--white);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 500;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1rem;
+    }
+
+    .feature-card {
+      min-height: 20rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1.6rem;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .feature-card:nth-child(1),
+    .feature-card:nth-child(4) {
+      grid-column: span 7;
+    }
+
+    .feature-card:nth-child(2),
+    .feature-card:nth-child(3) {
+      grid-column: span 5;
+    }
+
+    .feature-card:nth-child(1) {
+      color: var(--white);
+      background: var(--night);
+    }
+
+    .feature-card:nth-child(1) p {
+      color: #afbfbb;
+    }
+
+    .feature-card:nth-child(2) {
+      background: var(--lime);
+    }
+
+    .feature-card:nth-child(3) {
+      background: var(--paper-strong);
+    }
+
+    .feature-card:nth-child(4) {
+      color: var(--ink);
+      background: var(--orange);
+      border-color: var(--orange);
+    }
+
+    .feature-card:nth-child(4) p {
+      color: var(--ink);
+    }
+
+    .feature-icon {
+      width: 3.2rem;
+      height: 3.2rem;
+      display: grid;
+      place-items: center;
+      color: currentColor;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .feature-card:nth-child(1) .feature-icon {
+      color: var(--lime);
+    }
+
+    .feature-card h3 {
+      max-width: 14ch;
+      margin-top: 2rem;
+      font-size: clamp(1.55rem, 3vw, 2.45rem);
+    }
+
+    .feature-card p {
+      max-width: 34rem;
+      font-size: 1rem;
+    }
+
+    .sample-workspace {
+      background: var(--paper-strong);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .sample-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+      gap: clamp(2rem, 7vw, 7rem);
+      align-items: end;
+    }
+
+    .sample-head .section-title {
+      max-width: 13ch;
+    }
+
+    .sample-brief {
+      padding: 1.35rem;
+      background: var(--lime);
+      border: 1px solid var(--ink);
+      border-radius: var(--radius-md);
+      box-shadow: 0.5rem 0.5rem 0 var(--ink);
+      transform: rotate(1deg);
+    }
+
+    .sample-brief > span {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .sample-brief strong {
+      display: block;
+      margin-top: 0.65rem;
+      font-size: clamp(1.15rem, 2vw, 1.5rem);
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+    }
+
+    .sample-brief p {
+      margin: 0.7rem 0 0;
+      color: rgba(18, 33, 39, 0.76);
+      font-size: 0.8rem;
+    }
+
+    .state-trace {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.4rem;
+      margin-top: 3rem;
+    }
+
+    .trace-step {
+      position: relative;
+      min-width: 0;
+      padding: 0.85rem 1rem;
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: transform 160ms ease, border-color 160ms ease;
+    }
+
+    .trace-step:hover {
+      border-color: var(--orange);
+      transform: translateY(-0.2rem);
+    }
+
+    .trace-step:not(:last-child)::after {
+      position: absolute;
+      top: 50%;
+      left: calc(100% + 0.4rem);
+      color: var(--orange-dark);
+      content: "→";
+      font-size: 0.95rem;
+      transform: translateY(-50%);
+    }
+
+    .trace-step span,
+    .trace-step strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .trace-step span {
+      color: var(--orange-dark);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .trace-step strong {
+      margin-top: 0.25rem;
+      font-size: 0.76rem;
+    }
+
+    .workspace-browser {
+      margin-top: 1.25rem;
+      overflow: hidden;
+      color: var(--white);
+      background: var(--night);
+      border: 1px solid var(--ink);
+      border-radius: var(--radius-lg);
+      box-shadow: 1rem 1rem 0 var(--orange), var(--shadow);
+    }
+
+    .workspace-browser-bar {
+      min-height: 3.25rem;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.7rem 1rem;
+      color: #aebcb8;
+      background: #091519;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+    }
+
+    .workspace-dots {
+      display: flex;
+      gap: 0.35rem;
+    }
+
+    .workspace-dots span {
+      width: 0.62rem;
+      height: 0.62rem;
+      display: block;
+      background: #4d666b;
+      border-radius: 50%;
+    }
+
+    .workspace-dots span:first-child { background: var(--orange); }
+    .workspace-dots span:last-child { background: var(--lime); }
+
+    .workspace-current-path {
+      overflow: hidden;
+      color: #d5e1de;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fiction-badge {
+      padding: 0.25rem 0.45rem;
+      color: var(--lime);
+      border: 1px solid rgba(215, 243, 107, 0.3);
+      border-radius: 999px;
+      font-size: 0.66rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .workspace-browser-body {
+      display: grid;
+      grid-template-columns: 15.5rem minmax(0, 1fr);
+      min-height: 38rem;
+    }
+
+    .workspace-sidebar {
+      padding: 1rem 0.75rem 1.2rem;
+      background: var(--night-soft);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .workspace-sidebar-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.8rem;
+      padding: 0.4rem 0.55rem 0.9rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .workspace-sidebar-head strong {
+      font-size: 0.78rem;
+    }
+
+    .workspace-sidebar-head span {
+      color: #aebcb8;
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+
+    .workspace-file-list {
+      display: grid;
+      gap: 0.25rem;
+      margin: 0.75rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .workspace-file {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 1.2rem minmax(0, 1fr);
+      gap: 0.55rem;
+      align-items: center;
+      padding: 0.58rem 0.62rem;
+      color: #aebcb8;
+      border: 1px solid transparent;
+      border-radius: 0.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      line-height: 1.35;
+      text-decoration: none;
+    }
+
+    .workspace-file:hover {
+      color: var(--white);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .workspace-file[aria-current="true"] {
+      color: var(--white);
+      background: rgba(215, 243, 107, 0.1);
+      border-color: rgba(215, 243, 107, 0.3);
+    }
+
+    .file-icon {
+      color: var(--lime);
+      font-size: 0.66rem;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .workspace-file span:last-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .workspace-source-link {
+      display: block;
+      margin: 1rem 0.55rem 0;
+      padding-top: 0.9rem;
+      color: var(--lime);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.7rem;
+      font-weight: 750;
+      text-underline-offset: 0.2em;
+    }
+
+    .workspace-view {
+      min-width: 0;
+      padding: clamp(1rem, 2.5vw, 2rem);
+      background:
+        linear-gradient(rgba(18, 33, 39, 0.025) 1px, transparent 1px),
+        var(--paper);
+      background-size: 100% 2rem;
+    }
+
+    .workspace-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(12rem, 0.75fr);
+      gap: 1rem;
+      scroll-margin-top: 6rem;
+    }
+
+    .workspace-panel + .workspace-panel {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid var(--line-strong);
+    }
+
+    .js .workspace-panel {
+      display: none;
+    }
+
+    .js .workspace-panel.is-active {
+      display: grid;
+    }
+
+    .sample-sheet {
+      min-width: 0;
+      min-height: 31rem;
+      padding: clamp(1.2rem, 2.5vw, 2rem);
+      color: var(--ink);
+      background: var(--paper-strong);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      box-shadow: 0 1rem 2.5rem rgba(18, 33, 39, 0.08);
+    }
+
+    .sample-sheet-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1.8rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sample-sheet-meta span {
+      padding: 0.22rem 0.4rem;
+      color: var(--ink-soft);
+      background: var(--paper-muted);
+      border-radius: 0.32rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.66rem;
+      font-weight: 750;
+    }
+
+    .sample-sheet h3 {
+      margin: 0;
+      font-size: clamp(1.65rem, 3vw, 2.5rem);
+      letter-spacing: -0.055em;
+      line-height: 1;
+    }
+
+    .sample-block {
+      margin-top: 1.6rem;
+    }
+
+    .sample-block + .sample-block {
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .sample-label {
+      margin: 0;
+      color: var(--orange-dark);
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    .sample-value {
+      margin: 0.5rem 0 0;
+      color: var(--ink);
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .sample-value code,
+    .sample-table code {
+      padding: 0.12rem 0.25rem;
+      color: var(--ink);
+      background: var(--lime);
+      border-radius: 0.25rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.82em;
+    }
+
+    .sample-support {
+      margin: 0.35rem 0 0;
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+    }
+
+    .sample-list {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0.7rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .sample-list li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.6rem;
+      color: var(--ink-soft);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .sample-list li::before {
+      color: var(--orange-dark);
+      content: "—";
+      font-weight: 900;
+    }
+
+    .sample-table-wrap {
+      margin-top: 0.8rem;
+      overflow-x: auto;
+    }
+
+    .sample-table {
+      width: 100%;
+      border-collapse: collapse;
+      color: var(--ink-soft);
+      font-size: 0.74rem;
+    }
+
+    .sample-table th,
+    .sample-table td {
+      padding: 0.55rem;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .sample-table th {
+      color: var(--ink);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .sample-note {
+      align-self: start;
+      padding: 1.15rem;
+      color: #d5e1de;
+      background: var(--night-soft);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+    }
+
+    .sample-note > span {
+      color: var(--lime);
+      font-size: 0.66rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .sample-note h4 {
+      margin: 0.7rem 0 0;
+      color: var(--white);
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+
+    .sample-note p {
+      margin: 0.65rem 0 0;
+      color: #aebcb8;
+      font-size: 0.72rem;
+      line-height: 1.55;
+    }
+
+    .sample-next {
+      display: inline-flex;
+      margin-top: 1rem;
+      color: var(--lime);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-underline-offset: 0.2em;
+    }
+
+    .how {
+      color: var(--white);
+      background: var(--night);
+    }
+
+    .how .eyebrow,
+    .how .section-copy {
+      color: #aebcb8;
+    }
+
+    .how .eyebrow::before {
+      background: var(--lime);
+    }
+
+    .how .section-title .serif {
+      color: var(--lime);
+    }
+
+    .steps {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .steps::before {
+      position: absolute;
+      top: 2rem;
+      right: 16%;
+      left: 16%;
+      height: 1px;
+      content: "";
+      background: linear-gradient(90deg, var(--orange), var(--lime));
+    }
+
+    .step-card {
+      position: relative;
+      z-index: 1;
+      padding: 1.5rem;
+      background: var(--night-soft);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+    }
+
+    .step-number {
+      width: 4rem;
+      height: 4rem;
+      display: grid;
+      place-items: center;
+      margin-bottom: 2.8rem;
+      color: var(--ink);
+      background: var(--lime);
+      border: 0.6rem solid var(--night);
+      border-radius: 50%;
+      font-size: 1.05rem;
+      font-weight: 900;
+      box-sizing: content-box;
+    }
+
+    .step-card:nth-child(2) .step-number {
+      color: var(--white);
+      background: var(--orange);
+    }
+
+    .step-card p {
+      color: #aebcb8;
+    }
+
+    .code-line {
+      position: relative;
+      margin-top: 1.3rem;
+      padding: 0.8rem 2.9rem 0.8rem 0.9rem;
+      color: #d5e1de;
+      background: #091519;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.65rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .copy-button {
+      position: absolute;
+      top: 50%;
+      right: 0.5rem;
+      width: 2rem;
+      height: 2rem;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      color: #aebcb8;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 0.45rem;
+      cursor: pointer;
+      transform: translateY(-50%);
+    }
+
+    .copy-button:hover {
+      color: var(--white);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .rhythm {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      margin-top: 3.5rem;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .timeline-item {
+      position: relative;
+      min-height: 18rem;
+      padding: 2.2rem 1.2rem 1.2rem;
+      border-right: 1px solid var(--line);
+    }
+
+    .timeline-item:last-child {
+      border-right: 0;
+    }
+
+    .timeline-item::before {
+      position: absolute;
+      top: -0.48rem;
+      left: 1.2rem;
+      width: 0.85rem;
+      height: 0.85rem;
+      content: "";
+      background: var(--paper);
+      border: 2px solid var(--orange);
+      border-radius: 50%;
+    }
+
+    .timeline-item:nth-child(3)::before,
+    .timeline-item:nth-child(5)::before {
+      background: var(--lime);
+      border-color: var(--ink);
+    }
+
+    .timeline-day {
+      color: var(--orange-dark);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .timeline-item h3 {
+      margin: 0.8rem 0 0;
+      font-size: 1.15rem;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+    }
+
+    .timeline-item p {
+      margin: 0.75rem 0 0;
+      color: var(--ink-soft);
+      font-size: 0.84rem;
+    }
+
+    .timeline-command {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.35rem 0.55rem;
+      color: var(--ink);
+      background: var(--paper-muted);
+      border-radius: 0.35rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.65rem;
+    }
+
+    .workflow-library {
+      color: var(--white);
+      background:
+        radial-gradient(circle at 88% 8%, rgba(215, 243, 107, 0.12), transparent 24rem),
+        var(--night);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .workflow-head {
+      max-width: 48rem;
+    }
+
+    .workflow-library .section-title {
+      max-width: 15ch;
+    }
+
+    .workflow-library .section-title .serif {
+      color: var(--lime);
+    }
+
+    .workflow-library .section-copy {
+      color: #c3cfcc;
+    }
+
+    .workflow-entry-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 2.5rem;
+    }
+
+    .workflow-entry {
+      position: relative;
+      flex: 1 1 16rem;
+      min-height: 6rem;
+      padding: 1rem 3rem 1rem 1rem;
+      background: var(--night-soft);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .workflow-entry::after {
+      position: absolute;
+      top: 0.9rem;
+      right: 1rem;
+      color: var(--lime);
+      content: "→";
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .workflow-entry strong,
+    .workflow-entry span {
+      display: block;
+    }
+
+    .workflow-entry strong {
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    .workflow-entry span {
+      margin-top: 0.35rem;
+      color: #c3cfcc;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+    }
+
+    .workflow-entry:hover {
+      background: #213a41;
+      border-color: rgba(215, 243, 107, 0.55);
+    }
+
+    .workflow-entry[aria-current="true"] {
+      background: #213a41;
+      border-color: var(--lime);
+      box-shadow: inset 0 0 0 2px var(--lime);
+    }
+
+    .workflow-entry:focus-visible,
+    .workflow-catalogue summary:focus-visible,
+    .workflow-text-action:focus-visible {
+      outline: 3px solid var(--lime);
+      outline-offset: 3px;
+    }
+
+    .workflow-controls {
+      display: none;
+      max-width: 60rem;
+      margin-top: 1.25rem;
+    }
+
+    .js .workflow-controls {
+      display: block;
+    }
+
+    .workflow-control-top {
+      display: block;
+    }
+
+    .workflow-search {
+      display: block;
+      position: relative;
+    }
+
+    .workflow-search::before {
+      position: absolute;
+      top: 50%;
+      left: 1rem;
+      color: #c3cfcc;
+      content: "⌕";
+      font-size: 1.15rem;
+      transform: translateY(-52%);
+    }
+
+    .workflow-search input {
+      width: 100%;
+      min-height: 3.2rem;
+      padding: 0.8rem 1rem 0.8rem 2.8rem;
+      color: var(--white);
+      background: var(--night-soft);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.7rem;
+      outline: 0;
+    }
+
+    .workflow-search input::placeholder {
+      color: #c3cfcc;
+    }
+
+    .workflow-search input:focus-visible {
+      border-color: var(--lime);
+      outline: 3px solid var(--lime);
+      outline-offset: 2px;
+    }
+
+    .workflow-catalogue {
+      max-width: 60rem;
+      margin-top: 1rem;
+      overflow: hidden;
+      background: var(--night-soft);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: var(--radius-md);
+    }
+
+    .workflow-catalogue > summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 3.75rem;
+      padding: 0.9rem 1.1rem;
+      color: var(--ink);
+      background: var(--lime);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 850;
+      list-style: none;
+    }
+
+    .workflow-catalogue > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .workflow-catalogue > summary::after {
+      content: "+";
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .workflow-catalogue[open] > summary::after {
+      content: "−";
+    }
+
+    .workflow-catalogue-body {
+      padding: 0 1rem 1rem;
+    }
+
+    .workflow-results-toolbar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .js .workflow-results-toolbar {
+      display: flex;
+    }
+
+    .workflow-count {
+      color: #c3cfcc;
+      font-size: 0.75rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .workflow-results-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: flex-end;
+    }
+
+    .workflow-text-action {
+      min-height: 2.75rem;
+      padding: 0.55rem 0.75rem;
+      color: #c3cfcc;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0.55rem;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .workflow-text-action:hover {
+      color: var(--white);
+      border-color: rgba(215, 243, 107, 0.6);
+    }
+
+    .workflow-groups {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .workflow-group {
+      min-width: 0;
+      overflow: hidden;
+      background: var(--night-soft);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+    }
+
+    .workflow-group[open] {
+      border-color: rgba(215, 243, 107, 0.4);
+    }
+
+    .workflow-group[hidden],
+    .workflow-item[hidden] {
+      display: none;
+    }
+
+    .workflow-group summary {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1rem;
+      align-items: center;
+      min-height: 4.5rem;
+      padding: 1rem 1.1rem;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .workflow-group summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .workflow-group summary:hover {
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .workflow-group-number {
+      display: grid;
+      place-items: center;
+      width: 2.2rem;
+      height: 2.2rem;
+      color: var(--lime);
+      background: #091519;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 0.55rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      font-weight: 850;
+    }
+
+    .workflow-group-title strong,
+    .workflow-group-title small {
+      display: block;
+    }
+
+    .workflow-group-title strong {
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .workflow-group-title small {
+      margin-top: 0.2rem;
+      color: #c3cfcc;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+    }
+
+    .workflow-group-meta {
+      color: #c3cfcc;
+      font-size: 0.75rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .workflow-group-meta::after {
+      display: inline-block;
+      margin-left: 0.4rem;
+      content: "+";
+      color: var(--lime);
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .workflow-group[open] .workflow-group-meta::after {
+      content: "−";
+    }
+
+    .workflow-items {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .workflow-item {
+      display: grid;
+      grid-template-columns: 13rem minmax(0, 1fr);
+      gap: 1.25rem;
+      padding: 1.15rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .workflow-item:last-child {
+      border-bottom: 0;
+    }
+
+    .workflow-command-line {
+      min-width: 0;
+    }
+
+    .workflow-command-line code {
+      display: block;
+      color: var(--lime);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .workflow-badge {
+      display: inline-block;
+      margin-top: 0.45rem;
+      padding: 0.2rem 0.38rem;
+      color: #ffb5a2;
+      background: rgba(241, 90, 53, 0.12);
+      border: 1px solid rgba(241, 90, 53, 0.3);
+      border-radius: 0.3rem;
+      font-size: 0.625rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .workflow-item p {
+      margin: 0;
+      color: #c3cfcc;
+      font-size: 0.875rem;
+      line-height: 1.55;
+    }
+
+    .workflow-empty {
+      margin: 1rem 0 0;
+      padding: 1.5rem;
+      color: #c3cfcc;
+      text-align: center;
+      background: var(--night-soft);
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+    }
+
+    .workflow-footnote {
+      margin: 1.2rem 0 0;
+      color: #c3cfcc;
+      font-size: 0.75rem;
+    }
+
+    .workflow-footnote a {
+      color: var(--white);
+      text-underline-offset: 0.2em;
+    }
+
+    .team {
+      overflow: hidden;
+    }
+
+    .team-layout {
+      display: grid;
+      grid-template-columns: 0.78fr 1.22fr;
+      gap: clamp(2rem, 7vw, 7rem);
+      align-items: start;
+    }
+
+    .team-intro {
+      position: sticky;
+      top: 8rem;
+    }
+
+    .team-intro .section-title {
+      font-size: clamp(2.8rem, 5.3vw, 5rem);
+    }
+
+    .team-note {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-top: 2rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--line-strong);
+      color: var(--ink-soft);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .team-note strong {
+      color: var(--orange-dark);
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .agent-list {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0;
+      padding: 0;
+      counter-reset: agents;
+      list-style: none;
+    }
+
+    .agent {
+      display: grid;
+      grid-template-columns: 2.4rem minmax(8rem, 0.75fr) 1.25fr;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+      background: rgba(255, 250, 240, 0.55);
+      border: 1px solid var(--line);
+      border-radius: 0.8rem;
+      counter-increment: agents;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .agent:hover {
+      background: var(--paper-strong);
+      transform: translateX(-0.35rem);
+    }
+
+    .agent::before {
+      color: var(--orange-dark);
+      content: counter(agents, decimal-leading-zero);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.7rem;
+    }
+
+    .agent strong {
+      font-size: 0.9rem;
+      letter-spacing: -0.02em;
+    }
+
+    .agent span {
+      color: var(--ink-soft);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .multi-business {
+      position: relative;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--orange);
+    }
+
+    .multi-business::before {
+      position: absolute;
+      top: -12rem;
+      right: -9rem;
+      width: 31rem;
+      height: 31rem;
+      content: "";
+      background: rgba(215, 243, 107, 0.52);
+      border-radius: 50%;
+      filter: blur(1px);
+    }
+
+    .multi-layout {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 0.7fr 1.3fr;
+      gap: clamp(2.5rem, 7vw, 7rem);
+      align-items: start;
+    }
+
+    .multi-intro {
+      position: sticky;
+      top: 8rem;
+    }
+
+    .multi-business .eyebrow::before {
+      background: var(--ink);
+    }
+
+    .multi-business .section-copy {
+      color: rgba(18, 33, 39, 0.78);
+    }
+
+    .multi-note {
+      margin: 1.8rem 0 0;
+      padding: 1rem 1.1rem;
+      background: rgba(255, 250, 240, 0.5);
+      border: 1px solid rgba(18, 33, 39, 0.28);
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .multi-note code,
+    .business-command code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.82em;
+    }
+
+    .multi-diagram {
+      padding: clamp(1rem, 2.5vw, 2rem);
+      background: var(--paper-strong);
+      border: 1px solid var(--ink);
+      border-radius: var(--radius-lg);
+      box-shadow: 0.8rem 0.8rem 0 var(--lime), var(--shadow);
+    }
+
+    .registry-card {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1rem;
+      align-items: center;
+      padding: 1rem 1.1rem;
+      color: var(--white);
+      background: var(--ink);
+      border-radius: var(--radius-sm);
+    }
+
+    .registry-card > span:first-child {
+      display: grid;
+      place-items: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      color: var(--ink);
+      background: var(--lime);
+      border-radius: 50%;
+      font-size: 0.68rem;
+      font-weight: 900;
+    }
+
+    .registry-card strong,
+    .registry-card small {
+      display: block;
+    }
+
+    .registry-card strong {
+      font-size: 0.88rem;
+    }
+
+    .registry-card small {
+      margin-top: 0.1rem;
+      color: #aebcb8;
+      font-size: 0.7rem;
+    }
+
+    .registry-card code {
+      color: var(--lime);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.62rem;
+    }
+
+    .route-label {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0.85rem 0;
+      color: var(--ink-soft);
+      font-size: 0.64rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .route-label::before,
+    .route-label::after {
+      height: 1px;
+      flex: 1;
+      content: "";
+      background: var(--line-strong);
+    }
+
+    .business-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+    }
+
+    .business-card {
+      min-width: 0;
+      padding: 1.1rem;
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+    }
+
+    .business-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .business-card-head strong {
+      font-size: 0.95rem;
+    }
+
+    .business-slug {
+      padding: 0.2rem 0.4rem;
+      color: var(--orange-dark);
+      background: rgba(241, 90, 53, 0.12);
+      border-radius: 0.35rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.6rem;
+      font-weight: 800;
+    }
+
+    .business-card p {
+      margin: 0.6rem 0 0;
+      color: var(--ink-soft);
+      font-size: 0.73rem;
+    }
+
+    .business-files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.85rem;
+    }
+
+    .business-files span {
+      padding: 0.28rem 0.4rem;
+      background: var(--paper-strong);
+      border: 1px solid var(--line);
+      border-radius: 0.35rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.55rem;
+    }
+
+    .portfolio-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.9rem;
+      align-items: center;
+      padding: 1.05rem 1.1rem;
+      background: var(--lime);
+      border: 1px solid var(--ink);
+      border-radius: var(--radius-md);
+    }
+
+    .portfolio-mark {
+      display: grid;
+      place-items: center;
+      width: 2.7rem;
+      height: 2.7rem;
+      color: var(--white);
+      background: var(--ink);
+      border-radius: 0.7rem;
+      font-size: 0.7rem;
+      font-weight: 900;
+    }
+
+    .portfolio-card strong,
+    .portfolio-card span {
+      display: block;
+    }
+
+    .portfolio-card strong {
+      font-size: 0.88rem;
+    }
+
+    .portfolio-card span {
+      margin-top: 0.15rem;
+      font-size: 0.69rem;
+    }
+
+    .business-command {
+      margin: 1rem 0 0;
+      padding: 0.8rem 1rem;
+      color: #d5e1de;
+      background: #091519;
+      border-radius: var(--radius-sm);
+      font-size: 0.72rem;
+    }
+
+    .business-command strong {
+      color: var(--lime);
+    }
+
+    .multi-principles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+      margin-top: 1.2rem;
+    }
+
+    .multi-principle {
+      padding: 0.9rem;
+      border-top: 1px solid var(--ink);
+    }
+
+    .multi-principle strong,
+    .multi-principle span {
+      display: block;
+    }
+
+    .multi-principle strong {
+      font-size: 0.78rem;
+    }
+
+    .multi-principle span {
+      margin-top: 0.35rem;
+      color: rgba(18, 33, 39, 0.72);
+      font-size: 0.67rem;
+      line-height: 1.45;
+    }
+
+    .ownership {
+      background: var(--paper-strong);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .ownership-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(2.5rem, 6vw, 6rem);
+      align-items: center;
+    }
+
+    .ownership-map {
+      position: relative;
+      min-height: 32rem;
+      display: grid;
+      place-items: center;
+    }
+
+    .map-orbit {
+      position: absolute;
+      width: 24rem;
+      height: 24rem;
+      border: 1px dashed var(--line-strong);
+      border-radius: 50%;
+      animation: rotate 32s linear infinite;
+    }
+
+    .map-orbit::after {
+      position: absolute;
+      top: 2rem;
+      right: 1.8rem;
+      width: 1rem;
+      height: 1rem;
+      content: "";
+      background: var(--orange);
+      border: 4px solid var(--paper-strong);
+      border-radius: 50%;
+    }
+
+    .map-core {
+      position: relative;
+      z-index: 2;
+      width: 12rem;
+      height: 12rem;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      color: var(--white);
+      text-align: center;
+      background: var(--ink);
+      border-radius: 50%;
+      box-shadow: 0 0 0 1rem rgba(18, 33, 39, 0.08);
+      font-weight: 850;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+    }
+
+    .map-node {
+      position: absolute;
+      z-index: 3;
+      min-width: 8.4rem;
+      padding: 0.75rem;
+      text-align: center;
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      border-radius: 0.65rem;
+      box-shadow: 0 10px 30px rgba(18, 33, 39, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.69rem;
+      font-weight: 700;
+    }
+
+    .map-node:nth-of-type(1) { top: 1rem; left: 50%; transform: translateX(-50%) rotate(-2deg); }
+    .map-node:nth-of-type(2) { top: 27%; right: 0; transform: rotate(2deg); }
+    .map-node:nth-of-type(3) { right: 7%; bottom: 8%; transform: rotate(-2deg); }
+    .map-node:nth-of-type(4) { bottom: 1rem; left: 13%; transform: rotate(2deg); }
+    .map-node:nth-of-type(5) { top: 28%; left: 0; transform: rotate(-2deg); }
+
+    @keyframes rotate {
+      to { transform: rotate(360deg); }
+    }
+
+    .check-list {
+      display: grid;
+      gap: 1rem;
+      margin: 2rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      position: relative;
+      padding-left: 2rem;
+      color: var(--ink-soft);
+    }
+
+    .check-list li::before {
+      position: absolute;
+      top: 0.15rem;
+      left: 0;
+      width: 1.25rem;
+      height: 1.25rem;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      content: "✓";
+      background: var(--orange);
+      border-radius: 50%;
+      font-size: 0.68rem;
+      font-weight: 900;
+    }
+
+    .boundary-note {
+      margin-top: 1.5rem;
+      padding: 1rem 1.1rem;
+      color: var(--ink);
+      background: var(--lime);
+      border: 1px solid var(--ink);
+      border-radius: 0.75rem;
+      font-size: 0.88rem;
+      font-weight: 750;
+    }
+
+    .safety {
+      color: var(--white);
+      background:
+        linear-gradient(rgba(16, 32, 37, 0.94), rgba(16, 32, 37, 0.94)),
+        radial-gradient(circle at 80% 40%, var(--orange), transparent 22rem),
+        var(--night);
+    }
+
+    .safety-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: clamp(3rem, 8vw, 8rem);
+      align-items: center;
+    }
+
+    .safety .section-title {
+      max-width: 11ch;
+    }
+
+    .safety .section-copy {
+      color: #aebcb8;
+    }
+
+    .safety-card {
+      padding: 1.8rem;
+      color: var(--ink);
+      background: var(--lime);
+      border-radius: var(--radius-lg);
+      box-shadow: 1rem 1rem 0 var(--orange);
+      transform: rotate(-1.5deg);
+    }
+
+    .safety-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(18, 33, 39, 0.25);
+      font-size: 0.7rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .safety-card h3 {
+      margin: 1.6rem 0 0;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      letter-spacing: -0.065em;
+      line-height: 0.98;
+    }
+
+    .safety-card p {
+      margin: 1rem 0 0;
+      color: #314046;
+    }
+
+    .safety-list {
+      display: grid;
+      gap: 0.7rem;
+      margin: 1.5rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .safety-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.7rem 0;
+      border-top: 1px solid rgba(18, 33, 39, 0.18);
+      font-size: 0.85rem;
+      font-weight: 750;
+    }
+
+    .safety-list span:last-child {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+    }
+
+    .fit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .fit-card {
+      padding: 1.8rem;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+    }
+
+    .fit-card:first-child {
+      background: var(--paper-strong);
+    }
+
+    .fit-card:last-child {
+      color: var(--white);
+      background: var(--ink);
+    }
+
+    .fit-card h3 {
+      margin: 0;
+      font-size: 1.6rem;
+      letter-spacing: -0.045em;
+    }
+
+    .fit-card ul {
+      display: grid;
+      gap: 0.8rem;
+      margin: 1.5rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .fit-card li {
+      position: relative;
+      padding: 0.7rem 0 0.7rem 2rem;
+      border-top: 1px solid currentColor;
+      border-color: rgba(18, 33, 39, 0.14);
+      font-size: 0.9rem;
+    }
+
+    .fit-card:last-child li {
+      color: #b7c5c1;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .fit-card li::before {
+      position: absolute;
+      left: 0.25rem;
+      content: "+";
+      color: var(--orange-dark);
+      font-weight: 900;
+    }
+
+    .fit-card:last-child li::before {
+      content: "−";
+      color: var(--lime);
+    }
+
+    .requirements {
+      color: var(--white);
+      background: var(--night);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .requirements-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(2rem, 7vw, 7rem);
+      align-items: end;
+      margin-bottom: 3rem;
+    }
+
+    .requirements .eyebrow,
+    .requirements .section-copy {
+      color: #aebcb8;
+    }
+
+    .requirements .eyebrow::before {
+      background: var(--lime);
+    }
+
+    .requirements .section-title .serif {
+      color: var(--lime);
+    }
+
+    .requirements-head .button {
+      margin-top: 1.4rem;
+    }
+
+    .requirements-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .requirement {
+      min-height: 13rem;
+      padding: 1.35rem;
+      border-right: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .requirement:last-child {
+      border-right: 0;
+    }
+
+    .requirement span {
+      display: block;
+      color: var(--lime);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .requirement h3 {
+      margin: 2.2rem 0 0;
+      font-size: 1.2rem;
+      letter-spacing: -0.035em;
+    }
+
+    .requirement p {
+      margin: 0.65rem 0 0;
+      color: #aebcb8;
+      font-size: 0.84rem;
+    }
+
+    .requirement a {
+      color: var(--white);
+      text-underline-offset: 0.18rem;
+    }
+
+    .faq {
+      background: var(--paper-strong);
+      border-top: 1px solid var(--line);
+    }
+
+    .faq-layout {
+      display: grid;
+      grid-template-columns: 0.72fr 1.28fr;
+      gap: clamp(3rem, 8vw, 8rem);
+      align-items: start;
+    }
+
+    .faq .section-kicker {
+      position: sticky;
+      top: 8rem;
+      margin-bottom: 0;
+    }
+
+    .faq-list {
+      border-top: 1px solid var(--line-strong);
+    }
+
+    details {
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    summary {
+      position: relative;
+      padding: 1.5rem 3rem 1.5rem 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      list-style: none;
+      cursor: pointer;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::after {
+      position: absolute;
+      top: 50%;
+      right: 0.25rem;
+      width: 1.9rem;
+      height: 1.9rem;
+      display: grid;
+      place-items: center;
+      content: "+";
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
+
+    details[open] summary::after {
+      content: "−";
+      color: var(--white);
+      background: var(--orange);
+      border-color: var(--orange);
+    }
+
+    details p {
+      max-width: 42rem;
+      margin: -0.4rem 3rem 1.5rem 0;
+      color: var(--ink-soft);
+      font-size: 0.94rem;
+    }
+
+    .closing {
+      position: relative;
+      padding: clamp(5rem, 10vw, 9rem) 0;
+      color: var(--ink);
+      background: var(--orange);
+      overflow: hidden;
+    }
+
+    .closing::after {
+      position: absolute;
+      right: -12rem;
+      bottom: -15rem;
+      width: 38rem;
+      height: 38rem;
+      content: "";
+      border: 6rem solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+    }
+
+    .closing-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: clamp(3rem, 8vw, 8rem);
+      align-items: end;
+    }
+
+    .closing h2 {
+      max-width: 10ch;
+      font-size: clamp(3.2rem, 7vw, 6.7rem);
+    }
+
+    .closing .eyebrow {
+      color: var(--ink);
+    }
+
+    .closing h2 em {
+      color: var(--white);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 500;
+    }
+
+    .install-box {
+      padding: 1.5rem;
+      color: #dce7e4;
+      background: var(--night);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: var(--radius-md);
+      box-shadow: 1rem 1rem 0 var(--lime);
+    }
+
+    .install-box-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      color: #91a49f;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+    }
+
+    .install-box ol {
+      display: grid;
+      gap: 0.75rem;
+      margin: 1.25rem 0 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: install;
+    }
+
+    .install-row {
+      position: relative;
+      padding: 0.95rem 3rem 0.95rem 2.7rem;
+      background: #091519;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 0.65rem;
+      counter-increment: install;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      overflow-wrap: anywhere;
+    }
+
+    .install-row::before {
+      position: absolute;
+      top: 0.83rem;
+      left: 0.75rem;
+      width: 1.45rem;
+      height: 1.45rem;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      content: counter(install);
+      background: var(--lime);
+      border-radius: 50%;
+      font-family: Inter, ui-sans-serif, sans-serif;
+      font-size: 0.65rem;
+      font-weight: 900;
+    }
+
+    .install-row .copy-button {
+      right: 0.55rem;
+    }
+
+    .install-note {
+      margin: 1rem 0 0;
+      color: #91a49f;
+      font-size: 0.76rem;
+    }
+
+    .install-note strong {
+      color: var(--white);
+    }
+
+    .site-footer {
+      padding: 2rem 0;
+      color: #aebcb8;
+      background: var(--night);
+      font-size: 0.78rem;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+
+    .footer-links a:hover {
+      color: var(--white);
+    }
+
+    .js .reveal {
+      opacity: 0;
+      transform: translateY(1.5rem);
+      transition: opacity 600ms ease, transform 600ms ease;
+    }
+
+    .js .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      .hero {
+        min-height: auto;
+      }
+
+      .hero-grid,
+      .problem-grid,
+      .team-layout,
+      .multi-layout,
+      .ownership-grid,
+      .safety-grid,
+      .faq-layout,
+      .closing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-grid {
+        gap: 5rem;
+      }
+
+      .hero h1 {
+        max-width: 13ch;
+      }
+
+      .command-center {
+        max-width: 38rem;
+        margin-inline: auto;
+      }
+
+      .sticky-copy,
+      .team-intro,
+      .multi-intro,
+      .faq .section-kicker {
+        position: static;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .sample-head,
+      .workspace-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .sample-brief {
+        max-width: 32rem;
+      }
+
+      .requirements-head {
+        grid-template-columns: 1fr;
+      }
+
+      .workflow-entry {
+        flex-basis: calc(50% - 0.375rem);
+      }
+
+      .requirements-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .requirement:nth-child(2) {
+        border-right: 0;
+      }
+
+      .requirement:nth-child(-n + 2) {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .feature-card:nth-child(n) {
+        grid-column: auto;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .steps::before {
+        display: none;
+      }
+
+      .step-card {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0 1.2rem;
+        align-items: start;
+      }
+
+      .step-number {
+        grid-row: span 3;
+        margin-bottom: 0;
+      }
+
+      .timeline {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .timeline-item {
+        min-height: 15rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .timeline-item:nth-child(2n) {
+        border-right: 0;
+      }
+
+      .timeline-item:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .ownership-map {
+        order: 2;
+      }
+    }
+
+    @media (max-width: 760px) {
+      html {
+        scroll-padding-top: 5rem;
+      }
+
+      .nav {
+        min-height: 4.5rem;
+      }
+
+      .nav-toggle {
+        display: grid;
+      }
+
+      .nav-links {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 1rem;
+        left: 1rem;
+        display: none;
+        align-items: stretch;
+        padding: 1rem;
+        background: var(--paper-strong);
+        border: 1px solid var(--line-strong);
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+      }
+
+      .nav-links.is-open {
+        display: grid;
+      }
+
+      html:not(.js) .nav {
+        flex-wrap: wrap;
+        padding-block: 0.75rem;
+      }
+
+      html:not(.js) .nav-toggle {
+        display: none;
+      }
+
+      html:not(.js) .nav-links {
+        position: static;
+        width: 100%;
+        display: grid;
+        order: 3;
+      }
+
+      .nav-links a:not(.button) {
+        padding: 0.65rem;
+      }
+
+      .nav-links .button {
+        margin-top: 0.35rem;
+      }
+
+      .hero {
+        padding-top: 4rem;
+      }
+
+      .hero h1,
+      .section-title,
+      .closing h2 {
+        letter-spacing: -0.06em;
+      }
+
+      .hero-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .hero-actions .button {
+        width: 100%;
+      }
+
+      .command-center {
+        margin-right: 0.7rem;
+        box-shadow: 0.7rem 0.7rem 0 var(--lime), var(--shadow);
+        transform: none;
+      }
+
+      .command-center::before {
+        right: 1rem;
+      }
+
+      .demo-panel {
+        min-height: 27rem;
+        padding: 1.2rem;
+      }
+
+      .hero-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .stat:nth-child(2) {
+        border-right: 0;
+      }
+
+      .stat:nth-child(-n + 2) {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .problem-grid {
+        gap: 2.5rem;
+      }
+
+      .pain-card:nth-child(n) {
+        margin-left: 0;
+      }
+
+      .features-grid,
+      .fit-grid,
+      .requirements-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .state-trace,
+      .workspace-browser-body {
+        grid-template-columns: 1fr;
+      }
+
+      .state-trace {
+        gap: 0.65rem;
+      }
+
+      .trace-step:not(:last-child)::after {
+        top: calc(100% + 0.3rem);
+        left: 50%;
+        transform: translateX(-50%) rotate(90deg);
+      }
+
+      .workspace-browser {
+        margin-right: 0.65rem;
+        box-shadow: 0.65rem 0.65rem 0 var(--orange);
+      }
+
+      .workspace-browser-body {
+        min-height: 0;
+      }
+
+      .workspace-sidebar {
+        display: block;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .workspace-file-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .workspace-source-link {
+        margin-top: 0.5rem;
+      }
+
+      .sample-sheet {
+        min-height: 0;
+      }
+
+      .workflow-entry {
+        flex-basis: 100%;
+      }
+
+      .workflow-results-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .workflow-count {
+        white-space: normal;
+      }
+
+      .workflow-group summary {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+
+      .workflow-group-meta {
+        grid-column: 2;
+      }
+
+      .workflow-item {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+      }
+
+      .feature-card {
+        min-height: auto;
+      }
+
+      .requirement {
+        min-height: auto;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .requirement:last-child {
+        border-bottom: 0;
+      }
+
+      .feature-card {
+        gap: 3rem;
+      }
+
+      .step-card {
+        grid-template-columns: 1fr;
+      }
+
+      .step-number {
+        grid-row: auto;
+        margin-bottom: 1.5rem;
+      }
+
+      .timeline {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline-item,
+      .timeline-item:last-child {
+        min-height: auto;
+        grid-column: auto;
+        padding-bottom: 2rem;
+        border-right: 0;
+      }
+
+      .agent {
+        grid-template-columns: 2rem 1fr;
+        gap: 0.35rem 0.75rem;
+      }
+
+      .agent span {
+        grid-column: 2;
+      }
+
+      .multi-diagram {
+        margin-right: 0.6rem;
+        box-shadow: 0.6rem 0.6rem 0 var(--lime);
+      }
+
+      .registry-card {
+        grid-template-columns: auto 1fr;
+      }
+
+      .registry-card code {
+        grid-column: 2;
+      }
+
+      .business-row,
+      .multi-principles {
+        grid-template-columns: 1fr;
+      }
+
+      .ownership-map {
+        min-height: 27rem;
+        transform: scale(0.82);
+      }
+
+      .map-node:nth-of-type(2) { right: -2rem; }
+      .map-node:nth-of-type(5) { left: -2rem; }
+
+      .safety-card {
+        margin-right: 0.7rem;
+        box-shadow: 0.7rem 0.7rem 0 var(--orange);
+        transform: none;
+      }
+
+      .closing-grid {
+        gap: 3.5rem;
+      }
+
+      .install-box {
+        margin-right: 0.7rem;
+        box-shadow: 0.7rem 0.7rem 0 var(--lime);
+      }
+
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .container {
+        width: min(calc(100% - 1.25rem), var(--container));
+      }
+
+      .workspace-file-list {
+        grid-template-columns: 1fr;
+      }
+
+      .workspace-browser-bar {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+
+      .fiction-badge {
+        display: none;
+      }
+
+      .hero h1 {
+        font-size: clamp(2.8rem, 14vw, 4rem);
+      }
+
+      .command-center::before {
+        top: -1.55rem;
+        font-size: 0.58rem;
+      }
+
+      .window-title {
+        display: none;
+      }
+
+      .micro-proof {
+        align-items: flex-start;
+      }
+
+      .ownership-map {
+        min-height: 23rem;
+        transform: scale(0.7);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      .js .reveal {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="#top" aria-label="Founder OS — home">
+        <span class="brand-mark" aria-hidden="true">F/OS</span>
+        <span>Founder OS</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M3 6h14M3 10h14M3 14h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="nav-links" id="nav-links">
+        <a href="#how-it-works">How it works</a>
+        <a href="#sample-workspace">Live sample</a>
+        <a href="#workflows">49 workflows</a>
+        <a href="#multi-business">Multi-business</a>
+        <a class="button button-dark" href="#requirements">Install <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="container">
+        <div class="hero-grid">
+          <div class="hero-copy reveal">
+            <p class="eyebrow">The founder operating system</p>
+            <h1>Company of one. Decisions backed by an <span class="accent">exec team.</span></h1>
+            <p class="hero-lead">
+              Founder OS turns Claude Code into a <strong>13-agent executive team</strong> that knows the state of your business, keeps its rhythm, and stops important decisions from dying in chat history.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-dark" href="#how-it-works">See it at work <span class="arrow" aria-hidden="true">↓</span></a>
+              <a class="button button-light" href="#sample-workspace">View sample workspace</a>
+            </div>
+            <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Free and MIT-licensed · local Markdown files · requires Claude Code</p>
+            <div class="proof-links" aria-label="Product resources">
+              <a href="#workflows">Browse all 49 workflows</a>
+              <a href="https://github.com/msolecki/founder-os">View source on GitHub</a>
+            </div>
+          </div>
+
+          <div class="command-center reveal" aria-label="Fictional Founder OS example based on the real workspace contract">
+            <div class="window-bar">
+              <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <span class="window-title">founder-os / studio-north</span>
+              <span class="status-pill">state loaded</span>
+            </div>
+            <div class="demo-tabs" role="tablist" aria-label="Example Founder OS views">
+              <button class="demo-tab" id="tab-today" type="button" role="tab" aria-selected="true" aria-controls="panel-today" data-demo="today">Today</button>
+              <button class="demo-tab" id="tab-pipeline" type="button" role="tab" aria-selected="false" aria-controls="panel-pipeline" tabindex="-1" data-demo="pipeline">Pipeline</button>
+              <button class="demo-tab" id="tab-friday" type="button" role="tab" aria-selected="false" aria-controls="panel-friday" tabindex="-1" data-demo="friday">Friday</button>
+            </div>
+
+            <div class="demo-panel is-active" id="panel-today" role="tabpanel" aria-labelledby="tab-today" data-panel="today">
+              <p class="demo-label">08:00 / Daily brief</p>
+              <h2>The one thing that matters today</h2>
+              <p class="demo-meta"><span>BET: B1 — premium sprint</span><span>OWNER: founder</span></p>
+              <div class="demo-rule"></div>
+              <ul class="demo-list">
+                <li><span class="index">01</span><span>Finish the Acme proposal scope. Do not start the website redesign.</span></li>
+                <li><span class="index">02</span><span>Your weekly plan already funds a 09:00–11:30 block.</span></li>
+                <li><span class="index">03</span><span>Northwind's founder-owned follow-up is 3 days overdue.</span></li>
+              </ul>
+            </div>
+
+            <div class="demo-panel" id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" data-panel="pipeline">
+              <p class="demo-label">Thursday / Pipeline review</p>
+              <h2>Every deal gets a next move or leaves</h2>
+              <p class="demo-meta"><span>2 ACTIVE</span><span>1 OVERDUE</span></p>
+              <div class="demo-rule"></div>
+              <ul class="demo-list">
+                <li><span class="index">01</span><span>Acme — founder finishes proposal scope today.</span></li>
+                <li><span class="index">02</span><span>Northwind — requested references were due July 17.</span></li>
+                <li><span class="index">03</span><span>Delta — dead because procurement required open-ended availability.</span></li>
+              </ul>
+            </div>
+
+            <div class="demo-panel" id="panel-friday" role="tabpanel" aria-labelledby="tab-friday" data-panel="friday">
+              <p class="demo-label">16:00 / Weekly review</p>
+              <h2>The week scored by what actually happened</h2>
+              <p class="demo-meta"><span>2/3 SHIPPED</span><span>PATTERN: DELIVERY DISPLACES PROOF</span></p>
+              <div class="demo-rule"></div>
+              <ul class="demo-list">
+                <li><span class="index">01</span><span>The case study did not ship — third consecutive week.</span></li>
+                <li><span class="index">02</span><span>Do not roll it forward automatically. Make next week's plan smaller.</span></li>
+                <li><span class="index">03</span><span>Monday commitment: finish the Acme proposal scope by 11:30.</span></li>
+              </ul>
+            </div>
+            <div class="demo-foot"><span>fictional Studio North example</span><a href="#sample-workspace">explore the workspace →</a></div>
+          </div>
+        </div>
+
+        <div class="hero-stats reveal" aria-label="Founder OS in numbers">
+          <div class="stat"><strong>13</strong><span>agents</span></div>
+          <div class="stat"><strong>49</strong><span>workflows</span></div>
+          <div class="stat"><strong>10</strong><span>cadences</span></div>
+          <div class="stat"><strong>1</strong><span>source of truth</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section problem" id="problem">
+      <div class="container problem-grid">
+        <div class="sticky-copy reveal">
+          <p class="eyebrow">The real problem</p>
+          <h2 class="section-title">You do not need more <span class="serif">advice.</span></h2>
+          <p class="section-copy">You need a system that remembers what you decided, spots contradictions, and brings the decision back when it is actually due.</p>
+        </div>
+        <div class="pain-list">
+          <article class="pain-card reveal">
+            <span class="pain-number">01</span>
+            <h3>Every conversation starts from zero</h3>
+            <p>Strategy, pipeline, and clients live in different notes. AI answers your latest prompt, not the state of your business.</p>
+          </article>
+          <article class="pain-card reveal">
+            <span class="pain-number">02</span>
+            <h3>Important work ends as a paragraph</h3>
+            <p>The brief sounds smart, but has no owner, date, or next move. A week later, nobody comes back to it.</p>
+          </article>
+          <article class="pain-card reveal">
+            <span class="pain-number">03</span>
+            <h3>You are the CEO and the bottleneck</h3>
+            <p>You set the priority, chase the sale, calculate the margin, and judge your own plan. That is not a lack of ambition. It is a lack of structure.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <aside class="manifesto" aria-label="The core Founder OS principle">
+      <div class="container reveal">
+        <p>You do not need AI that always agrees. You need a system that <em>remembers, counts, and says no.</em></p>
+      </div>
+    </aside>
+
+    <section class="section" id="difference">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">What makes it different</p>
+          <h2 class="section-title">Conversations become <span class="serif">company memory.</span></h2>
+          <p class="section-copy">Founder OS does not pretend to be a magic autopilot. It builds continuity: shared state, clear ownership, operating cadence, and hard boundaries.</p>
+        </div>
+        <div class="features-grid">
+          <article class="feature-card reveal">
+            <span class="feature-icon" aria-hidden="true">MEM</span>
+            <div>
+              <h3>Memory that outlives the session</h3>
+              <p>Goals, metrics, pipeline, clients, decisions, and drafts live in a local Markdown workspace. Tomorrow starts with business state, not another retelling.</p>
+            </div>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon" aria-hidden="true">OWN</span>
+            <div>
+              <h3>One owner for every decision</h3>
+              <p>The CFO does not rewrite the pipeline, and the Brand Editor does not change strategy. A write-time guard keeps every role in its lane.</p>
+            </div>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon" aria-hidden="true">RUN</span>
+            <div>
+              <h3>A cadence that comes to you</h3>
+              <p>A brief in the morning, pipeline review on Thursday, weekly review on Friday, and financials after month-end. Run it by hand or on a local schedule.</p>
+            </div>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon" aria-hidden="true">NO</span>
+            <div>
+              <h3>Opinions, not business horoscopes</h3>
+              <p>Every role has principles you may disagree with. A plan gets a verdict, a bet gets a kill condition, and “no time” gets a calendar audit.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section sample-workspace" id="sample-workspace">
+      <div class="container">
+        <div class="sample-head reveal">
+          <div>
+            <p class="eyebrow">A real workspace, with fictional data</p>
+            <h2 class="section-title">Follow one decision through the <span class="serif">whole system.</span></h2>
+            <p class="section-copy">Studio North is a one-person strategy studio. Its example workspace is small enough to inspect, but complete enough to show how a bet becomes a commitment, a calendar block, and the next morning's brief.</p>
+          </div>
+          <aside class="sample-brief" aria-label="About the Studio North example">
+            <span>Not a polished dashboard</span>
+            <strong>Seven views into the same company state.</strong>
+            <p>Every company, person, amount, and date below is fictional. The file structure and cross-file contracts are real.</p>
+          </aside>
+        </div>
+
+        <div class="state-trace reveal" aria-label="Trace one commitment across the Studio North workspace">
+          <a class="trace-step" href="#sample-goals" data-workspace-open="goals"><span>goals.md</span><strong>B1 · premium sprint</strong></a>
+          <a class="trace-step" href="#sample-queue" data-workspace-open="queue"><span>queue.md</span><strong>q-0720a · proposal</strong></a>
+          <a class="trace-step" href="#sample-week" data-workspace-open="week"><span>week.md</span><strong>Mon · 09:00–11:30</strong></a>
+          <a class="trace-step" href="#sample-daily" data-workspace-open="daily"><span>daily brief</span><strong>the one thing today</strong></a>
+        </div>
+
+        <div class="workspace-browser reveal">
+          <div class="workspace-browser-bar">
+            <span class="workspace-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="workspace-current-path" id="workspace-current-path">studio-north / reviews / daily / 2026-07-20.md</span>
+            <span class="fiction-badge">fictional workspace</span>
+          </div>
+
+          <div class="workspace-browser-body">
+            <nav class="workspace-sidebar" aria-label="Studio North sample files">
+              <div class="workspace-sidebar-head"><strong>Studio North</strong><span>7 of 11 files</span></div>
+              <ul class="workspace-file-list">
+                <li><a class="workspace-file" href="#sample-daily" data-workspace-file="daily" data-workspace-open="daily" aria-controls="sample-daily" aria-current="true"><span class="file-icon">01</span><span>reviews/daily/2026-07-20.md</span></a></li>
+                <li><a class="workspace-file" href="#sample-queue" data-workspace-file="queue" data-workspace-open="queue" aria-controls="sample-queue"><span class="file-icon">02</span><span>queue.md</span></a></li>
+                <li><a class="workspace-file" href="#sample-goals" data-workspace-file="goals" data-workspace-open="goals" aria-controls="sample-goals"><span class="file-icon">03</span><span>goals.md</span></a></li>
+                <li><a class="workspace-file" href="#sample-week" data-workspace-file="week" data-workspace-open="week" aria-controls="sample-week"><span class="file-icon">04</span><span>week.md</span></a></li>
+                <li><a class="workspace-file" href="#sample-pipeline" data-workspace-file="pipeline" data-workspace-open="pipeline" aria-controls="sample-pipeline"><span class="file-icon">05</span><span>pipeline.md</span></a></li>
+                <li><a class="workspace-file" href="#sample-metrics" data-workspace-file="metrics" data-workspace-open="metrics" aria-controls="sample-metrics"><span class="file-icon">06</span><span>metrics.md</span></a></li>
+                <li><a class="workspace-file" href="#sample-decision" data-workspace-file="decision" data-workspace-open="decision" aria-controls="sample-decision"><span class="file-icon">07</span><span>decisions/raised-sprint-floor.md</span></a></li>
+              </ul>
+              <a class="workspace-source-link" href="https://github.com/msolecki/founder-os/tree/main/examples/studio-north">Browse all 11 source files →</a>
+            </nav>
+
+            <div class="workspace-view">
+              <section class="workspace-panel is-active" id="sample-daily" data-workspace-panel="daily" data-path="studio-north / reviews / daily / 2026-07-20.md" aria-labelledby="sample-daily-title">
+                <article class="sample-sheet">
+                  <div class="sample-sheet-meta"><span>owner: chief-of-staff</span><span>/daily-brief</span><span>2026-07-20</span></div>
+                  <h3 id="sample-daily-title">The day starts with one thing</h3>
+                  <div class="sample-block">
+                    <p class="sample-label">The one thing</p>
+                    <p class="sample-value"><code>q-0720a</code> Finish the Acme proposal scope — serves B1.</p>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">Rotting</p>
+                    <p class="sample-value">Northwind reference follow-up — 3 days overdue.</p>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">The trade</p>
+                    <p class="sample-value">The website redesign does not start. It serves neither quarterly bet.</p>
+                  </div>
+                </article>
+                <aside class="sample-note">
+                  <span>What to notice</span>
+                  <h4>A brief is a decision, not a task dump.</h4>
+                  <p>The Chief of Staff did not invent work. It selected one already-owned queue item, tied it to B1, surfaced an overdue deal, and named what will not happen.</p>
+                  <a class="sample-next" href="#sample-queue" data-workspace-open="queue">Follow q-0720a into the queue →</a>
+                </aside>
+              </section>
+
+              <section class="workspace-panel" id="sample-queue" data-workspace-panel="queue" data-path="studio-north / queue.md" aria-labelledby="sample-queue-title">
+                <article class="sample-sheet">
+                  <div class="sample-sheet-meta"><span>owner: chief-of-staff</span><span>cap: 15</span><span>live obligations</span></div>
+                  <h3 id="sample-queue-title">Work has an ID, owner, and expiry</h3>
+                  <div class="sample-block">
+                    <p class="sample-label">Doing</p>
+                    <p class="sample-value"><code>q-0720a</code> Finish the Acme proposal scope — bet: B1 — started 2026-07-20.</p>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">Queued</p>
+                    <ul class="sample-list">
+                      <li><span><code>q-0717b</code> Publish the Northwind migration case study — bet: B2.</span></li>
+                      <li><span><code>q-0717c</code> Book two qualified discovery calls — bet: B1.</span></li>
+                    </ul>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">Dropped</p>
+                    <p class="sample-value">Website redesign — passed over by three weekly reviews and serves no current bet.</p>
+                  </div>
+                </article>
+                <aside class="sample-note">
+                  <span>What to notice</span>
+                  <h4>The queue can say no.</h4>
+                  <p>Work does not survive because it appeared in a conversation. It needs a live owner and bet; stale work ages out instead of following the founder forever.</p>
+                  <a class="sample-next" href="#sample-goals" data-workspace-open="goals">Open the bet behind this work →</a>
+                </aside>
+              </section>
+
+              <section class="workspace-panel" id="sample-goals" data-workspace-panel="goals" data-path="studio-north / goals.md" aria-labelledby="sample-goals-title">
+                <article class="sample-sheet">
+                  <div class="sample-sheet-meta"><span>owner: strategist</span><span>quarter: Q3</span><span>2 active bets</span></div>
+                  <h3 id="sample-goals-title">B1 · Make the premium sprint the default</h3>
+                  <div class="sample-block">
+                    <p class="sample-label">Threshold · 30 September</p>
+                    <p class="sample-value">Sign 3 sprints at or above $15,000 without adding custom delivery.</p>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">Downside cap</p>
+                    <p class="sample-value">40 founder hours and $2,000 in design support.</p>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">Kill condition · 31 August</p>
+                    <p class="sample-value">Fewer than 2 qualified proposals.</p>
+                  </div>
+                </article>
+                <aside class="sample-note">
+                  <span>What to notice</span>
+                  <h4>A goal arrives with a way to lose.</h4>
+                  <p>B1 is not “grow revenue.” It has a price floor, outcome, judgment date, downside cap, and an earlier signal that forces a stop-or-continue decision.</p>
+                  <a class="sample-next" href="#sample-week" data-workspace-open="week">See how B1 earns calendar time →</a>
+                </aside>
+              </section>
+
+              <section class="workspace-panel" id="sample-week" data-workspace-panel="week" data-path="studio-north / week.md" aria-labelledby="sample-week-title">
+                <article class="sample-sheet">
+                  <div class="sample-sheet-meta"><span>owner: focus-coach</span><span>/week-plan</span><span>week of 2026-07-20</span></div>
+                  <h3 id="sample-week-title">The calendar funds the bet</h3>
+                  <div class="sample-block">
+                    <p class="sample-label">Arithmetic</p>
+                    <p class="sample-value">40h available · 24h delivery · 16h free · 9h planned.</p>
+                    <p class="sample-support">The plan uses 56% of free capacity instead of pretending every free hour is deliverable.</p>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">Selected funded blocks</p>
+                    <div class="sample-table-wrap">
+                      <table class="sample-table">
+                        <thead><tr><th>Day</th><th>Block</th><th>Serves</th></tr></thead>
+                        <tbody>
+                          <tr><td>Mon · 09:00–11:30</td><td>Finish Acme proposal scope</td><td><code>B1</code></td></tr>
+                          <tr><td>Tue · 09:00–11:00</td><td>Interview case-study client</td><td><code>B2</code></td></tr>
+                          <tr><td>Thu · 10:00–11:00</td><td>Pipeline review</td><td><code>B1</code></td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </article>
+                <aside class="sample-note">
+                  <span>What to notice</span>
+                  <h4>The same ID reaches Monday morning.</h4>
+                  <p>The proposal is not merely “important.” B1 funds a specific block, which gives the daily brief evidence that q-0720a can finish today.</p>
+                  <a class="sample-next" href="#sample-pipeline" data-workspace-open="pipeline">Inspect the deal behind the block →</a>
+                </aside>
+              </section>
+
+              <section class="workspace-panel" id="sample-pipeline" data-workspace-panel="pipeline" data-path="studio-north / pipeline.md" aria-labelledby="sample-pipeline-title">
+                <article class="sample-sheet">
+                  <div class="sample-sheet-meta"><span>owner: pipeline-coach</span><span>last review: 2026-07-17</span><span>coverage: 2.2×</span></div>
+                  <h3 id="sample-pipeline-title">Every deal has evidence and a date</h3>
+                  <div class="sample-block">
+                    <p class="sample-label">Pipeline · $33,000 live</p>
+                    <div class="sample-table-wrap">
+                      <table class="sample-table">
+                        <thead><tr><th>Deal</th><th>Stage</th><th>Next action</th></tr></thead>
+                        <tbody>
+                          <tr><td>Acme · $18k</td><td>Proposal</td><td>Finish scope · Jul 20</td></tr>
+                          <tr><td>Northwind · $15k</td><td>Qualified</td><td>References · Jul 17 · overdue</td></tr>
+                          <tr><td>Delta · $12k</td><td>Dead</td><td>Open-ended terms broke the offer boundary</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">What was learned</p>
+                    <p class="sample-value">Delta was lost because the buyer required ongoing availability, not because the price was too high.</p>
+                  </div>
+                </article>
+                <aside class="sample-note">
+                  <span>What to notice</span>
+                  <h4>Stage names do not replace proof.</h4>
+                  <p>Acme is a proposal because the CEO asked for one. Northwind's amount stays marked for validation, and its overdue action is why it reappears in the daily brief.</p>
+                  <a class="sample-next" href="#sample-metrics" data-workspace-open="metrics">Compare the pipeline with real revenue →</a>
+                </aside>
+              </section>
+
+              <section class="workspace-panel" id="sample-metrics" data-workspace-panel="metrics" data-path="studio-north / metrics.md" aria-labelledby="sample-metrics-title">
+                <article class="sample-sheet">
+                  <div class="sample-sheet-meta"><span>owner: cfo</span><span>close: 2026-06</span><span>closed 2026-07-01</span></div>
+                  <h3 id="sample-metrics-title">The company closes on actuals</h3>
+                  <div class="sample-block">
+                    <p class="sample-label">June close</p>
+                    <div class="sample-table-wrap">
+                      <table class="sample-table">
+                        <tbody>
+                          <tr><th>Booked</th><td>$31,000</td><th>Collected</th><td>$24,000</td></tr>
+                          <tr><th>Hours</th><td>112</td><th>Effective rate</th><td>$214/h vs $200 target</td></tr>
+                          <tr><th>Receivables</th><td>$7,000</td><th>Runway</th><td>9.7 months</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">Profitability signal</p>
+                    <p class="sample-value">The fixed-scope sprint is above target. Custom advisory added 14 unbilled hours and fell below it.</p>
+                  </div>
+                </article>
+                <aside class="sample-note">
+                  <span>What to notice</span>
+                  <h4>The strategy can cite a number.</h4>
+                  <p>The $15k floor is not a confidence exercise. It follows the effective-rate evidence: bounded work cleared target while open-ended advisory destroyed margin.</p>
+                  <a class="sample-next" href="#sample-decision" data-workspace-open="decision">Read the decision this evidence produced →</a>
+                </aside>
+              </section>
+
+              <section class="workspace-panel" id="sample-decision" data-workspace-panel="decision" data-path="studio-north / decisions / 2026-07-18-raised-sprint-floor.md" aria-labelledby="sample-decision-title">
+                <article class="sample-sheet">
+                  <div class="sample-sheet-meta"><span>owner: chief-of-staff</span><span>decided by: founder</span><span>serves: B1</span></div>
+                  <h3 id="sample-decision-title">Raised the sprint floor to $15,000</h3>
+                  <div class="sample-block">
+                    <p class="sample-label">Context</p>
+                    <p class="sample-value">The fixed-scope sprint cleared the $200/h target. Custom advisory fell below it after 14 unbilled hours.</p>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">Rejected</p>
+                    <p class="sample-value">Keep a $10,000 entry sprint and upsell advisory later.</p>
+                  </div>
+                  <div class="sample-block">
+                    <p class="sample-label">What would change our mind</p>
+                    <p class="sample-value">Fewer than 2 qualified proposals by 31 August, provided at least 8 ICP-matched discovery calls happened.</p>
+                  </div>
+                </article>
+                <aside class="sample-note">
+                  <span>What to notice</span>
+                  <h4>A decision remembers how to be reversed.</h4>
+                  <p>The log stores the rejected option and a falsifier. Future sessions can challenge the call with evidence instead of reopening it from memory.</p>
+                  <a class="sample-next" href="#sample-daily" data-workspace-open="daily">Return to the daily brief →</a>
+                </aside>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section how" id="how-it-works">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">How to start</p>
+          <h2 class="section-title">20 minutes to your first <span class="serif">brief.</span></h2>
+          <p class="section-copy">Install the plugin, complete onboarding, and start working from the real state of your business.</p>
+        </div>
+        <div class="steps">
+          <article class="step-card reveal">
+            <span class="step-number">1</span>
+            <div>
+              <h3>Add Founder OS</h3>
+              <p>Add the marketplace, then install the plugin. No Founder OS account, dashboard, or external database.</p>
+              <div class="code-line"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy marketplace command">⧉</button></div>
+              <div class="code-line"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy plugin installation command">⧉</button></div>
+            </div>
+          </article>
+          <article class="step-card reveal">
+            <span class="step-number">2</span>
+            <div>
+              <h3>Describe the business once</h3>
+              <p>Onboarding structures your charter, goals, metrics, offer, and voice. It ends with your first brief, not an empty folder.</p>
+              <div class="code-line"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy onboarding command">⧉</button></div>
+            </div>
+          </article>
+          <article class="step-card reveal">
+            <span class="step-number">3</span>
+            <div>
+              <h3>Turn on the rhythm</h3>
+              <p>Optional cron cadences run on your machine while it is on. Every workflow also works manually without cron.</p>
+              <div class="code-line"><code>/setup-cadences</code><button class="copy-button" type="button" data-copy="/setup-cadences" aria-label="Copy cadence setup command">⧉</button></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section rhythm" id="rhythm">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">The business in motion</p>
+          <h2 class="section-title">A week with a <span class="serif">backbone.</span></h2>
+          <p class="section-copy">Founder OS does not create more work. It connects the moments when you already need to make a decision.</p>
+        </div>
+        <div class="timeline">
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Weekdays · 08:00</span>
+            <h3>One thing for today</h3>
+            <p>The Chief of Staff reads your goals, metrics, and weekly plan, then names the most important move.</p>
+            <span class="timeline-command">/daily-brief</span>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Monday</span>
+            <h3>Bets enter the calendar</h3>
+            <p>The Focus Coach turns quarterly bets into concrete blocks of work.</p>
+            <span class="timeline-command">/week-plan</span>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Wednesday</span>
+            <h3>Content starts with the ICP</h3>
+            <p>The publishing plan starts with real audience questions, not an empty content slot.</p>
+            <span class="timeline-command">/content-plan</span>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Thursday</span>
+            <h3>Every deal gets a date</h3>
+            <p>The Pipeline Coach forces a next move. Conversations without action leave the pipeline.</p>
+            <span class="timeline-command">/pipeline-review</span>
+          </article>
+          <article class="timeline-item reveal">
+            <span class="timeline-day">Friday · 16:00</span>
+            <h3>The week gets a score</h3>
+            <p>Commitments against outcomes. No copying everything into next week by default.</p>
+            <span class="timeline-command">/weekly-review</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section workflow-library" id="workflows">
+      <div class="container">
+        <div class="workflow-head reveal">
+          <p class="eyebrow">The complete operating library</p>
+          <h2 class="section-title">A workflow for every decision that <span class="serif">keeps returning.</span></h2>
+          <p class="section-copy">Start with the decision in front of you. Founder OS routes it to the right owner and workflow.</p>
+        </div>
+
+        <nav class="workflow-entry-points reveal" aria-label="Choose a workflow by decision">
+          <a class="workflow-entry" href="#workflow-catalogue" data-workflow-filter="plan" aria-controls="workflow-groups"><strong>Set direction</strong><span>Choose, size, or challenge a bet.</span></a>
+          <a class="workflow-entry" href="#workflow-catalogue" data-workflow-filter="sell" aria-controls="workflow-groups"><strong>Move a deal</strong><span>Give every prospect a concrete next action.</span></a>
+          <a class="workflow-entry" href="#workflow-catalogue" data-workflow-filter="deliver" aria-controls="workflow-groups"><strong>Deliver well</strong><span>Check capacity, scope, client health, or results.</span></a>
+          <a class="workflow-entry" href="#workflow-catalogue" data-workflow-filter="money" aria-controls="workflow-groups"><strong>Know the numbers</strong><span>Review revenue, runway, margin, rates, or portfolio allocation.</span></a>
+          <a class="workflow-entry" href="#workflow-catalogue" data-workflow-filter="focus" aria-controls="workflow-groups"><strong>Protect focus</strong><span>Decide what deserves time today and this week.</span></a>
+          <a class="workflow-entry" href="#workflow-catalogue" data-workflow-filter="grow" aria-controls="workflow-groups"><strong>Grow deliberately</strong><span>Build skills, audience, voice, and relationships.</span></a>
+          <a class="workflow-entry" href="#workflow-catalogue" data-workflow-filter="run" aria-controls="workflow-groups"><strong>Run operations</strong><span>Automate carefully and keep the operating system healthy.</span></a>
+        </nav>
+
+        <div class="workflow-controls reveal">
+          <div class="workflow-control-top">
+            <label class="workflow-search">
+              <span class="sr-only">Search workflows</span>
+              <input id="workflow-search" type="search" placeholder="Search by problem or command…" autocomplete="off" aria-controls="workflow-groups">
+            </label>
+          </div>
+        </div>
+
+        <details class="workflow-catalogue" id="workflow-catalogue" open>
+          <summary class="workflow-catalogue-summary">Browse all <strong>49</strong> workflows</summary>
+          <div class="workflow-catalogue-body">
+            <div class="workflow-results-toolbar" id="workflow-results-toolbar">
+              <span class="workflow-count" id="workflow-count" aria-live="polite">49 of 49 workflows</span>
+              <div class="workflow-results-actions">
+                <button class="workflow-text-action" type="button" data-clear-workflow-filter hidden>Clear filter</button>
+                <button class="workflow-text-action" type="button" data-show-all-workflows>Show all 49</button>
+              </div>
+            </div>
+
+            <div class="workflow-groups" id="workflow-groups">
+          <details class="workflow-group" data-workflow-group data-category="focus" data-search="chief of staff attention priorities routing reviews queue" open>
+            <summary>
+              <span class="workflow-group-number">01</span>
+              <span class="workflow-group-title"><strong>Chief of Staff</strong><small>Attention, reviews, decisions, and the live queue.</small></span>
+              <span class="workflow-group-meta">6 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="daily brief morning today priority focus most important">
+                <div class="workflow-command-line"><code>/daily-brief</code><span class="workflow-badge">scheduled</span></div>
+                <p>Open the day with the one move that matters most, grounded in current goals, metrics, and this week's plan.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="weekly review commitments outcomes friday patterns">
+                <div class="workflow-command-line"><code>/weekly-review</code><span class="workflow-badge">scheduled</span></div>
+                <p>Score what you committed to against what actually happened, then name the pattern that keeps repeating.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="monthly review charter drift month reflection">
+                <div class="workflow-command-line"><code>/monthly-review</code></div>
+                <p>Read the month back against the company charter and identify drift after the financial close is complete.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="decision log irreversible reason falsifier reverse">
+                <div class="workflow-command-line"><code>/decision-log</code></div>
+                <p>Record an irreversible decision, why it was made, and the evidence that would justify reversing it.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="triage pile tasks priorities obligations overwhelmed route">
+                <div class="workflow-command-line"><code>/triage</code></div>
+                <p>Turn a pile of obligations into one priority, price the cost of the rest, and route each item to an owner.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="queue obligations cap expiry owner backlog tasks">
+                <div class="workflow-command-line"><code>/queue</code></div>
+                <p>Keep live obligations capped, dated, owned, and able to expire instead of becoming an endless wish list.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="plan" data-search="strategist quarterly bets strategy kill annual judgment">
+            <summary>
+              <span class="workflow-group-number">02</span>
+              <span class="workflow-group-title"><strong>Strategist</strong><small>Quarterly bets, downside, verdicts, and judgment.</small></span>
+              <span class="workflow-group-meta">4 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="quarterly planning quarter bets kill condition strategy">
+                <div class="workflow-command-line"><code>/quarterly-planning</code><span class="workflow-badge">scheduled</span></div>
+                <p>Close the old quarter's bets and commit to at most three new ones, each with a measurable kill condition.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="bet sizing downside cost risk cap goals">
+                <div class="workflow-command-line"><code>/bet-sizing</code></div>
+                <p>Price what a bet costs when it is wrong and cap the downside before it enters company goals.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="kill or continue verdict threshold sunk cost judgment date">
+                <div class="workflow-command-line"><code>/kill-or-continue</code></div>
+                <p>Force a verdict when the judgment date arrives, using the original threshold and naming sunk cost out loud.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="annual review year decisions judgment outcome">
+                <div class="workflow-command-line"><code>/annual-review</code></div>
+                <p>Review twelve months of decisions and score the quality of judgment, not whether luck produced a good outcome.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="plan" data-search="board member challenge plan assumptions premortem red team reality">
+            <summary>
+              <span class="workflow-group-number">03</span>
+              <span class="workflow-group-title"><strong>Board Member</strong><small>Pressure-test a plan before it gets expensive.</small></span>
+              <span class="workflow-group-meta">3 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="red team hostile review finished plan verdict challenge">
+                <div class="workflow-command-line"><code>/red-team</code></div>
+                <p>Attack a finished plan as a hostile reader and return a verdict, not a polite list of concerns.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="assumption audit evidence unknown test risk plan">
+                <div class="workflow-command-line"><code>/assumption-audit</code></div>
+                <p>List what must be true, remove what already has evidence, and rank the rest by the cost to test.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="premortem failure dead six months risk story plan">
+                <div class="workflow-command-line"><code>/premortem</code></div>
+                <p>Assume the plan is dead six months from now and tell the failure story while it can still change the plan.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="plan" data-search="positioning advisor icp offer price pricing buyer customer market">
+            <summary>
+              <span class="workflow-group-number">04</span>
+              <span class="workflow-group-title"><strong>Positioning Advisor</strong><small>Who you serve, what you sell, and what it is worth.</small></span>
+              <span class="workflow-group-meta">3 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="icp definition ideal customer profile buyer audience narrow">
+                <div class="workflow-command-line"><code>/icp-definition</code></div>
+                <p>Narrow the ideal customer until the definition excludes real, nameable people—not just vague adjectives.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="offer design outcome boundary bespoke hours service package">
+                <div class="workflow-command-line"><code>/offer-design</code></div>
+                <p>Turn bespoke work into a clear buyer outcome with an explicit boundary a prospect can repeat.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="pricing strategy price value alternative walk away floor negotiation">
+                <div class="workflow-command-line"><code>/pricing-strategy</code></div>
+                <p>Price against the buyer's outcome and real alternative, then put your walk-away floor in writing.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="sell" data-search="pipeline coach sales prospects outreach proposal win loss deals">
+            <summary>
+              <span class="workflow-group-number">05</span>
+              <span class="workflow-group-title"><strong>Pipeline Coach</strong><small>Every prospect gets a real next action.</small></span>
+              <span class="workflow-group-meta">4 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="pipeline review deals prospects next action date sales">
+                <div class="workflow-command-line"><code>/pipeline-review</code><span class="workflow-badge">scheduled</span></div>
+                <p>Give every deal a next action with a date—or remove it from the pipeline.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="outreach draft first contact follow up prospect message sales">
+                <div class="workflow-command-line"><code>/outreach-draft</code></div>
+                <p>Draft a first contact or follow-up from the prospect's problem, never from “just checking in.”</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="proposal draft scope price exclusions expiry close deal">
+                <div class="workflow-command-line"><code>/proposal-draft</code></div>
+                <p>Draft a qualified proposal with scope, price, exclusions, and an expiry date after capacity is confirmed.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="win loss analysis deal closed sales reasons prospect words">
+                <div class="workflow-command-line"><code>/win-loss-analysis</code></div>
+                <p>Reconstruct why a deal ended from the record and the prospect's own words while the evidence is fresh.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="deliver" data-search="delivery lead capacity scope client health project retro shipping">
+            <summary>
+              <span class="workflow-group-number">06</span>
+              <span class="workflow-group-title"><strong>Delivery Lead</strong><small>Capacity, scope, client risk, and learning after delivery.</small></span>
+              <span class="workflow-group-meta">4 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="capacity check hours accept work client deliverable start date">
+                <div class="workflow-command-line"><code>/capacity-check</code></div>
+                <p>Compute real deliverable hours before saying yes to a client, extra scope, or a start date.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="scope guard creep request proposal exclusions client">
+                <div class="workflow-command-line"><code>/scope-guard</code></div>
+                <p>Rule whether a client request is inside scope by checking it against the proposal and its exclusions.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="client health payment scope tone effort renewal risk">
+                <div class="workflow-command-line"><code>/client-health</code></div>
+                <p>Score payment, scope, tone, and effort before an engagement turns into a crisis or reaches renewal.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="delivery retro estimate actual hours project shipped learning">
+                <div class="workflow-command-line"><code>/delivery-retro</code></div>
+                <p>Compare estimated with actual hours within five days of shipping, before memory rewrites the project.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="money" data-search="cfo finance revenue runway profit profitability rate money cash">
+            <summary>
+              <span class="workflow-group-number">07</span>
+              <span class="workflow-group-title"><strong>CFO</strong><small>Revenue, survival, margin, and rates—not tax advice.</small></span>
+              <span class="workflow-group-meta">4 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="revenue review booked collected effective rate monthly close money">
+                <div class="workflow-command-line"><code>/revenue-review</code><span class="workflow-badge">scheduled</span></div>
+                <p>Close the month on revenue booked, cash collected, and the effective hourly rate actually earned.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="runway forecast burn survival cash pipeline discounted finance">
+                <div class="workflow-command-line"><code>/runway-forecast</code></div>
+                <p>Calculate months of survival at real burn, discounting pipeline value by the stage of each deal.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="profitability analysis clients margin effective hourly rate profit">
+                <div class="workflow-command-line"><code>/profitability-analysis</code></div>
+                <p>Rank clients by effective hourly rate to show exactly where margin is disappearing.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="rate raise price increase client script profitability">
+                <div class="workflow-command-line"><code>/rate-raise</code></div>
+                <p>Decide whether a rate should rise, by how much, and prepare the script when the numbers justify it.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="focus" data-search="focus coach week calendar time energy planning schedule">
+            <summary>
+              <span class="workflow-group-number">08</span>
+              <span class="workflow-group-title"><strong>Focus Coach</strong><small>Turn bets into time and compare plan with reality.</small></span>
+              <span class="workflow-group-meta">3 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="week plan quarterly bets calendar blocks dates monday focus">
+                <div class="workflow-command-line"><code>/week-plan</code><span class="workflow-badge">scheduled</span></div>
+                <p>Turn this quarter's bets into dated blocks before the week fills itself with other people's priorities.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="calendar audit planned actual time no time friday">
+                <div class="workflow-command-line"><code>/calendar-audit</code><span class="workflow-badge">scheduled</span></div>
+                <p>Compare where the week was meant to go with where it actually went, using the calendar as evidence.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="energy audit output quality calendar patterns focus hours">
+                <div class="workflow-command-line"><code>/energy-audit</code></div>
+                <p>Find the hours when your output is consistently good or poor from the accumulated calendar record.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="grow" data-search="skills mentor learning capability gap development project">
+            <summary>
+              <span class="workflow-group-number">09</span>
+              <span class="workflow-group-title"><strong>Skills Mentor</strong><small>Build only the capability the strategy now requires.</small></span>
+              <span class="workflow-group-meta">2 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="skill gap capability offer quarterly bets learning">
+                <div class="workflow-command-line"><code>/skill-gap</code></div>
+                <p>Name the capability gap between the offer sold today and the offer current bets require.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="learning plan capability project deadline practice skill">
+                <div class="workflow-command-line"><code>/learning-plan</code></div>
+                <p>Attach one needed capability to one real project and one deadline that forces practice.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="grow" data-search="brand editor content audience voice writing publishing marketing">
+            <summary>
+              <span class="workflow-group-number">10</span>
+              <span class="workflow-group-title"><strong>Brand Editor</strong><small>Audience evidence, useful content, and your real voice.</small></span>
+              <span class="workflow-group-meta">4 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="content plan publish cadence icp audience shipped marketing">
+                <div class="workflow-command-line"><code>/content-plan</code><span class="workflow-badge">scheduled</span></div>
+                <p>Plan what gets published against the ICP and the number of pieces you actually shipped last month.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="voice capture writing style sent samples edits founder">
+                <div class="workflow-command-line"><code>/voice-capture</code></div>
+                <p>Learn your voice from writing you really sent, including the edits you made before sending it.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="content draft planned piece idea learned doing writing post">
+                <div class="workflow-command-line"><code>/content-draft</code></div>
+                <p>Draft one planned piece around one useful idea you learned by doing—not to fill an empty slot.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="audience research icp quotes problem questions evidence market">
+                <div class="workflow-command-line"><code>/audience-research</code></div>
+                <p>Collect the exact language your ICP uses for the problem before deciding what to publish.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="grow" data-search="network manager relationships contacts follow up warm outreach people">
+            <summary>
+              <span class="workflow-group-number">11</span>
+              <span class="workflow-group-title"><strong>Network Manager</strong><small>Who you know, when to reconnect, and why now.</small></span>
+              <span class="workflow-group-meta">2 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="relationship map contacts network categories days since warm list conference">
+                <div class="workflow-command-line"><code>/relationship-map</code></div>
+                <p>Map real relationships by category and days since meaningful contact before reaching for cold outreach.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="follow up sweep overdue contacts reason reach out network">
+                <div class="workflow-command-line"><code>/follow-up-sweep</code><span class="workflow-badge">scheduled</span></div>
+                <p>Surface up to five overdue relationships and give each person a real reason to hear from you.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="run" data-search="ops engineer automation tools subscriptions software operations payback">
+            <summary>
+              <span class="workflow-group-number">12</span>
+              <span class="workflow-group-title"><strong>Ops Engineer</strong><small>Automate only what pays back and cut unused tools.</small></span>
+              <span class="workflow-group-meta">2 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="automation audit manual task build internal payback cost time">
+                <div class="workflow-command-line"><code>/automation-audit</code></div>
+                <p>Use payback arithmetic to decide whether a manual task is worth automating before building anything.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="tool stack review subscription paid unused cancel renewal software">
+                <div class="workflow-command-line"><code>/tool-stack-review</code></div>
+                <p>Find software you pay for but do not use and prepare a cancel list before renewals arrive.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="money" data-search="portfolio manager multi business companies time cash allocation ranking">
+            <summary>
+              <span class="workflow-group-number">13</span>
+              <span class="workflow-group-title"><strong>Portfolio Manager</strong><small>The one decision allowed to cross business boundaries.</small></span>
+              <span class="workflow-group-meta">1 workflow</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="portfolio review multi business rank companies time cash split starving">
+                <div class="workflow-command-line"><code>/portfolio-review</code><span class="workflow-badge">scheduled</span></div>
+                <p>Rank active businesses, split this week's hours and cash, and say plainly what that allocation is starving.</p>
+              </article>
+            </div>
+          </details>
+
+          <details class="workflow-group" data-workflow-group data-category="run" data-search="system commands onboarding safety state integrity context setup doctor data">
+            <summary>
+              <span class="workflow-group-number">14</span>
+              <span class="workflow-group-title"><strong>System workflows</strong><small>Load, protect, diagnose, and schedule the operating system.</small></span>
+              <span class="workflow-group-meta">7 workflows</span>
+            </summary>
+            <div class="workflow-items">
+              <article class="workflow-item" data-workflow data-search="context load charter goals metrics dates session state">
+                <div class="workflow-command-line"><code>/context-load</code></div>
+                <p>Load dated charter, goals, and metrics before advice begins, including the active business slug when needed.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="founder os doctor diagnose workspace rot files stale metrics clients cadences">
+                <div class="workflow-command-line"><code>/founder-os-doctor</code></div>
+                <p>Diagnose workspace rot—missing files, stale metrics, orphan clients, broken bets, and silent cadences—before repairing it.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="founder os init onboarding install interview scaffold first brief business">
+                <div class="workflow-command-line"><code>/founder-os-init</code></div>
+                <p>Interview the founder, scaffold the workspace, route every answer to its owner, and produce the first brief.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="guardrails safety never outbound send pay tax legal medical refuse">
+                <div class="workflow-command-line"><code>/guardrails</code></div>
+                <p>Enforce the hard refusals: nothing outbound, nothing paid, and professional escalation for regulated advice.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="ingestion gate external claim fact validate disregard source date evidence">
+                <div class="workflow-command-line"><code>/ingestion-gate</code></div>
+                <p>Classify every external claim as fact, validate, or disregard before it enters canonical company state.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="setup cadences cron schedule jobs machine automatic recurring">
+                <div class="workflow-command-line"><code>/setup-cadences</code></div>
+                <p>Schedule nine recurring reviews per business, plus one portfolio review when multiple active businesses make it relevant.</p>
+              </article>
+              <article class="workflow-item" data-workflow data-search="state integrity ownership map file write owner guard handoff">
+                <div class="workflow-command-line"><code>/state-integrity</code></div>
+                <p>Resolve every workspace write against the ownership map and hand it to the correct role when needed.</p>
+              </article>
+            </div>
+          </details>
+            </div>
+
+            <p class="workflow-empty" id="workflow-empty" hidden>No workflows match that search and filter.</p>
+            <p class="workflow-footnote">Commands are shown in their short form. The namespaced form is <code>/founder-os:&lt;workflow&gt;</code>. <a href="https://github.com/msolecki/founder-os/blob/main/founder-os/COMMANDS.md">Open the generated command reference →</a></p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section team" id="team">
+      <div class="container team-layout">
+        <div class="team-intro reveal">
+          <p class="eyebrow">Your executive team</p>
+          <h2 class="section-title">13 roles. Zero <span class="serif">overlap.</span></h2>
+          <p class="section-copy">Every agent owns exactly one decision nobody else can make. When you do not know where to start, the Chief of Staff routes the question to the right role.</p>
+          <p class="team-note"><strong>1</strong><span>role = one decision = one owner of state</span></p>
+        </div>
+        <ol class="agent-list">
+          <li class="agent reveal"><strong>Chief of Staff</strong><span>What deserves your attention now, and who should handle it.</span></li>
+          <li class="agent reveal"><strong>Board Member</strong><span>Whether a plan survives contact with reality.</span></li>
+          <li class="agent reveal"><strong>Strategist</strong><span>What bet to make this quarter — and what to kill.</span></li>
+          <li class="agent reveal"><strong>Positioning Advisor</strong><span>Exactly who you serve and what you sell them.</span></li>
+          <li class="agent reveal"><strong>Pipeline Coach</strong><span>What happens next with every prospect.</span></li>
+          <li class="agent reveal"><strong>Delivery Lead</strong><span>Whether you can take the work and whether it is good enough to ship.</span></li>
+          <li class="agent reveal"><strong>CFO</strong><span>Whether the company can afford it and whether the work makes money.</span></li>
+          <li class="agent reveal"><strong>Focus Coach</strong><span>What enters the calendar — and what comes out.</span></li>
+          <li class="agent reveal"><strong>Skills Mentor</strong><span>Which capability to build next and why.</span></li>
+          <li class="agent reveal"><strong>Brand Editor</strong><span>What to publish, where, and how to keep your voice.</span></li>
+          <li class="agent reveal"><strong>Network Manager</strong><span>Who to talk to and when to follow up.</span></li>
+          <li class="agent reveal"><strong>Ops Engineer</strong><span>What to automate and what to tolerate.</span></li>
+          <li class="agent reveal"><strong>Portfolio Manager</strong><span>How to split time and cash across multiple businesses.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section multi-business" id="multi-business">
+      <div class="container multi-layout">
+        <div class="multi-intro reveal">
+          <p class="eyebrow">Built for a portfolio of one</p>
+          <h2 class="section-title">One founder. Several businesses. <span class="serif">No shared mess.</span></h2>
+          <p class="section-copy">Founder OS repeats the operating system instead of blending your companies together. Every business keeps its own goals, clients, metrics, pipeline, decisions, and cadence.</p>
+          <p class="multi-note">Run one business? Nothing changes. The multi-business layer appears only when you register a second active business.</p>
+        </div>
+
+        <div class="reveal">
+          <div class="multi-diagram" aria-label="Multi-business architecture: a registry routes each session to an isolated business workspace, while the portfolio layer compares only time and cash allocation">
+            <div class="registry-card">
+              <span aria-hidden="true">01</span>
+              <div>
+                <strong>The registry routes first</strong>
+                <small>A named slug makes the active business explicit before any company file is opened.</small>
+              </div>
+              <code>businesses.yaml</code>
+            </div>
+
+            <p class="route-label">one full workspace per business</p>
+
+            <div class="business-row">
+              <article class="business-card">
+                <div class="business-card-head"><strong>Studio North</strong><span class="business-slug">studio</span></div>
+                <p>Its own operating state and its own scheduled rhythm.</p>
+                <div class="business-files" aria-label="Example Studio North files">
+                  <span>goals.md</span><span>metrics.md</span><span>pipeline.md</span><span>clients/</span>
+                </div>
+              </article>
+              <article class="business-card">
+                <div class="business-card-head"><strong>Field Notes</strong><span class="business-slug">field-notes</span></div>
+                <p>A separate history. No shared prospects, numbers, or obligations.</p>
+                <div class="business-files" aria-label="Example Field Notes files">
+                  <span>goals.md</span><span>metrics.md</span><span>pipeline.md</span><span>clients/</span>
+                </div>
+              </article>
+            </div>
+
+            <p class="route-label">one deliberately narrow cross-business view</p>
+
+            <div class="portfolio-card">
+              <span class="portfolio-mark" aria-hidden="true">PM</span>
+              <div>
+                <strong>Portfolio Manager · portfolio.md</strong>
+                <span>Ranks active businesses and sets this week's split of the founder's hours and cash. It does not merge their operating state.</span>
+              </div>
+            </div>
+
+            <p class="business-command"><strong>Target any workflow:</strong> <code>/founder-os:daily-brief studio</code></p>
+          </div>
+
+          <div class="multi-principles" aria-label="Multi-business rules">
+            <div class="multi-principle"><strong>Isolate the work</strong><span>Each company keeps a complete workspace, cadence, logs, and history.</span></div>
+            <div class="multi-principle"><strong>Name the company</strong><span>The slug, environment, or registry default resolves context before advice begins.</span></div>
+            <div class="multi-principle"><strong>Cross only at portfolio level</strong><span>Only the Portfolio Manager compares businesses, and only to allocate scarce time and cash.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section ownership" id="memory">
+      <div class="container ownership-grid">
+        <div class="ownership-map reveal" aria-label="Shared business state diagram">
+          <div class="map-orbit" aria-hidden="true"></div>
+          <div class="map-core">Your business state</div>
+          <span class="map-node">goals.md</span>
+          <span class="map-node">pipeline.md</span>
+          <span class="map-node">metrics.md</span>
+          <span class="map-node">decisions/</span>
+          <span class="map-node">queue.md</span>
+        </div>
+        <div class="reveal">
+          <p class="eyebrow">One source of truth</p>
+          <h2 class="section-title">Your business does not live in <span class="serif">prompts.</span></h2>
+          <p class="section-copy">It lives in simple files you can open, edit, archive, and version. Agents read the same state, but write only inside their own area.</p>
+          <p class="boundary-note">Founder OS only knows what is recorded here. It does not automatically sync your calendar, CRM, inbox, or bank account.</p>
+          <ul class="check-list">
+            <li>Decisions remember not only what, but why — and what evidence would reverse them.</li>
+            <li>Drafts stay on disk; the version you actually sent teaches the system your real voice.</li>
+            <li>The queue has a cap, dates, and expiry — it does not grow into another wish list.</li>
+            <li>With multiple companies, each business keeps its own workspace and cadence.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section safety" id="guardrails">
+      <div class="container safety-grid">
+        <div class="reveal">
+          <p class="eyebrow">Hard boundaries</p>
+          <h2 class="section-title">AI advises. <span class="serif">You decide.</span></h2>
+          <p class="section-copy">No agent has a browser, shell, or tool that can reach beyond the workspace. That is a deliberate boundary, not a missing feature.</p>
+        </div>
+        <article class="safety-card reveal">
+          <div class="safety-card-top"><span>Human in control</span><span>always on</span></div>
+          <h3>Never sends. Never pays.</h3>
+          <p>The system can prepare a proposal, follow-up, or rate-raise plan. You press the button, sign the document, and own the decision.</p>
+          <ul class="safety-list">
+            <li><span>Messages and posts</span><span>draft only</span></li>
+            <li><span>Invoices and transfers</span><span>no access</span></li>
+            <li><span>Legal and tax advice</span><span>escalate</span></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="fit">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">An honest filter</p>
+          <h2 class="section-title">This is for you — or <span class="serif">it isn't.</span></h2>
+        </div>
+        <div class="fit-grid">
+          <article class="fit-card reveal">
+            <h3>Founder OS fits if…</h3>
+            <ul>
+              <li>you run a company of one or a small service business where every decision lands with you,</li>
+              <li>you use Claude Code and want every conversation to build shared business state,</li>
+              <li>you need a rhythm across pipeline, delivery, money, and focus,</li>
+              <li>you run multiple businesses and need to divide resources honestly.</li>
+            </ul>
+          </article>
+          <article class="fit-card reveal">
+            <h3>Do not install it if…</h3>
+            <ul>
+              <li>you want an autonomous bot that sends messages and moves money for you,</li>
+              <li>you refuse to maintain any business state in files,</li>
+              <li>you need a full CRM with a shared dashboard for a large team,</li>
+              <li>you want an assistant that validates every decision without pushing back.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section requirements" id="requirements">
+      <div class="container">
+        <div class="requirements-head reveal">
+          <div>
+            <p class="eyebrow">Before you install</p>
+            <h2 class="section-title">What you need. What it <span class="serif">costs.</span></h2>
+          </div>
+          <div>
+            <p class="section-copy">Founder OS is free and MIT-licensed. It runs inside your existing Claude Code environment and adds no account or subscription of its own.</p>
+            <a class="button button-orange" href="#install">Continue to installation <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+        <div class="requirements-grid reveal">
+          <article class="requirement">
+            <span>Required</span>
+            <h3>Recent Claude Code</h3>
+            <p>Founder OS is a plugin, not a standalone app. <a href="https://code.claude.com/docs">Open Claude Code docs</a>.</p>
+          </article>
+          <article class="requirement">
+            <span>Runtime</span>
+            <h3>Python 3; PyYAML recommended</h3>
+            <p>Python runs the ownership hook. PyYAML enables its full ownership-map check.</p>
+          </article>
+          <article class="requirement">
+            <span>Optional</span>
+            <h3>cron for schedules</h3>
+            <p>Manual workflows need no cron. Scheduled cadences run only while your machine and cron service are on.</p>
+          </article>
+          <article class="requirement">
+            <span>Price</span>
+            <h3>$0 · MIT license</h3>
+            <p>Founder OS is free. Your existing Claude Code plan and usage remain separate.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq">
+      <div class="container faq-layout">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">FAQ</p>
+          <h2 class="section-title">Before you <span class="serif">install.</span></h2>
+        </div>
+        <div class="faq-list reveal">
+          <details>
+            <summary>Is Founder OS a separate app?</summary>
+            <p>No. It is a Claude Code plugin. The agents, workflows, and rules install inside that environment, while your business state stays in a local Markdown workspace.</p>
+          </details>
+          <details>
+            <summary>Are 13 agents running all the time?</summary>
+            <p>No. They are specialized roles, not 13 autonomous processes running all day. A workflow invokes the relevant role; nine per-business cadences can run on a local schedule, with Portfolio Review as the tenth on multi-business installs.</p>
+          </details>
+          <details>
+            <summary>How long does setup take?</summary>
+            <p>The plugin installs with two commands after adding its marketplace. Initial onboarding takes about 20 minutes and ends with a working workspace and your first brief.</p>
+          </details>
+          <details>
+            <summary>Do I need to learn all 49 commands?</summary>
+            <p>No. When you do not know what to use, ask the Chief of Staff. Routing is its job — it sends the question to the right agent.</p>
+          </details>
+          <details>
+            <summary>Can it work in my language?</summary>
+            <p>Yes. The technical section headings stay in English, but the workspace content and the agents' work can use your language. The system can also learn your style from real writing samples.</p>
+          </details>
+          <details>
+            <summary>What if I run more than one business?</summary>
+            <p>Each business gets its own workspace and cadences. The Portfolio Manager is the only role that looks across businesses, dividing time and cash without mixing operational state.</p>
+          </details>
+          <details>
+            <summary>Where does Founder OS get its data?</summary>
+            <p>Only from the Markdown workspace and context you provide in Claude Code. It does not automatically sync your calendar, CRM, inbox, or bank account. Files stay on your machine; Claude Code's own data-handling terms still apply to prompts and context sent through it.</p>
+          </details>
+          <details>
+            <summary>How much does it cost?</summary>
+            <p>Founder OS is free and MIT-licensed. It adds no account or subscription. Your existing Claude Code plan and usage are separate.</p>
+          </details>
+          <details>
+            <summary>Does the system really run automatically?</summary>
+            <p>After the optional <code>/setup-cadences</code>, local cron runs nine cadences per business while your machine and cron service are on. Multi-business installs add Portfolio Review as the tenth. There is no cloud scheduler, and every cadence also works by hand.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="closing" id="install">
+      <div class="container closing-grid">
+        <div class="reveal">
+          <p class="eyebrow">Start with state, not another prompt</p>
+          <h2>Your executive team is <em>ready.</em></h2>
+        </div>
+        <div class="install-box reveal">
+          <div class="install-box-top"><span>Claude Code</span><span>3 steps</span></div>
+          <ol>
+            <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy the first installation command">⧉</button></li>
+            <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy the second installation command">⧉</button></li>
+            <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command">⧉</button></li>
+          </ol>
+          <p class="install-note"><strong>Then:</strong> onboarding walks you through the business and ends with your first daily brief. Read the <a href="https://github.com/msolecki/founder-os/blob/main/docs/getting-started.md">complete getting-started guide</a> first if you want the requirements and data boundaries in one place.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>Founder OS · The executive team for a company of one</span>
+      <div class="footer-links">
+        <a href="https://github.com/msolecki/founder-os/blob/main/docs/getting-started.md">Get started</a>
+        <a href="#sample-workspace">Sample workspace</a>
+        <a href="#workflows">49 workflows</a>
+        <a href="https://github.com/msolecki/founder-os">GitHub</a>
+        <a href="https://github.com/msolecki/founder-os/issues">Report an issue</a>
+        <a href="#top">Back to top ↑</a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="sr-only" id="copy-status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const navToggle = document.querySelector('.nav-toggle');
+      const navLinks = document.querySelector('.nav-links');
+
+      navToggle?.addEventListener('click', () => {
+        const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', String(!isOpen));
+        navToggle.setAttribute('aria-label', isOpen ? 'Open menu' : 'Close menu');
+        navLinks?.classList.toggle('is-open', !isOpen);
+      });
+
+      navLinks?.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => {
+          navToggle?.setAttribute('aria-expanded', 'false');
+          navToggle?.setAttribute('aria-label', 'Open menu');
+          navLinks.classList.remove('is-open');
+        });
+      });
+
+      const workspaceTriggers = [...document.querySelectorAll('[data-workspace-open]')];
+      const workspaceFileLinks = [...document.querySelectorAll('[data-workspace-file]')];
+      const workspacePanels = [...document.querySelectorAll('[data-workspace-panel]')];
+      const workspaceCurrentPath = document.querySelector('#workspace-current-path');
+
+      function openWorkspaceFile(name) {
+        const activePanel = workspacePanels.find((panel) => panel.dataset.workspacePanel === name);
+        if (!activePanel) return;
+
+        workspacePanels.forEach((panel) => {
+          const isActive = panel === activePanel;
+          panel.classList.toggle('is-active', isActive);
+          panel.setAttribute('aria-hidden', String(!isActive));
+        });
+
+        workspaceFileLinks.forEach((link) => {
+          if (link.dataset.workspaceFile === name) link.setAttribute('aria-current', 'true');
+          else link.removeAttribute('aria-current');
+        });
+
+        if (workspaceCurrentPath) workspaceCurrentPath.textContent = activePanel.dataset.path || '';
+      }
+
+      workspaceTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', () => openWorkspaceFile(trigger.dataset.workspaceOpen));
+      });
+
+      function syncWorkspaceFromHash() {
+        const panel = workspacePanels.find((item) => `#${item.id}` === window.location.hash);
+        if (panel) openWorkspaceFile(panel.dataset.workspacePanel);
+        else if (!window.location.hash || window.location.hash === '#sample-workspace') openWorkspaceFile('daily');
+      }
+
+      window.addEventListener('hashchange', syncWorkspaceFromHash);
+      const initialWorkspacePanel = workspacePanels.find((panel) => `#${panel.id}` === window.location.hash);
+      openWorkspaceFile(initialWorkspacePanel?.dataset.workspacePanel || 'daily');
+
+      const workflowCatalogue = document.querySelector('#workflow-catalogue');
+      const workflowSearch = document.querySelector('#workflow-search');
+      const workflowCount = document.querySelector('#workflow-count');
+      const workflowEmpty = document.querySelector('#workflow-empty');
+      const workflowFilterLinks = [...document.querySelectorAll('.workflow-entry[data-workflow-filter]')];
+      const clearWorkflowFilter = document.querySelector('[data-clear-workflow-filter]');
+      const showAllWorkflows = document.querySelector('[data-show-all-workflows]');
+      const workflowGroups = [...document.querySelectorAll('[data-workflow-group]')];
+      const workflows = [...document.querySelectorAll('[data-workflow]')];
+      let activeWorkflowCategory = 'all';
+
+      function updateWorkflowCatalogue({ closeGroups = false } = {}) {
+        const query = workflowSearch?.value.trim().toLowerCase() || '';
+        const filtering = activeWorkflowCategory !== 'all' || Boolean(query);
+        let visibleCount = 0;
+
+        workflowGroups.forEach((group) => {
+          const categoryMatches = activeWorkflowCategory === 'all'
+            || group.dataset.category === activeWorkflowCategory;
+          const groupTextMatches = !query || group.dataset.search?.includes(query);
+          const groupWorkflows = [...group.querySelectorAll('[data-workflow]')];
+          let visibleInGroup = 0;
+
+          groupWorkflows.forEach((workflow) => {
+            const textMatches = !query || groupTextMatches
+              || workflow.dataset.search?.includes(query)
+              || workflow.textContent.toLowerCase().includes(query);
+            const isVisible = categoryMatches && textMatches;
+            workflow.hidden = !isVisible;
+            if (isVisible) visibleInGroup += 1;
+          });
+
+          group.hidden = visibleInGroup === 0;
+          if (closeGroups) group.open = false;
+          else if (filtering && visibleInGroup > 0) group.open = true;
+          visibleCount += visibleInGroup;
+        });
+
+        workflowFilterLinks.forEach((link) => {
+          if (link.dataset.workflowFilter === activeWorkflowCategory) {
+            link.setAttribute('aria-current', 'true');
+          } else {
+            link.removeAttribute('aria-current');
+          }
+        });
+
+        if (clearWorkflowFilter) clearWorkflowFilter.hidden = activeWorkflowCategory === 'all';
+        if (workflowCount) workflowCount.textContent = `${visibleCount} of ${workflows.length} workflows`;
+        if (workflowEmpty) workflowEmpty.hidden = visibleCount !== 0;
+      }
+
+      workflowFilterLinks.forEach((link) => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          activeWorkflowCategory = link.dataset.workflowFilter || 'all';
+          if (workflowCatalogue) workflowCatalogue.open = true;
+          updateWorkflowCatalogue();
+        });
+      });
+
+      workflowSearch?.addEventListener('input', () => {
+        if (workflowCatalogue) workflowCatalogue.open = true;
+        const closeGroups = !workflowSearch.value.trim()
+          && activeWorkflowCategory === 'all';
+        updateWorkflowCatalogue({ closeGroups });
+      });
+
+      workflowSearch?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || !workflowSearch.value) return;
+        workflowSearch.value = '';
+        updateWorkflowCatalogue({
+          closeGroups: activeWorkflowCategory === 'all',
+        });
+      });
+
+      clearWorkflowFilter?.addEventListener('click', () => {
+        activeWorkflowCategory = 'all';
+        updateWorkflowCatalogue({
+          closeGroups: !workflowSearch?.value.trim(),
+        });
+      });
+
+      showAllWorkflows?.addEventListener('click', () => {
+        activeWorkflowCategory = 'all';
+        if (workflowSearch) workflowSearch.value = '';
+        if (workflowCatalogue) workflowCatalogue.open = true;
+        updateWorkflowCatalogue({ closeGroups: true });
+      });
+
+      workflowCatalogue?.removeAttribute('open');
+      updateWorkflowCatalogue({ closeGroups: true });
+
+      const tabs = [...document.querySelectorAll('[data-demo]')];
+      const panels = [...document.querySelectorAll('[data-panel]')];
+
+      function selectDemoPanel(selected) {
+        tabs.forEach((item) => {
+          const isSelected = item.dataset.demo === selected;
+          item.setAttribute('aria-selected', String(isSelected));
+          item.tabIndex = isSelected ? 0 : -1;
+        });
+
+        panels.forEach((panel) => {
+          const isSelected = panel.dataset.panel === selected;
+          panel.classList.toggle('is-active', isSelected);
+          panel.hidden = !isSelected;
+        });
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => {
+          selectDemoPanel(tab.dataset.demo);
+        });
+
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+          event.preventDefault();
+          const direction = event.key === 'ArrowRight' ? 1 : -1;
+          const next = (index + direction + tabs.length) % tabs.length;
+          tabs[next].focus();
+          tabs[next].click();
+        });
+      });
+
+      const initialDemoTab = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
+      if (initialDemoTab) selectDemoPanel(initialDemoTab.dataset.demo);
+
+      const copyStatus = document.querySelector('#copy-status');
+
+      async function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+      }
+
+      document.querySelectorAll('[data-copy]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          try {
+            await copyText(button.dataset.copy);
+            const original = button.textContent;
+            button.textContent = '✓';
+            if (copyStatus) copyStatus.textContent = 'Command copied to clipboard.';
+            window.setTimeout(() => { button.textContent = original; }, 1400);
+          } catch {
+            if (copyStatus) copyStatus.textContent = 'Could not copy the command.';
+          }
+        });
+      });
+
+      const reveals = document.querySelectorAll('.reveal');
+      if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+        reveals.forEach((item) => observer.observe(item));
+      } else {
+        reveals.forEach((item) => item.classList.add('is-visible'));
+      }
+    })();
+  </script>
+</body>
+</html>
