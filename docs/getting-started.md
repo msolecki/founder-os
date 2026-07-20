@@ -103,6 +103,7 @@ happen next.
 
 ## Help and source
 
+- [Full documentation set](README.md) — architecture, agents, state model, enforcement, and the developer guide
 - [Complete command catalogue](../founder-os/COMMANDS.md)
 - [Product philosophy and agent map](../founder-os/README.md)
 - [Source code](https://github.com/msolecki/founder-os)
