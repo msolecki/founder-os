@@ -115,7 +115,7 @@ better afternoon. There is no better afternoon. There is this session.
    real samples into `## Samples`, banned phrases into `## Never`, register
    notes into `## Register`, each line stamped with where it came from
    (`per <path>, imported at init`). A founder who has already written down
-   "never say 'reasumując'" should not teach it to `voice-capture` again one
+   "never say 'in conclusion'" should not teach it to `voice-capture` again one
    harvested edit at a time. If the answer is no, leave it empty — empty is
    honest, and three real drafts will fill it faster than an interview would.
 

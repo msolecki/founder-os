@@ -1,104 +1,105 @@
-# Founder OS — sprzedażowy landing page
+# Founder OS — sales landing page
 
-Status: gotowe z jawnym ograniczeniem review
-Data: 2026-07-20
+Status: complete with an explicit review limitation
+Date: 2026-07-20
 
-## Cel
+## Goal
 
-Zbudować samodzielną anglojęzyczną stronę HTML, która wyjaśnia osobie prowadzącej
-firmę solo, czym jest Founder OS, jak używa się go w praktyce i dlaczego jest
-czymś więcej niż kolejnym czatem z AI.
+Build a standalone English-language HTML page that explains to a solo business
+owner what Founder OS is, how it works in practice, and why it is more than
+another AI chat.
 
-## Decyzje
+## Decisions
 
-- Format: jeden plik `site/index.html`, bez buildu i zależności.
-- Odbiorca: globalny founder firmy usługowej, konsultant lub właściciel kilku
-  małych biznesów, który pracuje w Claude Code.
-- Główna obietnica: Founder OS zamienia rozproszone rozmowy z AI w pamiętający
-  stan firmy zespół wykonawczy, który pilnuje decyzji i rytmu pracy.
-- Dowody produktowe: 13 agentów, 49 workflowów, 10 kadencji, lokalny stan w
-  Markdown, ownership guard, brak wysyłania i płacenia przez agentów.
-- CTA: instalacja pluginu; bez ceny i formularza, bo repo nie definiuje oferty
-  płatnej ani modelu sprzedaży.
-- Styl: editorial command center — ciepłe tło, granat, elektryczny pomarańcz,
-  mocna typografia, interfejs operacyjny zamiast stockowych zdjęć.
+- Format: one `site/index.html` file with no build step or dependencies.
+- Audience: a global service-business founder, consultant, or owner of several
+  small businesses who works in Claude Code.
+- Core promise: Founder OS turns scattered AI conversations into an executive
+  team that remembers company state and protects decisions and operating rhythm.
+- Product proof: 13 agents, 49 workflows, 10 cadences, local Markdown state, an
+  ownership guard, and agents that cannot send or pay.
+- CTA: install the plugin; no price or form because the repository did not
+  define a paid offer or sales model.
+- Style: editorial command center — warm background, navy, electric orange,
+  strong typography, and an operating interface instead of stock photography.
 
-## Krok 1 — narracja i architektura informacji [S]
+## Step 1 — narrative and information architecture [S]
 
-**What:** Ułożyć ścieżkę od problemu foundera przez mechanizm produktu do
-instalacji.
+**What:** Build the path from the founder's problem through the product
+mechanism to installation.
 
-**Where:** Ten plan oraz copy w `site/index.html`.
+**Where:** This plan and the copy in `site/index.html`.
 
-**How:** Hero → koszt chaosu → różnica Founder OS → dzień/tydzień pracy →
-zespół → mechanizm pamięci i bezpieczeństwa → FAQ → instalacja.
+**How:** Hero → cost of chaos → Founder OS difference → day/week of work →
+team → memory and safety mechanism → FAQ → installation.
 
-**Test:** Każda obietnica sprzedażowa ma oparcie w `founder-os/README.md`,
-`founder-os/COMMANDS.md` albo kanonicznym `founder-os/CLAUDE.md`.
+**Test:** Every sales claim is supported by `founder-os/README.md`,
+`founder-os/COMMANDS.md`, or the canonical `founder-os/CLAUDE.md`.
 
-## Krok 2 — implementacja strony [M]
+## Step 2 — page implementation [M]
 
-**What:** Responsywny, dostępny landing z lekkimi interakcjami.
+**What:** A responsive, accessible landing page with lightweight interactions.
 
 **Where:** `site/index.html`.
 
-**How:** Semantyczny HTML, inline CSS, vanilla JS; bez zewnętrznych fontów,
-frameworków i skryptów. Dodać mobilną nawigację, przełączany podgląd briefu,
-kopiowanie komend, FAQ w `details` i animacje respektujące
+**How:** Semantic HTML, inline CSS, and vanilla JavaScript; no external fonts,
+frameworks, or scripts. Add mobile navigation, switchable brief previews,
+command copying, an FAQ built with `details`, and animations that respect
 `prefers-reduced-motion`.
 
-**Test:** Dokument ma poprawną strukturę nagłówków, widoczny focus, działa bez
-JS i nie ma poziomego overflow przy szerokości 375 px.
+**Test:** The document has a valid heading structure, visible focus states,
+works without JavaScript, and has no horizontal overflow at 375 px.
 
-## Krok 3 — walidacja [M]
+## Step 3 — validation [M]
 
-**What:** Sprawdzić stronę oraz brak regresji pakietu.
+**What:** Check the page and prove the package has no regressions.
 
-**Where:** `site/index.html` i repozytorium.
+**Where:** `site/index.html` and the repository.
 
-**How:** Parser HTML, kontrola linków/ID, uruchomienie strony lokalnie,
-screenshot desktop/mobile, `python3 scripts/validate_package.py founder-os`
-oraz `python3 -m unittest discover -s tests`.
+**How:** Parse the HTML, check links and IDs, serve the page locally, capture
+desktop and mobile screenshots, run
+`python3 scripts/validate_package.py founder-os`, and run
+`python3 -m unittest discover -s tests`.
 
-**Test:** Brak błędów parsera i linków wewnętrznych; oba testy repo przechodzą;
-screenshot potwierdza układ desktop i mobile.
+**Test:** No parser or internal-link errors; both repository test commands
+pass; screenshots confirm the desktop and mobile layouts.
 
-## Krok 4 — świeży review [S]
+## Step 4 — fresh review [S]
 
-**What:** Niezależny przegląd końcowego HTML i poprawki po review.
+**What:** Independently review the final HTML and address the findings.
 
 **Where:** `site/index.html`.
 
-**How:** Świeży subagent otrzyma wyłącznie cel, ścieżkę, ograniczenia i format
-wyniku; po jego werdykcie zmiany zostaną zweryfikowane lokalnie.
+**How:** Give a fresh subagent only the objective, path, constraints, and
+expected result format; verify any changes locally after its verdict.
 
-**Test:** Brak nierozwiązanych usterek wysokiej lub średniej wagi.
+**Test:** No unresolved high- or medium-severity issues.
 
-## Inwariant
+## Invariant
 
-Landing jest dodatkiem do repo i nie zmienia działania ani instalacji pluginu.
-Istniejące, niezwiązane zmiany w hookach i testach pozostają nietknięte.
+The landing page is additive and does not change plugin behavior or
+installation. Existing unrelated changes in hooks and tests stay untouched.
 
-## Następny krok
+## Next step
 
-Zwalidować `site/index.html` na desktopie i mobile, uruchomić testy pakietu,
-a następnie przekazać stronę do świeżego review.
+No implementation remains. Preserve the documented review and screenshot
+limitations in any future handoff.
 
-## Postęp
+## Progress
 
-- 2026-07-20: ukończono narrację i architekturę informacji.
-- 2026-07-20: ukończono samodzielny landing HTML/CSS/JS.
-- 2026-07-20: parser HTML, kontrola ID/anchorów/ARIA i parser JavaScript
-  przeszły; walidator pakietu zgłosił 13 agentów, 49 skilli i 0 błędów; 80
-  testów unit przeszło.
-- 2026-07-20: audyt kontrastu wykrył i naprawił drobny tekst na pomarańczowym
-  tle; dodano też działającą bez JavaScript mobilną nawigację.
-- 2026-07-20: Chrome headless kończył się kodem 134, a lokalny serwer był
-  blokowany przez profil wykonawczy, więc screenshot desktop/mobile nie powstał.
-- 2026-07-20: dwie próby świeżego review subagentem zablokował aktywny
-  `ownership-guard.py`, który w Codex klasyfikuje read-only terminal jako
-  outbound `Bash`. Nie obchodzono guarda ani nie modyfikowano hooków; wykonano
-  końcowy audyt lokalny, a ograniczenie pozostaje jawne w handoffie.
-- 2026-07-20: po feedbacku użytkownika przepisano całą warstwę treści,
-  metadane, anchory, komunikaty JavaScript i etykiety dostępności na naturalny
-  sprzedażowy angielski; layout oraz mechanika pozostały bez zmian.
+- 2026-07-20: completed the narrative and information architecture.
+- 2026-07-20: completed the standalone HTML/CSS/JavaScript landing page.
+- 2026-07-20: HTML parsing, ID/anchor/ARIA checks, and JavaScript parsing
+  passed; the package validator reported 13 agents, 49 skills, and zero errors;
+  all 80 unit tests passed.
+- 2026-07-20: the contrast audit found and fixed small text on the orange
+  background; mobile navigation that works without JavaScript was also added.
+- 2026-07-20: headless Chrome exited with code 134 and the execution profile
+  blocked the local server, so desktop and mobile screenshots were not created.
+- 2026-07-20: the active `ownership-guard.py` blocked two attempts to use a
+  fresh review subagent because Codex classified its read-only terminal as
+  outbound `Bash`. The guard was not bypassed or modified; a final local audit
+  was completed and the limitation remains explicit in the handoff.
+- 2026-07-20: after user feedback, all copy, metadata, anchors, JavaScript
+  messages, and accessibility labels were rewritten in natural sales English;
+  the layout and behavior remained unchanged.
