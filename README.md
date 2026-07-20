@@ -7,6 +7,14 @@ delivery, money, focus and the cross-business portfolio, with one markdown
 workspace per business as shared state and a
 write-time ownership guard keeping the org from corrupting it.
 
+**Free and MIT-licensed.** Founder OS runs inside your existing Claude Code
+environment and adds no account or subscription of its own.
+
+[Getting started](docs/getting-started.md) ·
+[Example workspace](examples/studio-north/README.md) ·
+[All 49 workflows](founder-os/COMMANDS.md) ·
+[Product philosophy](founder-os/README.md)
+
 This repository is both the **plugin marketplace** (install straight from it)
 and the **source repo** (validator, tests, design docs).
 
@@ -15,6 +23,20 @@ and the **source repo** (validator, tests, design docs).
 > machine works and how to develop against it.
 
 ## Install
+
+Before installing:
+
+| Requirement | Purpose |
+|---|---|
+| Recent [Claude Code](https://code.claude.com/docs) | Founder OS is a plugin, not a standalone app. |
+| Python 3 | Runs the ownership hook. |
+| PyYAML | Enables the full ownership-map check; the hook degrades gracefully without it. |
+| `cron` *(optional)* | Runs scheduled cadences. Manual workflows do not need it. |
+
+The 13 agents are specialized roles invoked when needed, not 13 autonomous
+processes running all day. Founder OS knows only what is recorded in its local
+Markdown workspace or supplied in the current session; it does not
+automatically sync a calendar, CRM, inbox, or bank account.
 
 In Claude Code:
 
@@ -30,9 +52,14 @@ Then, once:
 /setup-cadences       # optional: cron entries so it runs without being asked
 ```
 
-Requirements: a recent Claude Code; `python3` with PyYAML for the ownership
-hook (the hook degrades gracefully without PyYAML — see below); `cron` only if
-you schedule the cadences.
+Scheduled jobs run only while that machine and its cron service are running.
+See the complete
+[`docs/getting-started.md`](docs/getting-started.md) guide before installing if
+you want the requirements, data boundary, and first-week workflow in one place.
+
+To see the output first, open the fictional but contract-shaped
+[`examples/studio-north/`](examples/studio-north/README.md) workspace and follow
+`q-0720a` from the daily brief into the queue, quarterly bet, week, and review.
 
 ## How it works
 
@@ -85,6 +112,8 @@ button.
 
 ```
 .claude-plugin/marketplace.json   # this repo *is* the marketplace
+docs/getting-started.md           # external-user requirements and first run
+examples/studio-north/            # fictional, contract-shaped workspace tour
 founder-os/                       # the plugin (what gets installed)
   .claude-plugin/plugin.json
   CLAUDE.md                       # loaded into every session; the never-miss rules

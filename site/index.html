@@ -366,6 +366,24 @@
       box-sizing: content-box;
     }
 
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1.2rem;
+      margin-top: 0.9rem;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .proof-links a {
+      text-underline-offset: 0.22rem;
+      text-decoration-thickness: 1px;
+    }
+
+    .proof-links a:hover {
+      color: var(--orange-dark);
+    }
+
     .command-center {
       position: relative;
       color: #e8f0ed;
@@ -547,6 +565,11 @@
       font-size: 0.64rem;
     }
 
+    .demo-foot a {
+      color: var(--lime);
+      text-underline-offset: 0.18rem;
+    }
+
     .hero-stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -666,8 +689,7 @@
 
     .pain-card h3,
     .feature-card h3,
-    .step-card h3,
-    .benefit h3 {
+    .step-card h3 {
       margin: 0;
       font-size: 1.25rem;
       letter-spacing: -0.035em;
@@ -676,8 +698,7 @@
 
     .pain-card p,
     .feature-card p,
-    .step-card p,
-    .benefit p {
+    .step-card p {
       margin: 0.7rem 0 0;
       color: var(--ink-soft);
       font-size: 0.94rem;
@@ -1175,39 +1196,15 @@
       font-weight: 900;
     }
 
-    .outcomes-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-    }
-
-    .benefit {
-      min-height: 18rem;
-      padding: 1.5rem;
-      border-top: 3px solid var(--ink);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .benefit:nth-child(2) {
-      border-top-color: var(--orange);
-    }
-
-    .benefit:nth-child(3) {
-      border-top-color: #91ad22;
-    }
-
-    .benefit-label {
-      display: block;
-      margin-bottom: 4.5rem;
-      color: var(--ink-soft);
-      font-size: 0.7rem;
-      font-weight: 850;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .benefit h3 {
-      font-size: clamp(1.4rem, 2.5vw, 2rem);
+    .boundary-note {
+      margin-top: 1.5rem;
+      padding: 1rem 1.1rem;
+      color: var(--ink);
+      background: var(--lime);
+      border: 1px solid var(--ink);
+      border-radius: 0.75rem;
+      font-size: 0.88rem;
+      font-weight: 750;
     }
 
     .safety {
@@ -1351,6 +1348,82 @@
     .fit-card:last-child li::before {
       content: "−";
       color: var(--lime);
+    }
+
+    .requirements {
+      color: var(--white);
+      background: var(--night);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .requirements-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(2rem, 7vw, 7rem);
+      align-items: end;
+      margin-bottom: 3rem;
+    }
+
+    .requirements .eyebrow,
+    .requirements .section-copy {
+      color: #aebcb8;
+    }
+
+    .requirements .eyebrow::before {
+      background: var(--lime);
+    }
+
+    .requirements .section-title .serif {
+      color: var(--lime);
+    }
+
+    .requirements-head .button {
+      margin-top: 1.4rem;
+    }
+
+    .requirements-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .requirement {
+      min-height: 13rem;
+      padding: 1.35rem;
+      border-right: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .requirement:last-child {
+      border-right: 0;
+    }
+
+    .requirement span {
+      display: block;
+      color: var(--lime);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .requirement h3 {
+      margin: 2.2rem 0 0;
+      font-size: 1.2rem;
+      letter-spacing: -0.035em;
+    }
+
+    .requirement p {
+      margin: 0.65rem 0 0;
+      color: #aebcb8;
+      font-size: 0.84rem;
+    }
+
+    .requirement a {
+      color: var(--white);
+      text-underline-offset: 0.18rem;
     }
 
     .faq {
@@ -1623,6 +1696,22 @@
         grid-template-columns: 1fr 1fr;
       }
 
+      .requirements-head {
+        grid-template-columns: 1fr;
+      }
+
+      .requirements-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .requirement:nth-child(2) {
+        border-right: 0;
+      }
+
+      .requirement:nth-child(-n + 2) {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
       .feature-card:nth-child(n) {
         grid-column: auto;
       }
@@ -1779,14 +1868,23 @@
       }
 
       .features-grid,
-      .outcomes-grid,
-      .fit-grid {
+      .fit-grid,
+      .requirements-grid {
         grid-template-columns: 1fr;
       }
 
-      .feature-card,
-      .benefit {
+      .feature-card {
         min-height: auto;
+      }
+
+      .requirement {
+        min-height: auto;
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      }
+
+      .requirement:last-child {
+        border-bottom: 0;
       }
 
       .feature-card {
@@ -1835,10 +1933,6 @@
         margin-right: 0.7rem;
         box-shadow: 0.7rem 0.7rem 0 var(--orange);
         transform: none;
-      }
-
-      .benefit-label {
-        margin-bottom: 2.5rem;
       }
 
       .closing-grid {
@@ -1923,7 +2017,7 @@
         <a href="#team">The team</a>
         <a href="#guardrails">Guardrails</a>
         <a href="#faq">FAQ</a>
-        <a class="button button-dark" href="#install">Install <span class="arrow" aria-hidden="true">→</span></a>
+        <a class="button button-dark" href="#requirements">Install <span class="arrow" aria-hidden="true">→</span></a>
       </div>
     </nav>
   </header>
@@ -1940,12 +2034,16 @@
             </p>
             <div class="hero-actions">
               <a class="button button-dark" href="#how-it-works">See it at work <span class="arrow" aria-hidden="true">↓</span></a>
-              <a class="button button-light" href="#install">Skip to installation</a>
+              <a class="button button-light" href="https://github.com/msolecki/founder-os/tree/main/examples/studio-north">View sample workspace</a>
             </div>
-            <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Open source · local Markdown files · built for Claude Code</p>
+            <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Free and MIT-licensed · local Markdown files · requires Claude Code</p>
+            <div class="proof-links" aria-label="Product resources">
+              <a href="https://github.com/msolecki/founder-os/blob/main/founder-os/COMMANDS.md">Browse all 49 workflows</a>
+              <a href="https://github.com/msolecki/founder-os">View source on GitHub</a>
+            </div>
           </div>
 
-          <div class="command-center reveal" aria-label="Example Founder OS daily brief">
+          <div class="command-center reveal" aria-label="Fictional Founder OS example based on the real workspace contract">
             <div class="window-bar">
               <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
               <span class="window-title">founder-os / studio-north</span>
@@ -1960,39 +2058,39 @@
             <div class="demo-panel" id="panel-today" role="tabpanel" aria-labelledby="tab-today" data-panel="today">
               <p class="demo-label">08:00 / Daily brief</p>
               <h2>The one thing that matters today</h2>
-              <p class="demo-meta"><span>BET: B2 — premium offer</span><span>OWNER: founder</span></p>
+              <p class="demo-meta"><span>BET: B1 — premium sprint</span><span>OWNER: founder</span></p>
               <div class="demo-rule"></div>
               <ul class="demo-list">
                 <li><span class="index">01</span><span>Finish the Acme proposal scope. Do not start the website redesign.</span></li>
-                <li><span class="index">02</span><span>Block 90 minutes before the first call. Your calendar has room.</span></li>
-                <li><span class="index">03</span><span>Risk: Project Delta is already 18% over estimate.</span></li>
+                <li><span class="index">02</span><span>Your weekly plan already funds a 09:00–11:30 block.</span></li>
+                <li><span class="index">03</span><span>Northwind's founder-owned follow-up is 3 days overdue.</span></li>
               </ul>
             </div>
 
             <div class="demo-panel" id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" data-panel="pipeline" hidden>
               <p class="demo-label">Thursday / Pipeline review</p>
               <h2>Every deal gets a next move or leaves</h2>
-              <p class="demo-meta"><span>4 ACTIVE</span><span>1 WITH NO DATE</span></p>
+              <p class="demo-meta"><span>2 ACTIVE</span><span>1 OVERDUE</span></p>
               <div class="demo-rule"></div>
               <ul class="demo-list">
-                <li><span class="index">01</span><span>Acme — proposal draft due today at 16:00.</span></li>
-                <li><span class="index">02</span><span>Northwind — buyer decision due July 24.</span></li>
-                <li><span class="index">03</span><span>Delta — no real next action. Remove it from the pipeline.</span></li>
+                <li><span class="index">01</span><span>Acme — founder finishes proposal scope today.</span></li>
+                <li><span class="index">02</span><span>Northwind — requested references were due July 17.</span></li>
+                <li><span class="index">03</span><span>Delta — dead because procurement required open-ended availability.</span></li>
               </ul>
             </div>
 
             <div class="demo-panel" id="panel-friday" role="tabpanel" aria-labelledby="tab-friday" data-panel="friday" hidden>
               <p class="demo-label">16:00 / Weekly review</p>
               <h2>The week scored by what actually happened</h2>
-              <p class="demo-meta"><span>2/3 SHIPPED</span><span>PATTERN: TOO MUCH WIP</span></p>
+              <p class="demo-meta"><span>2/3 SHIPPED</span><span>PATTERN: DELIVERY DISPLACES PROOF</span></p>
               <div class="demo-rule"></div>
               <ul class="demo-list">
-                <li><span class="index">01</span><span>The proposal went out. The case study did not — third week running.</span></li>
+                <li><span class="index">01</span><span>The case study did not ship — third consecutive week.</span></li>
                 <li><span class="index">02</span><span>Do not roll it forward automatically. Make next week's plan smaller.</span></li>
-                <li><span class="index">03</span><span>One decision for Monday: publish it or kill it.</span></li>
+                <li><span class="index">03</span><span>Monday commitment: finish the Acme proposal scope by 11:30.</span></li>
               </ul>
             </div>
-            <div class="demo-foot"><span>chief-of-staff</span><span>queue.md · metrics.md · goals.md</span></div>
+            <div class="demo-foot"><span>fictional Studio North example</span><a href="https://github.com/msolecki/founder-os/tree/main/examples/studio-north">open the files →</a></div>
           </div>
         </div>
 
@@ -2090,8 +2188,9 @@
             <span class="step-number">1</span>
             <div>
               <h3>Add Founder OS</h3>
-              <p>Two commands in Claude Code. No framework, no dashboard, no extra SaaS account.</p>
-              <div class="code-line"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy installation command">⧉</button></div>
+              <p>Add the marketplace, then install the plugin. No Founder OS account, dashboard, or external database.</p>
+              <div class="code-line"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy marketplace command">⧉</button></div>
+              <div class="code-line"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy plugin installation command">⧉</button></div>
             </div>
           </article>
           <article class="step-card reveal">
@@ -2106,7 +2205,7 @@
             <span class="step-number">3</span>
             <div>
               <h3>Turn on the rhythm</h3>
-              <p>Optional cadences run briefs and reviews on your machine. Every workflow also works on demand.</p>
+              <p>Optional cron cadences run on your machine while it is on. Every workflow also works manually without cron.</p>
               <div class="code-line"><code>/setup-cadences</code><button class="copy-button" type="button" data-copy="/setup-cadences" aria-label="Copy cadence setup command">⧉</button></div>
             </div>
           </article>
@@ -2197,39 +2296,13 @@
           <p class="eyebrow">One source of truth</p>
           <h2 class="section-title">Your business does not live in <span class="serif">prompts.</span></h2>
           <p class="section-copy">It lives in simple files you can open, edit, archive, and version. Agents read the same state, but write only inside their own area.</p>
+          <p class="boundary-note">Founder OS only knows what is recorded here. It does not automatically sync your calendar, CRM, inbox, or bank account.</p>
           <ul class="check-list">
             <li>Decisions remember not only what, but why — and what evidence would reverse them.</li>
             <li>Drafts stay on disk; the version you actually sent teaches the system your real voice.</li>
             <li>The queue has a cap, dates, and expiry — it does not grow into another wish list.</li>
             <li>With multiple companies, each business keeps its own workspace and cadence.</li>
           </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="outcomes">
-      <div class="container">
-        <div class="section-kicker reveal">
-          <p class="eyebrow">What you actually get</p>
-          <h2 class="section-title">Less management <span class="serif">from memory.</span></h2>
-          <p class="section-copy">Founder OS does not promise to run the company for you. It helps you run it from recorded state, not whatever feels urgent today.</p>
-        </div>
-        <div class="outcomes-grid">
-          <article class="benefit reveal">
-            <span class="benefit-label">Priorities</span>
-            <h3>Know what matters today</h3>
-            <p>The daily brief ties today's work to a quarterly bet and shows the cost of doing something else.</p>
-          </article>
-          <article class="benefit reveal">
-            <span class="benefit-label">Decisions</span>
-            <h3>Stop living in “we'll see”</h3>
-            <p>Plans have assumptions, bets have downside, and every judgment date forces a verdict: kill or continue.</p>
-          </article>
-          <article class="benefit reveal">
-            <span class="benefit-label">Continuity</span>
-            <h3>Stop paying twice for context</h3>
-            <p>A new session starts with your charter, goals, and metrics. The work from the last one stays in the system.</p>
-          </article>
         </div>
       </div>
     </section>
@@ -2283,6 +2356,43 @@
       </div>
     </section>
 
+    <section class="section requirements" id="requirements">
+      <div class="container">
+        <div class="requirements-head reveal">
+          <div>
+            <p class="eyebrow">Before you install</p>
+            <h2 class="section-title">What you need. What it <span class="serif">costs.</span></h2>
+          </div>
+          <div>
+            <p class="section-copy">Founder OS is free and MIT-licensed. It runs inside your existing Claude Code environment and adds no account or subscription of its own.</p>
+            <a class="button button-orange" href="#install">Continue to installation <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+        <div class="requirements-grid reveal">
+          <article class="requirement">
+            <span>Required</span>
+            <h3>Recent Claude Code</h3>
+            <p>Founder OS is a plugin, not a standalone app. <a href="https://code.claude.com/docs">Open Claude Code docs</a>.</p>
+          </article>
+          <article class="requirement">
+            <span>Runtime</span>
+            <h3>Python 3; PyYAML recommended</h3>
+            <p>Python runs the ownership hook. PyYAML enables its full ownership-map check.</p>
+          </article>
+          <article class="requirement">
+            <span>Optional</span>
+            <h3>cron for schedules</h3>
+            <p>Manual workflows need no cron. Scheduled cadences run only while your machine and cron service are on.</p>
+          </article>
+          <article class="requirement">
+            <span>Price</span>
+            <h3>$0 · MIT license</h3>
+            <p>Founder OS is free. Your existing Claude Code plan and usage remain separate.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="section faq" id="faq">
       <div class="container faq-layout">
         <div class="section-kicker reveal">
@@ -2295,8 +2405,12 @@
             <p>No. It is a Claude Code plugin. The agents, workflows, and rules install inside that environment, while your business state stays in a local Markdown workspace.</p>
           </details>
           <details>
+            <summary>Are 13 agents running all the time?</summary>
+            <p>No. They are specialized roles, not 13 autonomous processes running all day. A workflow invokes the relevant role; ten cadences can optionally run on a local schedule.</p>
+          </details>
+          <details>
             <summary>How long does setup take?</summary>
-            <p>The plugin installs with two commands. Initial onboarding takes about 20 minutes and ends with a working workspace and your first brief.</p>
+            <p>The plugin installs with two commands after adding its marketplace. Initial onboarding takes about 20 minutes and ends with a working workspace and your first brief.</p>
           </details>
           <details>
             <summary>Do I need to learn all 49 commands?</summary>
@@ -2311,12 +2425,16 @@
             <p>Each business gets its own workspace and cadences. The Portfolio Manager is the only role that looks across businesses, dividing time and cash without mixing operational state.</p>
           </details>
           <details>
-            <summary>Does my data go into another SaaS?</summary>
-            <p>Founder OS adds no external database or dashboard of its own — state is stored in files on your machine. The data-handling terms of the Claude Code environment you use still apply.</p>
+            <summary>Where does Founder OS get its data?</summary>
+            <p>Only from the Markdown workspace and context you provide in Claude Code. It does not automatically sync your calendar, CRM, inbox, or bank account. Files stay on your machine; Claude Code's own data-handling terms still apply to prompts and context sent through it.</p>
+          </details>
+          <details>
+            <summary>How much does it cost?</summary>
+            <p>Founder OS is free and MIT-licensed. It adds no account or subscription. Your existing Claude Code plan and usage are separate.</p>
           </details>
           <details>
             <summary>Does the system really run automatically?</summary>
-            <p>After the optional <code>/setup-cadences</code>, a local scheduler runs ten cadences on your machine. You can also invoke every one by hand. It automates the moment of review, not your responsibility.</p>
+            <p>After the optional <code>/setup-cadences</code>, local cron runs ten cadences while your machine and cron service are on. There is no cloud scheduler. You can invoke every cadence by hand.</p>
           </details>
         </div>
       </div>
@@ -2335,7 +2453,7 @@
             <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy the second installation command">⧉</button></li>
             <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command">⧉</button></li>
           </ol>
-          <p class="install-note"><strong>Then:</strong> onboarding walks you through the business and ends with your first daily brief.</p>
+          <p class="install-note"><strong>Then:</strong> onboarding walks you through the business and ends with your first daily brief. Read the <a href="https://github.com/msolecki/founder-os/blob/main/docs/getting-started.md">complete getting-started guide</a> first if you want the requirements and data boundaries in one place.</p>
         </div>
       </div>
     </section>
@@ -2345,8 +2463,11 @@
     <div class="container footer-inner">
       <span>Founder OS · The executive team for a company of one</span>
       <div class="footer-links">
+        <a href="https://github.com/msolecki/founder-os/blob/main/docs/getting-started.md">Get started</a>
+        <a href="https://github.com/msolecki/founder-os/tree/main/examples/studio-north">Sample workspace</a>
+        <a href="https://github.com/msolecki/founder-os/blob/main/founder-os/COMMANDS.md">49 workflows</a>
         <a href="https://github.com/msolecki/founder-os">GitHub</a>
-        <a href="https://github.com/msolecki/founder-os/blob/main/LICENSE">MIT License</a>
+        <a href="https://github.com/msolecki/founder-os/issues">Report an issue</a>
         <a href="#top">Back to top ↑</a>
       </div>
     </div>

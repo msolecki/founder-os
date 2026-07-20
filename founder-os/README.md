@@ -11,6 +11,34 @@ exactly one decision you keep postponing. Run one business or several — each
 business is its own workspace, and the thirteenth agent exists to rank between
 them.
 
+**Founder OS is free and MIT-licensed.** It runs inside your existing Claude
+Code environment and adds no account or subscription of its own.
+
+[Getting started](../docs/getting-started.md) ·
+[Example workspace](../examples/studio-north/README.md) ·
+[All 49 workflows](COMMANDS.md) ·
+[Report an issue](https://github.com/msolecki/founder-os/issues)
+
+## Before you install
+
+| Requirement | Purpose |
+|---|---|
+| Recent [Claude Code](https://code.claude.com/docs) | Founder OS is a plugin, not a standalone app. |
+| Python 3 | Runs the write-time ownership hook. |
+| PyYAML | Enables the full ownership-map check; the hook degrades gracefully without it. |
+| `cron` *(optional)* | Runs scheduled cadences. Every workflow also works manually. |
+
+The agents are specialized roles invoked when needed, not thirteen autonomous
+processes running all day. Ten cadences can optionally run on a local
+schedule; the rest run when you call them or when the Chief of Staff routes a
+question.
+
+Founder OS knows only what is recorded in its Markdown workspace or supplied
+in the current Claude Code session. It does **not** automatically sync your
+calendar, CRM, inbox, bank account, or accounting system. Workspace files stay
+on your machine; Claude Code's own data-handling terms still apply to prompts
+and context sent through it.
+
 ## Install
 
 ```
@@ -33,6 +61,16 @@ Then, if you want the company to come to you rather than wait to be opened:
 ```
 /setup-cadences
 ```
+
+This writes local cron entries with your consent. They run only while your
+machine and cron service are running. There is no Founder OS cloud scheduler;
+every cadence also works by hand.
+
+Want to see the result before installing? Start with the fictional but
+contract-shaped
+[`examples/studio-north/reviews/daily/2026-07-20.md`](../examples/studio-north/reviews/daily/2026-07-20.md),
+then follow `q-0720a` and `B1` across its queue, goals, week, pipeline, and
+reviews.
 
 ## What's inside
 
@@ -67,14 +105,18 @@ Thirteen agents only works if each owns a decision no other agent can make. That
 was the test every agent had to pass to ship — and the reason there are thirteen
 of them rather than a hundred and sixty-seven.
 
+They are role definitions, not always-on workers. A command invokes the role
+that owns its decision; a scheduled cadence invokes one at its configured time.
+
 Ask the **chief-of-staff** when you don't know who to ask. Routing is its one
 decision, and it can summon the rest of the org; they cannot summon each other
 sideways. The org chart is the agent graph, not a diagram in a README.
 
 ## A day with Founder OS
 
-Morning: the brief is already there — `/daily-brief` ran at 08:00 and named the
-one thing that matters today (or you type it yourself). A thought at 15:00 with
+Morning: if you enabled local cadences and the machine was running, the brief is
+already there — `/daily-brief` ran at 08:00 and named the one thing that matters
+today. Otherwise, you type it yourself. A thought at 15:00 with
 no session open: append one line to `inbox.md`, no fields, no ceremony — the
 next brief or `/triage` drains it. A prospect to move: `/pipeline-review`. A
 draft to send: `/outreach-draft` writes it to `drafts/`, you press send.
@@ -106,8 +148,9 @@ pipeline, the content plan, the follow-ups, the review, the close, the quarter.
 Session loops expire after seven days; cloud routines can't see your local
 files, and your workspace is local markdown by design. So `/setup-cadences`
 writes cron entries on **your** machine that call the skills headless. One
-setup, then it runs. Every cadence also works invoked by hand — the rhythm is
-the point, not the mechanism.
+setup, then it runs while that machine and cron service are on. Missed cron
+times do not become cloud catch-up runs. Every cadence also works invoked by
+hand — the rhythm is the point, not the mechanism.
 
 A personal-development tool that only runs when you remember to run it is the
 failure mode of every productivity system ever shipped. That's the part this
@@ -120,6 +163,12 @@ State lives in a markdown workspace (`FOUNDER_OS_HOME`, default
 clients, drafts, network, skills, content, voice, systems — and a decision log
 that records *why*, not just what. Six months from now you will want to know
 why you raised rates or dropped a client. That's the file that answers.
+
+**That workspace is the whole data boundary.** Founder OS does not silently
+read a calendar, CRM, inbox, bank, or accounting tool. If a fact is not in the
+workspace or the current session, the agents do not know it. This is why the
+example workspace shows the source file behind every daily-brief claim instead
+of implying a live integration.
 
 **Every file has exactly one owner.** Agents read anything and write only what
 they own. A `PreToolUse` hook checks every write against
@@ -218,4 +267,10 @@ fast.
 
 ## License
 
-MIT
+Free and MIT-licensed. See [`LICENSE`](LICENSE).
+
+## Help
+
+Read the repository's [`docs/getting-started.md`](../docs/getting-started.md),
+browse the generated [`COMMANDS.md`](COMMANDS.md), or
+[open an issue](https://github.com/msolecki/founder-os/issues).
