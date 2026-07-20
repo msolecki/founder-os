@@ -1,0 +1,4 @@
+interface:
+  display_name: "Profitability Analysis"
+  short_description: "Run the Profitability Analysis Founder OS workflow."
+  default_prompt: "Use $profitability-analysis to handle this Founder OS task."

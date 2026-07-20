@@ -1,0 +1,4 @@
+interface:
+  display_name: "Offer Design"
+  short_description: "Run the Offer Design Founder OS workflow."
+  default_prompt: "Use $offer-design to handle this Founder OS task."

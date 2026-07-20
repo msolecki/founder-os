@@ -1,0 +1,4 @@
+interface:
+  display_name: "Week Plan"
+  short_description: "Run the Week Plan Founder OS workflow."
+  default_prompt: "Use $week-plan to handle this Founder OS task."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tool Stack Review"
+  short_description: "Run the Tool Stack Review Founder OS workflow."
+  default_prompt: "Use $tool-stack-review to handle this Founder OS task."

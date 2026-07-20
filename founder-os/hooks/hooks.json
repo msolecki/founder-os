@@ -1,8 +1,29 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.py\""
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
-        "matcher": "^(Write|Edit|NotebookEdit|Bash|WebFetch|mcp__.*)$",
+        "matcher": "^(Write|Edit|NotebookEdit|apply_patch|Bash|WebFetch|mcp__.*)$",
         "hooks": [
           {
             "type": "command",

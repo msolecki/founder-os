@@ -1,0 +1,34 @@
+{
+  "name": "founder-os",
+  "version": "2.3.0",
+  "description": "The executive team you cannot afford yet: strategy, offer, pipeline, delivery, money and focus for a company of one.",
+  "author": {
+    "name": "Mateusz Solecki"
+  },
+  "license": "MIT",
+  "keywords": [
+    "founder",
+    "solopreneur",
+    "business",
+    "strategy",
+    "revenue",
+    "focus"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Founder OS",
+    "shortDescription": "Run a company of one with an executive team.",
+    "longDescription": "Founder OS adds reusable operating workflows and thirteen decision-owning executive agents for solo founders.",
+    "developerName": "Mateusz Solecki",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use Founder OS to plan my week from current state.",
+      "Run the Founder OS daily brief.",
+      "Ask the chief of staff to route this decision."
+    ]
+  }
+}

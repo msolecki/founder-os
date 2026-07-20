@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pipeline Review"
+  short_description: "Run the Pipeline Review Founder OS workflow."
+  default_prompt: "Use $pipeline-review to handle this Founder OS task."

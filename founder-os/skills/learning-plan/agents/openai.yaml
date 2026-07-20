@@ -1,0 +1,4 @@
+interface:
+  display_name: "Learning Plan"
+  short_description: "Run the Learning Plan Founder OS workflow."
+  default_prompt: "Use $learning-plan to handle this Founder OS task."

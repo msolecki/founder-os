@@ -1,0 +1,4 @@
+interface:
+  display_name: "Icp Definition"
+  short_description: "Run the Icp Definition Founder OS workflow."
+  default_prompt: "Use $icp-definition to handle this Founder OS task."

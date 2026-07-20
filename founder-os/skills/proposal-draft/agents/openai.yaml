@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proposal Draft"
+  short_description: "Run the Proposal Draft Founder OS workflow."
+  default_prompt: "Use $proposal-draft to handle this Founder OS task."

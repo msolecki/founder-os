@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guardrails"
+  short_description: "Run the Guardrails Founder OS workflow."
+  default_prompt: "Use $guardrails to handle this Founder OS task."

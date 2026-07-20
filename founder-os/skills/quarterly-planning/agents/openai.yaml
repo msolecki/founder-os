@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quarterly Planning"
+  short_description: "Run the Quarterly Planning Founder OS workflow."
+  default_prompt: "Use $quarterly-planning to handle this Founder OS task."

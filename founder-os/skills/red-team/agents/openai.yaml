@@ -1,0 +1,4 @@
+interface:
+  display_name: "Red Team"
+  short_description: "Run the Red Team Founder OS workflow."
+  default_prompt: "Use $red-team to handle this Founder OS task."

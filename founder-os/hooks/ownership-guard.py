@@ -45,8 +45,10 @@ on their own work, uninstalls it that afternoon, and then it protects nobody. A
 false deny costs more than a miss, because a miss is caught by the build-time
 validator and a false deny is caught by the user's patience.
 
-Main-thread calls (no `agent_type`) are always allowed. The founder is the CEO.
-This rule is about agents, not about them.
+Main-thread calls are always allowed. Claude marks subagent calls with
+`agent_type`; Codex supplies `turn_id`, which is resolved from the mapping
+written by record-agent.py at SubagentStart. The founder is the CEO. This rule
+is about agents, not about them.
 
 Python 3.9, stdlib + PyYAML. Style follows scripts/validate_package.py.
 """
@@ -154,7 +156,7 @@ def load_ownership():
     allow.
     """
     roots = []
-    env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
+    env_root = os.environ.get("PLUGIN_ROOT") or os.environ.get("CLAUDE_PLUGIN_ROOT")
     if env_root:
         roots.append(env_root)
     # CLAUDE_PLUGIN_ROOT is the documented way to find ourselves, but this file
@@ -214,13 +216,31 @@ def _registry_roots():
     A parse failure here must never cost anyone a write; it costs coverage,
     which the build-time validator does not depend on.
     """
-    path = os.path.expanduser(os.path.join("~", ".founder-os", "businesses.yaml"))
-    if yaml is None or not os.path.isfile(path):
+    user_home = os.environ.get("HOME") or os.path.expanduser("~")
+    path = os.path.join(user_home, ".founder-os", "businesses.yaml")
+    if not os.path.isfile(path):
         return []
     try:
         with open(path, encoding="utf-8") as fh:
-            data = yaml.safe_load(fh.read()) or {}
-    except (OSError, yaml.YAMLError) as e:
+            text = fh.read()
+        if yaml is not None:
+            data = yaml.safe_load(text) or {}
+        else:
+            # The registry shape is intentionally small. On machines without
+            # PyYAML, collect only absolute `home:` and `portfolio:` values;
+            # anything ambiguous remains uncovered and therefore allowed.
+            roots = []
+            for raw in text.splitlines():
+                line = raw.split("#", 1)[0].strip()
+                if line.startswith("home:") or line.startswith("portfolio:"):
+                    value = line.split(":", 1)[1].strip().strip("'\"")
+                    if os.path.isabs(value):
+                        roots.append(value)
+            return roots
+    except (OSError, ValueError) as e:
+        log("could not read registry %s (%s)" % (path, e))
+        return []
+    except Exception as e:  # PyYAML exposes its own exception class
         log("could not read registry %s (%s)" % (path, e))
         return []
     if not isinstance(data, dict):
@@ -281,9 +301,11 @@ def relative_to_workspace(file_path, hook_cwd):
     a candidate root, the file is not ours and the caller allows.
     """
     if not os.path.isabs(file_path):
-        # Write/Edit take absolute paths; resolving a relative one would mean
-        # trusting cwd, which the docs say not to do. Don't guess — allow.
-        return None
+        # Codex apply_patch uses workspace-relative paths. Its hook payload
+        # carries the session cwd, so resolve against that explicit value.
+        if not isinstance(hook_cwd, str) or not os.path.isabs(hook_cwd):
+            return None
+        file_path = os.path.join(hook_cwd, file_path)
     targets = []
     for v in (os.path.realpath(file_path),
               os.path.normpath(os.path.abspath(file_path))):
@@ -348,38 +370,81 @@ def check_outbound(agent_type, tool_name):
         )
 
 
+def _patch_paths(command):
+    """Return paths touched by a Codex apply_patch payload."""
+    if not isinstance(command, str):
+        return []
+    paths = []
+    marker = re.compile(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$")
+    move = re.compile(r"^\*\*\* Move to: (.+)$")
+    for line in command.splitlines():
+        match = marker.match(line) or move.match(line)
+        if match:
+            path = match.group(1).strip()
+            if path and path not in paths:
+                paths.append(path)
+    return paths
+
+
+def _tool_paths(tool_name, tool_input):
+    if tool_name == "apply_patch":
+        return _patch_paths(tool_input.get("command"))
+    if tool_name in ("Write", "Edit", "NotebookEdit"):
+        path = tool_input.get("file_path") or tool_input.get("notebook_path")
+        return [path] if isinstance(path, str) and path else []
+    return []
+
+
 def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
-    if tool_name not in ("Write", "Edit", "NotebookEdit"):
+    paths = _tool_paths(tool_name, tool_input)
+    if not paths:
         return
-    file_path = tool_input.get("file_path") or tool_input.get("notebook_path")
-    if not isinstance(file_path, str) or not file_path:
-        allow("%s has no file_path" % tool_name)
-    rel = relative_to_workspace(file_path, hook_cwd)
-    if rel is None:
-        allow("%s is outside the workspace" % file_path)
     by_path = load_ownership()
     if by_path is None:
         allow("no ownership map — the guard is off, not strict")
-    owner = owner_of(rel, by_path)
-    if owner is None:
-        allow("%s has no owner in the map" % rel)
-    if owner == agent_type:
-        return
-    # A subagent that isn't in the map at all (someone's own custom agent) is
-    # also not the owner, and is denied. That is the rule working, not a bug:
-    # "one owner per file" is about the file having exactly one writer, and an
-    # unrecognised writer is precisely what it guards against. The founder's own
-    # main thread is never in this code path.
-    deny(
-        "`%s` is owned by `%s`, not `%s`. Every file in the workspace has "
-        "exactly one owner (house rule 4: stay in your lane) and the map is "
-        "references/ownership.yaml.\n\n"
-        "Hand off to `%s`: tell it what needs to change and why, and let it "
-        "make the edit. If you think the ownership map is wrong, that is a "
-        "decision for the founder, not an edit to make on the way past.\n\n"
-        "(The founder can always make this edit themselves — this rule is about "
-        "agents.)" % (rel, owner, agent_type, owner)
-    )
+    for file_path in paths:
+        rel = relative_to_workspace(file_path, hook_cwd)
+        if rel is None:
+            log("allow: %s is outside the workspace" % file_path)
+            continue
+        owner = owner_of(rel, by_path)
+        if owner is None:
+            log("allow: %s has no owner in the map" % rel)
+            continue
+        if owner == agent_type:
+            continue
+        # A subagent that isn't in the map at all is also not the owner.
+        deny(
+            "`%s` is owned by `%s`, not `%s`. Every file in the workspace has "
+            "exactly one owner (house rule 4: stay in your lane) and the map is "
+            "references/ownership.yaml.\n\n"
+            "Hand off to `%s`: tell it what needs to change and why, and let it "
+            "make the edit. If you think the ownership map is wrong, that is a "
+            "decision for the founder, not an edit to make on the way past.\n\n"
+            "(The founder can always make this edit themselves — this rule is about "
+            "agents.)" % (rel, owner, agent_type, owner)
+        )
+
+
+def agent_type_for(data):
+    """Resolve the subagent type from Claude input or Codex turn state."""
+    direct = data.get("agent_type")
+    if isinstance(direct, str) and direct:
+        return direct
+    turn_id = data.get("turn_id")
+    if not isinstance(turn_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]+", turn_id):
+        return None
+    data_root = os.environ.get("PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
+    if not data_root:
+        return None
+    path = os.path.join(data_root, "agent-types", turn_id + ".json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except (OSError, ValueError, TypeError):
+        return None
+    resolved = payload.get("agent_type") if isinstance(payload, dict) else None
+    return resolved if isinstance(resolved, str) and resolved else None
 
 
 def main():
@@ -394,10 +459,8 @@ def main():
     if not isinstance(data, dict):
         allow("hook input is not an object")
 
-    # `agent_type` is present only when the call comes from a subagent. Its
-    # absence is the founder at the keyboard, and the founder is the CEO.
-    agent_type = data.get("agent_type")
-    if not agent_type or not isinstance(agent_type, str):
+    agent_type = agent_type_for(data)
+    if not agent_type:
         allow("main thread — the founder is the CEO")
 
     tool_name = data.get("tool_name") or ""
@@ -411,7 +474,7 @@ def main():
     # normalisation lives here so the next person to add a pattern inherits it
     # rather than rediscovering the hole.
     cmd = tool_input.get("command")
-    if isinstance(cmd, str):
+    if tool_name == "Bash" and isinstance(cmd, str):
         tool_input = dict(tool_input, command=cmd.replace("\n", " ").replace("\r", " "))
 
     check_outbound(agent_type, tool_name)

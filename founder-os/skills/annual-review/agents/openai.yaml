@@ -1,0 +1,4 @@
+interface:
+  display_name: "Annual Review"
+  short_description: "Run the Annual Review Founder OS workflow."
+  default_prompt: "Use $annual-review to handle this Founder OS task."

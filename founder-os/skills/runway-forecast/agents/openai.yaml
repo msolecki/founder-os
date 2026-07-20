@@ -1,0 +1,4 @@
+interface:
+  display_name: "Runway Forecast"
+  short_description: "Run the Runway Forecast Founder OS workflow."
+  default_prompt: "Use $runway-forecast to handle this Founder OS task."

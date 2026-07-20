@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ingestion Gate"
+  short_description: "Run the Ingestion Gate Founder OS workflow."
+  default_prompt: "Use $ingestion-gate to handle this Founder OS task."

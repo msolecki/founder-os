@@ -1,0 +1,4 @@
+interface:
+  display_name: "Client Health"
+  short_description: "Run the Client Health Founder OS workflow."
+  default_prompt: "Use $client-health to handle this Founder OS task."

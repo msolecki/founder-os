@@ -1,0 +1,4 @@
+interface:
+  display_name: "Triage"
+  short_description: "Run the Triage Founder OS workflow."
+  default_prompt: "Use $triage to handle this Founder OS task."

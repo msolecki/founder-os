@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rate Raise"
+  short_description: "Run the Rate Raise Founder OS workflow."
+  default_prompt: "Use $rate-raise to handle this Founder OS task."

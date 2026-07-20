@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portfolio Review"
+  short_description: "Run the Portfolio Review Founder OS workflow."
+  default_prompt: "Use $portfolio-review to handle this Founder OS task."

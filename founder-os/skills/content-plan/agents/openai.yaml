@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Plan"
+  short_description: "Run the Content Plan Founder OS workflow."
+  default_prompt: "Use $content-plan to handle this Founder OS task."

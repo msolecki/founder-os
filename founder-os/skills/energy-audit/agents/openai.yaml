@@ -1,0 +1,4 @@
+interface:
+  display_name: "Energy Audit"
+  short_description: "Run the Energy Audit Founder OS workflow."
+  default_prompt: "Use $energy-audit to handle this Founder OS task."

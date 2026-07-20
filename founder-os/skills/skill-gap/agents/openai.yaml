@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Gap"
+  short_description: "Run the Skill Gap Founder OS workflow."
+  default_prompt: "Use $skill-gap to handle this Founder OS task."

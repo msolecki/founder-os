@@ -1,0 +1,4 @@
+interface:
+  display_name: "State Integrity"
+  short_description: "Run the State Integrity Founder OS workflow."
+  default_prompt: "Use $state-integrity to handle this Founder OS task."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monthly Review"
+  short_description: "Run the Monthly Review Founder OS workflow."
+  default_prompt: "Use $monthly-review to handle this Founder OS task."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Founder Os Init"
+  short_description: "Run the Founder Os Init Founder OS workflow."
+  default_prompt: "Use $founder-os-init to handle this Founder OS task."

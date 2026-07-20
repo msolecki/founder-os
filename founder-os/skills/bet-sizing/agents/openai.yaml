@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bet Sizing"
+  short_description: "Run the Bet Sizing Founder OS workflow."
+  default_prompt: "Use $bet-sizing to handle this Founder OS task."

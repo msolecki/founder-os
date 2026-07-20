@@ -1,0 +1,4 @@
+interface:
+  display_name: "Outreach Draft"
+  short_description: "Run the Outreach Draft Founder OS workflow."
+  default_prompt: "Use $outreach-draft to handle this Founder OS task."

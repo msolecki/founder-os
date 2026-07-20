@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capacity Check"
+  short_description: "Run the Capacity Check Founder OS workflow."
+  default_prompt: "Use $capacity-check to handle this Founder OS task."

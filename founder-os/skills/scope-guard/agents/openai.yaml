@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scope Guard"
+  short_description: "Run the Scope Guard Founder OS workflow."
+  default_prompt: "Use $scope-guard to handle this Founder OS task."

@@ -29,6 +29,16 @@ def run_hook(payload):
                           text=True, env=env, cwd=str(REPO_ROOT))
 
 
+def run_codex_hook(payload, data_root):
+    env = {**os.environ,
+           "FOUNDER_OS_HOME": str(PLUGIN_ROOT),
+           "PLUGIN_ROOT": str(PLUGIN_ROOT),
+           "PLUGIN_DATA": str(data_root)}
+    return subprocess.run([sys.executable, str(GUARD_PATH)],
+                          input=json.dumps(payload), capture_output=True,
+                          text=True, env=env, cwd=str(REPO_ROOT))
+
+
 def load_guard():
     spec = importlib.util.spec_from_file_location("ownership_guard", GUARD_PATH)
     mod = importlib.util.module_from_spec(spec)
@@ -78,7 +88,7 @@ class TestHookIntegration(unittest.TestCase):
                       "cwd": str(REPO_ROOT),
                       "tool_input": {
                           "notebook_path": str(PLUGIN_ROOT / "goals.md")}})
-        self.assertIn("deny", p.stdout)
+        self.assertIn("deny", p.stdout, p.stderr)
         self.assertIn("strategist", p.stdout)
 
     def test_write_case_bypass_is_denied(self):
@@ -95,6 +105,48 @@ class TestHookIntegration(unittest.TestCase):
                       "cwd": str(REPO_ROOT),
                       "tool_input": {
                           "notebook_path": str(PLUGIN_ROOT / "goals.md")}})
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertEqual(p.returncode, 0)
+
+    def test_codex_apply_patch_uses_turn_mapping(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            mapping = Path(td) / "agent-types"
+            mapping.mkdir()
+            (mapping / "turn-1.json").write_text(
+                json.dumps({"agent_type": "pipeline-coach"}), encoding="utf-8")
+            payload = {
+                "turn_id": "turn-1",
+                "tool_name": "apply_patch",
+                "cwd": str(PLUGIN_ROOT),
+                "tool_input": {"command": (
+                    "*** Begin Patch\n"
+                    "*** Update File: goals.md\n"
+                    "@@\n-old\n+new\n"
+                    "*** End Patch\n")},
+            }
+            p = run_codex_hook(payload, td)
+        self.assertIn("deny", p.stdout)
+        self.assertIn("strategist", p.stdout)
+
+    def test_codex_apply_patch_owner_is_allowed(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            mapping = Path(td) / "agent-types"
+            mapping.mkdir()
+            (mapping / "turn-2.json").write_text(
+                json.dumps({"agent_type": "strategist"}), encoding="utf-8")
+            payload = {
+                "turn_id": "turn-2",
+                "tool_name": "apply_patch",
+                "cwd": str(PLUGIN_ROOT),
+                "tool_input": {"command": (
+                    "*** Begin Patch\n"
+                    "*** Update File: goals.md\n"
+                    "@@\n-old\n+new\n"
+                    "*** End Patch\n")},
+            }
+            p = run_codex_hook(payload, td)
         self.assertEqual(p.stdout.strip(), "")
         self.assertEqual(p.returncode, 0)
 
@@ -322,7 +374,7 @@ class TestRegistryRoots(unittest.TestCase):
             r = subprocess.run([sys.executable, str(GUARD_PATH)],
                                input=json.dumps(payload), capture_output=True,
                                text=True, env=env, cwd=str(tmp))
-            self.assertIn("deny", r.stdout)
+            self.assertIn("deny", r.stdout, r.stderr)
             self.assertIn("cfo", r.stdout)
 
 
