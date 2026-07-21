@@ -197,7 +197,7 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Task 5 — Close the remaining landing controller test debt (M)
 
-- [ ] **What:** close `TEST-010` if it remains false on current HEAD by testing
+- [x] **What:** close `TEST-010` if it remains false on current HEAD by testing
   exported controller behavior instead of slicing and evaluating inline HTML.
 - **Where:** create `docs/workflow-library.js` and `docs/demo-tabs.js`; modify
   `docs/index.html`, `tests/docs_workflows.behavior.test.js`,
@@ -442,6 +442,15 @@ Decision / next action: implement Task 5's exported landing controllers from thi
 ```
 
 ```text
+Task 5 — 2026-07-22
+Commit: ad2c9f8
+Focused test: node --test tests/*.behavior.test.js — 2/2 green; local-variable rename resilience mutation also stayed 2/2
+Full gate: 163 Python tests, installed-copy smoke, validator, generated-command check, 2 Node behavior tests and both official plugin validations green
+Review: fresh artifact reviewer approved; no Critical, Important or Minor findings open
+Decision / next action: implement Task 6's activation-led landing and onboarding documentation; hold completion for the required five-person test
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -452,7 +461,7 @@ Decision / next action: <one line>
 
 ## Next action
 
-Tasks 1–4 are committed and fresh-review approved, with the complete gate green
-through `f7b0ec1`. Begin Task 5's controller extraction from this deployable
-checkpoint; keep the staged user deletion of `TODO-done.md` outside every task
-commit.
+Tasks 1–5 are committed and fresh-review approved, with the complete gate green
+through `ad2c9f8`. Begin Task 6's activation-led landing and onboarding docs from
+this deployable checkpoint; keep the staged user deletion of `TODO-done.md`
+outside every task commit.
