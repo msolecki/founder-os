@@ -36,8 +36,9 @@ workspace before preflight succeeds.
 
 Stage 0 is read-only. Finish every check before the first workspace write:
 
-1. Confirm the plugin manifest, `references/ownership.yaml`, house rules and
-   every downstream skill named below exist in the installed package.
+1. Confirm the plugin manifest, `CLAUDE.md`, `references/house-rules.md`,
+   `references/ownership.yaml`, `references/multi-business.md` and every
+   downstream skill named below exist in the installed package.
 2. Resolve `FOUNDER_OS_HOME`, then resolve the business slug from the registry
    when one exists. Treat the resulting path, `FOUNDER_OS_HOME` and business
    slug as one frozen **resolved workspace** tuple for the entire run.
@@ -45,9 +46,19 @@ Stage 0 is read-only. Finish every check before the first workspace write:
    follows `references/multi-business.md`; an ambiguous or invalid slug stops.
 4. Check from filesystem metadata that the target or its nearest existing
    parent is writable. Do not create a probe file.
-5. Confirm the canonical context is present and names the Founder OS house
+5. Confirm the canonical context is present and carries `CLAUDE.md`, the house
    rules, ownership map and resolved workspace.
-6. Read the target's `charter.md`, owned outputs and `reviews/daily/`, then
+6. Apply the **daily-review validity invariant**: in this resolved workspace,
+   a candidate `reviews/daily/YYYY-MM-DD.md` is valid only when it contains the
+   headings declared for `reviews/daily/` by `references/ownership.yaml`, with
+   a non-empty `## The one thing` and `## The trade`. Stage 6 uses this exact
+   invariant again; there is no weaker activation check.
+7. If `decisions/YYYY-MM-DD-founder-os-installed.md` already carries a target
+   checkpoint, compare its `FOUNDER_OS_HOME`, business slug and resolved path
+   with the newly resolved tuple. Any checkpoint mismatch must stop before a
+   read or write outside the selected workspace and ask the founder to select
+   the recorded business explicitly.
+8. Read the target's `charter.md`, owned outputs and `reviews/daily/`, then
    classify exactly one activation state:
 
 | State | Evidence | Action |
@@ -81,6 +92,8 @@ Write only missing answers to `charter.md` under `## Timezone`, `## Business`
 and `## North star`. On resume, treat a populated section as completed and do
 not ask for or rewrite it. The Chief of Staff owns this file.
 
+- **Target checkpoint:** persist `decisions/YYYY-MM-DD-founder-os-installed.md` with the exact `FOUNDER_OS_HOME`, business slug and resolved workspace path before Stage 2; this owner-written decision record binds later resume runs without creating hidden state.
+
 ## Stage 2/4 — Customer
 
 Display `Onboarding 2/4 — Customer`.
@@ -91,6 +104,8 @@ session for `/icp-definition`; do not write it to `offer.md` yourself.
 
 If any part is unknown, carry the known examples and label the missing evidence
 as unknown. Do not turn a preference into customer evidence.
+
+- **Stage checkpoint:** immediately invoke `/icp-definition` through the owner allowlist and require its successful persisted `offer.md` result in the resolved workspace before Stage 3; until that write validates, Stage 2 is incomplete rather than an accepted answer held only in memory.
 
 ## Stage 3/4 — Quarter
 
@@ -103,6 +118,8 @@ hours and cash available to pursue it. Carry the answer for
 A missing capacity or cash cap stays unknown. The first bet may be thin, but it
 may not be unsized while pretending to be complete.
 
+- **Stage checkpoint:** immediately invoke `/quarterly-planning` through the owner allowlist and require its successful persisted `goals.md` result in the resolved workspace before Stage 4; on resume, a valid owner output completes this stage without re-asking it.
+
 ## Stage 4/4 — Money
 
 Display `Onboarding 4/4 — Money`.
@@ -114,10 +131,13 @@ to `/revenue-review` and `/runway-forecast`; do not write `metrics.md` yourself.
 Unknown values stay unknown. Do not estimate cash, infer receivables, discount
 pipeline into cash, or omit founder pay to make runway look longer.
 
+- **Stage checkpoint:** immediately invoke `/revenue-review` and then `/runway-forecast` through the owner allowlist and require their successful persisted `metrics.md` results in the resolved workspace before Stage 5; on resume, continue with the first missing CFO output rather than repeating a valid one.
+
 The interview has a hard stop at fifteen minutes. Anything still unanswered
-moves to `queue.md`: a cash unknown goes in `## Doing`; every other missing
-fact goes in `## Queued`. Each item gets an id, a date, `bet: none`, the owner
-who can settle it and the missing evidence. There are no `TODO` lines.
+moves to `queue.md`: unknown cash on hand goes in `## Doing`; every other
+missing fact goes in `## Queued`. Each item gets an id, a date, `bet: none`,
+the owner who can settle it and the missing evidence. There are no `TODO`
+lines. The quarter's cash capacity is a bet constraint, not this blocker.
 
 ## Stage 5 — Owner-safe delegation
 
@@ -137,22 +157,27 @@ Wait for each owner result before continuing.
 | `/revenue-review` | `cfo` | `metrics.md` | Only supplied or computable close values; every unavailable input stays explicit. |
 | `/runway-forecast` | `cfo` | `metrics.md` | Real cash and burn arithmetic, or an explicit gap and owned queue item. |
 
-Run them in table order. The two CFO skills share one owner and one file, so
-`/runway-forecast` reads the first-run close that `/revenue-review` just wrote.
-After each result, re-read the owned output from the same resolved workspace.
-Do not accept a verbal “done” as persisted state.
+The Stage 2–4 checkpoints invoke these rows in table order. Stage 5 reconciles
+their persisted results; it does not wait until now to make the first call. The
+two CFO skills share one owner and one file, so `/runway-forecast` reads the
+first-run close that `/revenue-review` just wrote. After each result, re-read
+the owned output from the same resolved workspace. Do not accept a verbal
+“done” as persisted state and do not re-run a valid completed owner output.
 
-The Chief of Staff may write missing-data queue items and the install decision
-record because it owns those paths. The decision record uses the four headings
-declared for `decisions/`, records the timezone, resolved workspace and unknown
-inputs, and labels itself `none — install record` under `## Rejected` and
-`## Supersedes`.
+The Chief of Staff may write missing-data queue items and update the target
+checkpoint because it owns those paths. The decision record uses the four
+headings declared for `decisions/`, records the timezone, resolved workspace
+and unknown inputs, and labels itself `none — install record` under
+`## Rejected` and `## Supersedes`.
 
 ## Stage 6 — First brief
 
 Use the same resolved workspace tuple — the same `FOUNDER_OS_HOME`, business
 slug and resolved workspace path fixed in Stage 0 — for validation, invocation
 and persistence.
+
+Use the **daily-review validity invariant** from Stage 0 and its headings from
+`references/ownership.yaml`; do not substitute a file-exists check.
 
 - **Minimum-state validation:** in the same resolved workspace, validate non-empty charter identity plus owner-persisted `offer.md`, `goals.md`, `metrics.md` and `queue.md`; truthful hypotheses and unknowns are valid, fabricated completeness is not.
 - **Daily-brief invocation:** invoke `/daily-brief` as the Chief of Staff against that same resolved workspace.
@@ -189,17 +214,21 @@ there is no hidden progress file or second state tracker.
 
 On a failed preflight, delegation, validation, invocation or write, halt before
 Stage 7. Print the completed stages, the missing stage, the concrete failed
-condition, and `/founder-os-init` as the resume command. Omit the success
-receipt. A caught failure in one owner stage must not erase another owner's
-successful output.
+condition, and `/founder-os-init` as the resume command. On the next line print
+the exact `FOUNDER_OS_HOME`, business slug and resolved workspace path from the
+target checkpoint so the founder can select the same business. Omit the
+success receipt. A caught failure in one owner stage must not erase another
+owner's successful output.
 
 ### Resume
 
-On the next run, derive completed stages from valid owned outputs, preserve all
-populated sections byte-for-byte, and continue from the first missing stage.
-Do not re-scaffold destructively, re-ask completed stages or copy a carried
-answer into a file owned by someone else. An activated classification still
-routes to the doctor instead of resuming.
+- **Preservation:** keep and preserve every populated section byte-for-byte and create only missing stubs or declared headings before continuing from the first missing stage.
+
+On the next run, derive completed stages from valid owned outputs and compare
+the resolved tuple to the target checkpoint before continuing. Do not
+re-scaffold destructively, re-ask completed stages or copy a carried answer
+into a file owned by someone else. An activated classification still routes to
+the doctor instead of resuming.
 
 ## Output
 

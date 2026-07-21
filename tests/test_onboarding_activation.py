@@ -120,6 +120,22 @@ def semantic_pattern(text: str) -> str:
     return re.escape(text).replace(r"\ ", r"\s+")
 
 
+def assert_preservation_contract(testcase: unittest.TestCase, body: str) -> None:
+    _, preflight, _ = section_matching(body, r"Stage 0.*Preflight")
+    incomplete = " | ".join(table_row_for(preflight, "incomplete"))
+    for token in ("preserve", "byte-for-byte", "first missing stage"):
+        testcase.assertRegex(incomplete, rf"(?i){semantic_pattern(token)}")
+    testcase.assertNotRegex(incomplete, r"(?i)overwrite|replace|normalize")
+
+    _, resume_and_failure, _ = section_matching(body, r"Resume and failure")
+    _, resume, _ = section_matching(resume_and_failure, r"Resume", level=3)
+    preservation = structured_actions(resume).get("preservation")
+    testcase.assertIsNotNone(preservation, "missing structured Preservation action")
+    recipe = preservation[0]
+    for token in ("keep", "byte-for-byte", "create only missing"):
+        testcase.assertRegex(recipe, rf"(?i){semantic_pattern(token)}")
+
+
 def owner_for(path: str, ownership: dict) -> str:
     matches = []
     for agent, owned_paths in ownership["owns"].items():
@@ -289,6 +305,59 @@ class OnboardingActivationContract(unittest.TestCase):
         self.assertRegex(self.init_body, r"(?i)hard stop.*fifteen minutes")
         self.assertNotRegex(self.init_body, r"(?i)twenty minutes")
 
+    def test_interview_stages_persist_owner_output_before_advancing(self):
+        cases = {
+            r"Stage 2/4.*Customer": (
+                "/icp-definition",
+                "offer.md",
+                "before Stage 3",
+            ),
+            r"Stage 3/4.*Quarter": (
+                "/quarterly-planning",
+                "goals.md",
+                "before Stage 4",
+            ),
+            r"Stage 4/4.*Money": (
+                "/revenue-review",
+                "/runway-forecast",
+                "metrics.md",
+                "before Stage 5",
+            ),
+        }
+        for heading, required in cases.items():
+            with self.subTest(stage=heading):
+                _, section, _ = section_matching(self.init_body, heading)
+                checkpoint = structured_actions(section).get("stage checkpoint")
+                self.assertIsNotNone(checkpoint, heading)
+                for token in required:
+                    self.assertRegex(
+                        checkpoint[0], rf"(?i){semantic_pattern(token)}"
+                    )
+                self.assertRegex(checkpoint[0], r"(?i)successful.*persist")
+
+    def test_interview_does_not_pull_progressive_setup_forward(self):
+        interview = []
+        for heading in (
+            r"Stage 1/4.*Business",
+            r"Stage 2/4.*Customer",
+            r"Stage 3/4.*Quarter",
+            r"Stage 4/4.*Money",
+        ):
+            _, section, _ = section_matching(self.init_body, heading)
+            ask_paragraphs = [
+                paragraph
+                for paragraph in operative_markdown(section).split("\n\n")
+                if paragraph.startswith("Ask ")
+            ]
+            self.assertEqual(len(ask_paragraphs), 1, (heading, ask_paragraphs))
+            interview.extend(ask_paragraphs)
+        questions = "\n".join(interview)
+        self.assertNotRegex(
+            questions,
+            r"(?i)style guide|banned phrase|entity structure|booked revenue|"
+            r"receivable|pipeline|cadence",
+        )
+
     def test_codex_interface_promises_resumable_persisted_activation(self):
         interface = yaml.safe_load(
             (
@@ -377,9 +446,57 @@ class OnboardingActivationContract(unittest.TestCase):
         _, delegation, _ = section_matching(
             self.init_body, r"Stage 5.*Owner-safe delegation"
         )
-        self.assertRegex(delegation, r"(?i)Chief of Staff.*writes only")
-        for path in ("charter.md", "queue.md", "reviews/daily/"):
-            self.assertRegex(delegation, rf"(?i){semantic_pattern(path)}")
+        declaration = re.search(
+            r"(?is)Chief of Staff writes only (?P<paths>.*?);",
+            operative_markdown(delegation),
+        )
+        self.assertIsNotNone(declaration)
+        declared_paths = re.findall(r"`([^`]+)`", declaration.group("paths"))
+        self.assertCountEqual(
+            declared_paths,
+            self.ownership["owns"]["chief-of-staff"],
+        )
+        self.assertRegex(delegation, r"(?i)empty lifecycle stub")
+
+    def test_target_checkpoint_binds_resume_to_the_original_workspace(self):
+        _, preflight, _ = section_matching(
+            self.init_body, r"Stage 0.*Preflight"
+        )
+        self.assertRegex(preflight, r"(?is)checkpoint.*mismatch.*stop")
+
+        _, business, _ = section_matching(
+            self.init_body, r"Stage 1/4.*Business"
+        )
+        checkpoint = structured_actions(business).get("target checkpoint")
+        self.assertIsNotNone(checkpoint)
+        for token in (
+            "decisions/",
+            "FOUNDER_OS_HOME",
+            "business slug",
+            "resolved workspace",
+        ):
+            self.assertRegex(
+                checkpoint[0], rf"(?i){semantic_pattern(token)}"
+            )
+
+        _, failure, _ = section_matching(self.init_body, r"Resume and failure")
+        _, halt, _ = section_matching(failure, r"Failure", level=3)
+        for token in ("FOUNDER_OS_HOME", "business slug", "resolved workspace"):
+            self.assertRegex(halt, rf"(?i){semantic_pattern(token)}")
+
+    def test_stage_zero_and_stage_six_share_daily_review_validity_invariant(self):
+        _, preflight, _ = section_matching(
+            self.init_body, r"Stage 0.*Preflight"
+        )
+        _, first_brief, _ = section_matching(
+            self.init_body, r"Stage 6.*First brief"
+        )
+        for section in (preflight, first_brief):
+            self.assertRegex(
+                section,
+                rf"(?i){semantic_pattern('daily-review validity invariant')}",
+            )
+            self.assertRegex(section, r"(?i)references/ownership\.yaml")
 
     def test_minimum_state_daily_brief_persistence_and_receipt_are_ordered(self):
         _, first_brief, first_brief_offset = section_matching(
@@ -431,6 +548,16 @@ class OnboardingActivationContract(unittest.TestCase):
             "byte-for-byte",
         ):
             self.assertRegex(resume, rf"(?i){semantic_pattern(required)}")
+        assert_preservation_contract(self, self.init_body)
+
+    def test_preservation_contract_rejects_a_destructive_incomplete_row(self):
+        assert_preservation_contract(self, self.init_body)
+        mutated = self.init_body.replace(
+            "Preserve every populated section byte-for-byte and resume from the first missing stage.",
+            "Overwrite populated sections and resume from the first missing stage.",
+        )
+        with self.assertRaises(AssertionError):
+            assert_preservation_contract(self, mutated)
 
     def test_receipt_order_check_detects_completion_moved_before_write(self):
         compliant = """
