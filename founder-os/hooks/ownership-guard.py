@@ -151,7 +151,7 @@ def _parse_owns_without_yaml(text):
             if not agent:
                 return None
         elif body.startswith("- "):
-            if agent is None or indent <= indents.get("agent", 0):
+            if agent is None or indent < indents.get("agent", 0):
                 return None
             owns.setdefault(agent, []).append(body[2:].strip().strip("'\""))
         else:
@@ -304,7 +304,7 @@ def workspace_roots(hook_cwd):
     return out
 
 
-def relative_to_workspace(file_path, hook_cwd):
+def relative_to_workspace(file_path, hook_cwd, roots=None):
     """Workspace-relative POSIX path for `file_path`, or None if it's outside.
 
     Both sides get realpath'd (which collapses `..` and follows symlinks) and
@@ -323,7 +323,7 @@ def relative_to_workspace(file_path, hook_cwd):
               os.path.normpath(os.path.abspath(file_path))):
         if v not in targets:
             targets.append(v)
-    for root in workspace_roots(hook_cwd):
+    for root in workspace_roots(hook_cwd) if roots is None else roots:
         for target in targets:
             if target == root:
                 continue
@@ -414,8 +414,9 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
     by_path = load_ownership()
     if by_path is None:
         allow("no ownership map — the guard is off, not strict")
+    roots = workspace_roots(hook_cwd)
     for file_path in paths:
-        rel = relative_to_workspace(file_path, hook_cwd)
+        rel = relative_to_workspace(file_path, hook_cwd, roots)
         if rel is None:
             log("allow: %s is outside the workspace" % file_path)
             continue

@@ -344,6 +344,25 @@ class TestFallbackParser(unittest.TestCase):
             "owns:\n  - a list where an agent should be\n"))
         self.assertIsNone(self.guard._parse_owns_without_yaml("no owns here\n"))
 
+    def test_same_indent_sequence_matches_pyyaml(self):
+        text = "owns:\n  strategist:\n  - goals.md\n  - metrics.md\n"
+        self.assertEqual(
+            self.guard._parse_owns_without_yaml(text),
+            {"strategist": ["goals.md", "metrics.md"]})
+
+
+class TestOwnershipHotPath(unittest.TestCase):
+    def test_workspace_roots_are_computed_once_for_multiple_paths(self):
+        guard = load_guard()
+        with mock.patch.object(guard, "load_ownership", return_value={}), \
+                mock.patch.object(guard, "workspace_roots", return_value=[] ) as roots:
+            guard.check_ownership("cfo", "apply_patch", {
+                "command": "*** Begin Patch\n"
+                            "*** Update File: a.md\n"
+                            "*** Update File: b.md\n"
+                            "*** End Patch\n"}, "/tmp/workspace")
+        roots.assert_called_once_with("/tmp/workspace")
+
 
 class TestRegistryRoots(unittest.TestCase):
     """Multi-business: the registry's workspace roots are guarded too.

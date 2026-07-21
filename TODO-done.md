@@ -62,3 +62,11 @@
 
 ### [BUG-001] `check_hooks` never asserts the matcher covers `apply_patch`
 - **Completed**: Validator coverage now includes `apply_patch`; fixture and regression test pin the matcher contract. Full suite passed with 95 tests.
+
+## 2026-07-21 — ownership hot-path batch
+
+### [PERF-002] `workspace_roots()` + registry read + all `realpath`s recomputed per path
+- **Completed**: `check_ownership` computes roots once per invocation and reuses them for each touched path; a multi-path call-count test pins the optimization. Full suite passed with 97 tests.
+
+### [BUG-002] Fallback `owns:` parser rejects valid same-indent YAML list style
+- **Completed**: Fallback accepts same-indent sequences and has a focused parser contract test. Full suite passed with 97 tests.
