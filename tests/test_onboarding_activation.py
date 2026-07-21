@@ -172,6 +172,43 @@ def assert_cfo_checkpoint_contract(testcase: unittest.TestCase, body: str) -> No
         )
 
 
+def heading_matcher(action_text: str) -> re.Pattern:
+    match = re.search(r"heading matcher:[ \t]*`([^`]+)`", action_text)
+    if match is None:
+        raise AssertionError("missing canonical heading matcher")
+    return re.compile(match.group(1))
+
+
+def quarter_output_is_activation_ready(text: str) -> bool:
+    """Evaluate the owner artifact against the composed Stage 3 predicate."""
+    required_lines = (
+        r"(?m)^Activation status:[ \t]*ready[ \t]*$",
+        r"(?m)^Proposed:[ \t]*\S.+$",
+        r"(?m)^Outcome:[ \t]*\S.+$",
+        r"(?m)^Cost:[ \t]*\S.+$",
+        r"(?m)^Kill if:[ \t]*\S.+$",
+    )
+    return (
+        len(re.findall(r"(?m)^### Bet\b", text)) == 1
+        and all(re.search(pattern, text) for pattern in required_lines)
+        and not re.search(r"(?m)^Activation status:[ \t]*blocked\b", text)
+    )
+
+
+def assert_revenue_close_type_contract(
+    testcase: unittest.TestCase, body: str
+) -> None:
+    _, first_run, _ = section_matching(body, r"First-run branch")
+    _, when_to_use, _ = section_matching(body, r"When to use")
+    _, recurring_output, _ = section_matching(body, r"Output")
+    testcase.assertRegex(first_run, r"(?m)^    Close type: activation-baseline$")
+    testcase.assertRegex(
+        when_to_use,
+        r"(?is)activation-baseline.*not.*prior monthly close",
+    )
+    testcase.assertRegex(recurring_output, r"(?m)^    Close type: monthly-close$")
+
+
 def assert_resume_resolution_contract(testcase: unittest.TestCase, body: str) -> None:
     """Pin changed-slug, changed-home and confirmed-relocation behavior."""
     _, preflight, _ = section_matching(body, r"Stage 0.*Preflight")
@@ -742,6 +779,117 @@ class OnboardingActivationContract(unittest.TestCase):
                 mutated = self.init_body.replace(marker, "## Financial state")
                 with self.assertRaises(AssertionError):
                     assert_cfo_checkpoint_contract(self, mutated)
+
+    def test_cfo_owner_headings_satisfy_init_checkpoint_matchers(self):
+        _, money, _ = section_matching(self.init_body, r"Stage 4/4.*Money")
+        actions = structured_actions(money)
+        cases = {
+            "revenue checkpoint": (
+                "## Close — 2026-07",
+                "revenue-review",
+                "## Close — YYYY-MM",
+            ),
+            "runway checkpoint": (
+                "## Runway — as of 2026-07-21",
+                "runway-forecast",
+                "## Runway — as of YYYY-MM-DD",
+            ),
+        }
+        for action_label, (emitted, skill_name, template_heading) in cases.items():
+            with self.subTest(checkpoint=action_label):
+                matcher = heading_matcher(actions[action_label][0])
+                self.assertIsNotNone(matcher.fullmatch(emitted))
+                _, first_run, _ = section_matching(
+                    self.owner_skill_bodies[skill_name], r"First-run branch"
+                )
+                self.assertIn(template_heading, first_run)
+
+        broken = actions["runway checkpoint"][0].replace(
+            r"^## Runway — as of \d{4}-\d{2}-\d{2}$",
+            r"^## Runway$",
+        )
+        self.assertIsNone(
+            heading_matcher(broken).fullmatch("## Runway — as of 2026-07-21")
+        )
+
+    def test_quarterly_owner_output_composes_with_activation_readiness(self):
+        _, quarter, _ = section_matching(
+            self.init_body, r"Stage 3/4.*Quarter"
+        )
+        checkpoint = structured_actions(quarter).get("stage checkpoint")
+        self.assertIsNotNone(checkpoint)
+        checkpoint_text = checkpoint[0].replace("`", "")
+        for token in (
+            "Activation status: ready",
+            "Activation status: blocked",
+            "exactly one ### Bet",
+            "Proposed:",
+            "Outcome:",
+            "Cost:",
+            "Kill if:",
+            "halt",
+        ):
+            self.assertRegex(
+                checkpoint_text, rf"(?i){semantic_pattern(token)}"
+            )
+
+        ready = """\
+## Bets
+Activation status: ready
+Proposed: define retained client — bet: B1
+### Bet B1: retain three clients
+Outcome: retained clients reaches 3 by 2026-10-19
+Cost: 20 h/week + PLN 8000
+Kill if: retained clients is below 2 on 2026-10-19
+"""
+        blocked = """\
+## Bets
+Activation status: blocked
+Proposed: resolve cash cap — bet: none
+Status: blocked — cash cap: UNKNOWN
+"""
+        self.assertTrue(quarter_output_is_activation_ready(ready))
+        self.assertFalse(quarter_output_is_activation_ready(blocked))
+        self.assertFalse(
+            quarter_output_is_activation_ready(
+                ready.replace("Activation status: ready", "Activation status: blocked")
+            )
+        )
+
+        _, first_brief, _ = section_matching(
+            self.init_body, r"Stage 6.*First brief"
+        )
+        minimum_state = structured_actions(first_brief)[
+            "minimum-state validation"
+        ][0]
+        self.assertRegex(minimum_state, r"(?i)Activation status: ready")
+        _, receipt, _ = section_matching(
+            self.init_body, r"Stage 7.*Activation receipt"
+        )
+        self.assertRegex(receipt, r"(?i)unresolved activation-stage blocker")
+
+    def test_activation_baseline_cannot_become_a_recurring_monthly_close(self):
+        body = self.owner_skill_bodies["revenue-review"]
+        assert_revenue_close_type_contract(self, body)
+        mutated = body.replace(
+            "Close type: activation-baseline",
+            "Close type: monthly-close",
+        )
+        with self.assertRaises(AssertionError):
+            assert_revenue_close_type_contract(self, mutated)
+
+        _, money, _ = section_matching(self.init_body, r"Stage 4/4.*Money")
+        revenue_checkpoint = structured_actions(money)["revenue checkpoint"][0]
+        self.assertRegex(
+            revenue_checkpoint,
+            rf"(?i){semantic_pattern('Close type: activation-baseline')}",
+        )
+        runway = self.owner_skill_bodies["runway-forecast"]
+        _, runway_first_run, _ = section_matching(runway, r"First-run branch")
+        self.assertRegex(
+            runway_first_run,
+            rf"(?i){semantic_pattern('Close type: activation-baseline')}",
+        )
 
     def test_stage_zero_and_stage_six_share_daily_review_validity_invariant(self):
         _, preflight, _ = section_matching(

@@ -135,7 +135,7 @@ hours and cash available to pursue it. Carry the answer for
 A missing capacity or cash cap stays unknown. The first bet may be thin, but it
 may not be unsized while pretending to be complete.
 
-- **Stage checkpoint:** immediately invoke `/quarterly-planning` through the owner allowlist and require its successful persisted `goals.md` result in the resolved workspace before Stage 4; on resume, a valid owner output completes this stage without re-asking it.
+- **Stage checkpoint:** immediately invoke `/quarterly-planning` through the owner allowlist and require a successful persisted `goals.md` whose `## Bets` contains `Activation status: ready`, exactly one `### Bet`, and non-empty `Proposed:`, `Outcome:`, `Cost:` and `Kill if:` lines before Stage 4; `Activation status: blocked` is resumable persisted state but must halt at Stage 3 rather than advance or re-ask completed interview answers.
 
 ## Stage 4/4 — Money
 
@@ -149,8 +149,8 @@ Unknown values stay unknown. Do not estimate cash, infer receivables, discount
 pipeline into cash, or omit founder pay to make runway look longer.
 
 - **Stage checkpoint:** immediately invoke `/revenue-review` and then `/runway-forecast` through the owner allowlist, requiring each successful independently persisted `metrics.md` result in the resolved workspace before Stage 5.
-- **Revenue checkpoint:** invoke `/revenue-review` and require a successful persisted `## Close — YYYY-MM` block in `metrics.md` before `/runway-forecast`; on resume, do not repeat a valid close.
-- **Runway checkpoint:** invoke `/runway-forecast` after the revenue checkpoint and require a successful persisted `## Runway` block in `metrics.md` before Stage 5; without that distinct block, Stage 4 remains incomplete.
+- **Revenue checkpoint:** invoke `/revenue-review` and require a successful persisted `## Close — YYYY-MM` contract in `metrics.md` with heading matcher: `^## Close — \d{4}-\d{2}$` and `Close type: activation-baseline` before `/runway-forecast`; on resume, do not repeat a valid activation close.
+- **Runway checkpoint:** invoke `/runway-forecast` after the revenue checkpoint and require a successful persisted `## Runway` contract in `metrics.md` with heading matcher: `^## Runway — as of \d{4}-\d{2}-\d{2}$` before Stage 5; without that distinct dated block, Stage 4 remains incomplete.
 
 The interview has a hard stop at fifteen minutes. Anything still unanswered
 moves to `queue.md`: unknown cash on hand goes in `## Doing`; every other
@@ -179,11 +179,12 @@ Wait for each owner result before continuing.
 The Stage 2–4 checkpoints invoke these rows in table order. Stage 5 reconciles
 their persisted results; it does not wait until now to make the first call. The
 two CFO skills share one owner and one file, so `/runway-forecast` reads the
-first-run close that `/revenue-review` just wrote. Treat `## Close — YYYY-MM`
-and `## Runway` as independent completion markers. After each result, re-read
-and validate its own block from the same resolved workspace. Do not accept a
-verbal “done” as persisted state and do not re-run a valid completed owner
-output.
+first-run close that `/revenue-review` just wrote. Treat a dated `## Close —
+YYYY-MM` with `Close type: activation-baseline` and a dated `## Runway` matching
+the Stage 4 expressions as independent completion markers. After each result,
+re-read and validate its own block from the same resolved workspace. Do not
+accept a verbal “done” as persisted state and do not re-run a valid completed
+owner output.
 
 The Chief of Staff may write missing-data queue items and update the target
 checkpoint because it owns those paths. The decision record uses the four
@@ -200,7 +201,7 @@ and persistence.
 Use the **daily-review validity invariant** from Stage 0 and its headings from
 `references/ownership.yaml`; do not substitute a file-exists check.
 
-- **Minimum-state validation:** in the same resolved workspace, validate non-empty charter identity plus owner-persisted `offer.md`, `goals.md`, `queue.md`, a `metrics.md` `## Close — YYYY-MM` block and a separate `## Runway` block; truthful hypotheses and unknowns are valid, fabricated completeness is not.
+- **Minimum-state validation:** in the same resolved workspace, validate non-empty charter identity plus owner-persisted `offer.md`, `queue.md`, a `goals.md` `## Bets` with `Activation status: ready` and its complete committed `### Bet`, a `metrics.md` `## Close — YYYY-MM` block with `Close type: activation-baseline`, and a separate dated `## Runway` block matching Stage 4; truthful financial unknowns are valid, but a blocked quarter or fabricated completeness is not.
 - **Daily-brief invocation:** invoke `/daily-brief` as the Chief of Staff against that same resolved workspace.
 - **Persisted completion:** require a successful persisted write to `reviews/daily/YYYY-MM-DD.md` in that same resolved workspace and validate its declared daily-review headings before continuing.
 
@@ -210,7 +211,7 @@ historical items do not become rotting work merely because this is day one.
 
 ## Stage 7 — Activation receipt
 
-- **Activation receipt:** print `Activation complete` only after the successful persisted write from Stage 6 has been validated.
+- **Activation receipt:** print `Activation complete` only after the successful persisted write from Stage 6 has been validated and only when no unresolved activation-stage blocker remains.
 
 Re-resolve nothing here. This is the same resolved workspace: the same
 `FOUNDER_OS_HOME`, business slug and path tuple validated in Stage 6. Include:

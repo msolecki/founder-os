@@ -63,6 +63,7 @@ On the complete path, write one `### Bet` under `goals.md` `## Bets`:
 
     # Partial quarter — as of YYYY-MM-DD
     ## Bets
+    Activation status: ready
     Proposed: <first move> — bet: B1
     ### Bet B1: <name>
     Status: first-run 90-day bet opened mid-quarter
@@ -72,10 +73,11 @@ On the complete path, write one `### Bet` under `goals.md` `## Bets`:
     Cost: <supplied hours> h + <supplied cash cap>
     Kill if: <metric> is below <numeric threshold> on <date>
 
-If any required sizing value is unknown, write the same dated `## Bets`
-section with `Status: blocked — <field>: UNKNOWN` and `Proposed: resolve
-<field> — bet: none`; do not create a `### Bet` block. Hand that proposal to
-the Chief of Staff, who owns `queue.md`, without inventing an answer.
+If any required field is unknown or invalid, write the same dated `## Bets`
+section with `Activation status: blocked`, `Status: blocked — <field>:
+UNKNOWN` and `Proposed: resolve <field> — bet: none`; do not create a `### Bet`
+block. This is resumable evidence, not activation readiness. Hand that proposal
+to the Chief of Staff, who owns `queue.md`, without inventing an answer.
 
 For `reviews/quarterly/YYYY-Qn.md`, use the recurring section vocabulary while
 making the absent history explicit:

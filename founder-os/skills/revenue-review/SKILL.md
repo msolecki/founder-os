@@ -19,6 +19,12 @@ the calendar 1st, weekend or not, and a close does not mind running on a Saturda
 by cron on the 1st if the founder ran `/setup-cadences`; otherwise `/revenue-review`, by hand. Also before any decision that spends the
 month's revenue: a contractor, a tool, a holiday.
 
+A block labeled `Close type: activation-baseline` is not a prior monthly close
+and never settles a recurring review. On the first real reporting run after
+activation, use the recurring path below for the month that actually ended and
+replace the baseline with `Close type: monthly-close` using that month's source
+artifacts.
+
 ## First-run branch
 
 Use this branch only when `/founder-os-init` invokes the skill and there is no
@@ -38,6 +44,7 @@ arithmetic over supplied values.
 Replace `metrics.md` `## Close` with this first-run block:
 
     ## Close — YYYY-MM
+    Close type: activation-baseline
     Baseline: first run on YYYY-MM-DD; not a monthly close
     Source: founder onboarding, YYYY-MM-DD
     Collection window: <supplied dates, or last three months as stated>
@@ -143,6 +150,7 @@ Read first, in order — house rule 1:
 Replace the `## Close — YYYY-MM` block in `metrics.md`:
 
     ## Close — YYYY-MM
+    Close type: monthly-close
     Booked: <amount>
     Collected: <amount>  (<n>% of booked)
     Receivables — one line per invoice, never rolled up before it is stamped:

@@ -22,9 +22,10 @@ whether they can afford something.
 ## First-run branch
 
 Use this branch only when `/founder-os-init` invokes the skill and the
-`## Close` block is an activation baseline. The first-run question is narrower
-than the recurring forecast: what can be computed from supplied cash and real
-burn on `YYYY-MM-DD` without turning an absent pipeline into revenue?
+`## Close` block carries `Close type: activation-baseline`. The first-run
+question is narrower than the recurring forecast: what can be computed from
+supplied cash and real burn on `YYYY-MM-DD` without turning an absent pipeline
+into revenue?
 
 | Input state | Persisted result | Required action |
 |---|---|---|
