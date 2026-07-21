@@ -194,6 +194,26 @@ class TestHookIntegration(unittest.TestCase):
         self.assertEqual(p.returncode, 0)
 
 
+class TestPatchPaths(unittest.TestCase):
+    def setUp(self):
+        self.guard = load_guard()
+
+    def test_all_patch_markers_are_extracted_in_first_seen_order(self):
+        command = ("*** Begin Patch\n"
+                   "*** Add File: add.md\n"
+                   "*** Update File: update.md\n"
+                   "*** Delete File: delete.md\n"
+                   "*** Move to: moved.md\n"
+                   "*** Update File: update.md\n"
+                   "*** End Patch\n")
+        self.assertEqual(
+            self.guard._patch_paths(command),
+            ["add.md", "update.md", "delete.md", "moved.md"])
+
+    def test_non_string_patch_is_empty(self):
+        self.assertEqual(self.guard._patch_paths(None), [])
+
+
 class TestOutboundGuard(unittest.TestCase):
     """House rule 0 at the tool layer — the half of the hook nothing covered.
 

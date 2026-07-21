@@ -133,3 +133,8 @@
 
 ### [SEC-001] Landing page ships no Content-Security-Policy (or referrer) meta
 - **Completed**: Added CSP and `strict-origin-when-cross-origin` referrer policy compatible with the page's inline assets. Full suite passed with 108 tests.
+
+## 2026-07-21 — patch parser test batch
+
+### [TEST-007] `_patch_paths` is tested for Add/Delete/Update/Move markers and multi-file dedup order
+- **Completed**: Added marker-order, deduplication, and non-string fallback tests; full suite passed with 110 tests.
