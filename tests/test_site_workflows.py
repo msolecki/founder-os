@@ -42,6 +42,12 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_launch_page_declares_csp_and_referrer_policy(self):
+        self.assertIn('http-equiv="Content-Security-Policy"', HTML)
+        self.assertIn("default-src 'self'", HTML)
+        self.assertIn("script-src 'self' 'unsafe-inline'", HTML)
+        self.assertIn('name="referrer" content="strict-origin-when-cross-origin"', HTML)
+
     def test_page_texture_avoids_svg_fractal_noise_filter(self):
         self.assertNotIn("feTurbulence", HTML)
         self.assertIn("background-image: radial-gradient", HTML)

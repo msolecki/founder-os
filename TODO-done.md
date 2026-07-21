@@ -128,3 +128,8 @@
 
 ### [PERF-006] Full-viewport fixed `::before` runs an SVG `feTurbulence` fractal-noise filter
 - **Completed**: Replaced SVG fractal noise with a lightweight CSS radial-gradient pattern; contract and full 107-test suite pass.
+
+## 2026-07-21 — security metadata batch
+
+### [SEC-001] Landing page ships no Content-Security-Policy (or referrer) meta
+- **Completed**: Added CSP and `strict-origin-when-cross-origin` referrer policy compatible with the page's inline assets. Full suite passed with 108 tests.
