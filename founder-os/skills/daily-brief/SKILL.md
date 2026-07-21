@@ -17,6 +17,39 @@ This is the fifteen minutes that decides whether today moved the quarter.
 Weekday mornings, before opening email. Triggered automatically by
 cron, if the founder ran `/setup-cadences`. Otherwise `/daily-brief`, by hand.
 
+## First-run branch
+
+Use this branch when `/founder-os-init` invokes the skill and there is no prior
+daily review. Read the persisted owner outputs; do not reconstruct a history
+that predates `YYYY-MM-DD`. `UNKNOWN` is eligible work when it blocks the
+financial baseline, not a reason to invent a normal-looking day.
+
+| Persisted state | Selection rule | Required action |
+|---|---|---|
+| `first move available` | Cash and real burn are known and `goals.md` carries a first move. | Make that first move `## The one thing`, preserving its bet link. |
+| `cash on hand unknown` | Runway is blocked by cash on hand. | Make `resolve cash on hand` `## The one thing` and keep or add that item in `## Doing`; it outranks a planned bet move. |
+| `burn unknown` | Cash is known but real monthly burn is missing. | Make `resolve real monthly burn` `## The one thing` and keep or add that item in `## Doing`; it outranks a planned bet move. |
+| `no prior review` | No daily commitment has started a clock. | Write `Rotting: none — first run; no historical clock`; do not assign ages to empty clients, pipeline or review files. |
+| `first move unknown` | Financial inputs are known but no owner-persisted first move exists. | Write the blocking first move as `UNKNOWN`, keep activation incomplete, and do not invent work. |
+
+Write the same owned daily-review headings as every later brief:
+
+    # YYYY-MM-DD
+    ## The one thing
+    [<existing queue id, or new id from queue>] <financial blocker or first move>
+    ## Rotting
+    none — first run; no historical clock
+    ## The trade
+    <what the selected blocker or move displaces today>
+    ## Triage
+    none
+
+When the cash or burn item already exists in `queue.md`, reuse its id and move
+it through `queue`; do not create a duplicate. The Chief of Staff owns both the
+queue and daily review, so this is an ordinary owner-safe transition. On the
+next day, leave this branch and apply the recurring Steps below to actual
+history.
+
 ## Inputs
 
 Read first, in order — house rule 1. **This list is longer than `context-load`
@@ -183,8 +216,8 @@ Read for one named section only:
    a thin workspace has taught the founder on day one that this file is padded,
    and they will read it accordingly for as long as they keep it.
 
-   This is not only onboarding's problem. Onboarding has `PROJECT.md` in the room
-   to explain the thinness; **day two's 08:00 cron brief has the same three empty
+   This is not only onboarding's problem. The activation receipt explains the
+   first day's thinness; **day two's 08:00 cron brief has the same three empty
    inputs and nothing to explain them.** The rule lives here for that morning.
 
 ## Output
@@ -200,6 +233,8 @@ Append to `reviews/daily/YYYY-MM-DD.md`:
     <"+<n> more — handed to triage", if there were more than three>
     ## The trade
     <what doesn't happen today>
+    ## Triage
+    none | <+n items handed to triage>
 
 ## Guardrails
 

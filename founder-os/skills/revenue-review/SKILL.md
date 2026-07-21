@@ -19,6 +19,46 @@ the calendar 1st, weekend or not, and a close does not mind running on a Saturda
 by cron on the 1st if the founder ran `/setup-cadences`; otherwise `/revenue-review`, by hand. Also before any decision that spends the
 month's revenue: a contractor, a tool, a holiday.
 
+## First-run branch
+
+Use this branch only when `/founder-os-init` invokes the skill and there is no
+prior monthly close. This is a dated activation baseline, not a reconstructed
+month. Every line names its source as founder onboarding on `YYYY-MM-DD` or as
+arithmetic over supplied values.
+
+| Input state | Persisted value | Required action |
+|---|---|---|
+| `supplied or computable` | A value supplied for the stated window, or arithmetic over those supplied values. | Write only supplied or computable values, label the window, date `YYYY-MM-DD`, name the source, state this is not a monthly close, and make no monthly-review handoff. |
+| `collected unknown` | `Collected: UNKNOWN` and `Monthly average: UNKNOWN` | Never infer collected cash from booked revenue or pipeline; ask the Chief of Staff to queue the missing bank evidence. |
+| `booked unknown` | `Booked: UNKNOWN` | Never zero-fill booked revenue; ask the Chief of Staff to queue the missing close input. |
+| `hours unknown` | `Hours worked: UNKNOWN` and `Effective rate: UNKNOWN` | Never infer hours or rate from revenue, proposals or a quoted rate. |
+| `receivables unknown` | `Receivables: UNKNOWN` | Never zero-fill receivables; ask the Chief of Staff to queue the missing invoice evidence. |
+| `cash on hand unknown` | `Cash on hand: UNKNOWN` | Keep cash unknown and hand the blocking input to the Chief of Staff for the queue. |
+
+Replace `metrics.md` `## Close` with this first-run block:
+
+    ## Close — YYYY-MM
+    Baseline: first run on YYYY-MM-DD; not a monthly close
+    Source: founder onboarding, YYYY-MM-DD
+    Collection window: <supplied dates, or last three months as stated>
+    Booked: <supplied/computable amount, or UNKNOWN>
+    Collected, supplied window: <amount, or UNKNOWN>
+    Collected, monthly average: <computed amount, or UNKNOWN>  (not a monthly close)
+    Receivables: <invoice-backed lines, or UNKNOWN — never 0 by absence>
+    Past terms: <computed from supplied invoice lines, or UNKNOWN>
+    Hours worked: <supplied total for the same window, or UNKNOWN>
+    Effective rate: <collected divided by same-window hours, or UNKNOWN>
+    Largest client: <computed from supplied collection lines, or UNKNOWN>
+    Cash on hand: <supplied amount, or UNKNOWN>  (before any tax reserve)
+    Proposed: <missing input and evidence needed> — bet: none | none
+    Handed to: Chief of Staff for queue intake only; no monthly-review handoff
+
+Do not derive booked revenue or receivables from collected cash. Do not turn an
+absent pipeline, invoice list or hours ledger into zero. The Chief of Staff
+chooses queue ids and dates; this skill only names each missing fact and the
+evidence that would settle it. Once a real reporting month exists, leave this
+branch and use the recurring Steps and Output below.
+
 ## Inputs
 
 Read first, in order — house rule 1:

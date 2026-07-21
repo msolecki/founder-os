@@ -39,34 +39,65 @@ If `metrics.md` has no close for the quarter's final month, stop and hand to the
 **CFO** — the same rule `monthly-review` runs on. Step 1 has nothing to settle
 verdicts with and the rest of this skill is built on step 1.
 
-### The first run, which is not mid-quarter
+## First-run branch
 
-**On a workspace with no `reviews/quarterly/` and no bets in `goals.md`: skip
-steps 1, 2 and 7, say out loud that you skipped them and why, and write the
-plan.** `founder-os-init` hands to this skill at install, and installs land
-mid-quarter roughly ninety-eight times in a hundred. Every rule above is a rule
-about a quarter that has already been played.
+Use this branch only when `/founder-os-init` invokes the skill, `goals.md` has
+no bets and `reviews/quarterly/` has no prior quarter. It creates a truthful
+partial-quarter starting state, not a fictional recurring review. Record the
+run date as `YYYY-MM-DD`.
 
-- **Step 1 is not optional and it is not possible early — and on day one it is
-  not possible at all.** There are no bets to verdict and no close to verdict them
-  against. Skipping a step because it is empty is not the same act as skipping it
-  because it is inconvenient, and only the second one is what those sentences
-  forbid.
-- **Step 7 goes too.** `red-team` attacks a plan against a record; there is no
-  record. It also cannot fit — `founder-os-init` runs a hard twenty-minute budget
-  and the Board Member is a session, not a step. The first plan ships unattacked
-  and the second one does not; say that, so the founder knows a debt was taken
-  rather than a rule quietly bent.
-- **Step 6 stays.** `bet-sizing` needs no history — it needs hours and cash, which
-  `founder-os-init`'s fourth interview question just collected. An unsized bet
-  still does not enter `goals.md`.
-- **"Never mid-quarter" governs reopening a plan, not writing the first one.**
-  There is nothing to reopen. A founder who installs on 12 August and is told to
-  come back on 1 October has been handed a `goals.md` with nothing in it, and
-  `daily-brief` — which ties its one thing to a bet — has nothing to tie to for
-  seven weeks. That is not discipline, it is the package refusing to start.
-- **Write the partial quarter as what it is.** Bets sized to the weeks that are
-  actually left, not to thirteen.
+Commit the first bet only when all five fields are non-empty and valid: numeric
+outcome, numeric kill condition, hours cap, cash cap and one concrete first
+move that can start within 21 days. Otherwise persist the blocked state.
+
+| Input state | Completion rule | Required action |
+|---|---|---|
+| `complete onboarding answer` | Outcome, failure threshold, hours and cash cap are supplied. | Write one partial-quarter bet opened mid-quarter; preserve the supplied 90-day horizon, which may cross a calendar-quarter boundary; include the numeric outcome, kill condition, hours, cash cap and one first move. |
+| `outcome unknown` | The numeric outcome is `UNKNOWN`. | Write a blocked first-run state, do not commit a bet, and hand the missing number to the Chief of Staff for the queue. |
+| `kill condition unknown` | The numeric failure threshold is `UNKNOWN`. | Write a blocked first-run state, do not commit a bet, and hand the missing kill condition to the Chief of Staff for the queue. |
+| `hours unknown` | Available hours are `UNKNOWN`. | Write a blocked first-run state, do not commit an unsized bet, and hand the hours question to the Chief of Staff for the queue. |
+| `cash cap unknown` | Available cash cap is `UNKNOWN`. | Write a blocked first-run state, do not commit an unsized bet, and hand the cash-cap question to the Chief of Staff for the queue. |
+| `first move unknown` | No concrete first move can be named from the persisted result. | Write a blocked first-run state with first move `UNKNOWN`, do not commit a bet, and hand the missing first move to the Chief of Staff for the queue. |
+
+On the complete path, write one `### Bet` under `goals.md` `## Bets`:
+
+    # Partial quarter — as of YYYY-MM-DD
+    ## Bets
+    Proposed: <first move> — bet: B1
+    ### Bet B1: <name>
+    Status: first-run 90-day bet opened mid-quarter
+    Start date: YYYY-MM-DD
+    Judgment date: <the supplied 90-day horizon; exactly 90 days after start>
+    Outcome: <metric> reaches <numeric value> by <date>
+    Cost: <supplied hours> h + <supplied cash cap>
+    Kill if: <metric> is below <numeric threshold> on <date>
+
+If any required sizing value is unknown, write the same dated `## Bets`
+section with `Status: blocked — <field>: UNKNOWN` and `Proposed: resolve
+<field> — bet: none`; do not create a `### Bet` block. Hand that proposal to
+the Chief of Staff, who owns `queue.md`, without inventing an answer.
+
+For `reviews/quarterly/YYYY-Qn.md`, use the recurring section vocabulary while
+making the absent history explicit:
+
+    # YYYY-Qn — first run on YYYY-MM-DD
+    ## Last quarter's verdicts
+    Not applicable — first run; no prior bets or review.
+    ## Never measured
+    Not applicable — no prior bets existed to measure.
+    ## This quarter's bets
+    <the first-run bet above, or blocked state with UNKNOWN>
+    ## What we are not doing
+    UNKNOWN — no alternatives were supplied during onboarding.
+
+Never create wins, losses or a never-measured count. Skip recurring Steps 1, 2
+and 7 because there is no record. Step 6 still applies to a complete answer.
+Future quarter plans must return to the recurring path: verdict every prior bet
+and run `red-team` before writing. "Never mid-quarter" governs reopening a
+plan, not creating the first one. Here, "partial-quarter" means opened partway
+through the current calendar quarter: preserve the supplied 90-day judgment
+horizon even when it crosses the next quarter boundary, and size capacity from
+the start through that date.
 
 ## Inputs
 

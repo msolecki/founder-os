@@ -238,6 +238,149 @@ def skill_holders(skill_name: str) -> list[str]:
     return holders
 
 
+FIRST_RUN_CASES = {
+    "icp-definition": {
+        "paid-client evidence": (
+            "recurring evidence path",
+            "clients/",
+        ),
+        "founder examples only": (
+            "dated hypothesis",
+            "YYYY-MM-DD",
+            "named examples",
+            "not evidence",
+            "queue validation",
+        ),
+        "examples unknown": (
+            "UNKNOWN",
+            "queue validation",
+            "do not invent",
+        ),
+    },
+    "quarterly-planning": {
+        "complete onboarding answer": (
+            "one partial-quarter bet",
+            "opened mid-quarter",
+            "preserve the supplied 90-day horizon",
+            "may cross a calendar-quarter boundary",
+            "numeric outcome",
+            "kill condition",
+            "hours",
+            "cash cap",
+            "first move",
+        ),
+        "outcome unknown": ("UNKNOWN", "do not commit", "queue"),
+        "kill condition unknown": ("UNKNOWN", "do not commit", "queue"),
+        "hours unknown": ("UNKNOWN", "do not commit", "queue"),
+        "cash cap unknown": ("UNKNOWN", "do not commit", "queue"),
+        "first move unknown": ("UNKNOWN", "do not commit", "queue"),
+    },
+    "revenue-review": {
+        "supplied or computable": (
+            "write only supplied or computable values",
+            "YYYY-MM-DD",
+            "source",
+            "not a monthly close",
+            "no monthly-review handoff",
+        ),
+        "collected unknown": (
+            "Collected: UNKNOWN",
+            "Monthly average: UNKNOWN",
+            "never infer",
+            "queue",
+        ),
+        "booked unknown": ("Booked: UNKNOWN", "never zero", "queue"),
+        "hours unknown": (
+            "Hours worked: UNKNOWN",
+            "Effective rate: UNKNOWN",
+            "never infer",
+        ),
+        "receivables unknown": (
+            "Receivables: UNKNOWN",
+            "never zero",
+            "queue",
+        ),
+        "cash on hand unknown": (
+            "Cash on hand: UNKNOWN",
+            "queue",
+        ),
+    },
+    "runway-forecast": {
+        "cash and burn supplied": (
+            "cash divided by real monthly burn",
+            "strictly greater than zero",
+            "zero new revenue",
+            "YYYY-MM-DD",
+        ),
+        "zero burn": (
+            "Runway: not finite",
+            "do not divide",
+            "no cliff date",
+            "no band",
+        ),
+        "negative burn": (
+            "Runway: UNKNOWN",
+            "invalid burn input",
+            "no cliff date",
+            "no band",
+            "queue",
+        ),
+        "cash unknown": (
+            "Runway: UNKNOWN",
+            "no band",
+            "no cliff date",
+            "queue",
+        ),
+        "burn unknown": (
+            "Runway: UNKNOWN",
+            "no band",
+            "no cliff date",
+            "queue",
+        ),
+        "pipeline unknown": (
+            "Pipeline-discounted runway: UNKNOWN",
+            "never zero",
+            "no optimism gap",
+        ),
+    },
+    "daily-brief": {
+        "first move available": (
+            "goals.md",
+            "first move",
+            "The one thing",
+        ),
+        "cash on hand unknown": (
+            "The one thing",
+            "resolve cash on hand",
+            "## Doing",
+        ),
+        "burn unknown": (
+            "The one thing",
+            "resolve real monthly burn",
+            "## Doing",
+        ),
+        "no prior review": (
+            "Rotting: none",
+            "first run",
+            "no historical clock",
+        ),
+    },
+}
+
+
+def assert_owner_first_run_contract(
+    testcase: unittest.TestCase, skill_name: str, body: str
+) -> None:
+    _, first_run, _ = section_matching(body, r"First-run branch")
+    normalized = first_run.replace("`", "")
+    testcase.assertRegex(normalized, r"\bYYYY-MM-DD\b")
+    testcase.assertRegex(normalized, r"\bUNKNOWN\b")
+    for state, required in FIRST_RUN_CASES[skill_name].items():
+        row = " | ".join(table_row_for(first_run, state)).replace("`", "")
+        for token in required:
+            testcase.assertRegex(row, rf"(?i){semantic_pattern(token)}")
+
+
 def assert_receipt_order(testcase: unittest.TestCase, text: str) -> None:
     actions = structured_actions(text)
     required = (
@@ -286,6 +429,12 @@ class OnboardingActivationContract(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        cls.owner_skill_bodies = {
+            skill_name: parse_frontmatter(
+                PLUGIN_ROOT / "skills" / skill_name / "SKILL.md"
+            )[1]
+            for skill_name in FIRST_RUN_CASES
+        }
 
     def test_init_declares_ordered_activation_stages(self):
         self.assertEqual(self.init_frontmatter["name"], "founder-os-init")
@@ -692,6 +841,136 @@ class OnboardingActivationContract(unittest.TestCase):
             "Activation complete must follow the persisted daily review",
         ):
             assert_receipt_order(self, mutated)
+
+    def test_owner_skills_define_table_driven_first_run_branches(self):
+        for skill_name, body in self.owner_skill_bodies.items():
+            with self.subTest(skill=skill_name):
+                assert_owner_first_run_contract(self, skill_name, body)
+
+    def test_unknown_first_run_inputs_cannot_be_promoted_to_facts(self):
+        mutations = {
+            "icp-definition": (
+                "not evidence",
+                "client evidence",
+            ),
+            "revenue-review": (
+                "`Booked: UNKNOWN`",
+                "`Booked: 0`",
+            ),
+            "runway-forecast": (
+                "`Pipeline-discounted runway: UNKNOWN`",
+                "`Pipeline-discounted runway: 0 months`",
+            ),
+            "daily-brief": (
+                "no historical clock",
+                "infer the oldest historical clock",
+            ),
+        }
+        for skill_name, (truthful, fabricated) in mutations.items():
+            with self.subTest(skill=skill_name):
+                body = self.owner_skill_bodies[skill_name]
+                assert_owner_first_run_contract(self, skill_name, body)
+                mutated = body.replace(truthful, fabricated)
+                self.assertNotEqual(mutated, body, truthful)
+                with self.assertRaises(AssertionError):
+                    assert_owner_first_run_contract(self, skill_name, mutated)
+
+    def test_quarterly_missing_kill_or_first_move_cannot_commit(self):
+        body = self.owner_skill_bodies["quarterly-planning"]
+        assert_owner_first_run_contract(self, "quarterly-planning", body)
+        for state in ("kill condition unknown", "first move unknown"):
+            with self.subTest(state=state):
+                mutated = body.replace(f"`{state}`", f"`{state} accepted`")
+                self.assertNotEqual(mutated, body)
+                with self.assertRaises(AssertionError):
+                    assert_owner_first_run_contract(
+                        self, "quarterly-planning", mutated
+                    )
+
+    def test_runway_non_positive_burn_cannot_enter_division_path(self):
+        body = self.owner_skill_bodies["runway-forecast"]
+        assert_owner_first_run_contract(self, "runway-forecast", body)
+        for state in ("zero burn", "negative burn"):
+            with self.subTest(state=state):
+                mutated = body.replace(f"`{state}`", f"`{state} accepted`")
+                self.assertNotEqual(mutated, body)
+                with self.assertRaises(AssertionError):
+                    assert_owner_first_run_contract(
+                        self, "runway-forecast", mutated
+                    )
+
+    def test_first_run_branches_preserve_recurring_contracts(self):
+        recurring_tokens = {
+            "icp-definition": ("clients/", "evidence attached"),
+            "quarterly-planning": ("Verdict every bet", "red-team"),
+            "revenue-review": ("Age the receivables", "effective rate"),
+            "runway-forecast": ("pipeline", "Band"),
+            "daily-brief": ("Check yesterday's commitment", "ranked by days"),
+        }
+        for skill_name, required in recurring_tokens.items():
+            with self.subTest(skill=skill_name):
+                body = self.owner_skill_bodies[skill_name]
+                _, first_run, _ = section_matching(body, r"First-run branch")
+                recurring = body.replace(first_run, "")
+                for token in required:
+                    self.assertRegex(
+                        recurring, rf"(?i){semantic_pattern(token)}"
+                    )
+
+    def test_first_run_output_contracts_keep_truthful_labels_and_headings(self):
+        required = {
+            "icp-definition": (
+                "## ICP",
+                "Status: hypothesis",
+                "Source: founder onboarding, YYYY-MM-DD",
+                "UNKNOWN",
+            ),
+            "quarterly-planning": (
+                "## Bets",
+                "Proposed:",
+                "Outcome:",
+                "Cost:",
+                "Kill if:",
+                "## Last quarter's verdicts",
+                "## Never measured",
+                "## This quarter's bets",
+                "## What we are not doing",
+            ),
+            "revenue-review": (
+                "## Close — YYYY-MM",
+                "Source: founder onboarding, YYYY-MM-DD",
+                "Booked:",
+                "Receivables:",
+                "Hours worked:",
+                "Effective rate:",
+            ),
+            "runway-forecast": (
+                "## Runway — as of YYYY-MM-DD",
+                "Cash on hand:",
+                "Real monthly burn:",
+                "Runway, zero new revenue:",
+                "Pipeline-discounted runway:",
+                "Band:",
+            ),
+            "daily-brief": tuple(
+                self.ownership["sections"]["reviews/daily/"]
+            ),
+        }
+        for skill_name, tokens in required.items():
+            with self.subTest(skill=skill_name):
+                _, first_run, _ = section_matching(
+                    self.owner_skill_bodies[skill_name], r"First-run branch"
+                )
+                for token in tokens:
+                    self.assertRegex(
+                        first_run, rf"(?i){semantic_pattern(token)}"
+                    )
+
+    def test_daily_brief_output_keeps_every_owned_review_heading(self):
+        body = self.owner_skill_bodies["daily-brief"]
+        _, output, _ = section_matching(body, r"Output")
+        for heading in self.ownership["sections"]["reviews/daily/"]:
+            self.assertIn(heading, output)
 
     def test_contract_parser_ignores_examples_and_quotations(self):
         examples_only = """

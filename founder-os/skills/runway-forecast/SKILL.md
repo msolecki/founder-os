@@ -19,6 +19,50 @@ Monthly, right after `revenue-review`. Before any commitment that changes burn: 
 tool, a contractor, a subscription, a month off. Whenever the founder asks
 whether they can afford something.
 
+## First-run branch
+
+Use this branch only when `/founder-os-init` invokes the skill and the
+`## Close` block is an activation baseline. The first-run question is narrower
+than the recurring forecast: what can be computed from supplied cash and real
+burn on `YYYY-MM-DD` without turning an absent pipeline into revenue?
+
+| Input state | Persisted result | Required action |
+|---|---|---|
+| `cash and burn supplied` | Honest runway from cash divided by real monthly burn that is strictly greater than zero. | Compute the dated runway on `YYYY-MM-DD` with zero new revenue; use only the supplied cash and positive burn. |
+| `zero burn` | `Runway: not finite` at the current zero-burn state. | Do not divide, write no cliff date and no band, and state that zero burn must be verified before any spending decision. |
+| `negative burn` | `Runway: UNKNOWN` because a negative outflow is an invalid burn input. | Do not divide, write no cliff date and no band, and hand the classification gap to the Chief of Staff for the queue. |
+| `cash unknown` | `Runway: UNKNOWN` | Write no band and no cliff date; hand the cash evidence gap to the Chief of Staff for the queue. |
+| `burn unknown` | `Runway: UNKNOWN` | Write no band and no cliff date; hand the real-burn evidence gap to the Chief of Staff for the queue. |
+| `pipeline unknown` | `Pipeline-discounted runway: UNKNOWN` | Never zero-fill pipeline and write no optimism gap; the honest runway remains valid when cash and burn exist. |
+
+Replace only `metrics.md` `## Runway` with:
+
+    ## Runway — as of YYYY-MM-DD
+    Source: founder onboarding, YYYY-MM-DD
+    Cash on hand: <supplied amount, or UNKNOWN>
+    Real monthly burn: <supplied amount including founder pay, or UNKNOWN>
+    Runway, zero new revenue: <cash divided by positive burn, not finite for verified zero burn, or UNKNOWN>
+    Cash-zero cliff date: <computed date for positive burn, otherwise UNKNOWN>
+    Pipeline-discounted runway: <computed from supplied staged deals, or UNKNOWN>
+    Optimism gap: <computed difference, or UNKNOWN>
+    Band: <computed from honest runway, or UNKNOWN>
+    Consequence: <band action, or resolve the blocking cash/burn input>
+    Tax reserve: UNKNOWN unless supplied; runway is before any tax reserve
+    Proposed: <missing cash or burn evidence> — bet: none | none
+    Handed to: Chief of Staff for queue intake
+
+Divide only when cash is known and real monthly burn is strictly positive. A
+verified zero burn has no finite runway or cash-zero cliff at the current state;
+do not force it into a conventional band. A negative number is not valid burn
+outflow: keep runway `UNKNOWN` and queue classification evidence rather than
+calling the company immortal. If cash or burn is unknown, do not divide, assign
+a band or date a cliff. On a first run, never substitute a market-wage estimate
+for unknown founder pay and never discount an empty or unknown pipeline as
+zero. The Chief of Staff chooses queue ids and dates; this skill names the
+evidence gap without writing `queue.md`. Once the close and pipeline have
+recurring evidence, leave this branch and run every Step below, including the
+downside cases.
+
 ## Inputs
 
 Read first, in order — house rule 1:

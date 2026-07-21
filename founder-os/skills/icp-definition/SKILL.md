@@ -20,6 +20,52 @@ menu. Also when the founder describes their buyer with adjectives ("ambitious",
 says "this is interesting" and vanishes. Run when `/founder-os-init` hands off
 here — it is the first stop after the charter.
 
+## First-run branch
+
+Use this branch only when `/founder-os-init` invokes the skill and `clients/`
+contains no paid-client evidence. Supplied companies are examples of the
+founder's preference, not clients and not proof. A first-run result is allowed
+to be thin; it is not allowed to sound researched.
+
+| Input state | Classification | Required action |
+|---|---|---|
+| `paid-client evidence` | The workspace is not evidence-empty. | Leave this branch and use the recurring evidence path from `clients/`. |
+| `founder examples only` | The named examples are preference, not evidence. | Write a dated hypothesis as of `YYYY-MM-DD`, name the supplied named examples, mark them not evidence, and hand a queue validation proposal to the Chief of Staff. |
+| `examples unknown` | The ICP evidence and examples are `UNKNOWN`. | Write `UNKNOWN` rather than a segment, hand a queue validation proposal to the Chief of Staff, and do not invent examples or attributes. |
+
+For the examples-only path, replace only `offer.md` `## ICP` with:
+
+    ## ICP
+    Updated: YYYY-MM-DD
+    Status: hypothesis — no paid-client evidence
+
+    ### Who
+    <one-sentence hypothesis from the observable difference, or UNKNOWN>
+
+    ### Trigger
+    UNKNOWN — no paid-client trigger supplied
+
+    ### Attributes to test
+    - <observable difference supplied by the founder> — hypothesis, not evidence
+
+    ### Not this
+    - <supplied named exclusion> — founder preference, not client evidence
+
+    ### Evidence status
+    - Paid-client evidence: none
+    - Would take again, by name: <supplied company>, <supplied company>
+    - Would not take again, by name: <supplied company>
+    - Source: founder onboarding, YYYY-MM-DD
+
+    ### Validation
+    UNKNOWN — hand to Chief of Staff as a queue proposal; owner:
+    positioning-advisor; missing evidence: one paid engagement that tests the
+    observable difference; never claim the named examples paid.
+
+The Chief of Staff decides the queue id and dates. This skill proposes the
+validation item and does not write `queue.md`. Recurring runs with real paid
+clients keep the evidence-ranked Steps and Output below.
+
 ## Inputs
 
 Read first, in order — house rule 1:
