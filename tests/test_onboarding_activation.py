@@ -271,8 +271,20 @@ class OnboardingActivationContract(unittest.TestCase):
         _, first_brief, _ = section_matching(
             self.init_body, r"Stage 6.*First brief"
         )
+        daily_path = PLUGIN_ROOT / "skills" / "daily-brief" / "SKILL.md"
+        self.assertTrue(daily_path.is_file(), daily_path)
+        daily_frontmatter, _ = parse_frontmatter(daily_path)
+        self.assertEqual(daily_frontmatter["name"], "daily-brief")
         daily_holders = skill_holders("daily-brief")
-        self.assertEqual(daily_holders, [owner_for("reviews/daily/", self.ownership)])
+        self.assertEqual(len(daily_holders), 1, daily_holders)
+        daily_holder = daily_holders[0]
+        daily_writes = daily_frontmatter.get("metadata", {}).get("writes", [])
+        self.assertTrue(daily_writes, "daily-brief declares no writes")
+        for write_path in daily_writes:
+            self.assertEqual(daily_holder, owner_for(write_path, self.ownership))
+        self.assertEqual(
+            daily_holder, owner_for("reviews/daily/", self.ownership)
+        )
         self.assertRegex(first_brief, r"(?i)/daily-brief\b")
 
     def test_minimum_state_daily_brief_persistence_and_receipt_are_ordered(self):
