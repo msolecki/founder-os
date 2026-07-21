@@ -31,7 +31,7 @@
 - Consumes: the module-level `yaml` seam, `load_ownership()`, `_registry_roots()`, `workspace_roots(hook_cwd)`, and the real `founder-os/references/ownership.yaml`.
 - Produces: `_get_yaml()` returning the memoized PyYAML module or `None`; loading the guard module performs no `yaml` import; tests can force fallback behavior with `mock.patch.object(guard, "yaml", None)`.
 
-- [ ] **Step 1: Write the failing lazy-import test**
+- [x] **Step 1: Write the failing lazy-import test**
 
 Add `import builtins` and `from unittest import mock` at module scope in `tests/test_ownership_guard.py`, then add:
 
@@ -52,13 +52,13 @@ class TestLazyYamlImport(unittest.TestCase):
         self.assertEqual(imported, [])
 ```
 
-- [ ] **Step 2: Run the lazy-import test and verify RED**
+- [x] **Step 2: Run the lazy-import test and verify RED**
 
 Run: `python3 -m unittest tests.test_ownership_guard.TestLazyYamlImport -v`
 
 Expected: FAIL because importing `ownership-guard.py` currently imports `yaml` immediately.
 
-- [ ] **Step 3: Implement the memoized lazy loader**
+- [x] **Step 3: Implement the memoized lazy loader**
 
 Replace the top-level `try: import yaml` block in `founder-os/hooks/ownership-guard.py` with:
 
@@ -81,7 +81,7 @@ def _get_yaml():
 
 At the start of each YAML-using parse block in `load_ownership()` and `_registry_roots()`, bind `yaml_module = _get_yaml()`. Replace `yaml.safe_load`, `yaml.YAMLError`, and `if yaml is not None` with their `yaml_module` equivalents. Do not call `_get_yaml()` from `main()` before the main-thread and outbound early exits.
 
-- [ ] **Step 4: Run the lazy-import test and guard suite and verify GREEN**
+- [x] **Step 4: Run the lazy-import test and guard suite and verify GREEN**
 
 Run: `python3 -m unittest tests.test_ownership_guard.TestLazyYamlImport -v`
 
@@ -91,7 +91,7 @@ Run: `python3 -m unittest tests.test_ownership_guard -v`
 
 Expected: PASS with no changed allow/deny decisions.
 
-- [ ] **Step 5: Add the no-PyYAML registry fallback test**
+- [x] **Step 5: Add the no-PyYAML registry fallback test**
 
 In `TestRegistryRoots`, add a test using `_home_with_registry` and absolute temporary paths:
 
@@ -116,7 +116,7 @@ def test_registry_roots_without_pyyaml_match_yaml_result(self):
         self.assertEqual(roots, [str(acme), str(portfolio)])
 ```
 
-- [ ] **Step 6: Add the no-PyYAML `load_ownership()` integration test**
+- [x] **Step 6: Add the no-PyYAML `load_ownership()` integration test**
 
 In `TestFallbackParser`, add:
 
@@ -135,7 +135,7 @@ def test_load_ownership_without_pyyaml_matches_pyyaml_map(self):
     self.assertEqual(got, expected)
 ```
 
-- [ ] **Step 7: Prove the fallback tests detect regressions**
+- [x] **Step 7: Prove the fallback tests detect regressions**
 
 Temporarily change the `yaml_module is None` branch of `_registry_roots()` to `return []`, run:
 
@@ -149,7 +149,7 @@ Temporarily change the `yaml_module is None` branch of `load_ownership()` to `ow
 
 Expected: FAIL because the fallback map is missing. Restore the production code immediately.
 
-- [ ] **Step 8: Run the task checks**
+- [x] **Step 8: Run the task checks**
 
 Run: `python3 -m unittest tests.test_ownership_guard.TestLazyYamlImport tests.test_ownership_guard.TestRegistryRoots tests.test_ownership_guard.TestFallbackParser -v`
 
@@ -159,12 +159,14 @@ Run: `python3 -m py_compile founder-os/hooks/ownership-guard.py tests/test_owner
 
 Expected: exit 0.
 
-- [ ] **Step 9: Commit Task 1 files only**
+- [x] **Step 9: Commit Task 1 files only**
 
 ```bash
 git add founder-os/hooks/ownership-guard.py tests/test_ownership_guard.py
 git commit -m "perf(hooks): defer PyYAML import and test fallbacks [PERF-001, TEST-001, TEST-002]"
 ```
+
+**Task 1 evidence (2026-07-21):** lazy-import RED observed `yaml` and `yaml._yaml`; GREEN passed. Both fallback tests failed under their specified temporary mutations and passed after restoration. Focused checks passed 8/8, the subsequent full batch suite passed 93/93, validator reported 13 agents / 49 skills / 0 errors, generator was current, and fresh review approved the task without findings. Commit: `c49873d`.
 
 ---
 
@@ -177,12 +179,12 @@ git commit -m "perf(hooks): defer PyYAML import and test fallbacks [PERF-001, TE
 - Consumes: `validate_package.OUTBOUND_TOOLS`, `check_agent_tools(root, agents)`, `run_checks(root)`, and the real `check_ownership`/`check_hooks` entries in `CHECKS`.
 - Produces: one subtest per `WebSearch`, `NotebookEdit`, and `Task`; one integration test proving malformed ownership aborts its check while a later hook check still reports its own error.
 
-- [ ] **Step 1: Add the three outbound-tool contract cases**
+- [x] **Step 1: Add the three outbound-tool contract cases**
 
 In `TestAgentTools`, add:
 
 ```python
-def test_all_non_network_outbound_tools_are_caught(self):
+def test_additional_outbound_tools_are_caught(self):
     for tool in ("WebSearch", "NotebookEdit", "Task"):
         with self.subTest(tool=tool):
             self.write_agent("cfo", skills=list(UNIVERSALS),
@@ -193,15 +195,15 @@ def test_all_non_network_outbound_tools_are_caught(self):
                 self.check(V.check_agent_tools))
 ```
 
-- [ ] **Step 2: Mutation-check the outbound-tool cases**
+- [x] **Step 2: Mutation-check the outbound-tool cases**
 
 Temporarily remove `WebSearch`, `NotebookEdit`, and `Task` from `scripts/validate_package.py::OUTBOUND_TOOLS`, then run:
 
-`python3 -m unittest tests.test_validate_package.TestAgentTools.test_all_non_network_outbound_tools_are_caught -v`
+`python3 -m unittest tests.test_validate_package.TestAgentTools.test_additional_outbound_tools_are_caught -v`
 
 Expected: FAIL for all three subtests. Restore `OUTBOUND_TOOLS` immediately and rerun the command; expected PASS.
 
-- [ ] **Step 3: Add the per-check exception-containment integration test**
+- [x] **Step 3: Add the per-check exception-containment integration test**
 
 In `TestRunChecksContainment`, add:
 
@@ -218,7 +220,7 @@ def test_malformed_ownership_aborts_only_its_check(self):
 
 The missing `hooks/hooks.json` error is emitted by `check_hooks`, which appears after `check_ownership` in `CHECKS`; seeing both messages proves the loop continued.
 
-- [ ] **Step 4: Mutation-check exception containment**
+- [x] **Step 4: Mutation-check exception containment**
 
 Temporarily replace the inner `try/except` in `run_checks()` with a direct `errs += fn(root, agents)`, then run:
 
@@ -226,7 +228,7 @@ Temporarily replace the inner `try/except` in `run_checks()` with a direct `errs
 
 Expected: ERROR with a PyYAML parser exception instead of a returned error list. Restore `run_checks()` immediately and rerun the command; expected PASS.
 
-- [ ] **Step 5: Run the task checks**
+- [x] **Step 5: Run the task checks**
 
 Run: `python3 -m unittest tests.test_validate_package.TestAgentTools tests.test_validate_package.TestRunChecksContainment -v`
 
@@ -236,12 +238,14 @@ Run: `python3 -m py_compile tests/test_validate_package.py`
 
 Expected: exit 0.
 
-- [ ] **Step 6: Commit Task 2 file only**
+- [x] **Step 6: Commit Task 2 file only**
 
 ```bash
 git add tests/test_validate_package.py
 git commit -m "test(validator): pin enforcement containment [TEST-003, TEST-004]"
 ```
+
+**Task 2 evidence (2026-07-21):** all three outbound-tool subtests failed when the tools were temporarily removed from `OUTBOUND_TOOLS`; containment failed with a parser traceback when the inner `try/except` was temporarily removed. Restored code passed 9 focused tests, py_compile, full 93-test suite, and fresh review; the test name was tightened after the review's Minor finding. Commit: `76bf04e`.
 
 ---
 
@@ -257,7 +261,7 @@ git commit -m "test(validator): pin enforcement containment [TEST-003, TEST-004]
 - Consumes: verified Task 1 and Task 2 commits.
 - Produces: a clean batch validation record, five `passes: true` values, a small active backlog with completed entries moved intact to `TODO-done.md`, and a recorded next batch.
 
-- [ ] **Step 1: Run full validation in mandated order**
+- [x] **Step 1: Run full validation in mandated order**
 
 Run: `python3 scripts/validate_package.py founder-os`
 
@@ -275,7 +279,7 @@ Run: `python3 scripts/generate_commands.py founder-os --check`
 
 Expected: `founder-os/COMMANDS.md is current`.
 
-- [ ] **Step 2: Verify the performance acceptance check**
+- [x] **Step 2: Verify the performance acceptance check**
 
 Pipe a JSON main-thread payload into:
 
@@ -283,21 +287,23 @@ Pipe a JSON main-thread payload into:
 
 Capture stderr and assert there is no import-time line whose module column is `yaml` or starts with `yaml.`. Do not count occurrences in file paths or comments.
 
-- [ ] **Step 3: Update `feature_list.json` only after E2E verification**
+- [x] **Step 3: Update `feature_list.json` only after E2E verification**
 
 Change only the `passes` field from `false` to `true` for descriptions beginning `[TEST-001]`, `[TEST-002]`, `[TEST-003]`, `[TEST-004]`, and `[PERF-001]`. Do not reformat the file or edit descriptions/steps.
 
-- [ ] **Step 4: Move completed backlog entries intact**
+- [x] **Step 4: Move completed backlog entries intact**
 
 Remove the five completed item sections from `TODO.md` and append them under a dated heading in `TODO-done.md`, preserving their original text and adding only a one-line completion note with the validating command or commit.
 
-- [ ] **Step 5: Update this plan**
+- [x] **Step 5: Update this plan**
 
 Check completed steps, record the exact validation evidence, list any review findings, and set the next action to the highest-priority remaining coherent batch.
 
-- [ ] **Step 6: Obtain fresh review before the bookkeeping commit**
+- [x] **Step 6: Obtain fresh review before the bookkeeping commit**
 
 Give a fresh reviewer the full batch diff and the five original TODO requirements. Fix CRITICAL/HIGH findings before proceeding; add MEDIUM/LOW findings to `TODO.md` with evidence.
+
+**Review evidence (2026-07-21):** fresh whole-batch review approved the implementation with no critical, important, or actionable minor findings. The only noted scope observation—malformed registry YAML handling—is outside TEST-003, which specifically covers malformed ownership YAML.
 
 - [ ] **Step 7: Commit bookkeeping files only**
 
