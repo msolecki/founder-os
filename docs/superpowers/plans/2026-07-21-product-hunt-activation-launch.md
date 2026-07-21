@@ -386,6 +386,14 @@ Passing logs stay concise; report only failures and the final pass counts.
      blockers and supporting Product Hunt/repository indicators.
   8. Write a verdict: continue the current funnel, revise the activation flow or
      stop promotion until the failed condition is fixed.
+- **Release audit 2026-07-22:** the founder-approved cohort waiver is recorded,
+  `TODO-done.md` was committed separately as `bc742d5`, the worktree is clean,
+  all three manifests read `2.4.0`, and no `v2.4.0` tag exists. The last local
+  tracking ref is `origin/main` at `3631f36`, 58 commits behind the candidate;
+  live `git ls-remote` failed twice because this environment could not resolve
+  GitHub. The founder must push `main`; then installation from that public
+  commit must be retested before tagging. Founder OS will not push, publish,
+  post or schedule.
 - **Test / launch success:**
   - ten voluntary confirmed activations in seven days;
   - at least 60% activation in the consented launch cohort;
@@ -518,6 +526,15 @@ Decision / next action: prepare the exact release handoff, then require a clean 
 ```
 
 ```text
+Task 10 release audit — 2026-07-22
+Commit: bc742d5 (separate, founder-authorized removal of TODO-done.md; recoverable from git history)
+Release state: clean worktree, manifests and marketplace agree on 2.4.0, latest local tag v2.0.0, no v2.4.0 tag
+Full gate before the cleanup commit: 189 Python tests, 2 Node behavior tests, installed-copy smoke, validator 13 agents/49 skills/0 errors, generated-command check, diff checks and both official validation targets green; package warning remains the single addressed CLAUDE.md warning
+Public state: local origin/main tracking ref is 3631f36 and candidate is 58 commits ahead; live read-only lookup failed under both sandboxed and escalated DNS, so public availability is not claimed
+Boundary / next action: founder runs git push origin main; after public HEAD equals local HEAD, retest a clean public clone, then hand the founder the exact v2.4.0 tag/publish commands; no outbound action is performed by Founder OS
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -530,9 +547,10 @@ Decision / next action: <one line>
 
 Tasks 1–8 are complete. Task 9's technical review and cohort protocol are
 complete through `aca1a28`; its real-user gate is explicitly founder-waived,
-not passed. Prepare Task 10 without inventing activation evidence. Before any
-tag, resolve the unrelated staged deletion of `TODO-done.md`, push the candidate
-commit through a founder-operated outbound action, and retest installation from
-that public commit. Founder OS may hand over release commands and Product Hunt
-artifacts but must not push, publish, post or schedule them. The D+7 launch
-review remains dependent on real post-publication results.
+not passed. Task 10 is prepared through a clean local release audit. The founder
+must now run `git push origin main` and report completion. Then verify that
+public `main` equals local `HEAD`, install from a fresh public clone and rerun
+the complete gate before creating `v2.4.0`. Founder OS may hand over exact tag,
+GitHub release and Product Hunt actions but must not push, publish, post or
+schedule them. The D+7 launch review remains dependent on real
+post-publication results.
