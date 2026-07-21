@@ -93,3 +93,8 @@
 
 ### [ARCH-004] Claude and Codex plugin manifests disagree, and nothing validates agreement
 - **Completed**: Claude and Codex identity fields are synchronized; `check_plugin` now rejects name/version/description drift. Full suite passed with 101 tests.
+
+## 2026-07-21 — accessibility contrast batch
+
+### [A11Y-002] Translucent ink text on the orange section fails WCAG AA
+- **Completed**: Orange-section body copy now uses solid `var(--ink)`; CSS contract test and full 102-test suite pass.

@@ -42,6 +42,18 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_orange_section_copy_uses_solid_ink_for_contrast(self):
+        self.assertRegex(
+            HTML,
+            r"\.multi-business \.section-copy \{[^}]*color: var\(--ink\)",
+        )
+        self.assertRegex(
+            HTML,
+            r"\.multi-principle span \{[^}]*color: var\(--ink\)",
+        )
+        self.assertNotIn("color: rgba(18, 33, 39, 0.78)", HTML)
+        self.assertNotIn("color: rgba(18, 33, 39, 0.72)", HTML)
+
     def test_launch_metadata_supports_social_sharing(self):
         required = (
             'property="og:type" content="website"',
