@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Founder OS thumbnail</title>
+  <desc id="desc">A compact F slash OS mark in cream, lime, and orange on dark green.</desc>
+  <rect width="240" height="240" rx="42" fill="#102025"/>
+  <circle cx="177" cy="58" r="35" fill="#d7f36b"/>
+  <path d="M42 186 C86 166 146 166 198 186" fill="none" stroke="#f15a35" stroke-width="18" stroke-linecap="round"/>
+  <text x="38" y="137" fill="#fffdf7" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800" letter-spacing="-5">F/OS</text>
+</svg>

@@ -1,6 +1,7 @@
 """Contract tests for the dependency-free workflow catalogue landing section."""
 import re
 import shutil
+import struct
 import subprocess
 import unittest
 from collections import Counter
@@ -46,6 +47,36 @@ EXPECTED_ENTRIES = {
     "grow": (8, "Grow deliberately"),
     "run": (9, "Run operations"),
 }
+
+PRODUCT_HUNT_DIR = REPO_ROOT / "docs" / "product-hunt"
+PRODUCT_HUNT_TEXT_FILES = (
+    "README.md",
+    "listing.md",
+    "maker-comment.md",
+    "demo-script.md",
+    "activation-study.md",
+)
+PRODUCT_HUNT_IMAGES = {
+    "thumbnail-240.png": (240, 240),
+    "gallery-01-outcome.png": (1270, 760),
+    "gallery-02-onboarding.png": (1270, 760),
+    "gallery-03-trust.png": (1270, 760),
+    "gallery-04-operating-loop.png": (1270, 760),
+}
+
+
+def markdown_section(document, heading):
+    marker = f"## {heading}\n"
+    start = document.index(marker) + len(marker)
+    end = document.find("\n## ", start)
+    return document[start:end if end >= 0 else None].strip()
+
+
+def png_dimensions(path):
+    data = path.read_bytes()[:24]
+    if data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
+        raise AssertionError(f"{path} is not a PNG with an IHDR header")
+    return struct.unpack(">II", data[16:24])
 
 
 class DocumentContractParser(HTMLParser):
@@ -457,6 +488,133 @@ class ActivationCopyContractTest(unittest.TestCase):
                 self.assertTrue(agent_markers)
                 agents = min(agent_markers)
                 self.assertLess(outcome, agents)
+
+
+class ProductHuntLaunchKitContractTest(unittest.TestCase):
+    def read_required(self, filename):
+        path = PRODUCT_HUNT_DIR / filename
+        self.assertTrue(path.is_file(), f"missing {path.relative_to(REPO_ROOT)}")
+        if not path.is_file():
+            return ""
+        return path.read_text(encoding="utf-8")
+
+    def test_required_copy_and_image_files_exist_at_exact_dimensions(self):
+        for filename in PRODUCT_HUNT_TEXT_FILES:
+            with self.subTest(filename=filename):
+                self.assertTrue((PRODUCT_HUNT_DIR / filename).is_file())
+        for filename, expected in PRODUCT_HUNT_IMAGES.items():
+            with self.subTest(filename=filename):
+                path = PRODUCT_HUNT_DIR / filename
+                self.assertTrue(path.is_file())
+                if path.is_file():
+                    self.assertEqual(png_dimensions(path), expected)
+
+    def test_listing_uses_approved_identity_and_conservative_limits(self):
+        listing = self.read_required("listing.md")
+        if not listing:
+            return
+        name = markdown_section(listing, "Name")
+        tagline = markdown_section(listing, "Tagline")
+        description = markdown_section(listing, "Description")
+        topics = [
+            line for line in markdown_section(listing, "Topics").splitlines()
+            if line.startswith("- ")
+        ]
+        self.assertEqual(name, "Founder OS")
+        self.assertEqual(
+            tagline, "Know what matters today — before opening your inbox"
+        )
+        self.assertLessEqual(len(tagline), 60)
+        self.assertLessEqual(len(description), 260)
+        self.assertGreaterEqual(len(topics), 1)
+        self.assertLessEqual(len(topics), 3)
+
+    def test_readme_inventory_pins_sources_dimensions_and_alt_text(self):
+        readme = self.read_required("README.md")
+        if not readme:
+            return
+        for filename, (width, height) in PRODUCT_HUNT_IMAGES.items():
+            with self.subTest(filename=filename):
+                source = f"sources/{filename.removesuffix('.png')}.svg"
+                self.assertIn(filename, readme)
+                self.assertIn(source, readme)
+                self.assertIn(f"{width}×{height}", readme)
+        self.assertGreaterEqual(readme.lower().count("alt text:"), 5)
+        self.assertIn("Submission checklist", readme)
+
+    def test_maker_comment_requests_feedback_without_vote_manipulation(self):
+        comment = self.read_required("maker-comment.md")
+        if not comment:
+            return
+        compact = re.sub(r"\s+", " ", comment.lower())
+        for marker in (
+            "company of one",
+            "local markdown",
+            "never sends",
+            "who it is for",
+            "where it breaks",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, compact)
+        for prohibited in ("upvote", "vote for", "support us", "hunter"):
+            with self.subTest(prohibited=prohibited):
+                self.assertNotIn(prohibited, compact)
+
+    def test_demo_script_covers_real_uncut_activation_in_45_to_60_seconds(self):
+        script = self.read_required("demo-script.md")
+        if not script:
+            return
+        spoken = markdown_section(script, "Spoken script")
+        word_count = len(re.findall(r"\b[\w’'-]+\b", spoken))
+        self.assertGreaterEqual(word_count, 105)
+        self.assertLessEqual(word_count, 150)
+        for marker in (
+            "/plugin marketplace add msolecki/founder-os",
+            "/plugin install founder-os@founder-os",
+            "/founder-os-init",
+            "Business",
+            "Customer",
+            "Quarter",
+            "Money",
+            "reviews/daily/YYYY-MM-DD.md",
+            "no hidden cuts",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, script)
+
+    def test_activation_study_records_only_consented_operational_fields(self):
+        study = self.read_required("activation-study.md")
+        if not study:
+            return
+        for marker in (
+            "Consented participant ID",
+            "First brief persisted",
+            "Elapsed minutes",
+            "First confusion",
+            "Outcome useful",
+            "Seven-day return",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, study)
+        compact = study.lower()
+        self.assertIn("do not paste workspace contents", compact)
+        self.assertIn("voluntary", compact)
+        self.assertNotIn("synthetic copy rehearsal", compact)
+
+    def test_every_png_has_a_reviewable_svg_source(self):
+        for filename, expected in PRODUCT_HUNT_IMAGES.items():
+            with self.subTest(filename=filename):
+                source = PRODUCT_HUNT_DIR / "sources" / (
+                    filename.removesuffix(".png") + ".svg"
+                )
+                self.assertTrue(source.is_file())
+                if source.is_file():
+                    svg = source.read_text(encoding="utf-8")
+                    self.assertIn(
+                        f'viewBox="0 0 {expected[0]} {expected[1]}"', svg
+                    )
+                    self.assertIn("<title", svg)
+                    self.assertIn("<desc", svg)
 
 
 if __name__ == "__main__":

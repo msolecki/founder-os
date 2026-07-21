@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1270" height="760" viewBox="0 0 1270 760" role="img" aria-labelledby="title desc">
+  <title id="title">Founder OS daily outcome</title>
+  <desc id="desc">A daily brief names one priority, one trade, and the source behind the decision.</desc>
+  <rect width="1270" height="760" fill="#f2eee4"/>
+  <circle cx="1120" cy="116" r="122" fill="#d7f36b"/>
+  <text x="70" y="72" fill="#ba351c" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="800" letter-spacing="4">FOUNDER OS · DAILY DECISION</text>
+  <text x="70" y="164" fill="#122127" font-family="Arial, Helvetica, sans-serif" font-size="70" font-weight="800" letter-spacing="-4">Know what</text>
+  <text x="70" y="234" fill="#122127" font-family="Georgia, serif" font-size="76" font-style="italic">matters today.</text>
+  <text x="72" y="286" fill="#4d5a5e" font-family="Arial, Helvetica, sans-serif" font-size="24">One decision from goals, cash,</text>
+  <text x="72" y="320" fill="#4d5a5e" font-family="Arial, Helvetica, sans-serif" font-size="24">pipeline and commitments.</text>
+  <rect x="540" y="104" width="648" height="548" rx="30" fill="#102025"/>
+  <rect x="576" y="140" width="576" height="55" rx="12" fill="#1a3036"/>
+  <circle cx="610" cy="168" r="8" fill="#f15a35"/>
+  <text x="636" y="176" fill="#aebcb8" font-family="Arial, Helvetica, sans-serif" font-size="18">reviews/daily/2026-07-20.md</text>
+  <text x="580" y="246" fill="#f15a35" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="800" letter-spacing="3">THE ONE THING</text>
+  <text x="580" y="292" fill="#fffdf7" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700">q-0720a · Finish the Acme</text>
+  <text x="580" y="328" fill="#fffdf7" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700">proposal scope — serves B1.</text>
+  <line x1="580" y1="372" x2="1110" y2="372" stroke="#385057" stroke-width="2"/>
+  <text x="580" y="420" fill="#d7f36b" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="800" letter-spacing="3">THE TRADE</text>
+  <text x="580" y="466" fill="#dce5e2" font-family="Arial, Helvetica, sans-serif" font-size="25">The website redesign does not start.</text>
+  <text x="580" y="505" fill="#96aaa5" font-family="Arial, Helvetica, sans-serif" font-size="20">It serves neither quarterly bet.</text>
+  <rect x="580" y="552" width="530" height="58" rx="14" fill="#d7f36b"/>
+  <text x="607" y="589" fill="#122127" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="800">SOURCE-LINKED · OWNER: CHIEF OF STAFF</text>
+  <rect x="70" y="374" width="392" height="218" rx="24" fill="#fffaf0" stroke="#122127" stroke-width="2"/>
+  <text x="102" y="424" fill="#ba351c" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="800" letter-spacing="2">WHY THIS, WHY NOW</text>
+  <text x="102" y="470" fill="#122127" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">Already committed.</text>
+  <text x="102" y="506" fill="#122127" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">Tied to a live bet.</text>
+  <text x="102" y="542" fill="#122127" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">Possible to finish today.</text>
+  <text x="70" y="696" fill="#4d5a5e" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">LOCAL MARKDOWN · TRACEABLE TO ITS SOURCE · NO HIDDEN ACTIONS</text>
+</svg>
