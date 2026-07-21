@@ -292,8 +292,9 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Task 8 — Add release gates and prepare `2.4.0` (M)
 
-- [ ] **What:** remove manifest warnings, align version metadata and make release
-  validation reproducible without prematurely tagging the release.
+- [x] **What:** remove the marketplace warning, explicitly address the package's
+  canonical-context warning, align version metadata and make release validation
+  reproducible without prematurely tagging the release.
 - **Where:** modify `.claude-plugin/marketplace.json`,
   `founder-os/.claude-plugin/plugin.json`, the Codex manifest used by current
   HEAD, `CHANGELOG.md`, `.github/workflows/ci.yml`, and `docs/development.md`.
@@ -307,6 +308,8 @@ Passing logs stay concise; report only failures and the final pass counts.
      downloads an npm package, obtain explicit founder approval before adding or
      executing it. If approval is denied, keep official validation as a blocking
      documented release gate and do not describe it as CI coverage.
+     Approval was not granted in this task, so no npm-backed step was added or
+     executed; both official commands remain documented blocking local gates.
   6. Keep the internal installed-copy smoke in CI regardless of that decision.
   7. Do not create the git tag in this task.
 - **Test:** manifest parity tests, internal validator, generated-command check,
@@ -387,22 +390,22 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Final release checklist
 
-- [ ] Current HEAD and worktree ownership recorded.
+- [x] Current HEAD and worktree ownership recorded.
 - [ ] All relevant `feature_list.json` entries true with end-to-end evidence.
-- [ ] Package validator: 0 errors.
-- [ ] `COMMANDS.md` current.
-- [ ] Python unit suite green.
-- [ ] Node behavior suite green.
-- [ ] Installed-copy smoke green.
-- [ ] Official root and plugin validation green without unaddressed warnings.
-- [ ] Fresh-agent review has no open P0/P1.
+- [x] Package validator: 0 errors.
+- [x] `COMMANDS.md` current.
+- [x] Python unit suite green.
+- [x] Node behavior suite green.
+- [x] Installed-copy smoke green.
+- [x] Official root and plugin validation green without unaddressed warnings.
+- [ ] Fresh-agent end-to-end review has no open P0/P1.
 - [ ] Five-person activation gate passed.
 - [x] Landing five-second test founder-waived on 2026-07-22; synthetic rehearsal
   recorded as non-evidence.
 - [x] Product Hunt dimensions, character limits, links and alt text verified.
-- [ ] `2.4.0` versions and changelog agree.
+- [x] `2.4.0` versions and changelog agree.
 - [ ] Public install retested immediately before tagging.
-- [ ] Product Hunt page asks for testing/feedback, never votes.
+- [x] Product Hunt page asks for testing/feedback, never votes.
 
 ## Evidence log
 
@@ -475,6 +478,16 @@ Decision / next action: begin Task 8 release preparation; request explicit found
 ```
 
 ```text
+Task 8 — 2026-07-22
+Commit: 86a647c
+Focused test: python3 -m unittest tests.test_release_metadata — RED with 10 contract failures, GREEN 5/5; review hardening structurally pins active job/steps and exact warning semantics
+Full gate: 188 Python tests, 2 Node behavior tests, installed-copy smoke, validator 13 agents/49 skills/0 errors, generated-command check and diff-check green
+Official validation: marketplace passed warning-free; package passed with the one addressed root-CLAUDE.md warning, whose SessionStart delivery is pinned by test_session_context and installed-copy smoke
+Review: fresh artifact reviewer approved after two contract-hardening corrections; no Critical, Important or Minor findings open
+Decision / next action: no explicit approval was granted for an npm-downloading Claude CLI step, so CI keeps the internal smoke and Node gates while both official validations remain blocking local release gates; begin Task 9 without tagging
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -485,10 +498,10 @@ Decision / next action: <one line>
 
 ## Next action
 
-Tasks 1–7 are committed or founder-accepted and fresh-review approved, with the
-complete gate green through `ba87f19`. Begin Task 8's `2.4.0` release
-preparation. Remove both manifest warnings, align version metadata and changelog,
-and keep official local validation blocking. Do not add or execute an
-npm-downloading official CLI validation step in CI without explicit founder
-approval. Keep the staged user deletion of `TODO-done.md` outside every task
-commit.
+Tasks 1–8 are committed or founder-accepted and fresh-review approved. Commit
+`86a647c` is the untagged `2.4.0` candidate; the complete gate is green and the
+only official package warning is explicitly addressed by the tested
+`SessionStart` delivery path. Begin Task 9: obtain a fresh end-to-end review and
+real first-run evidence from five people who did not work on the repository.
+Do not fabricate participants or schedule/tag the launch before the thresholds
+pass. Keep the staged user deletion of `TODO-done.md` outside every task commit.
