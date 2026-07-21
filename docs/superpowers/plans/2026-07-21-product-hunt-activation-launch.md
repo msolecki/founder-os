@@ -345,6 +345,11 @@ Passing logs stay concise; report only failures and the final pass counts.
   assigns five interruption boundaries, distinguishes protected sections from
   expected writes and keeps the Codex run separate. Steps 4–7 remain open; all
   participant result cells are intentionally empty.
+- **Founder waiver 2026-07-22:** the founder explicitly chose option B: proceed
+  toward publication without the five-person activation evidence and accept the
+  resulting launch risk. This waives the gate; it does not pass it. Steps 4–7,
+  every cohort metric and the separate Codex result remain unverified and must
+  never be represented as observed evidence.
 - **Test / go-no-go:**
   - at least 4/5 first briefs persisted;
   - P50 ≤10 minutes and target P90 ≤15 minutes;
@@ -405,6 +410,8 @@ Passing logs stay concise; report only failures and the final pass counts.
 - [x] Official root and plugin validation green without unaddressed warnings.
 - [x] Fresh-agent end-to-end review has no open P0/P1.
 - [ ] Five-person activation gate passed.
+- [x] Founder waiver to proceed without the five-person gate recorded; no
+  participant result fabricated.
 - [x] Landing five-second test founder-waived on 2026-07-22; synthetic rehearsal
   recorded as non-evidence.
 - [x] Product Hunt dimensions, character limits, links and alt text verified.
@@ -503,6 +510,14 @@ Decision / next action: founder recruits five consented people who did not work 
 ```
 
 ```text
+Task 9 founder waiver — 2026-07-22
+Decision: founder selected option B and accepts publication risk without the five-person activation evidence
+Evidence status: the cohort and Codex worksheet rows remain empty; activation, timing, integrity and seven-day return thresholds are not passed and no result is inferred
+Boundary: the waiver permits release preparation but does not authorize Founder OS to push, publish, post or otherwise act outbound; the founder performs those actions
+Decision / next action: prepare the exact release handoff, then require a clean tree and a public-install verification of the pushed candidate before tagging
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -514,11 +529,10 @@ Decision / next action: <one line>
 ## Next action
 
 Tasks 1–8 are complete. Task 9's technical review and cohort protocol are
-complete through `aca1a28`; the untagged `2.4.0` candidate is approved for the
-cohort with the complete gate green. Recruit five consented people who did not
-work on the repository and run the assigned clean Claude Code installs in
-`docs/product-hunt/activation-study.md`; run the separate Codex row without
-counting it toward the five. Return after the seven-day follow-up with aggregate
-results only. Do not fabricate participants or schedule/tag the launch before
-the thresholds pass. Keep the staged user deletion of `TODO-done.md` outside
-every task commit.
+complete through `aca1a28`; its real-user gate is explicitly founder-waived,
+not passed. Prepare Task 10 without inventing activation evidence. Before any
+tag, resolve the unrelated staged deletion of `TODO-done.md`, push the candidate
+commit through a founder-operated outbound action, and retest installation from
+that public commit. Founder OS may hand over release commands and Product Hunt
+artifacts but must not push, publish, post or schedule them. The D+7 launch
+review remains dependent on real post-publication results.
