@@ -364,6 +364,14 @@ class TestOwnership(ValidatorTestCase):
         self.assertIn("ownership.yaml: workspace file 'metrics.md' has no owner",
                       self.check(V.check_ownership))
 
+    def test_unowned_portfolio_file_is_caught(self):
+        own = base_ownership()
+        own["portfolio_files"] = ["portfolio.md"]
+        self.write_ownership(own)
+        self.assertIn(
+            "ownership.yaml: portfolio file 'portfolio.md' has no owner",
+            self.check(V.check_ownership))
+
     def test_ownership_by_a_non_agent_is_caught(self):
         own = base_ownership()
         own["owns"]["ghost"] = []

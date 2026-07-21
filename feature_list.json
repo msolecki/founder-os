@@ -26,7 +26,7 @@
     { "description": "[TEST-006] workspace_roots relative/default FOUNDER_OS_HOME resolution is tested", "steps": ["python3 -m unittest tests.test_ownership_guard -v shows the relative-home test passing"], "passes": true },
     { "description": "[TEST-007] _patch_paths is tested for Add/Delete/Update/Move markers and multi-file dedup order", "steps": ["python3 -m unittest tests.test_ownership_guard.TestPatchPaths -v passes"], "passes": true },
     { "description": "[TEST-008] agent_type_for negative branches (bad turn_id, no PLUGIN_DATA, missing mapping) each resolve to None under test", "steps": ["python3 -m unittest tests.test_ownership_guard.TestAgentTypeFor -v passes"], "passes": true },
-    { "description": "[TEST-009] check_ownership catches an unowned portfolio_files entry", "steps": ["python3 -m unittest tests.test_validate_package.TestOwnership -v shows the portfolio_files test passing"], "passes": false },
+    { "description": "[TEST-009] check_ownership catches an unowned portfolio_files entry", "steps": ["python3 -m unittest tests.test_validate_package.TestOwnership -v shows the portfolio_files test passing"], "passes": true },
     { "description": "[TEST-010] The landing controllers are unit-tested by requiring an extracted JS module, not by string-slicing and eval-ing HTML", "steps": ["node --test tests/*.behavior.test.js passes without any literal source-line markers"], "passes": false }
   ]
 }

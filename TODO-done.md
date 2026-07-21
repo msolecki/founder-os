@@ -148,3 +148,8 @@
 
 ### [TEST-008] `agent_type_for` negative branches are untested
 - **Completed**: Added tests for invalid turn IDs, missing plugin data, and missing mappings; full suite passed with 115 tests.
+
+## 2026-07-21 — portfolio ownership batch
+
+### [TEST-009] `check_ownership` catches an unowned `portfolio_files` entry
+- **Completed**: Added regression coverage for unowned portfolio files; full suite passed with 116 tests.
