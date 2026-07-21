@@ -174,6 +174,11 @@
 ### [PERF-003] Use `CSafeLoader` when available for the guard's YAML parse
 - **Completed**: Added dynamic C-loader selection for both ownership and registry parsing, with a loader-selection test. Full suite passed with 122 tests.
 
+## 2026-07-21 — test naming batch
+
+### [ARCH-006] Test files still named `site_*` after the landing moved to `docs/`
+- **Completed**: Renamed landing tests to `docs_workflows*` and updated Python/documentation references. Python suite and Node behavior tests pass.
+
 ## 2026-07-21 — plugin name test batch
 
 ### [TEST-013] `check_plugin` wrong-`name` branch untested

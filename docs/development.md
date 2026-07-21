@@ -111,7 +111,7 @@ Under `tests/`:
 - `test_validate_package.py` — the validator's own behavior.
 - `test_ownership_guard.py` — the write-time hook (subprocess tests: main-thread
   allow, subagent ownership deny, outbound deny, fail-open paths).
-- `test_site_workflows.py` / `site_workflows.behavior.test.js` — the landing
+- `test_docs_workflows.py` / `docs_workflows.behavior.test.js` — the landing
   site's workflow content.
 
 Run: `python3 -m unittest discover -s tests`.
