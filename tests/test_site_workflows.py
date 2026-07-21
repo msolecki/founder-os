@@ -230,6 +230,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertEqual(len(panel_tags), 3)
         self.assertTrue(all(" hidden" not in tag for tag in panel_tags))
         self.assertEqual(sum("is-active" in tag for tag in panel_tags), 1)
+        self.assertEqual(sum('tabindex="-1"' in tag for tag in panel_tags), 3)
         self.assertRegex(compact, r"\.demo-tabs \{[^}]*display: none")
         self.assertRegex(compact, r"\.js \.demo-tabs \{[^}]*display: flex")
         self.assertRegex(compact, r"\.js \.demo-panel \{[^}]*display: none")

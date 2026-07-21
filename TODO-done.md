@@ -113,3 +113,8 @@
 
 ### [A11Y-005] The page still renders visible content if the main script throws
 - **Completed**: Global error handling reveals all `.reveal` content when page JavaScript fails; contract and full 105-test suite pass.
+
+## 2026-07-21 — demo tabpanel batch
+
+### [A11Y-006] Demo tabpanels are not keyboard-focusable
+- **Completed**: All demo tabpanels now use `tabindex="-1"`; the contract test confirms all three panels are focusable targets. Full suite remains green.
