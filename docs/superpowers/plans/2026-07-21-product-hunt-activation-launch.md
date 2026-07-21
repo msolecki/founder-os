@@ -394,6 +394,12 @@ Passing logs stay concise; report only failures and the final pass counts.
   GitHub. The founder must push `main`; then installation from that public
   commit must be retested before tagging. Founder OS will not push, publish,
   post or schedule.
+- **Tag checkpoint 2026-07-22:** the founder pushed `main`, and a fresh clone
+  from `https://github.com/msolecki/founder-os.git` resolved to
+  `6f4b3a3ca3a571f0d95f9ea0928b38d8ad24edd0`. The complete gate passed inside
+  that public clone. Local annotated tag `v2.4.0` now points exactly to that
+  commit. The tag is not pushed and no GitHub release or Product Hunt post has
+  been published by Founder OS.
 - **Test / launch success:**
   - ten voluntary confirmed activations in seven days;
   - at least 60% activation in the consented launch cohort;
@@ -424,7 +430,7 @@ Passing logs stay concise; report only failures and the final pass counts.
   recorded as non-evidence.
 - [x] Product Hunt dimensions, character limits, links and alt text verified.
 - [x] `2.4.0` versions and changelog agree.
-- [ ] Public install retested immediately before tagging.
+- [x] Public install retested immediately before tagging.
 - [x] Product Hunt page asks for testing/feedback, never votes.
 
 ## Evidence log
@@ -535,6 +541,15 @@ Boundary / next action: founder runs git push origin main; after public HEAD equ
 ```
 
 ```text
+Task 10 local tag checkpoint — 2026-07-22
+Public commit: 6f4b3a3ca3a571f0d95f9ea0928b38d8ad24edd0, confirmed by founder's HTTPS clone from GitHub
+Public-clone gate: 189 Python tests, 2 Node behavior tests, installed-copy smoke, validator 13 agents/49 skills/0 errors, generated-command check, clean worktree and both official validation targets green; package warning remains the single addressed CLAUDE.md warning
+Tag: local annotated v2.4.0 points exactly to 6f4b3a3ca3a571f0d95f9ea0928b38d8ad24edd0
+Outbound status: tag not pushed; GitHub release and Product Hunt submission not published
+Decision / next action: founder pushes this post-tag plan commit and refs/tags/v2.4.0, creates the GitHub release from the prepared changelog, then submits the Product Hunt kit manually; record real D+7 metrics or an explicit post-launch waiver
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -547,10 +562,9 @@ Decision / next action: <one line>
 
 Tasks 1–8 are complete. Task 9's technical review and cohort protocol are
 complete through `aca1a28`; its real-user gate is explicitly founder-waived,
-not passed. Task 10 is prepared through a clean local release audit. The founder
-must now run `git push origin main` and report completion. Then verify that
-public `main` equals local `HEAD`, install from a fresh public clone and rerun
-the complete gate before creating `v2.4.0`. Founder OS may hand over exact tag,
-GitHub release and Product Hunt actions but must not push, publish, post or
-schedule them. The D+7 launch review remains dependent on real
-post-publication results.
+not passed. Task 10 is complete through the public clean-install gate and local
+annotated `v2.4.0` tag at `6f4b3a3`. The founder must push this post-tag plan
+commit and `refs/tags/v2.4.0`, create the GitHub release from `CHANGELOG.md`, and
+submit the prepared Product Hunt listing/assets/comment. Founder OS must not
+push, publish, post or schedule them. The D+7 launch review remains dependent
+on real post-publication results or a separately recorded founder waiver.
