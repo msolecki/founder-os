@@ -5,289 +5,216 @@ description: Run first-install onboarding — interview the founder, scaffold th
 
 # Founder OS Init
 
-This runs once, at install, and it decides whether the founder is still using
-this package in three weeks.
+This is the one resumable path from an installed package to a useful first
+daily brief. It runs as the Chief of Staff. It orchestrates the owner agents;
+it does not borrow their files or call a scaffold an activation.
 
-A new installer faces an org of agents and an empty directory. Nothing in that
-directory can be advised on, because house rule 1 forbids advice without state,
-so the entire company is inert until this skill runs. The failure mode is not
-that onboarding is hard — it is that onboarding is *thorough*: forty questions,
-eighteen carefully scaffolded files, and a founder who closes the terminal and
-never opens it again. Ask the four questions that matter, write the one file you
-own, scaffold the rest, and let the owners fill them in.
-
-This skill carries onboarding itself, and onboarding ends by running the
-founder's first `daily-brief`. Everything you collect here is that brief's
-input. Collect nothing you cannot use in it.
-
-**You interview four files' worth and write one.** You run as the Chief of Staff,
-who owns `charter.md` — so the charter answers land in the charter. The other
-three answers are carried forward, in this session, to the owners of the skills
-you hand to next: `/icp-definition` writes `offer.md`, `/quarterly-planning`
-writes `goals.md`, `/revenue-review` and `/runway-forecast` write `metrics.md`.
-That is not
-bureaucracy and it is not a smaller product: `state-integrity` gives this skill
-exactly one exemption — it may bring a file into existence across an ownership
-boundary, **as an empty stub, and never with a line of content in it**.
-Scaffolding is lifecycle; content is ownership.
-
-It would also be wasted work. `quarterly-planning` opens by replacing `goals.md`
-outright, so a bet written here is destroyed twenty minutes later by the agent
-that was always going to write it — and the founder answered the question twice.
+Activation exists only when a valid brief has been persisted at
+`reviews/daily/YYYY-MM-DD.md` in the workspace resolved at preflight. Until
+then the workspace is incomplete and the next `/founder-os-init` continues it.
 
 ## When to use
 
-Immediately after install, before any other agent runs. Also after moving
-`FOUNDER_OS_HOME`.
+Run immediately after install, after moving `FOUNDER_OS_HOME`, or to resume an
+interrupted first run. Do not use it to refresh an activated workspace; that is
+`/founder-os-doctor`.
 
-Not after a package update. Nothing here is reset by one — this skill writes the
-workspace, and an update replaces the package. If the cadences stopped after a
-move, the crontab is pointing at the old path and `/setup-cadences` is what
-rewrites it.
-
-Do not run it to "refresh" a live workspace. That is `founder-os-doctor`.
+Start with Stage 0. Do not ask whether the founder is ready and do not mutate a
+workspace before preflight succeeds.
 
 ## Inputs
 
-- `references/ownership.yaml` — `workspace_files:` is the scaffold list and
-  `sections:` is what goes inside each one. Read both; do not scaffold from
-  memory or from this skill. The map changes and this file does not.
+- `references/ownership.yaml` — the only source for scaffold paths, headings
+  and owners.
+- `references/multi-business.md` and `~/.founder-os/businesses.yaml`, when the
+  registry exists.
 - `$FOUNDER_OS_HOME`, default `./founder-os/`.
-- Existing `charter.md`, if any — the abort check in step 1.
-- `~/.founder-os/businesses.yaml`, if it exists — the multi-business registry
-  (`references/multi-business.md`). Its presence, or a live workspace at a
-  different path, is what routes step 1 into the second-business flow instead
-  of an abort.
+- the canonical Founder OS context injected into this session;
+- existing workspace files and `reviews/daily/`, read before any question.
 
-## Steps
+## Stage 0 — Preflight
 
-**Start. Do not ask whether they are ready.** No "shall we begin?", no "this
-takes about twenty minutes, is now a good time?" — the first question goes in
-the first message you send. A handshake is a turn the founder spends to receive
-nothing, and it hands them the first convenient moment to defer this to a
-better afternoon. There is no better afternoon. There is this session.
+Stage 0 is read-only. Finish every check before the first workspace write:
 
-1. **Refuse to init over a live workspace.** If `charter.md` exists and has
-   content **at the target path**, stop and say so. Re-running init over real
-   state is the one way this
-   skill can destroy something irreplaceable, and "it looked empty" is not a
-   defence. Route to `founder-os-doctor`, which repairs without clobbering.
+1. Confirm the plugin manifest, `references/ownership.yaml`, house rules and
+   every downstream skill named below exist in the installed package.
+2. Resolve `FOUNDER_OS_HOME`, then resolve the business slug from the registry
+   when one exists. Treat the resulting path, `FOUNDER_OS_HOME` and business
+   slug as one frozen **resolved workspace** tuple for the entire run.
+3. Validate the registry without rewriting it. A second-business request
+   follows `references/multi-business.md`; an ambiguous or invalid slug stops.
+4. Check from filesystem metadata that the target or its nearest existing
+   parent is writable. Do not create a probe file.
+5. Confirm the canonical context is present and names the Founder OS house
+   rules, ownership map and resolved workspace.
+6. Read the target's `charter.md`, owned outputs and `reviews/daily/`, then
+   classify exactly one activation state:
 
-   **A live workspace at a *different* path is not an abort — it is a second
-   business.** Ask one question to confirm that is what the founder means, then
-   follow `references/multi-business.md`: ask for a slug for each business
-   (`[a-z0-9-]`), write or update `~/.founder-os/businesses.yaml` — the
-   existing workspace registered under its slug, the new one under its own,
-   `default:` chosen by the founder — and scaffold the new workspace exactly as
-   below. If this registration makes it two **active** businesses, also
-   scaffold the portfolio workspace at the registry's `portfolio:` path from
-   `portfolio_files:` in `ownership.yaml` (same rule: headings from
-   `sections:`, every one empty), and name `/portfolio-review` in the closing
-   line as the cadence that now exists for a reason. The interview below runs
-   for the **new** business only — the existing one already answered it.
+| State | Evidence | Action |
+|---|---|---|
+| `new` | No populated Founder OS state and no valid daily review. | Scaffold missing paths, then start Stage 1. |
+| `incomplete` | No valid daily review, but one or more owned outputs already contain state. | Preserve every populated section byte-for-byte and resume from the first missing stage. |
+| `activated` | A valid `reviews/daily/YYYY-MM-DD.md` exists in the resolved workspace. | Stop and route to `/founder-os-doctor`; never re-run onboarding over live state. |
 
-2. **Ask the timezone first.** The founder is never more willing to answer
-   questions than in the first minute. IANA form — `Europe/Warsaw`,
-   `America/Denver`. Store it in `charter.md` under `## Timezone`.
+Any failed preflight check stops before mutation. Report the failed check, why
+it matters and the exact repair or resume command. Never silently choose a
+different business.
 
-   **It schedules nothing.** Cadences run on host cron in the host's local zone,
-   so no file reads this to work out when 08:00 is. It is the founder's stated
-   zone, and `/setup-cadences` compares the host against it to catch a charter
-   left behind by a move. Do not tell them it makes anything fire.
+For a `new` workspace, scaffold every `workspace_files:` entry using the H1 and
+ordered empty headings from `sections:`. Create directories as directories.
+For a new second active business, scaffold the portfolio workspace from
+`portfolio_files:` as `multi-business.md` requires. Scaffolding is lifecycle:
+outside Chief of Staff-owned paths, never put content below those headings.
 
-3. **Scaffold every entry in `workspace_files:`, with the headings `sections:`
-   declares for it.** Directories as directories. Files as their H1 followed by
-   every section heading the map lists for that path, in the order it lists them,
-   each one empty. Read the headings from `ownership.yaml` — not from memory, not
-   from this skill.
+For an `incomplete` workspace, create only missing stubs or missing declared
+headings. Never replace, normalize, reorder or rephrase existing content.
 
-   Empty is honest; a stub full of plausible placeholder content is a lie the
-   next agent will read as state and quote as fact. But an *absent* heading is
-   not honest, it is a vacancy: `energy-audit` replaces `## Shape` in `week.md`
-   and `revenue-review` replaces `## Close` in `metrics.md`, and a skill told to
-   replace a section that was never scaffolded will create one — with a slightly
-   different name each time. By month three no two files agree and the map is
-   fiction. The headings are the contract; you are laying it down.
+## Stage 1/4 — Business
 
-   **One exception to empty: `voice.md`, if the founder already has a voice.**
-   Ask one question — "do you have a style guide, a banned-phrases list, or a
-   few emails you'd send again?" — and if the answer names a file, pull it in:
-   real samples into `## Samples`, banned phrases into `## Never`, register
-   notes into `## Register`, each line stamped with where it came from
-   (`per <path>, imported at init`). A founder who has already written down
-   "never say 'in conclusion'" should not teach it to `voice-capture` again one
-   harvested edit at a time. If the answer is no, leave it empty — empty is
-   honest, and three real drafts will fill it faster than an interview would.
+Display `Onboarding 1/4 — Business`.
 
-4. **Show them what was built while they talked. Two or three lines, not a file
-   listing.** The workspace appeared during the interview and the founder did
-   not see it happen. Show it now, at the one moment they are still deciding
-   whether this was worth the twenty minutes.
+Ask for the founder's timezone in IANA form, the business in one sentence
+without “and”, and the five-year north star. Explain that timezone records the
+founder's stated zone; it does not schedule cron.
 
-   `ls` output is not a payoff, it is a receipt. The founder cannot tell a
-   scaffolded heading from a real one, and eighteen filenames over mostly empty
-   files is "we did a lot" theatre — it reads as effort, which is the currency
-   this package specifically refuses.
+Write only missing answers to `charter.md` under `## Timezone`, `## Business`
+and `## North star`. On resume, treat a populated section as completed and do
+not ask for or rewrite it. The Chief of Staff owns this file.
 
-   Show the lines that prove it heard them. One is quoted from what you wrote:
-   their own sentence under `charter.md` `## Business`. The rest are said, not
-   shown — the client they would not take again, by name, and the runway that
-   falls out of the cash and burn they gave you two minutes ago, a number they did
-   not work out from two numbers they did.
+## Stage 2/4 — Customer
 
-   **Say them; do not write them.** `## ICP` is the Positioning Advisor's and
-   `/icp-definition` is where the excluded client lands. `## Runway` is the CFO's
-   and `/runway-forecast` is where it lands. Saying a number out loud is not a lesser
-   version of writing it — at this moment it is the better one. It proves the
-   thing was heard, which is all step 4 is for, and it costs the founder nothing
-   to hear a number that three minutes of a later task will make permanent and
-   owned.
+Display `Onboarding 2/4 — Customer`.
 
-   **If a line would be true for any other founder, cut it.** Generic output at
-   this exact moment reads as a template, and a founder who concludes they have
-   been talking to a template has concluded correctly and should stop.
+Ask for two clients or companies the founder would take again, one they would
+not take again, and the observable difference. Carry the answer in this
+session for `/icp-definition`; do not write it to `offer.md` yourself.
 
-5. **Hand to the next three skills. Do not run them.** Say in one line that
-   onboarding continues at `/icp-definition` → `/quarterly-planning` →
-   `/revenue-review`, and stop.
+If any part is unknown, carry the known examples and label the missing evidence
+as unknown. Do not turn a preference into customer evidence.
 
-   The order still matters and it is still the product: goals set before the
-   offer is named are hopes about a business that hasn't been described, and
-   metrics baselined before goals exist have nothing to be a baseline *of*. Say
-   the order. Let the founder or the **Chief of Staff** run it.
+## Stage 3/4 — Quarter
 
-   **Name the ending, not just the order.** Onboarding finishes by running their
-   first `daily-brief` on the state those three skills complete — say so in the
-   same breath as the order. It is the reason to finish. A founder told that
-   three questions stand between them and a real brief answers three questions;
-   a founder told "next: `/icp-definition`" has been handed a chore list and will
-   do it on Sunday, meaning never.
+Display `Onboarding 3/4 — Quarter`.
 
-   **The brief is not yours to run and it must not fire here.** You are holding a
-   thin `goals.md` and a `metrics.md` twenty minutes old. `/quarterly-planning`
-   and `/revenue-review` are what make a brief worth reading, and one run now
-   would rank a bet the founder has not finished writing. It would also spend the
-   payoff in the middle and leave onboarding ending on paperwork — the exact
-   failure this flow is arranged to avoid.
+Ask what result must be true in 90 days, the numeric failure threshold, and the
+hours and cash available to pursue it. Carry the answer for
+`/quarterly-planning`; do not write it to `goals.md` yourself.
 
-   **Name `/setup-cadences` as what comes after the brief. Do not run it here.**
-   The cadences are cron jobs on the founder's own machine, and nothing in
-   this package writes one until they say yes to that skill. Until they do, every
-   cadence is a command they have to remember to type — which is the state this
-   package exists to end. It goes after the brief for the same reason the brief
-   goes last: a founder who has never seen one has no reason to schedule any.
+A missing capacity or cash cap stays unknown. The first bet may be thin, but it
+may not be unsized while pretending to be complete.
 
-6. **Stop at twenty minutes.** Hard rule, not a target. Past twenty minutes you
-   are conducting an interview, not onboarding, and the founder is answering to
-   be polite. A thin charter that exists beats a rich one that was abandoned in
-   the middle.
+## Stage 4/4 — Money
 
-   **Anything unanswered becomes a queue item, not a `TODO` line.** Run `queue`
-   — you are running as the **Chief of Staff**, who owns `queue.md` — and file it
-   with an id and `bet: none`. A `TODO` in `charter.md` is homework with a file
-   extension: `weekly-review` reads `goals.md`, `reviews/daily/`, `queue.md` and
-   `reviews/weekly/`, so it will never see it, and neither will anything else.
-   The queue is swept every Friday. The TODO line is read by nobody, including
-   the founder who watched you write it.
+Display `Onboarding 4/4 — Money`.
 
-   **The cash unknown goes in `## Doing`. Everything else goes in `## Queued`.**
-   Which section is not filing, it is whether tomorrow's brief can say the thing:
-   `daily-brief` reads `## Doing` and is forbidden from reciting `## Queued`, so a
-   cash unknown filed to `## Queued` is invisible on the exact morning it matters
-   most. It is also not a three-week item. A founder who cannot say their cash
-   number has one job tomorrow, and `## Doing` is the section that means that.
+Ask for cash on hand, revenue collected over the last three months, and real
+monthly burn including founder pay. Collected is not booked. Carry these values
+to `/revenue-review` and `/runway-forecast`; do not write `metrics.md` yourself.
 
-## The interview
+Unknown values stay unknown. Do not estimate cash, infer receivables, discount
+pipeline into cash, or omit founder pay to make runway look longer.
 
-Four questions, one per file. They are chosen because each is one a founder is
-actively avoiding, and because each has a file that cannot be written without it.
+The interview has a hard stop at fifteen minutes. Anything still unanswered
+moves to `queue.md`: a cash unknown goes in `## Doing`; every other missing
+fact goes in `## Queued`. Each item gets an id, a date, `bet: none`, the owner
+who can settle it and the missing evidence. There are no `TODO` lines.
 
-**One answer you write. Three you carry.** The charter is yours; the other three
-belong to agents whose skills run in the next twenty minutes and who will ask a
-sharper version of the same question. Hold those answers in the session and hand
-them over by name — a carried answer is not a lost one, it is one that arrives at
-its owner with the founder still in the room. Where each goes is on the arrow.
+## Stage 5 — Owner-safe delegation
 
-- **What is this business, in one sentence, without the word "and"? Then: what
-  does "won" look like — not this quarter, the thing that would make five years
-  of this right?** The `and` is the tell: it is where two businesses are hiding in
-  one calendar. The second half is where they will stall, and the stall is the
-  finding — a founder who cannot say what winning looks like is optimising a
-  business they have not finished choosing. → **written**, `charter.md`
-  `## Business` and `## North star`
-- **Name two clients you would take again, and one you would not. What is
-  different about them?** Founders cannot describe their ICP in the abstract and
-  can always describe it by example. The one they would not take again is where
-  the actual answer is. → **carried to `/icp-definition`**, which runs as the
-  **Positioning Advisor** and writes `offer.md` `## ICP`
-- **What has to be true in 90 days for this quarter to have been worth it — and
-  what number would tell you it wasn't?** A bet without a kill condition is a
-  hope; the second half of the question is the half that matters. → **carried to
-  `/quarterly-planning`**, which runs as the **Strategist** and writes `goals.md`
-  `## Bets`
-- **Cash on hand, revenue *collected* in the last three months, and monthly burn
-  including paying yourself.** Collected, not booked — an invoice sent is not
-  money. Burn that omits the founder's own pay describes a company that is
-  subsidised, not profitable. → **carried to `/revenue-review` and
-  `/runway-forecast`**, which run as the **CFO** and write `metrics.md`
-  `## Close` and `## Runway`
+The Chief of Staff writes only `charter.md`, `queue.md`, `decisions/`,
+`reviews/daily/`, `reviews/weekly/`, `reviews/monthly/` and `inbox.md`; it
+scaffolds other paths as empty lifecycle stubs and delegates all content to the
+owner declared by `references/ownership.yaml`.
 
-If the founder does not know their cash number, that is the most important
-finding of the onboarding. Write it down as unknown and hand to the **CFO**.
-Do not estimate it for them, and do not tell them to go and find it — that is
-homework, and it goes in the queue per step 6 like every other unanswered
-question. Tomorrow's brief will name it as the thing that is rotting, because it
-is.
+Use the Chief of Staff's explicit agent allowlist. Pass each carried answer,
+the resolved workspace tuple and the fact that this is a bounded first run.
+Wait for each owner result before continuing.
+
+| Skill | Holder | Declared writes | Required first-run result |
+|---|---|---|---|
+| `/icp-definition` | `positioning-advisor` | `offer.md` | Evidence-backed ICP or a dated hypothesis with missing validation queued. |
+| `/quarterly-planning` | `strategist` | `goals.md`, `reviews/quarterly/` | One sized partial-quarter bet with a numeric outcome, kill condition and first move. |
+| `/revenue-review` | `cfo` | `metrics.md` | Only supplied or computable close values; every unavailable input stays explicit. |
+| `/runway-forecast` | `cfo` | `metrics.md` | Real cash and burn arithmetic, or an explicit gap and owned queue item. |
+
+Run them in table order. The two CFO skills share one owner and one file, so
+`/runway-forecast` reads the first-run close that `/revenue-review` just wrote.
+After each result, re-read the owned output from the same resolved workspace.
+Do not accept a verbal “done” as persisted state.
+
+The Chief of Staff may write missing-data queue items and the install decision
+record because it owns those paths. The decision record uses the four headings
+declared for `decisions/`, records the timezone, resolved workspace and unknown
+inputs, and labels itself `none — install record` under `## Rejected` and
+`## Supersedes`.
+
+## Stage 6 — First brief
+
+Use the same resolved workspace tuple — the same `FOUNDER_OS_HOME`, business
+slug and resolved workspace path fixed in Stage 0 — for validation, invocation
+and persistence.
+
+- **Minimum-state validation:** in the same resolved workspace, validate non-empty charter identity plus owner-persisted `offer.md`, `goals.md`, `metrics.md` and `queue.md`; truthful hypotheses and unknowns are valid, fabricated completeness is not.
+- **Daily-brief invocation:** invoke `/daily-brief` as the Chief of Staff against that same resolved workspace.
+- **Persisted completion:** require a successful persisted write to `reviews/daily/YYYY-MM-DD.md` in that same resolved workspace and validate its declared daily-review headings before continuing.
+
+Minimum state is not “every field known.” It is enough truthful state for the
+brief to choose exactly one first move or the blocking cash unknown. Missing
+historical items do not become rotting work merely because this is day one.
+
+## Stage 7 — Activation receipt
+
+- **Activation receipt:** print `Activation complete` only after the successful persisted write from Stage 6 has been validated.
+
+Re-resolve nothing here. This is the same resolved workspace: the same
+`FOUNDER_OS_HOME`, business slug and path tuple validated in Stage 6. Include:
+
+- the one thing selected for today;
+- the persisted `reviews/daily/YYYY-MM-DD.md` path;
+- every file written and its owner;
+- honest gaps added to `queue.md`;
+- the first five actions: run `/daily-brief`, write a thought to `inbox.md`,
+  run `/pipeline-review`, run `/weekly-review`, and ask the Chief of Staff where
+  to route an uncategorized decision.
+
+Name `/setup-cadences` as optional post-activation setup. Do not run it. Do not
+send telemetry, feedback, messages or any other outbound event.
+
+## Resume and failure
+
+Resume state comes only from the persisted outputs in the resolved workspace;
+there is no hidden progress file or second state tracker.
+
+### Failure
+
+On a failed preflight, delegation, validation, invocation or write, halt before
+Stage 7. Print the completed stages, the missing stage, the concrete failed
+condition, and `/founder-os-init` as the resume command. Omit the success
+receipt. A caught failure in one owner stage must not erase another owner's
+successful output.
+
+### Resume
+
+On the next run, derive completed stages from valid owned outputs, preserve all
+populated sections byte-for-byte, and continue from the first missing stage.
+Do not re-scaffold destructively, re-ask completed stages or copy a carried
+answer into a file owned by someone else. An activated classification still
+routes to the doctor instead of resuming.
 
 ## Output
 
-- `$FOUNDER_OS_HOME/` containing every entry from `workspace_files:`, each flat
-  file carrying the headings `sections:` declares for it, **every one of them
-  empty** — except `charter.md`, which the Chief of Staff owns and which carries
-  the interview's first answer under `## Business`, `## North star` and
-  `## Timezone`.
-- The other three interview answers held in this session and handed by name to
-  `/icp-definition`, `/quarterly-planning` and `/revenue-review`. Not written.
-  Their owners write them, three skills from now, which is the whole reason those
-  skills exist.
-- Two or three lines, on screen, quoted from what you just wrote, that would be
-  wrong for any other founder — step 4.
-- One line naming what happens next: `/icp-definition` → `/quarterly-planning` →
-  `/revenue-review`, ending in their first daily brief, and `/setup-cadences`
-  after it. The brief is onboarding's output, not this skill's — step 5 says why.
-- `queue.md` carrying one item per unanswered question, each with an id and
-  `bet: none` — the cash unknown in `## Doing`, the rest in `## Queued`. No
-  `TODO` lines anywhere.
-- `decisions/YYYY-MM-DD-founder-os-installed.md` — the timezone chosen, the
-  workspace path, and any question the founder could not answer, **carrying the
-  four headings the map declares for `decisions/`**: the facts under
-  `## Context`, `none — install record` under `## Rejected` and
-  `## Supersedes`, and under `## What would change our mind` the one honest
-  answer — "the cadences stop being read". This is the first entry in the
-  decision log; the log's own vocabulary starting at entry one is what
-  establishes the habit that makes `annual-review` possible twelve months from
-  now — an entry zero that breaks the format licenses every entry after it.
+- One resolved business workspace, never a guessed cross-business path.
+- Existing populated state preserved exactly.
+- Owner-persisted charter, ICP/hypothesis, first bet, financial baseline/runway
+  or explicit gaps, queue items and first daily brief.
+- A local activation receipt shown only after the brief validates.
 
 ## Guardrails
 
-Never overwrite a workspace that has content. Never invent a number the founder
-did not give you — an empty `metrics.md` is a known gap, and a plausible one is
-a lie every agent downstream will quote as fact under house rule 2.
+Never overwrite populated state. Never invent a fact or write content into a
+file owned by another agent. Read `references/ownership.yaml` at runtime; the
+table above describes orchestration, not a replacement owner map.
 
-**Never put a line of content in a file the Chief of Staff does not own.** You
-scaffold every path in the map and you write one file. The exemption `state-integrity`
-grants this skill is lifecycle — bringing a missing file into existence — and it
-is empty-stub only, on purpose, and it does not stretch to "but I have the answer
-right here and the founder is sitting in front of me". That sentence is exactly
-the pressure it was written against, and it arrives every single install. The
-answer goes to the owner, in the handoff, by name.
-
-Never scaffold beyond `workspace_files:`. Extra files are unowned files, and
-`state-integrity` will refuse to write them for the rest of the package's life.
-The same applies to headings: a section `sections:` does not declare is a section
-no skill will ever look for, and it will sit in the file looking like state.
-
-No tax, legal, or medical advice, including in the interview. The entity
-question — sole trader, limited company, which jurisdiction — will come up
-inside the first five minutes because it feels like setup. It is not setup. See
-`guardrails`.
+Never send, publish, pay, invoice, sign, cancel or install anything. No tax,
+legal or medical advice belongs in onboarding. Route those questions according
+to `guardrails` and continue only with the in-scope business facts.

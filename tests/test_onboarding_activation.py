@@ -102,6 +102,24 @@ def markdown_table_rows(body: str) -> list[list[str]]:
     return rows
 
 
+def table_row_for(body: str, first_cell: str) -> list[str]:
+    matches = [
+        row
+        for row in markdown_table_rows(body)
+        if row and row[0].strip("`").lower() == first_cell.lower()
+    ]
+    if len(matches) != 1:
+        raise AssertionError(
+            f"expected one table row for {first_cell!r}, found {len(matches)}"
+        )
+    return matches[0]
+
+
+def semantic_pattern(text: str) -> str:
+    """Match required words across ordinary Markdown line wrapping."""
+    return re.escape(text).replace(r"\ ", r"\s+")
+
+
 def owner_for(path: str, ownership: dict) -> str:
     matches = []
     for agent, owned_paths in ownership["owns"].items():
@@ -213,9 +231,77 @@ class OnboardingActivationContract(unittest.TestCase):
             "incomplete",
             "activated",
         ):
-            self.assertRegex(preflight, rf"(?i){re.escape(required)}")
+            self.assertRegex(preflight, rf"(?i){semantic_pattern(required)}")
         self.assertRegex(preflight, r"(?is)activated.*?/founder-os-doctor")
         self.assertRegex(preflight, r"(?is)incomplete.*?resume")
+
+    def test_state_rows_define_new_interrupted_and_activated_actions(self):
+        _, preflight, _ = section_matching(
+            self.init_body, r"Stage 0.*Preflight"
+        )
+        cases = {
+            "new": ("scaffold", "Stage 1"),
+            "incomplete": (
+                "preserve",
+                "byte-for-byte",
+                "first missing stage",
+            ),
+            "activated": ("reviews/daily/", "/founder-os-doctor", "stop"),
+        }
+        for state, required in cases.items():
+            with self.subTest(state=state):
+                row = " | ".join(table_row_for(preflight, state))
+                for token in required:
+                    self.assertRegex(row, rf"(?i){semantic_pattern(token)}")
+
+    def test_interview_stages_collect_only_first_brief_inputs(self):
+        expected = {
+            r"Stage 1/4.*Business": (
+                "timezone",
+                "one sentence",
+                "five-year north star",
+            ),
+            r"Stage 2/4.*Customer": (
+                "two",
+                "take again",
+                "would not",
+                "observable difference",
+            ),
+            r"Stage 3/4.*Quarter": (
+                "90 days",
+                "numeric failure threshold",
+                "hours",
+                "cash",
+            ),
+            r"Stage 4/4.*Money": (
+                "cash on hand",
+                "revenue collected",
+                "last three months",
+                "monthly burn",
+                "founder pay",
+            ),
+        }
+        for heading, required in expected.items():
+            with self.subTest(stage=heading):
+                _, section, _ = section_matching(self.init_body, heading)
+                for token in required:
+                    self.assertRegex(section, rf"(?i){semantic_pattern(token)}")
+        self.assertRegex(self.init_body, r"(?i)hard stop.*fifteen minutes")
+        self.assertNotRegex(self.init_body, r"(?i)twenty minutes")
+
+    def test_codex_interface_promises_resumable_persisted_activation(self):
+        interface = yaml.safe_load(
+            (
+                PLUGIN_ROOT
+                / "skills"
+                / "founder-os-init"
+                / "agents"
+                / "openai.yaml"
+            ).read_text(encoding="utf-8")
+        )["interface"]
+        prompt = interface["default_prompt"]
+        for token in ("resum", "persisted", "daily brief"):
+            self.assertRegex(prompt, rf"(?i){semantic_pattern(token)}")
 
     def test_delegated_skills_follow_live_agent_and_ownership_manifests(self):
         _, delegation, _ = section_matching(
@@ -287,6 +373,14 @@ class OnboardingActivationContract(unittest.TestCase):
         )
         self.assertRegex(first_brief, r"(?i)/daily-brief\b")
 
+    def test_chief_of_staff_writes_only_owned_activation_state(self):
+        _, delegation, _ = section_matching(
+            self.init_body, r"Stage 5.*Owner-safe delegation"
+        )
+        self.assertRegex(delegation, r"(?i)Chief of Staff.*writes only")
+        for path in ("charter.md", "queue.md", "reviews/daily/"):
+            self.assertRegex(delegation, rf"(?i){semantic_pattern(path)}")
+
     def test_minimum_state_daily_brief_persistence_and_receipt_are_ordered(self):
         _, first_brief, first_brief_offset = section_matching(
             self.init_body, r"Stage 6.*First brief"
@@ -309,11 +403,12 @@ class OnboardingActivationContract(unittest.TestCase):
         )
         for token in ("FOUNDER_OS_HOME", "business slug", "resolved workspace"):
             with self.subTest(token=token):
-                self.assertRegex(preflight, rf"(?i){re.escape(token)}")
-                self.assertRegex(validation, rf"(?i){re.escape(token)}")
-                self.assertRegex(receipt, rf"(?i){re.escape(token)}")
+                pattern = rf"(?i){semantic_pattern(token)}"
+                self.assertRegex(preflight, pattern)
+                self.assertRegex(validation, pattern)
+                self.assertRegex(receipt, pattern)
         for section in (validation, receipt):
-            self.assertRegex(section, r"(?i)same resolved workspace")
+            self.assertRegex(section, rf"(?i){semantic_pattern('same resolved workspace')}")
 
     def test_failure_reports_resume_state_without_a_success_receipt(self):
         _, failure, _ = section_matching(self.init_body, r"Resume and failure")
@@ -327,7 +422,7 @@ class OnboardingActivationContract(unittest.TestCase):
             "halt",
             "Stage 7",
         ):
-            self.assertRegex(halt, rf"(?i){re.escape(required)}")
+            self.assertRegex(halt, rf"(?i){semantic_pattern(required)}")
         self.assertNotIn("Activation complete", halt)
         for required in (
             "first missing stage",
@@ -335,7 +430,7 @@ class OnboardingActivationContract(unittest.TestCase):
             "preserve",
             "byte-for-byte",
         ):
-            self.assertRegex(resume, rf"(?i){re.escape(required)}")
+            self.assertRegex(resume, rf"(?i){semantic_pattern(required)}")
 
     def test_receipt_order_check_detects_completion_moved_before_write(self):
         compliant = """
