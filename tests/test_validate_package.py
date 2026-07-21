@@ -182,6 +182,14 @@ class TestFixture(ValidatorTestCase):
 
 
 class TestPlugin(ValidatorTestCase):
+    def test_claude_and_codex_manifest_identity_must_match(self):
+        write(self.root / ".codex-plugin" / "plugin.json",
+              json.dumps({"name": "founder-os", "version": "0.0.1",
+                          "description": "different"}))
+        errs = self.check(V.check_plugin)
+        self.assertTrue(any("version differs" in err for err in errs), errs)
+        self.assertTrue(any("description differs" in err for err in errs), errs)
+
     def test_missing_plugin_json_is_caught(self):
         (self.root / ".claude-plugin" / "plugin.json").unlink()
         self.assertEqual(self.check(V.check_plugin),

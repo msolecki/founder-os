@@ -68,6 +68,15 @@ def check_plugin(root, agents):
         errs.append("plugin.json: 'name' is the one required field and it is missing")
     if d.get("name") and d["name"] != "founder-os":
         errs.append("plugin.json: name must be 'founder-os'")
+    codex_path = root / ".codex-plugin" / "plugin.json"
+    if codex_path.exists():
+        try:
+            codex = json.loads(codex_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            return errs + [".codex-plugin/plugin.json: invalid JSON (%s)" % e]
+        for field in ("name", "version", "description"):
+            if d.get(field) != codex.get(field):
+                errs.append("plugin manifests: %s differs between Claude and Codex" % field)
     return errs
 
 

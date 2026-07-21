@@ -88,3 +88,8 @@
 
 ### [ARCH-003] Hardcoded "13 / 49 / 10" counts drift across docs & the Codex manifest
 - **Completed**: `check_readme_counts` now scans the documentation surfaces and Codex long description; a stale docs fixture fails validation. Full suite passed with 100 tests.
+
+## 2026-07-21 — manifest parity batch
+
+### [ARCH-004] Claude and Codex plugin manifests disagree, and nothing validates agreement
+- **Completed**: Claude and Codex identity fields are synchronized; `check_plugin` now rejects name/version/description drift. Full suite passed with 101 tests.
