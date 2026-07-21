@@ -305,9 +305,13 @@ Give a fresh reviewer the full batch diff and the five original TODO requirement
 
 **Review evidence (2026-07-21):** fresh whole-batch review approved the implementation with no critical, important, or actionable minor findings. The only noted scope observation—malformed registry YAML handling—is outside TEST-003, which specifically covers malformed ownership YAML.
 
-- [ ] **Step 7: Commit bookkeeping files only**
+- [x] **Step 7: Commit bookkeeping files only**
 
 ```bash
 git add feature_list.json TODO.md TODO-done.md docs/superpowers/plans/2026-07-21-enforcement-test-net.md
 git commit -m "chore(backlog): close enforcement test batch [TEST-001, TEST-002, TEST-003, TEST-004, PERF-001]"
 ```
+
+**Bookkeeping evidence (2026-07-21):** staged diff passed `git diff --cached --check`; the mandated validation set passed again (13 agents / 49 skills / 0 errors, compile OK, 93 tests OK, generated commands current). Commit: `2cde445`.
+
+**Next action:** highest-priority remaining coherent work is the next P1 batch, beginning with `ARCH-001` and `A11Y-001`; no implementation was started in this batch.
