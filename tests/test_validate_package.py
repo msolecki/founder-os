@@ -141,7 +141,7 @@ class ValidatorTestCase(unittest.TestCase):
     def write_hooks(self):
         write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
             "PreToolUse": [{"matcher":
-                "^(Write|Edit|NotebookEdit|Bash|WebFetch|mcp__.*)$",
+                "^(Write|Edit|NotebookEdit|Bash|WebFetch|apply_patch|mcp__.*)$",
                 "hooks": []}]}}))
         write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
 
@@ -493,7 +493,7 @@ class TestCheckHooks(unittest.TestCase):
             "PreToolUse": [{"matcher": "^(Write|Edit)$", "hooks": []}]}}))
         write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
         errs = V.check_hooks(self.root, {})
-        for tool in ("NotebookEdit", "Bash", "WebFetch", "mcp__"):
+        for tool in ("Edit", "NotebookEdit", "Bash", "WebFetch", "apply_patch", "mcp__"):
             self.assertTrue(any(tool in e for e in errs), (tool, errs))
 
     def test_edit_hidden_inside_notebookedit_is_detected(self):

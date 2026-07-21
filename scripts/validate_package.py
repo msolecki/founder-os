@@ -376,7 +376,7 @@ def check_hooks(root, agents):
                 patterns.remove(pat)
         return False
 
-    for tool in ("Write", "Edit", "NotebookEdit", "Bash", "WebFetch", "mcp__x"):
+    for tool in ("Write", "Edit", "NotebookEdit", "Bash", "WebFetch", "apply_patch", "mcp__x"):
         if not covered(tool):
             if tool == "mcp__x":
                 errs.append("hooks/hooks.json: PreToolUse matcher does not "

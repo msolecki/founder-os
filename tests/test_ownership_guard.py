@@ -100,6 +100,31 @@ class TestOwnerOfCasefold(unittest.TestCase):
 
 
 class TestHookIntegration(unittest.TestCase):
+    def test_symlink_outside_workspace_to_owned_file_is_denied(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "founder-os"
+            root.mkdir()
+            (root / "references").mkdir()
+            (root / "references" / "ownership.yaml").write_text(
+                "owns:\n  strategist:\n    - goals.md\n", encoding="utf-8")
+            owned = root / "goals.md"
+            owned.write_text("", encoding="utf-8")
+            outside = Path(td) / "linked-goals.md"
+            outside.symlink_to(owned)
+            env = {**os.environ,
+                   "FOUNDER_OS_HOME": str(root),
+                   "CLAUDE_PLUGIN_ROOT": str(root)}
+            payload = {"agent_type": "pipeline-coach", "tool_name": "Write",
+                       "cwd": str(root),
+                       "tool_input": {"file_path": str(outside)}}
+            result = subprocess.run(
+                [sys.executable, str(GUARD_PATH)],
+                input=json.dumps(payload), capture_output=True, text=True,
+                env=env, cwd=str(REPO_ROOT))
+        self.assertIn("deny", result.stdout)
+        self.assertIn("strategist", result.stdout)
+
     def test_notebookedit_by_wrong_agent_is_denied(self):
         p = run_hook({"agent_type": "pipeline-coach",
                       "tool_name": "NotebookEdit",

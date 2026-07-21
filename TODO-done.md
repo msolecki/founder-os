@@ -54,3 +54,11 @@
 
 ### [A11Y-001] No Open Graph / Twitter Card / canonical meta on a launch page
 - **Completed**: Added OG/Twitter/canonical metadata and a 1200×630 `og-image.svg`, plus a metadata contract test. Full suite passed with 94 tests.
+
+## 2026-07-21 — hook coverage batch
+
+### [TEST-005] Symlink / `..` resolution in `relative_to_workspace` is untested
+- **Completed**: Added an end-to-end symlink fixture proving an outside link to an owned file is denied to the wrong agent. Full suite passed with 95 tests.
+
+### [BUG-001] `check_hooks` never asserts the matcher covers `apply_patch`
+- **Completed**: Validator coverage now includes `apply_patch`; fixture and regression test pin the matcher contract. Full suite passed with 95 tests.
