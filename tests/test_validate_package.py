@@ -182,6 +182,12 @@ class TestFixture(ValidatorTestCase):
 
 
 class TestPlugin(ValidatorTestCase):
+    def test_wrong_plugin_name_is_caught(self):
+        self.write_plugin({"name": "other-plugin"})
+        self.assertEqual(
+            self.check(V.check_plugin),
+            ["plugin.json: name must be 'founder-os'"])
+
     def test_claude_and_codex_manifest_identity_must_match(self):
         write(self.root / ".codex-plugin" / "plugin.json",
               json.dumps({"name": "founder-os", "version": "0.0.1",
