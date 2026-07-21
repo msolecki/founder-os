@@ -340,6 +340,11 @@ Passing logs stay concise; report only failures and the final pass counts.
   6. Run Claude Code clean installs for all five. Run a separate Codex test; if
      it fails, label Codex beta/manual everywhere before launch.
   7. Re-test `weekly-review` seven days later.
+- **Checkpoint 2026-07-22:** steps 1–3 are complete. A fresh end-to-end reviewer
+  approved the candidate for the cohort with no P0/P1/P2. The worksheet now
+  assigns five interruption boundaries, distinguishes protected sections from
+  expected writes and keeps the Codex run separate. Steps 4–7 remain open; all
+  participant result cells are intentionally empty.
 - **Test / go-no-go:**
   - at least 4/5 first briefs persisted;
   - P50 ≤10 minutes and target P90 ≤15 minutes;
@@ -391,14 +396,14 @@ Passing logs stay concise; report only failures and the final pass counts.
 ## Final release checklist
 
 - [x] Current HEAD and worktree ownership recorded.
-- [ ] All relevant `feature_list.json` entries true with end-to-end evidence.
+- [x] All relevant `feature_list.json` entries true with end-to-end evidence.
 - [x] Package validator: 0 errors.
 - [x] `COMMANDS.md` current.
 - [x] Python unit suite green.
 - [x] Node behavior suite green.
 - [x] Installed-copy smoke green.
 - [x] Official root and plugin validation green without unaddressed warnings.
-- [ ] Fresh-agent end-to-end review has no open P0/P1.
+- [x] Fresh-agent end-to-end review has no open P0/P1.
 - [ ] Five-person activation gate passed.
 - [x] Landing five-second test founder-waived on 2026-07-22; synthetic rehearsal
   recorded as non-evidence.
@@ -488,6 +493,16 @@ Decision / next action: no explicit approval was granted for an npm-downloading 
 ```
 
 ```text
+Task 9 technical checkpoint — 2026-07-22
+Commit: aca1a28
+Focused test: python3 -m unittest tests.test_docs_workflows.ProductHuntLaunchKitContractTest — RED with 13 missing cohort-protocol markers, then review-correction RED with 8 section/timing failures, final GREEN 10/10
+Full gate: 189 Python tests, 2 Node behavior tests, installed-copy smoke, validator 13 agents/49 skills/0 errors, generated-command check, diff-check and both official validation targets green; the sole package warning remains addressed
+Review: fresh end-to-end artifact reviewer approved the candidate for cohort, then approved the protected-section/expected-write protocol correction; no P0/P1/P2 findings open
+Operational evidence: P-01 through P-05 and the separate Codex row remain empty; no participant result is claimed
+Decision / next action: founder recruits five consented people who did not work on the repo, runs the assigned clean-install interruptions without rescue, records aggregate operational fields, and returns after seven days; no tag or Product Hunt schedule before thresholds pass
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -498,10 +513,12 @@ Decision / next action: <one line>
 
 ## Next action
 
-Tasks 1–8 are committed or founder-accepted and fresh-review approved. Commit
-`86a647c` is the untagged `2.4.0` candidate; the complete gate is green and the
-only official package warning is explicitly addressed by the tested
-`SessionStart` delivery path. Begin Task 9: obtain a fresh end-to-end review and
-real first-run evidence from five people who did not work on the repository.
-Do not fabricate participants or schedule/tag the launch before the thresholds
-pass. Keep the staged user deletion of `TODO-done.md` outside every task commit.
+Tasks 1–8 are complete. Task 9's technical review and cohort protocol are
+complete through `aca1a28`; the untagged `2.4.0` candidate is approved for the
+cohort with the complete gate green. Recruit five consented people who did not
+work on the repository and run the assigned clean Claude Code installs in
+`docs/product-hunt/activation-study.md`; run the separate Codex row without
+counting it toward the five. Return after the seven-day follow-up with aggregate
+results only. Do not fabricate participants or schedule/tag the launch before
+the thresholds pass. Keep the staged user deletion of `TODO-done.md` outside
+every task commit.
