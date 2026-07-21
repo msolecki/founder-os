@@ -621,6 +621,7 @@ class ProductHuntLaunchKitContractTest(unittest.TestCase):
         study = self.read_required("activation-study.md")
         if not study:
             return
+        normalized = " ".join(study.split())
         for marker in (
             "Consented participant ID",
             "First brief persisted",
@@ -630,11 +631,41 @@ class ProductHuntLaunchKitContractTest(unittest.TestCase):
             "Seven-day return",
         ):
             with self.subTest(marker=marker):
-                self.assertIn(marker, study)
+                self.assertIn(marker, normalized)
         compact = study.lower()
         self.assertIn("do not paste workspace contents", compact)
         self.assertIn("voluntary", compact)
         self.assertNotIn("synthetic copy rehearsal", compact)
+
+    def test_activation_study_pins_resume_integrity_and_separate_codex_gate(self):
+        study = self.read_required("activation-study.md")
+        if not study:
+            return
+        normalized = " ".join(study.split())
+        for marker in (
+            "Assigned interruption boundary",
+            "Resume preserved protected sections",
+            "Integrity incident",
+            "after Business checkpoint, before Customer",
+            "after offer checkpoint, before Quarter",
+            "after ready-bet checkpoint, before Money",
+            "after activation close, before runway",
+            "after runway checkpoint, before first brief",
+            "Separate Codex clean-install check",
+            "Codex status",
+            "beta/manual",
+            "Do not count the Codex result toward the five-person Claude Code gate",
+            "0 overwrites, ownership breaches, or false completions",
+            "Protected populated sections",
+            "Expected post-resume write",
+            "Do not hash the whole file",
+            "existing `## Close — YYYY-MM` block",
+            "append `## Runway — as of YYYY-MM-DD` to the same `metrics.md`",
+            "Stop the activation timer",
+            "Do not include the seven-day wait",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, normalized)
 
     def test_every_png_has_a_reviewable_svg_source(self):
         for filename, expected in PRODUCT_HUNT_IMAGES.items():
