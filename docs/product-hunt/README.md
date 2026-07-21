@@ -21,7 +21,7 @@ the real activation run, and posts the maker comment.
 | `gallery-01-outcome.png` | 1270×760 | [`sources/gallery-01-outcome.svg`](sources/gallery-01-outcome.svg) | Alt text: Founder OS daily brief naming one priority and one explicit trade. |
 | `gallery-02-onboarding.png` | 1270×760 | [`sources/gallery-02-onboarding.svg`](sources/gallery-02-onboarding.svg) | Alt text: Four onboarding groups leading from an empty folder to a valid first brief. |
 | `gallery-03-trust.png` | 1270×760 | [`sources/gallery-03-trust.svg`](sources/gallery-03-trust.svg) | Alt text: Four Founder OS trust boundaries: local Markdown, ownership, provenance, and no sending or payments. |
-| `gallery-04-operating-loop.png` | 1270×760 | [`sources/gallery-04-operating-loop.svg`](sources/gallery-04-operating-loop.svg) | Alt text: Daily and weekly Founder OS loop connecting inbox, brief, queue, calendar, pipeline, and review. |
+| `gallery-04-operating-loop.png` | 1270×760 | [`sources/gallery-04-operating-loop.svg`](sources/gallery-04-operating-loop.svg) | Alt text: Founder OS loop from daily brief through committed work and Friday review to the next brief, with inbox notes feeding forward. |
 
 The SVG files are the reviewed visual sources. The PNG files are deterministic
 renders of those sources, not generated screenshots of a fictional successful

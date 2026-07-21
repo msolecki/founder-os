@@ -35,7 +35,7 @@
     <text x="944" y="447" fill="#344045" font-size="20">Cash and burn.</text>
     <text x="944" y="477" fill="#344045" font-size="18">Unknown stays unknown.</text>
   </g>
-  <text x="70" y="588" fill="#fffdf7" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800">10-MINUTE MEDIAN TARGET · 15-MINUTE HARD STOP</text>
+  <text x="70" y="588" fill="#fffdf7" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800">10-MIN MEDIAN · 15-MIN ONBOARDING STOP</text>
   <rect x="690" y="552" width="470" height="84" rx="18" fill="#fffaf0"/>
   <text x="720" y="586" fill="#ba351c" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="800">ACTIVATION RECORD</text>
   <text x="720" y="616" fill="#122127" font-family="Courier New, monospace" font-size="20">reviews/daily/YYYY-MM-DD.md</text>

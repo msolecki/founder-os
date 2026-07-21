@@ -7,6 +7,7 @@ import unittest
 from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urlparse
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HTML = (REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
@@ -533,14 +534,48 @@ class ProductHuntLaunchKitContractTest(unittest.TestCase):
         readme = self.read_required("README.md")
         if not readme:
             return
+        rows = re.findall(
+            r"\| `([^`]+\.png)` \| (\d+)×(\d+) \| "
+            r"\[`([^`]+\.svg)`\]\(([^)]+)\) \| Alt text: ([^|]+) \|",
+            readme,
+        )
+        self.assertEqual(len(rows), len(PRODUCT_HUNT_IMAGES))
+        inventory = {row[0]: row[1:] for row in rows}
+        self.assertEqual(set(inventory), set(PRODUCT_HUNT_IMAGES))
+        alt_texts = []
         for filename, (width, height) in PRODUCT_HUNT_IMAGES.items():
             with self.subTest(filename=filename):
-                source = f"sources/{filename.removesuffix('.png')}.svg"
-                self.assertIn(filename, readme)
-                self.assertIn(source, readme)
-                self.assertIn(f"{width}×{height}", readme)
-        self.assertGreaterEqual(readme.lower().count("alt text:"), 5)
+                row_width, row_height, source_label, source_href, alt = (
+                    inventory[filename]
+                )
+                expected_source = (
+                    f"sources/{filename.removesuffix('.png')}.svg"
+                )
+                self.assertEqual((int(row_width), int(row_height)), (width, height))
+                self.assertEqual(source_label, expected_source)
+                self.assertEqual(source_href, expected_source)
+                self.assertTrue((PRODUCT_HUNT_DIR / source_href).is_file())
+                self.assertTrue(alt.strip())
+                alt_texts.append(alt.strip())
+        self.assertEqual(len(set(alt_texts)), len(PRODUCT_HUNT_IMAGES))
+        for href in re.findall(r"\[[^]]+\]\(([^)]+)\)", readme):
+            with self.subTest(href=href):
+                if not href.startswith(("https://", "http://", "#")):
+                    self.assertTrue((PRODUCT_HUNT_DIR / href).is_file())
         self.assertIn("Submission checklist", readme)
+
+    def test_listing_uses_a_direct_primary_url(self):
+        listing = self.read_required("listing.md")
+        if not listing:
+            return
+        primary_url = markdown_section(listing, "Primary URL")
+        self.assertEqual(primary_url, "https://msolecki.github.io/founder-os/")
+        parsed = urlparse(primary_url)
+        self.assertEqual(parsed.scheme, "https")
+        self.assertEqual(parsed.netloc, "msolecki.github.io")
+        self.assertEqual(parsed.path, "/founder-os/")
+        self.assertFalse(parsed.query)
+        self.assertFalse(parsed.fragment)
 
     def test_maker_comment_requests_feedback_without_vote_manipulation(self):
         comment = self.read_required("maker-comment.md")
@@ -615,6 +650,16 @@ class ProductHuntLaunchKitContractTest(unittest.TestCase):
                     )
                     self.assertIn("<title", svg)
                     self.assertIn("<desc", svg)
+
+    def test_operating_loop_starts_with_the_brief_and_feeds_inbox_forward(self):
+        source = (
+            PRODUCT_HUNT_DIR / "sources" / "gallery-04-operating-loop.svg"
+        ).read_text(encoding="utf-8")
+        self.assertLess(
+            source.index(">daily brief</text>"),
+            source.index(">inbox.md</text>"),
+        )
+        self.assertIn("feeds the next brief", source.lower())
 
 
 if __name__ == "__main__":
