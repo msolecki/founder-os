@@ -42,6 +42,16 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_labeled_generic_regions_have_naming_capable_roles(self):
+        self.assertIn(
+            'class="command-center reveal" role="group" aria-label=', HTML)
+        self.assertIn(
+            'class="hero-stats reveal" role="group" aria-label=', HTML)
+        self.assertIn(
+            'class="multi-diagram" role="img" aria-label=', HTML)
+        self.assertIn(
+            'class="multi-principles" role="group" aria-label=', HTML)
+
     def test_orange_section_copy_uses_solid_ink_for_contrast(self):
         self.assertRegex(
             HTML,

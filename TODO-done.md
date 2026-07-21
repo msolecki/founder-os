@@ -98,3 +98,8 @@
 
 ### [A11Y-002] Translucent ink text on the orange section fails WCAG AA
 - **Completed**: Orange-section body copy now uses solid `var(--ink)`; CSS contract test and full 102-test suite pass.
+
+## 2026-07-21 — ARIA roles batch
+
+### [A11Y-003] `aria-label` on roleless `<div>`s
+- **Completed**: Labeled generic regions and diagrams now use `group`/`img` roles; the landing-page contract test passes in the full 103-test suite.
