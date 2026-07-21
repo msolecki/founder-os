@@ -20,5 +20,7 @@ jobs:
         run: python3 scripts/validate_package.py founder-os
       - name: Check COMMANDS.md is current
         run: python3 scripts/generate_commands.py founder-os --check
+      - name: Smoke-test an installed copy
+        run: python3 scripts/smoke_installed_copy.py
       - name: Run the tests
         run: python3 -m unittest discover -s tests -v

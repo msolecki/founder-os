@@ -10,10 +10,11 @@ tests, CI, and releasing.
 pip install pyyaml
 python3 scripts/validate_package.py founder-os     # 13 agent(s), 49 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os    # regenerate COMMANDS.md if frontmatter changed
+python3 scripts/smoke_installed_copy.py            # installed-copy smoke: PASS
 python3 -m unittest discover -s tests              # OK
 ```
 
-CI runs all three on every push and PR (`.github/workflows/ci.yml`). A red build
+CI runs all four on every push and PR (`.github/workflows/ci.yml`). A red build
 is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
@@ -111,10 +112,14 @@ Under `tests/`:
 - `test_validate_package.py` — the validator's own behavior.
 - `test_ownership_guard.py` — the write-time hook (subprocess tests: main-thread
   allow, subagent ownership deny, outbound deny, fail-open paths).
+- `test_session_context.py` — copies the plugin into a temporary marketplace,
+  checks every `SessionStart` source and exercises ownership from that copy.
 - `test_docs_workflows.py` / `docs_workflows.behavior.test.js` — the landing
   site's workflow content.
 
-Run: `python3 -m unittest discover -s tests`.
+Run `python3 scripts/smoke_installed_copy.py` for the clean-copy lifecycle and
+`python3 -m unittest discover -s tests` for the complete Python suite. The smoke
+uses local subprocesses only; it does not invoke an LLM or make network calls.
 
 ## Releasing
 
