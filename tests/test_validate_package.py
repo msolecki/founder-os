@@ -569,6 +569,20 @@ class TestReadmeCounts(ValidatorTestCase):
         self.assertTrue(any("claims 12 agents, the package has 2" in e
                             for e in errs), errs)
 
+    def test_stale_skill_count_is_caught(self):
+        write(self.root / "README.md",
+              "# X\n\n| Content | Count |\n|---|---|\n"
+              "| Agents | 2 |\n| Skills | 2 |\n")
+        errs = self.check(V.check_readme_counts)
+        self.assertTrue(any("claims 2 skills, the package has 4" in e
+                            for e in errs), errs)
+
+    def test_missing_cadence_row_is_caught_when_cadence_exists(self):
+        write(self.root / "README.md", self.README % (2, 4))
+        self.write_skill("setup-cadences", body="## Steps\n\n1. Go.\n")
+        errs = self.check(V.check_readme_counts)
+        self.assertTrue(any("no 'Cadences' row" in e for e in errs), errs)
+
     def test_missing_readme_is_not_this_checks_problem(self):
         self.assertEqual(self.check(V.check_readme_counts), [])
 

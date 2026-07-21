@@ -153,3 +153,8 @@
 
 ### [TEST-009] `check_ownership` catches an unowned `portfolio_files` entry
 - **Completed**: Added regression coverage for unowned portfolio files; full suite passed with 116 tests.
+
+## 2026-07-21 — readme count test batch
+
+### [TEST-011] `check_readme_counts` Skills-drift and Cadences-row branches untested
+- **Completed**: Added stale Skills and missing Cadences-row tests; full suite passed with 118 tests.
