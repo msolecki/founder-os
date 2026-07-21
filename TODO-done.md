@@ -159,6 +159,11 @@
 ### [TEST-011] `check_readme_counts` Skills-drift and Cadences-row branches untested
 - **Completed**: Added stale Skills and missing Cadences-row tests; full suite passed with 118 tests.
 
+## 2026-07-21 — favicon batch
+
+### [A11Y-007] No favicon / apple-touch-icon
+- **Completed**: Added SVG favicon and Apple touch icon metadata; full suite passed with 120 tests.
+
 ## 2026-07-21 — plugin name test batch
 
 ### [TEST-013] `check_plugin` wrong-`name` branch untested

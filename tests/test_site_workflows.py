@@ -42,6 +42,10 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_launch_page_declares_favicon_and_apple_touch_icon(self):
+        self.assertIn('rel="icon" type="image/svg+xml"', HTML)
+        self.assertIn('rel="apple-touch-icon"', HTML)
+
     def test_launch_page_declares_csp_and_referrer_policy(self):
         self.assertIn('http-equiv="Content-Security-Policy"', HTML)
         self.assertIn("default-src 'self'", HTML)
