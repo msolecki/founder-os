@@ -42,6 +42,11 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_sticky_header_does_not_use_scroll_time_blur(self):
+        header = HTML[HTML.index(".site-header {"):HTML.index(".site-header::after")]
+        self.assertIn("background: var(--paper);", header)
+        self.assertNotIn("backdrop-filter", header)
+
     def test_script_error_reveals_content_fallback(self):
         self.assertIn("window.addEventListener('error'", HTML)
         self.assertIn("item.classList.add('is-visible')", HTML)

@@ -118,3 +118,8 @@
 
 ### [A11Y-006] Demo tabpanels are not keyboard-focusable
 - **Completed**: All demo tabpanels now use `tabindex="-1"`; the contract test confirms all three panels are focusable targets. Full suite remains green.
+
+## 2026-07-21 — header performance batch
+
+### [PERF-005] Sticky header `backdrop-filter: blur(16px)` re-blurs content every scroll frame
+- **Completed**: Removed sticky-header backdrop blur and switched to opaque `var(--paper)`; CSS contract and full 106-test suite pass.
