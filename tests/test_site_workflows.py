@@ -42,6 +42,10 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_script_error_reveals_content_fallback(self):
+        self.assertIn("window.addEventListener('error'", HTML)
+        self.assertIn("item.classList.add('is-visible')", HTML)
+
     def test_workflow_summary_focus_ring_is_visible_and_unclipped(self):
         self.assertIn(".workflow-catalogue summary:focus-visible", HTML)
         self.assertIn("outline: 3px solid var(--orange);", HTML)

@@ -108,3 +108,8 @@
 
 ### [A11Y-004] Catalogue `<summary>` focus ring is lime-on-lime and clipped away
 - **Completed**: Focus ring now uses contrasting orange and the catalogue permits the outline to render outside its bounds. Full suite passed with 104 tests.
+
+## 2026-07-21 — script fallback batch
+
+### [A11Y-005] The page still renders visible content if the main script throws
+- **Completed**: Global error handling reveals all `.reveal` content when page JavaScript fails; contract and full 105-test suite pass.

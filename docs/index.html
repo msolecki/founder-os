@@ -4402,6 +4402,11 @@
   <div class="sr-only" id="copy-status" aria-live="polite"></div>
 
   <script>
+    window.addEventListener('error', () => {
+      document.querySelectorAll('.reveal').forEach((item) => {
+        item.classList.add('is-visible');
+      });
+    }, { once: true });
     (() => {
       const navToggle = document.querySelector('.nav-toggle');
       const navLinks = document.querySelector('.nav-links');
