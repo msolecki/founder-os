@@ -16,3 +16,7 @@ Run focused tests and compile checks after each change, then package validation,
 - Focused fallback and hot-path tests passed; the multi-path mock confirms one `workspace_roots` call.
 - Full validation passed: 13 agents / 49 skills / 0 errors, compile OK, 97 tests OK, generated commands current.
 - Fresh review requested; no implementation changes remain outside the two scoped tasks.
+
+## Follow-up batch
+
+The next portability batch (`BUG-003`, `ARCH-002`) was completed in the same session: shared parser module, CRLF normalization, focused test, and full 98-test validation.

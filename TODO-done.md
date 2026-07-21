@@ -70,3 +70,11 @@
 
 ### [BUG-002] Fallback `owns:` parser rejects valid same-indent YAML list style
 - **Completed**: Fallback accepts same-indent sequences and has a focused parser contract test. Full suite passed with 97 tests.
+
+## 2026-07-21 — parser portability batch
+
+### [BUG-003] `parse_frontmatter` hardcodes `\n`, so a CRLF checkout breaks all validation & generation
+- **Completed**: Central parser normalizes CRLF before parsing; a CRLF fixture test passes in the full 98-test suite.
+
+### [ARCH-002] `SYSTEM_SKILLS` / `STANDALONE_SKILLS` / `parse_frontmatter` copy-pasted across both scripts
+- **Completed**: Shared `scripts/_package.py` now owns the constants and parser; both scripts import it and command generation remains current.

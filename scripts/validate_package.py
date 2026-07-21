@@ -14,13 +14,8 @@ from pathlib import Path
 
 import yaml
 
-SYSTEM_SKILLS = {"founder-os-init", "founder-os-doctor", "context-load",
-                 "guardrails", "state-integrity", "ingestion-gate",
-                 "setup-cadences"}
-UNIVERSAL_SKILLS = {"guardrails", "state-integrity", "ingestion-gate"}
-
-# Skills the founder runs directly; they belong to no agent by design.
-STANDALONE_SKILLS = {"setup-cadences"}
+from _package import (SYSTEM_SKILLS, STANDALONE_SKILLS, UNIVERSAL_SKILLS,
+                      parse_frontmatter)
 
 # House Rule 0, enforced at the tool layer rather than requested in prose.
 # An agent with Bash can curl. An agent with WebFetch can POST. An agent with
@@ -32,14 +27,6 @@ ALLOWED_AGENT_TOOLS = {"Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent"
 
 AGENT_HEADINGS = ["## What triggers you", "## What you do",
                   "## What you produce", "## Who you hand off to"]
-
-
-def parse_frontmatter(path):
-    text = path.read_text(encoding="utf-8")
-    m = re.match(r"^---\n(.*?)\n---\n?(.*)$", text, re.S)
-    if not m:
-        raise ValueError("%s: missing YAML frontmatter" % path)
-    return (yaml.safe_load(m.group(1)) or {}), m.group(2)
 
 
 def load_agents(root):

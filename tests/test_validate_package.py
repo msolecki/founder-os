@@ -150,6 +150,13 @@ class ValidatorTestCase(unittest.TestCase):
 
 
 class TestFixture(ValidatorTestCase):
+    def test_frontmatter_accepts_crlf(self):
+        path = self.root / "agents" / "crlf.md"
+        write(path, agent_md("crlf").replace("\n", "\r\n"))
+        fm, body = V.parse_frontmatter(path)
+        self.assertEqual(fm["name"], "crlf")
+        self.assertIn("## What you do", body)
+
     def test_minimal_package_is_clean(self):
         self.assertEqual(all_errors(self.root), [])
 

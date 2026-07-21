@@ -17,13 +17,7 @@ import re
 import sys
 from pathlib import Path
 
-import yaml
-
-# Keep in sync with scripts/validate_package.py — same sets, same meaning.
-SYSTEM_SKILLS = {"founder-os-init", "founder-os-doctor", "context-load",
-                 "guardrails", "state-integrity", "ingestion-gate",
-                 "setup-cadences"}
-STANDALONE_SKILLS = {"setup-cadences"}
+from _package import SYSTEM_SKILLS, STANDALONE_SKILLS, parse_frontmatter
 
 HEADER = """\
 # Commands
@@ -39,14 +33,6 @@ business slug first — `/founder-os:daily-brief acme`.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 """
-
-
-def parse_frontmatter(path):
-    text = path.read_text(encoding="utf-8")
-    m = re.match(r"^---\n(.*?)\n---\n?(.*)$", text, re.S)
-    if not m:
-        raise ValueError("%s: missing YAML frontmatter" % path)
-    return (yaml.safe_load(m.group(1)) or {}), m.group(2)
 
 
 def load(root):
