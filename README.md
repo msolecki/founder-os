@@ -112,6 +112,8 @@ button.
 
 ```
 .claude-plugin/marketplace.json   # this repo *is* the marketplace
+docs/index.html                   # GitHub Pages marketing landing page
+docs/README.md                    # documentation hub for the complete docs set
 docs/getting-started.md           # external-user requirements and first run
 examples/studio-north/            # fictional, contract-shaped workspace tour
 founder-os/                       # the plugin (what gets installed)
@@ -130,6 +132,10 @@ scripts/generate_commands.py      # derives COMMANDS.md from the package; CI che
 tests/                            # validator mutations + hook subprocess + registry roots
 CHANGELOG.md                      # what shipped in each version
 ```
+
+GitHub Pages serves `docs/index.html` as the public landing page. The remaining
+Markdown files under `docs/` are the linked documentation hub and are not a
+second landing-page index.
 
 ## Development
 

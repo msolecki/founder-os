@@ -179,6 +179,11 @@
 ### [ARCH-006] Test files still named `site_*` after the landing moved to `docs/`
 - **Completed**: Renamed landing tests to `docs_workflows*` and updated Python/documentation references. Python suite and Node behavior tests pass.
 
+## 2026-07-21 — docs layout batch
+
+### [ARCH-007] `docs/` doubles as the Pages landing and the doc hub; README layout is stale
+- **Completed**: Added `docs/.nojekyll`, documented `docs/index.html` as the Pages source, and listed the documentation hub in the root layout. Full validation and 122 tests pass.
+
 ## 2026-07-21 — plugin name test batch
 
 ### [TEST-013] `check_plugin` wrong-`name` branch untested
