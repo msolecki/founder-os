@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Founder OS</title>
+  <desc id="desc">The executive team for a company of one.</desc>
+  <rect width="1200" height="630" fill="#f2eee4"/>
+  <rect x="72" y="72" width="1056" height="486" rx="34" fill="#102025"/>
+  <circle cx="950" cy="166" r="118" fill="#d7f36b"/>
+  <path d="M850 430c86-36 156-34 238 0" fill="none" stroke="#f15a35" stroke-width="28" stroke-linecap="round"/>
+  <text x="132" y="260" fill="#fffdf7" font-family="Arial, sans-serif" font-size="92" font-weight="700">Founder OS</text>
+  <text x="138" y="344" fill="#f2eee4" font-family="Arial, sans-serif" font-size="34">The executive team for a company of one.</text>
+  <text x="138" y="438" fill="#d7f36b" font-family="Arial, sans-serif" font-size="26">13 agents · 49 workflows · persistent decisions</text>
+</svg>

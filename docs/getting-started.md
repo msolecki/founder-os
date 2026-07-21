@@ -14,6 +14,7 @@ an owner, and a review rhythm.
 | A recent [Claude Code](https://code.claude.com/docs) installation | Founder OS is a plugin, not a standalone app. |
 | Python 3 | Runs the write-time ownership hook. |
 | PyYAML | Enables the full ownership-map check. The hook degrades gracefully when PyYAML is unavailable. |
+| Node.js 20+ *(development/tests only)* | Runs the landing-page behavior contract test. |
 | `cron` *(optional)* | Runs scheduled cadences. Every workflow also works manually without it. |
 
 Founder OS itself is free and MIT-licensed. Your existing Claude Code plan and

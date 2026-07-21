@@ -1,5 +1,6 @@
 """Contract tests for the dependency-free workflow catalogue landing section."""
 import re
+import shutil
 import subprocess
 import unittest
 from collections import Counter
@@ -41,6 +42,23 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_launch_metadata_supports_social_sharing(self):
+        required = (
+            'property="og:type" content="website"',
+            'property="og:title"',
+            'property="og:description"',
+            'property="og:url"',
+            'property="og:image"',
+            'content="https://msolecki.github.io/founder-os/"',
+            'content="https://msolecki.github.io/founder-os/og-image.svg"',
+            'name="twitter:card" content="summary_large_image"',
+            'name="twitter:image"',
+            'rel="canonical"',
+        )
+        for marker in required:
+            with self.subTest(marker=marker):
+                self.assertIn(marker, HTML)
+
     def test_problem_first_entries_are_complete(self):
         entries = re.findall(
             r'<a class="workflow-entry"[^>]*data-workflow-filter="([^"]+)"'
@@ -155,6 +173,8 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertEqual(missing, [])
 
     def test_controllers_execute_the_approved_interactions(self):
+        if shutil.which("node") is None:
+            self.skipTest("node required for docs/index.html behavior tests")
         behavior_test = REPO_ROOT / "tests" / "site_workflows.behavior.test.js"
         result = subprocess.run(
             ["node", "--test", str(behavior_test)],
