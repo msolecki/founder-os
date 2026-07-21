@@ -400,7 +400,12 @@ def _patch_paths(command):
 
 def _tool_paths(tool_name, tool_input):
     if tool_name == "apply_patch":
-        return _patch_paths(tool_input.get("command"))
+        for key in ("command", "input", "patch"):
+            paths = _patch_paths(tool_input.get(key))
+            if paths:
+                return paths
+        log("allow: apply_patch payload contained no recognizable file paths")
+        return []
     if tool_name in ("Write", "Edit", "NotebookEdit"):
         path = tool_input.get("file_path") or tool_input.get("notebook_path")
         return [path] if isinstance(path, str) and path else []

@@ -213,6 +213,12 @@ class TestPatchPaths(unittest.TestCase):
     def test_non_string_patch_is_empty(self):
         self.assertEqual(self.guard._patch_paths(None), [])
 
+    def test_tool_paths_accepts_alternate_patch_payload_keys(self):
+        self.assertEqual(
+            self.guard._tool_paths("apply_patch", {
+                "patch": "*** Update File: alternate.md\n"}),
+            ["alternate.md"])
+
 
 class TestAgentTypeFor(unittest.TestCase):
     def setUp(self):

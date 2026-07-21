@@ -164,6 +164,11 @@
 ### [A11Y-007] No favicon / apple-touch-icon
 - **Completed**: Added SVG favicon and Apple touch icon metadata; full suite passed with 120 tests.
 
+## 2026-07-21 — patch payload batch
+
+### [BUG-005] `_tool_paths` assumes the `apply_patch` body lives under `tool_input["command"]`
+- **Completed**: `_tool_paths` now accepts `command`, `input`, or `patch` payload keys and logs unrecognized empty patches; full suite passed with 121 tests.
+
 ## 2026-07-21 — plugin name test batch
 
 ### [TEST-013] `check_plugin` wrong-`name` branch untested
