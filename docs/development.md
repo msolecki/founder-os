@@ -12,9 +12,10 @@ python3 scripts/validate_package.py founder-os     # 13 agent(s), 49 skill(s), 0
 python3 scripts/generate_commands.py founder-os    # regenerate COMMANDS.md if frontmatter changed
 python3 scripts/smoke_installed_copy.py            # installed-copy smoke: PASS
 python3 -m unittest discover -s tests              # OK
+node --test tests/*.behavior.test.js               # landing behavior: pass
 ```
 
-CI runs all four on every push and PR (`.github/workflows/ci.yml`). A red build
+CI runs all five on every push and PR (`.github/workflows/ci.yml`). A red build
 is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
@@ -114,6 +115,8 @@ Under `tests/`:
   allow, subagent ownership deny, outbound deny, fail-open paths).
 - `test_session_context.py` — copies the plugin into a temporary marketplace,
   checks every `SessionStart` source and exercises ownership from that copy.
+- `test_release_metadata.py` — pins release versions, activation-led metadata,
+  changelog sections and the reproducible release-gate contract.
 - `test_docs_workflows.py` / `docs_workflows.behavior.test.js` — the landing
   site's workflow content.
 
@@ -123,15 +126,37 @@ uses local subprocesses only; it does not invoke an LLM or make network calls.
 
 ## Releasing
 
-1. Bump the version in `founder-os/.claude-plugin/plugin.json` (mirror it in
-   `.codex-plugin/plugin.json`).
+1. Bump the version in `.claude-plugin/marketplace.json` and both package
+   manifests: `founder-os/.claude-plugin/plugin.json` and
+   `founder-os/.codex-plugin/plugin.json`.
 2. Add a `CHANGELOG.md` entry (SemVer, dated).
-3. Ensure validator, `--check`, and tests are green.
-4. Tag / publish. The repo *is* the marketplace, so a merge to the default branch
-   ships it.
+3. Run every command from **Before you open a PR**, then run both official local
+   gates from **Official Claude validation** below.
+4. Tag / publish only after the release plan's remaining gates are complete.
+   The repo *is* the marketplace, so a merge to the default branch ships it.
 
 The `solkova-core:release` skill can build a SemVer release from Conventional
 Commits if you use it.
+
+## Official Claude validation
+
+Run the installed Claude CLI against both distribution boundaries before a
+release:
+
+```bash
+claude plugin validate .
+claude plugin validate founder-os
+```
+
+The marketplace must pass without warnings. The package currently emits one
+addressed warning for `founder-os/CLAUDE.md`: plugin roots are not loaded as
+project context by Claude, so the `SessionStart` hook injects that canonical
+guidance. `tests/test_session_context.py` and the installed-copy smoke pin the
+actual delivery path. Any new or different warning blocks the release.
+
+These local official commands are a release gate, not CI coverage. Adding a
+pinned Claude CLI package to CI would download and execute an npm dependency;
+that requires explicit founder approval before the workflow may change.
 
 ## Dual-host notes
 

@@ -3,6 +3,41 @@
 All notable changes to Founder OS. Versions follow the plugin's
 `founder-os/.claude-plugin/plugin.json`.
 
+## 2.4.0 — 2026-07-22
+
+**Activation.**
+
+- `founder-os-init` is now a continuous, resumable path from first answer to a
+  valid daily brief, with explicit stops instead of a false completion state.
+- The landing page and onboarding now lead with the first useful outcome: one
+  source-linked decision for today, grounded in goals, cash, pipeline and live
+  commitments.
+
+**Trust.**
+
+- A valid brief uses the same invariant at creation and validation: one owned
+  action, linked to current source state, with ambiguity made visible.
+- Ownership and provenance stay explicit; Founder OS keeps state local and
+  never sends messages or spends money for the founder.
+
+**Verification.**
+
+- Installed-copy smoke tests now exercise the packaged lifecycle and exported
+  controller paths, while release metadata is pinned by contract tests.
+- The marketplace passes the official Claude validator without warnings. The
+  package's single addressed warning is the canonical `CLAUDE.md`: Claude does
+  not auto-load it as plugin context, so the `SessionStart` hook injects it and
+  `tests/test_session_context.py` pins that behavior.
+
+**Launch assets.**
+
+- Added a complete Product Hunt kit: current listing copy, maker comment, demo
+  script, activation-study protocol, source SVGs and exact-size PNG exports.
+- Claude Code is the verified release path. Codex remains beta/manual until a
+  separate clean-install validation; this release makes no cross-host claim.
+
+This is release preparation only: 2.4.0 is not tagged.
+
 ## 2.3.0 — 2026-07-19
 
 **Multi-business.** One founder, several companies of one — without changing

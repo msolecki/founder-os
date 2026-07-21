@@ -24,3 +24,5 @@ jobs:
         run: python3 scripts/smoke_installed_copy.py
       - name: Run the tests
         run: python3 -m unittest discover -s tests -v
+      - name: Run landing behavior tests
+        run: node --test tests/*.behavior.test.js
