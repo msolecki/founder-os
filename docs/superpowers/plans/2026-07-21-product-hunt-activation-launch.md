@@ -66,7 +66,7 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Task 1 — Pin the activation contract (M)
 
-- [ ] **What:** add executable contract coverage for first-run stage order,
+- [x] **What:** add executable contract coverage for first-run stage order,
   completion, failure and resume behavior before changing the onboarding prose.
 - **Where:** create `tests/test_onboarding_activation.py`; modify
   `tests/test_validate_package.py` and `scripts/validate_package.py` only if a
@@ -98,7 +98,7 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Task 2 — Make `/founder-os-init` resumable and outcome-complete (L)
 
-- [ ] **What:** replace the contradictory stop-and-handoff behavior with one
+- [x] **What:** replace the contradictory stop-and-handoff behavior with one
   preflighted, resumable orchestration ending in the first brief.
 - **Where:** modify
   `founder-os/skills/founder-os-init/SKILL.md`,
@@ -133,7 +133,7 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Task 3 — Add truthful first-run branches to the owner skills (L)
 
-- [ ] **What:** let each owner consume the carried onboarding answer without
+- [x] **What:** let each owner consume the carried onboarding answer without
   pretending that a ten-minute setup is a full operating review.
 - **Where:** modify
   `founder-os/skills/icp-definition/SKILL.md`,
@@ -406,6 +406,33 @@ Passing logs stay concise; report only failures and the final pass counts.
 Update after each task with:
 
 ```text
+Task 1 — 2026-07-21
+Commit: 938bd11..259e095
+Focused test: python3 -m unittest tests.test_onboarding_activation -v — 6 expected contract RED, 2 parser/mutation tests green
+Full gate: 122 pre-existing Python tests, validator, generated-command check and 2 Node behavior tests green
+Review: fresh task reviewer approved; no Critical, Important or Minor findings open
+Decision / next action: continuous RED → GREEN batch approved; implement Task 2 without handing back the red state
+```
+
+```text
+Task 2 — 2026-07-21
+Commit: d203803, 7042f3b, 7178d57
+Focused test: python3 -m unittest tests.test_onboarding_activation — 21/21 green, including resume-target and independent-CFO-marker mutations
+Full gate: 143 Python tests, validator, generated-command check, 2 Node behavior tests and both official plugin validations green
+Review: fresh task reviewer approved after two correction rounds; no Critical, Important or Minor findings open
+Decision / next action: implement Task 3 owner-safe first-run branches, pressure-test the day-one scenario, then restore the complete green gate
+```
+
+```text
+Task 3 — 2026-07-21
+Commit: 002c446, bdefd48
+Focused test: python3 -m unittest tests.test_onboarding_activation — 31/31 green, including fabrication, boundary and composed-transition mutations
+Full gate: 153 Python tests, validator, generated-command check, 2 Node behavior tests and both official plugin validations green
+Review: fresh task and batch reviewers approved after correction; no Critical, Important or Minor findings open
+Decision / next action: begin Task 4 from this green deployable checkpoint
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -416,9 +443,7 @@ Decision / next action: <one line>
 
 ## Next action
 
-Start a fresh implementation session and say:
-
-> continue from docs/superpowers/plans/2026-07-21-product-hunt-activation-launch.md
-
-Begin with Task 1 only. Do not change onboarding behavior until the activation
-contract is red for the current known contradiction.
+Tasks 1–3 are committed, individually and batch fresh-review approved, and
+green through `bdefd48`. Begin Task 4's isolated-home lifecycle harness from
+this deployable checkpoint; keep the staged user deletion of `TODO-done.md`
+outside every task commit.
