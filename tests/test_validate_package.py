@@ -556,6 +556,13 @@ class TestReadmeCounts(ValidatorTestCase):
     def test_missing_readme_is_not_this_checks_problem(self):
         self.assertEqual(self.check(V.check_readme_counts), [])
 
+    def test_document_count_drift_is_caught(self):
+        write(self.root / "README.md", self.README % (2, 4))
+        write(self.root / "docs" / "README.md",
+              "Founder OS adds 12 agents, 48 workflows, and 9 optional cadences.")
+        errs = self.check(V.check_readme_counts)
+        self.assertTrue(any("docs/README.md" in err for err in errs), errs)
+
 
 class TestRealPackage(unittest.TestCase):
     def test_shipped_package_passes_every_check(self):

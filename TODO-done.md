@@ -83,3 +83,8 @@
 
 ### [BUG-004] `generate_commands.load` tracebacks when `skills/` is absent
 - **Completed**: Missing `skills/` now produces a clean `FAIL:` with exit 1; regression test passes. Full suite reached 99 tests.
+
+## 2026-07-21 — documentation drift batch
+
+### [ARCH-003] Hardcoded "13 / 49 / 10" counts drift across docs & the Codex manifest
+- **Completed**: `check_readme_counts` now scans the documentation surfaces and Codex long description; a stale docs fixture fails validation. Full suite passed with 100 tests.

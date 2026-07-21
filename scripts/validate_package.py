@@ -425,6 +425,23 @@ def check_readme_counts(root, agents):
         elif claimed != real:
             errs.append("README.md: claims %d %s, the package has %d — a count "
                         "that drifts is a second map" % (claimed, label.lower(), real))
+
+    docs = [root / "docs" / "README.md", root / "docs" / "getting-started.md",
+            root / "docs" / "index.html", root / ".codex-plugin" / "plugin.json"]
+    patterns = {
+        "Agents": r"(\d+)\s+(?:specialized\s+business\s+roles|decision-owning executive agents|agents)",
+        "Skills": r"(\d+)\s+(?:skills|workflows)",
+        "Cadences": r"(\d+)\s+(?:optional\s+)?(?:operating\s+)?cadences",
+    }
+    for path in docs:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for label, pattern in patterns.items():
+            values = [int(value) for value in re.findall(pattern, text, re.I)]
+            if values and any(value != actual.get(label) for value in values):
+                errs.append("%s: %s count drifts from package value %d" %
+                            (path.relative_to(root), label.lower(), actual.get(label, 0)))
     return errs
 
 
