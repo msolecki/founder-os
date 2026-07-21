@@ -259,7 +259,7 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Task 7 — Build the Product Hunt launch kit (M)
 
-- [ ] **What:** produce every submission asset and the complete maker copy before
+- [x] **What:** produce every submission asset and the complete maker copy before
   scheduling the launch.
 - **Where:** create `docs/product-hunt/README.md`,
   `docs/product-hunt/listing.md`, `docs/product-hunt/maker-comment.md`,
@@ -267,8 +267,9 @@ Passing logs stay concise; report only failures and the final pass counts.
   `docs/product-hunt/thumbnail-240.png`, and at least four
   `docs/product-hunt/gallery-*.png` assets at `1270×760`.
 - **How:**
-  1. Use the approved name and tagline; keep description within 500 characters
-     and tagline within 60.
+  1. Use the approved name and tagline; keep the description within 260
+     characters and the tagline within 60. The current Help Center says 260
+     while the launch guide still says 500, so the stricter limit governs.
   2. Gallery sequence: outcome, four-stage onboarding, trust/provenance, daily
      and weekly operating loop.
   3. Capture assets from the real static page/example workspace or generate
@@ -398,7 +399,7 @@ Passing logs stay concise; report only failures and the final pass counts.
 - [ ] Five-person activation gate passed.
 - [x] Landing five-second test founder-waived on 2026-07-22; synthetic rehearsal
   recorded as non-evidence.
-- [ ] Product Hunt dimensions, character limits, links and alt text verified.
+- [x] Product Hunt dimensions, character limits, links and alt text verified.
 - [ ] `2.4.0` versions and changelog agree.
 - [ ] Public install retested immediately before tagging.
 - [ ] Product Hunt page asks for testing/feedback, never votes.
@@ -464,6 +465,16 @@ Decision / next action: begin Task 7; never present these synthetic lines as res
 ```
 
 ```text
+Task 7 — 2026-07-22
+Commits: 9b4bdc1, ba87f19
+Focused test: python3 -m unittest tests.test_docs_workflows.ProductHuntLaunchKitContractTest — RED with 20 missing-artifact failures, GREEN 7/7, then review-fix RED for inbox-before-brief and final GREEN 9/9
+Full gate: 183 Python tests, installed-copy smoke, validator, generated-command check, 2 Node behavior tests and both official plugin validations green with the two known Task 8 warnings
+Visual review: thumbnail at 240×240; four gallery assets at 1270×760 and true 50% size; overflow and flow-order defects corrected from reviewable SVG sources
+Review: fresh artifact reviewer approved after correction; no Critical, Important or Minor findings open
+Decision / next action: begin Task 8 release preparation; request explicit founder approval before adding or executing any npm-downloading official CLI step in CI
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -474,9 +485,10 @@ Decision / next action: <one line>
 
 ## Next action
 
-Tasks 1–6 are committed or founder-accepted and fresh-review approved, with the
-complete gate green through `bb5b54d`. Begin Task 7's Product Hunt launch kit.
-Use the stricter current Product Hunt description limit of 260 characters where
-official guidance conflicts, keep all generated marketing-rehearsal text labeled
-synthetic, and keep the staged user deletion of `TODO-done.md` outside every task
+Tasks 1–7 are committed or founder-accepted and fresh-review approved, with the
+complete gate green through `ba87f19`. Begin Task 8's `2.4.0` release
+preparation. Remove both manifest warnings, align version metadata and changelog,
+and keep official local validation blocking. Do not add or execute an
+npm-downloading official CLI validation step in CI without explicit founder
+approval. Keep the staged user deletion of `TODO-done.md` outside every task
 commit.
