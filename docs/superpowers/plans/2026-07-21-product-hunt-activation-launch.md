@@ -451,6 +451,15 @@ Decision / next action: implement Task 6's activation-led landing and onboarding
 ```
 
 ```text
+Task 6 machine checkpoint — 2026-07-22
+Commit: bb5b54d
+Focused test: python3 -m unittest tests.test_docs_workflows.ActivationCopyContractTest — 11/11 green after the validity contract first failed across all six activation documents
+Full gate: 174 Python tests, installed-copy smoke, validator, generated-command check, 2 Node behavior tests and both official plugin validations green with two known warnings reserved for Task 8
+Review: fresh artifact reviewer approved the corrected validity and example-trace contracts; no Critical, Important or Minor findings open
+Decision / next action: keep Task 6 unchecked until five real five-second-test answers are recorded and at least 4/5 describe choosing what matters today
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -461,7 +470,9 @@ Decision / next action: <one line>
 
 ## Next action
 
-Tasks 1–5 are committed and fresh-review approved, with the complete gate green
-through `ad2c9f8`. Begin Task 6's activation-led landing and onboarding docs from
-this deployable checkpoint; keep the staged user deletion of `TODO-done.md`
-outside every task commit.
+Tasks 1–5 and Task 6's machine artifact are committed and fresh-review approved,
+with the complete gate green through `bb5b54d`. Run the five-second test with
+five people who have not worked on the repository: show the first screen, ask
+“What does this product help you do?”, and record each answer verbatim. Keep Task
+6 unchecked until at least 4/5 describe choosing what matters today, and keep the
+staged user deletion of `TODO-done.md` outside every task commit.
