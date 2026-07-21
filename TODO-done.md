@@ -143,3 +143,8 @@
 
 ### [TEST-006] `workspace_roots` relative/default `FOUNDER_OS_HOME` resolution is tested
 - **Completed**: Added relative-home and default-root contract tests; full suite passed with 112 tests.
+
+## 2026-07-21 — agent type resolution batch
+
+### [TEST-008] `agent_type_for` negative branches are untested
+- **Completed**: Added tests for invalid turn IDs, missing plugin data, and missing mappings; full suite passed with 115 tests.

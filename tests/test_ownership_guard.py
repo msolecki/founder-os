@@ -214,6 +214,23 @@ class TestPatchPaths(unittest.TestCase):
         self.assertEqual(self.guard._patch_paths(None), [])
 
 
+class TestAgentTypeFor(unittest.TestCase):
+    def setUp(self):
+        self.guard = load_guard()
+
+    def test_invalid_turn_id_returns_none(self):
+        self.assertIsNone(self.guard.agent_type_for({"turn_id": "bad/id"}))
+
+    def test_missing_plugin_data_returns_none(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertIsNone(self.guard.agent_type_for({"turn_id": "turn-1"}))
+
+    def test_missing_mapping_returns_none(self):
+        with mock.patch.dict(os.environ, {"PLUGIN_DATA": "/tmp/no-such-data"},
+                             clear=False):
+            self.assertIsNone(self.guard.agent_type_for({"turn_id": "turn-1"}))
+
+
 class TestOutboundGuard(unittest.TestCase):
     """House rule 0 at the tool layer — the half of the hook nothing covered.
 
