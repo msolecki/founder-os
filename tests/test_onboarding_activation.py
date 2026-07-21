@@ -21,9 +21,30 @@ sys.path.insert(0, str(SCRIPTS))
 from _package import parse_frontmatter  # noqa: E402
 
 
-def h2_sections(body: str) -> list[tuple[str, str, int]]:
-    """Return H2 title, body and source offset without pinning prose."""
-    matches = list(re.finditer(r"(?m)^##[ \t]+(.+?)[ \t]*$", body))
+def operative_markdown(body: str) -> str:
+    """Remove fenced examples and blockquotes while preserving line offsets."""
+    operative_lines = []
+    fence = None
+    for line in body.splitlines(keepends=True):
+        stripped = line.lstrip()
+        marker = stripped[:3]
+        if marker in {"```", "~~~"}:
+            fence = None if fence == marker else marker if fence is None else fence
+            operative_lines.append("\n" if line.endswith("\n") else "")
+        elif fence is not None or stripped.startswith(">"):
+            operative_lines.append("\n" if line.endswith("\n") else "")
+        else:
+            operative_lines.append(line)
+    return "".join(operative_lines)
+
+
+def markdown_sections(body: str, level: int) -> list[tuple[str, str, int]]:
+    """Return operative sections at one heading level."""
+    body = operative_markdown(body)
+    marker = "#" * level
+    matches = list(
+        re.finditer(rf"(?m)^{re.escape(marker)}[ \t]+(.+?)[ \t]*$", body)
+    )
     return [
         (
             match.group(1),
@@ -36,11 +57,49 @@ def h2_sections(body: str) -> list[tuple[str, str, int]]:
     ]
 
 
-def section_matching(body: str, pattern: str) -> tuple[str, str, int]:
-    for section in h2_sections(body):
-        if re.search(pattern, section[0], re.IGNORECASE):
-            return section
-    raise AssertionError(f"missing H2 matching {pattern!r}")
+def h2_sections(body: str) -> list[tuple[str, str, int]]:
+    return markdown_sections(body, 2)
+
+
+def section_matching(
+    body: str, pattern: str, level: int = 2
+) -> tuple[str, str, int]:
+    matches = [
+        section
+        for section in markdown_sections(body, level)
+        if re.search(pattern, section[0], re.IGNORECASE)
+    ]
+    if len(matches) != 1:
+        raise AssertionError(
+            f"expected one H{level} matching {pattern!r}, found {len(matches)}"
+        )
+    return matches[0]
+
+
+def structured_actions(body: str) -> dict[str, tuple[str, int]]:
+    """Return unique `- **Action:** contract` entries from operative prose."""
+    actions = {}
+    pattern = re.compile(
+        r"(?m)^[ \t]*(?:[-*+]|\d+\.)[ \t]+\*\*([^*\n]+):\*\*[ \t]*(.+)$"
+    )
+    for match in pattern.finditer(operative_markdown(body)):
+        label = match.group(1).strip().lower()
+        if label in actions:
+            raise AssertionError(f"duplicate structured action {label!r}")
+        actions[label] = (match.group(2).strip(), match.start())
+    return actions
+
+
+def markdown_table_rows(body: str) -> list[list[str]]:
+    rows = []
+    for line in operative_markdown(body).splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
+            continue
+        rows.append(cells)
+    return rows
 
 
 def owner_for(path: str, ownership: dict) -> str:
@@ -65,38 +124,39 @@ def skill_holders(skill_name: str) -> list[str]:
     return holders
 
 
-def receipt_markers(text: str) -> dict[str, int]:
-    patterns = {
-        "minimum state validation": r"minimum[- ]state validation",
-        "daily brief invocation": r"(?:invoke|run)[^\n]{0,80}/daily-brief",
-        "persisted daily review": (
-            r"(?:successful|validated)[^\n]{0,100}"
-            r"(?:write|persist)[^\n]{0,100}reviews/daily/"
-        ),
-        "activation receipt": r"Activation complete",
-    }
-    positions = {}
-    for label, pattern in patterns.items():
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match is None:
-            raise AssertionError(f"missing {label}: /{pattern}/")
-        positions[label] = match.start()
-    return positions
-
-
 def assert_receipt_order(testcase: unittest.TestCase, text: str) -> None:
-    positions = receipt_markers(text)
-    testcase.assertLess(
-        positions["minimum state validation"],
-        positions["daily brief invocation"],
+    actions = structured_actions(text)
+    required = (
+        "minimum-state validation",
+        "daily-brief invocation",
+        "persisted completion",
+        "activation receipt",
+    )
+    for label in required:
+        testcase.assertIn(label, actions)
+    positions = {label: actions[label][1] for label in required}
+    testcase.assertRegex(
+        actions["daily-brief invocation"][0], r"(?i)(?:invoke|run).*?/daily-brief"
+    )
+    testcase.assertRegex(
+        actions["persisted completion"][0],
+        r"(?i)(?:successful|validated).*(?:write|persist).*reviews/daily/",
+    )
+    testcase.assertRegex(
+        actions["activation receipt"][0],
+        r"(?i)\bActivation complete\b.*\bonly after\b.*"
+        r"(?:successful|validated).*(?:write|persist)",
     )
     testcase.assertLess(
-        positions["daily brief invocation"],
-        positions["persisted daily review"],
+        positions["minimum-state validation"],
+        positions["daily-brief invocation"],
     )
     testcase.assertLess(
-        positions["persisted daily review"],
-        positions["activation receipt"],
+        positions["daily-brief invocation"],
+        positions["persisted completion"],
+    )
+    testcase.assertLess(
+        positions["persisted completion"], positions["activation receipt"],
         "Activation complete must follow the persisted daily review",
     )
 
@@ -129,13 +189,13 @@ class OnboardingActivationContract(unittest.TestCase):
         ]
         positions = []
         for pattern in required:
-            position = next(
-                (index for index, heading in enumerate(headings)
-                 if re.search(pattern, heading, re.IGNORECASE)),
-                None,
-            )
-            self.assertIsNotNone(position, f"missing H2 /{pattern}/")
-            positions.append(position)
+            matches = [
+                index
+                for index, heading in enumerate(headings)
+                if re.search(pattern, heading, re.IGNORECASE)
+            ]
+            self.assertEqual(len(matches), 1, (pattern, matches))
+            positions.append(matches[0])
         self.assertEqual(positions, sorted(positions), positions)
 
     def test_preflight_classifies_new_incomplete_and_activated_workspaces(self):
@@ -161,6 +221,7 @@ class OnboardingActivationContract(unittest.TestCase):
         _, delegation, _ = section_matching(
             self.init_body, r"Stage 5.*Owner-safe delegation"
         )
+        rows = markdown_table_rows(delegation)
         chief_frontmatter, _ = parse_frontmatter(
             PLUGIN_ROOT / "agents" / "chief-of-staff.md"
         )
@@ -189,15 +250,30 @@ class OnboardingActivationContract(unittest.TestCase):
                         (skill_name, write_path),
                     )
 
-                self.assertRegex(delegation, rf"(?i)/{re.escape(skill_name)}\b")
-                self.assertRegex(
-                    delegation,
-                    rf"(?i)\b{re.escape(holder)}\b",
-                )
+                matching_rows = [
+                    row
+                    for row in rows
+                    if any(
+                        re.fullmatch(rf"`?/{re.escape(skill_name)}`?", cell)
+                        for cell in row
+                    )
+                ]
+                self.assertEqual(len(matching_rows), 1, (skill_name, rows))
+                row_text = " | ".join(matching_rows[0])
+                self.assertRegex(row_text, rf"(?i)\b{re.escape(holder)}\b")
+                for write_path in writes:
+                    self.assertIn(write_path, row_text)
                 self.assertRegex(
                     allowlist,
                     rf"(?i)\b{re.escape(holder)}\b",
                 )
+
+        _, first_brief, _ = section_matching(
+            self.init_body, r"Stage 6.*First brief"
+        )
+        daily_holders = skill_holders("daily-brief")
+        self.assertEqual(daily_holders, [owner_for("reviews/daily/", self.ownership)])
+        self.assertRegex(first_brief, r"(?i)/daily-brief\b")
 
     def test_minimum_state_daily_brief_persistence_and_receipt_are_ordered(self):
         _, first_brief, first_brief_offset = section_matching(
@@ -213,44 +289,77 @@ class OnboardingActivationContract(unittest.TestCase):
         _, preflight, _ = section_matching(
             self.init_body, r"Stage 0.*Preflight"
         )
+        _, validation, _ = section_matching(
+            self.init_body, r"Stage 6.*First brief"
+        )
         _, receipt, _ = section_matching(
             self.init_body, r"Stage 7.*Activation receipt"
         )
         for token in ("FOUNDER_OS_HOME", "business slug", "resolved workspace"):
             with self.subTest(token=token):
                 self.assertRegex(preflight, rf"(?i){re.escape(token)}")
+                self.assertRegex(validation, rf"(?i){re.escape(token)}")
                 self.assertRegex(receipt, rf"(?i){re.escape(token)}")
-        self.assertRegex(receipt, r"(?i)same resolved workspace")
+        for section in (validation, receipt):
+            self.assertRegex(section, r"(?i)same resolved workspace")
 
     def test_failure_reports_resume_state_without_a_success_receipt(self):
         _, failure, _ = section_matching(self.init_body, r"Resume and failure")
-        for required in ("completed stages", "missing stage", "/founder-os-init"):
-            self.assertRegex(failure, rf"(?i){re.escape(required)}")
-        self.assertNotIn("Activation complete", failure)
+        _, halt, halt_offset = section_matching(failure, r"Failure", level=3)
+        _, resume, resume_offset = section_matching(failure, r"Resume", level=3)
+        self.assertLess(halt_offset, resume_offset)
+        for required in (
+            "completed stages",
+            "missing stage",
+            "/founder-os-init",
+            "halt",
+            "Stage 7",
+        ):
+            self.assertRegex(halt, rf"(?i){re.escape(required)}")
+        self.assertNotIn("Activation complete", halt)
+        for required in (
+            "first missing stage",
+            "completed stages",
+            "preserve",
+            "byte-for-byte",
+        ):
+            self.assertRegex(resume, rf"(?i){re.escape(required)}")
 
     def test_receipt_order_check_detects_completion_moved_before_write(self):
         compliant = """
 ## Stage 6 — First brief
-Perform minimum-state validation.
-Invoke /daily-brief.
-Require a successful persisted write to reviews/daily/YYYY-MM-DD.md.
+- **Minimum-state validation:** validate the resolved target.
+- **Daily-brief invocation:** invoke /daily-brief.
+- **Persisted completion:** require a successful persisted write to reviews/daily/YYYY-MM-DD.md.
 ## Stage 7 — Activation receipt
-Print Activation complete.
+- **Activation receipt:** print Activation complete only after the successful persisted write.
 """
         assert_receipt_order(self, compliant)
 
         mutated = compliant.replace(
-            "Require a successful persisted write to reviews/daily/YYYY-MM-DD.md.\n"
+            "- **Persisted completion:** require a successful persisted write to reviews/daily/YYYY-MM-DD.md.\n"
             "## Stage 7 — Activation receipt\n"
-            "Print Activation complete.",
-            "Print Activation complete.\n"
-            "Require a successful persisted write to reviews/daily/YYYY-MM-DD.md.",
+            "- **Activation receipt:** print Activation complete only after the successful persisted write.",
+            "- **Activation receipt:** print Activation complete only after the successful persisted write.\n"
+            "- **Persisted completion:** require a successful persisted write to reviews/daily/YYYY-MM-DD.md.",
         )
         with self.assertRaisesRegex(
             AssertionError,
             "Activation complete must follow the persisted daily review",
         ):
             assert_receipt_order(self, mutated)
+
+    def test_contract_parser_ignores_examples_and_quotations(self):
+        examples_only = """
+```markdown
+## Stage 0 — Preflight
+- **Activation receipt:** print Activation complete only after a successful write.
+```
+> ## Stage 6 — First brief
+> - **Daily-brief invocation:** invoke /daily-brief.
+"""
+        self.assertEqual(h2_sections(examples_only), [])
+        self.assertEqual(structured_actions(examples_only), {})
 
 
 if __name__ == "__main__":
