@@ -169,6 +169,11 @@
 ### [BUG-005] `_tool_paths` assumes the `apply_patch` body lives under `tool_input["command"]`
 - **Completed**: `_tool_paths` now accepts `command`, `input`, or `patch` payload keys and logs unrecognized empty patches; full suite passed with 121 tests.
 
+## 2026-07-21 — CSafeLoader batch
+
+### [PERF-003] Use `CSafeLoader` when available for the guard's YAML parse
+- **Completed**: Added dynamic C-loader selection for both ownership and registry parsing, with a loader-selection test. Full suite passed with 122 tests.
+
 ## 2026-07-21 — plugin name test batch
 
 ### [TEST-013] `check_plugin` wrong-`name` branch untested

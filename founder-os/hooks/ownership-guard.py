@@ -86,6 +86,12 @@ def _get_yaml():
     return yaml
 
 
+def _yaml_load(yaml_module, text):
+    """Use LibYAML's C loader when installed, otherwise SafeLoader."""
+    loader = getattr(yaml_module, "CSafeLoader", yaml_module.SafeLoader)
+    return yaml_module.load(text, Loader=loader) or {}
+
+
 def log(msg):
     """Hook stderr is surfaced in debug mode and ignored otherwise — which is
     the correct volume for 'I decided not to have an opinion'."""
@@ -187,7 +193,7 @@ def load_ownership():
         yaml_module = _get_yaml()
         if yaml_module is not None:
             try:
-                data = yaml_module.safe_load(text) or {}
+                data = _yaml_load(yaml_module, text)
             except yaml_module.YAMLError as e:
                 log("%s is not valid YAML (%s)" % (path, e))
                 return None
@@ -236,7 +242,7 @@ def _registry_roots():
             text = fh.read()
         yaml_module = _get_yaml()
         if yaml_module is not None:
-            data = yaml_module.safe_load(text) or {}
+            data = _yaml_load(yaml_module, text)
         else:
             # The registry shape is intentionally small. On machines without
             # PyYAML, collect only absolute `home:` and `portfolio:` values;

@@ -63,6 +63,15 @@ class TestLazyYamlImport(unittest.TestCase):
 
         self.assertEqual(imported, [])
 
+    def test_yaml_loader_prefers_c_safe_loader(self):
+        guard = load_guard()
+        import yaml
+        class FakeLoader: pass
+        with mock.patch.object(yaml, "CSafeLoader", FakeLoader), \
+                mock.patch.object(yaml, "load", return_value={"owns": {}}) as load:
+            self.assertEqual(guard._yaml_load(yaml, "owns: {}\n"), {"owns": {}})
+        self.assertIs(load.call_args.kwargs["Loader"], FakeLoader)
+
 
 class TestOwnerOfCasefold(unittest.TestCase):
     BY_PATH = {
