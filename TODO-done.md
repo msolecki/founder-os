@@ -46,3 +46,11 @@
 - **Fix**: Defer the import into `load_ownership` and `_registry_roots` via a memoized `_get_yaml()` sentinel; keep every `if yaml is not None` branch. Fail-open semantics unchanged.
 - **Validation**: `python3 -X importtime ... < main_thread_payload.json | grep -c yaml` → 0 for main-thread/outbound; `python3 -m unittest tests.test_ownership_guard` stays green.
 - **Completed**: Added memoized lazy import; importtime output contained no `yaml` module and full `93`-test suite passed. Commit `c49873d`.
+
+## 2026-07-21 — platform and launch readiness batch
+
+### [ARCH-001] Hidden, unpinned `node` dependency for the test suite
+- **Completed**: CI now pins Node 20, getting-started documents the development dependency, and the behavior test skips cleanly when Node is absent. Full suite passed with 94 tests.
+
+### [A11Y-001] No Open Graph / Twitter Card / canonical meta on a launch page
+- **Completed**: Added OG/Twitter/canonical metadata and a 1200×630 `og-image.svg`, plus a metadata contract test. Full suite passed with 94 tests.
