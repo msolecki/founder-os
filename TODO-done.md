@@ -103,3 +103,8 @@
 
 ### [A11Y-003] `aria-label` on roleless `<div>`s
 - **Completed**: Labeled generic regions and diagrams now use `group`/`img` roles; the landing-page contract test passes in the full 103-test suite.
+
+## 2026-07-21 — focus ring batch
+
+### [A11Y-004] Catalogue `<summary>` focus ring is lime-on-lime and clipped away
+- **Completed**: Focus ring now uses contrasting orange and the catalogue permits the outline to render outside its bounds. Full suite passed with 104 tests.

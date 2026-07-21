@@ -42,6 +42,12 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_workflow_summary_focus_ring_is_visible_and_unclipped(self):
+        self.assertIn(".workflow-catalogue summary:focus-visible", HTML)
+        self.assertIn("outline: 3px solid var(--orange);", HTML)
+        self.assertIn(".workflow-catalogue {", HTML)
+        self.assertRegex(HTML, r"\.workflow-catalogue \{[^}]*overflow: visible")
+
     def test_labeled_generic_regions_have_naming_capable_roles(self):
         self.assertIn(
             'class="command-center reveal" role="group" aria-label=', HTML)
