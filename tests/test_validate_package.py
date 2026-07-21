@@ -241,6 +241,16 @@ class TestAgentTools(ValidatorTestCase):
             "house rule 0 says agents draft and the founder sends",
             self.check(V.check_agent_tools))
 
+    def test_additional_outbound_tools_are_caught(self):
+        for tool in ("WebSearch", "NotebookEdit", "Task"):
+            with self.subTest(tool=tool):
+                self.write_agent("cfo", skills=list(UNIVERSALS),
+                                 tools=DEFAULT_TOOLS + ", " + tool)
+                self.assertIn(
+                    "agents/cfo.md: tool '%s' can reach the outside world — "
+                    "house rule 0 says agents draft and the founder sends" % tool,
+                    self.check(V.check_agent_tools))
+
     def test_omitted_tools_is_caught(self):
         # No `tools:` key inherits every tool, including Bash. Silence here is
         # the most permissive setting there is, which is why it is an error.
@@ -574,6 +584,15 @@ class TestRunChecksContainment(unittest.TestCase):
         agents, errs = V.run_checks(self.root)
         self.assertEqual(agents, {})
         self.assertTrue(any("frontmatter" in e for e in errs), errs)
+
+    def test_malformed_ownership_aborts_only_its_check(self):
+        write(self.root / "references" / "ownership.yaml", "owns: [unclosed\n")
+        agents, errs = V.run_checks(self.root)
+        self.assertEqual(agents, {})
+        self.assertTrue(any(
+            "check 'check_ownership' aborted at first bad file" in err
+            for err in errs), errs)
+        self.assertTrue(any("hooks.json" in err for err in errs), errs)
 
 
 if __name__ == "__main__":
