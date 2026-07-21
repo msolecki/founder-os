@@ -4404,6 +4404,8 @@
 
   <div class="sr-only" id="copy-status" aria-live="polite"></div>
 
+  <script src="workflow-library.js"></script>
+  <script src="demo-tabs.js"></script>
   <script>
     window.addEventListener('error', () => {
       document.querySelectorAll('.reveal').forEach((item) => {
@@ -4466,132 +4468,8 @@
       const initialWorkspacePanel = workspacePanels.find((panel) => `#${panel.id}` === window.location.hash);
       openWorkspaceFile(initialWorkspacePanel?.dataset.workspacePanel || 'daily');
 
-      const workflowCatalogue = document.querySelector('#workflow-catalogue');
-      const workflowSearch = document.querySelector('#workflow-search');
-      const workflowCount = document.querySelector('#workflow-count');
-      const workflowEmpty = document.querySelector('#workflow-empty');
-      const workflowFilterLinks = [...document.querySelectorAll('.workflow-entry[data-workflow-filter]')];
-      const clearWorkflowFilter = document.querySelector('[data-clear-workflow-filter]');
-      const showAllWorkflows = document.querySelector('[data-show-all-workflows]');
-      const workflowGroups = [...document.querySelectorAll('[data-workflow-group]')];
-      const workflows = [...document.querySelectorAll('[data-workflow]')];
-      let activeWorkflowCategory = 'all';
-
-      function updateWorkflowCatalogue({ closeGroups = false } = {}) {
-        const query = workflowSearch?.value.trim().toLowerCase() || '';
-        const filtering = activeWorkflowCategory !== 'all' || Boolean(query);
-        let visibleCount = 0;
-
-        workflowGroups.forEach((group) => {
-          const categoryMatches = activeWorkflowCategory === 'all'
-            || group.dataset.category === activeWorkflowCategory;
-          const groupTextMatches = !query || group.dataset.search?.includes(query);
-          const groupWorkflows = [...group.querySelectorAll('[data-workflow]')];
-          let visibleInGroup = 0;
-
-          groupWorkflows.forEach((workflow) => {
-            const textMatches = !query || groupTextMatches
-              || workflow.dataset.search?.includes(query)
-              || workflow.textContent.toLowerCase().includes(query);
-            const isVisible = categoryMatches && textMatches;
-            workflow.hidden = !isVisible;
-            if (isVisible) visibleInGroup += 1;
-          });
-
-          group.hidden = visibleInGroup === 0;
-          if (closeGroups) group.open = false;
-          else if (filtering && visibleInGroup > 0) group.open = true;
-          visibleCount += visibleInGroup;
-        });
-
-        workflowFilterLinks.forEach((link) => {
-          if (link.dataset.workflowFilter === activeWorkflowCategory) {
-            link.setAttribute('aria-current', 'true');
-          } else {
-            link.removeAttribute('aria-current');
-          }
-        });
-
-        if (clearWorkflowFilter) clearWorkflowFilter.hidden = activeWorkflowCategory === 'all';
-        if (workflowCount) workflowCount.textContent = `${visibleCount} of ${workflows.length} workflows`;
-        if (workflowEmpty) workflowEmpty.hidden = visibleCount !== 0;
-      }
-
-      workflowFilterLinks.forEach((link) => {
-        link.addEventListener('click', (event) => {
-          event.preventDefault();
-          activeWorkflowCategory = link.dataset.workflowFilter || 'all';
-          if (workflowCatalogue) workflowCatalogue.open = true;
-          updateWorkflowCatalogue();
-        });
-      });
-
-      workflowSearch?.addEventListener('input', () => {
-        if (workflowCatalogue) workflowCatalogue.open = true;
-        const closeGroups = !workflowSearch.value.trim()
-          && activeWorkflowCategory === 'all';
-        updateWorkflowCatalogue({ closeGroups });
-      });
-
-      workflowSearch?.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape' || !workflowSearch.value) return;
-        workflowSearch.value = '';
-        updateWorkflowCatalogue({
-          closeGroups: activeWorkflowCategory === 'all',
-        });
-      });
-
-      clearWorkflowFilter?.addEventListener('click', () => {
-        activeWorkflowCategory = 'all';
-        updateWorkflowCatalogue({
-          closeGroups: !workflowSearch?.value.trim(),
-        });
-      });
-
-      showAllWorkflows?.addEventListener('click', () => {
-        activeWorkflowCategory = 'all';
-        if (workflowSearch) workflowSearch.value = '';
-        if (workflowCatalogue) workflowCatalogue.open = true;
-        updateWorkflowCatalogue({ closeGroups: true });
-      });
-
-      workflowCatalogue?.removeAttribute('open');
-      updateWorkflowCatalogue({ closeGroups: true });
-
-      const tabs = [...document.querySelectorAll('[data-demo]')];
-      const panels = [...document.querySelectorAll('[data-panel]')];
-
-      function selectDemoPanel(selected) {
-        tabs.forEach((item) => {
-          const isSelected = item.dataset.demo === selected;
-          item.setAttribute('aria-selected', String(isSelected));
-          item.tabIndex = isSelected ? 0 : -1;
-        });
-
-        panels.forEach((panel) => {
-          const isSelected = panel.dataset.panel === selected;
-          panel.classList.toggle('is-active', isSelected);
-          panel.hidden = !isSelected;
-        });
-      }
-
-      tabs.forEach((tab, index) => {
-        tab.addEventListener('click', () => {
-          selectDemoPanel(tab.dataset.demo);
-        });
-
-        tab.addEventListener('keydown', (event) => {
-          if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
-          event.preventDefault();
-          const direction = event.key === 'ArrowRight' ? 1 : -1;
-          const next = (index + direction + tabs.length) % tabs.length;
-          tabs[next].focus();
-          tabs[next].click();
-        });
-      });
-
-      const initialDemoTab = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
-      if (initialDemoTab) selectDemoPanel(initialDemoTab.dataset.demo);
+      window.FounderOSWorkflowLibrary?.initWorkflowLibrary?.(document);
+      window.FounderOSDemoTabs?.initDemoTabs?.(document);
 
       const copyStatus = document.querySelector('#copy-status');
 

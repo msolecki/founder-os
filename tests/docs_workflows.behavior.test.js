@@ -2,6 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  initWorkflowLibrary,
+} = require('../docs/workflow-library.js');
+const { initDemoTabs } = require('../docs/demo-tabs.js');
 
 const HTML = fs.readFileSync(
   path.join(__dirname, '..', 'docs', 'index.html'),
@@ -75,14 +79,6 @@ function workflowSection() {
   return HTML.slice(start, HTML.indexOf('</section>', start));
 }
 
-function extractController(startMarker, endMarker) {
-  const start = HTML.indexOf(startMarker);
-  const end = HTML.indexOf(endMarker, start);
-  assert.notEqual(start, -1, `missing controller marker: ${startMarker}`);
-  assert.notEqual(end, -1, `missing controller marker: ${endMarker}`);
-  return HTML.slice(start, end);
-}
-
 function buildWorkflowDom() {
   const section = workflowSection();
   const groups = [...section.matchAll(
@@ -154,27 +150,8 @@ function buildWorkflowDom() {
 
 function runWorkflowController(assertions) {
   const dom = buildWorkflowDom();
-  const previousDocument = global.document;
-  global.document = dom.document;
-  const expectedCounts = {
-    plan: 10,
-    sell: 4,
-    deliver: 4,
-    money: 5,
-    focus: 9,
-    grow: 8,
-    run: 9,
-  };
-  const controller = extractController(
-    "      const workflowCatalogue = document.querySelector('#workflow-catalogue');",
-    "      const tabs = [...document.querySelectorAll('[data-demo]')];",
-  );
-
-  try {
-    eval(`${controller}\n(${assertions.toString()})();`);
-  } finally {
-    global.document = previousDocument;
-  }
+  initWorkflowLibrary(dom.document);
+  assertions(dom);
 }
 
 function buildDemoDom() {
@@ -209,22 +186,30 @@ function buildDemoDom() {
 
 function runDemoController(assertions) {
   const dom = buildDemoDom();
-  const previousDocument = global.document;
-  global.document = dom.document;
-  const controller = extractController(
-    "      const tabs = [...document.querySelectorAll('[data-demo]')];",
-    "      const copyStatus = document.querySelector('#copy-status');",
-  );
-
-  try {
-    eval(`${controller}\n(${assertions.toString()})();`);
-  } finally {
-    global.document = previousDocument;
-  }
+  initDemoTabs(dom.document);
+  assertions(dom);
 }
 
 test('workflow controller executes every approved state transition', () => {
-  runWorkflowController(function verifyWorkflowState() {
+  runWorkflowController(({
+    catalogue: workflowCatalogue,
+    search: workflowSearch,
+    count: workflowCount,
+    empty: workflowEmpty,
+    clear: clearWorkflowFilter,
+    showAll: showAllWorkflows,
+    groups: workflowGroups,
+    links: workflowFilterLinks,
+  }) => {
+    const expectedCounts = {
+      plan: 10,
+      sell: 4,
+      deliver: 4,
+      money: 5,
+      focus: 9,
+      grow: 8,
+      run: 9,
+    };
     assert.equal(workflowCatalogue.open, false);
     assert.equal(workflowCount.textContent, '49 of 49 workflows');
 
@@ -290,7 +275,7 @@ test('workflow controller executes every approved state transition', () => {
 });
 
 test('demo tabs synchronize panels and wrap arrow-key navigation', () => {
-  runDemoController(function verifyDemoState() {
+  runDemoController(({ tabs, panels }) => {
     function assertSelected(name) {
       for (const tab of tabs) {
         const selected = tab.dataset.demo === name;

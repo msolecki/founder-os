@@ -9,6 +9,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HTML = (REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+BEHAVIOR_TEST = (
+    REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
+).read_text(encoding="utf-8")
+CONTROLLER_SOURCES = ("workflow-library.js", "demo-tabs.js")
 SECTION_START = HTML.index(
     '<section class="section workflow-library" id="workflows">')
 SECTION = HTML[SECTION_START:HTML.index("</section>", SECTION_START)]
@@ -50,7 +54,30 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertIn('http-equiv="Content-Security-Policy"', HTML)
         self.assertIn("default-src 'self'", HTML)
         self.assertIn("script-src 'self' 'unsafe-inline'", HTML)
+        csp = re.search(
+            r'http-equiv="Content-Security-Policy" content="([^"]+)"', HTML
+        ).group(1)
+        self.assertNotIn("unsafe-eval", csp)
+        self.assertNotRegex(csp, r"https?://")
         self.assertIn('name="referrer" content="strict-origin-when-cross-origin"', HTML)
+
+    def test_controllers_load_from_same_origin_scripts(self):
+        for source in CONTROLLER_SOURCES:
+            with self.subTest(source=source):
+                self.assertTrue((REPO_ROOT / "docs" / source).is_file())
+                self.assertIn(f'<script src="{source}"></script>', HTML)
+
+    def test_behavior_suite_requires_modules_without_eval_or_source_markers(self):
+        self.assertIn("require('../docs/workflow-library.js')", BEHAVIOR_TEST)
+        self.assertIn("require('../docs/demo-tabs.js')", BEHAVIOR_TEST)
+        self.assertNotIn("extractController", BEHAVIOR_TEST)
+        self.assertNotIn("eval(", BEHAVIOR_TEST)
+        self.assertNotIn(
+            "const workflowCatalogue = document.querySelector", BEHAVIOR_TEST
+        )
+        self.assertNotIn(
+            "const tabs = [...document.querySelectorAll", BEHAVIOR_TEST
+        )
 
     def test_page_texture_avoids_svg_fractal_noise_filter(self):
         self.assertNotIn("feTurbulence", HTML)
