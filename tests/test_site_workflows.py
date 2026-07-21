@@ -42,6 +42,10 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_page_texture_avoids_svg_fractal_noise_filter(self):
+        self.assertNotIn("feTurbulence", HTML)
+        self.assertIn("background-image: radial-gradient", HTML)
+
     def test_sticky_header_does_not_use_scroll_time_blur(self):
         header = HTML[HTML.index(".site-header {"):HTML.index(".site-header::after")]
         self.assertIn("background: var(--paper);", header)

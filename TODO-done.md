@@ -123,3 +123,8 @@
 
 ### [PERF-005] Sticky header `backdrop-filter: blur(16px)` re-blurs content every scroll frame
 - **Completed**: Removed sticky-header backdrop blur and switched to opaque `var(--paper)`; CSS contract and full 106-test suite pass.
+
+## 2026-07-21 — noise performance batch
+
+### [PERF-006] Full-viewport fixed `::before` runs an SVG `feTurbulence` fractal-noise filter
+- **Completed**: Replaced SVG fractal noise with a lightweight CSS radial-gradient pattern; contract and full 107-test suite pass.
