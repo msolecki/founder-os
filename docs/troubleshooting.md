@@ -5,6 +5,44 @@ diagnoses workspace rot and **reports before it repairs anything** — it propos
 each fix individually and waits for confirmation, and some findings it will never
 repair because the fix is a decision, not a structural edit.
 
+## Activation and install recovery
+
+**The Founder OS command is missing.** Refresh the marketplace, update the
+plugin, then reload active plugins:
+
+```text
+/plugin marketplace update founder-os
+/plugin update founder-os@founder-os
+/reload-plugins
+```
+
+**Preflight stopped before the interview.** `/founder-os-init` has not changed
+the workspace. Follow the failed check's repair instruction, then run
+`/founder-os-init` again.
+
+**The interview or an owner stage stopped.** Run `/founder-os-init` again. It
+classifies the workspace as incomplete, preserves populated sections, and
+resumes at the first missing owned output. Do not delete the workspace and do
+not manually replay Positioning Advisor, Strategist, CFO, or Daily Brief steps.
+
+**There is no activation receipt.** Activation requires a valid
+`reviews/daily/YYYY-MM-DD.md` in the resolved workspace. A scaffold, populated
+charter, or successful install is not activation. Rerun `/founder-os-init`; a
+failure branch reports the completed stages and exact resume command and never
+prints `Activation complete`.
+
+A valid brief has all four required headings from `ownership.yaml`: `## The one
+thing`, `## Rotting`, `## The trade`, and `## Triage`, with non-empty `## The
+one thing` and `## The trade`. An empty, malformed, or wrong-path file is not an
+activation receipt.
+
+**Init says this workspace is already activated.** That means a valid daily
+review exists. Use `/founder-os-doctor` to inspect or repair the live workspace;
+init will not reset it.
+
+Uninstall instructions and the distinction between plugin files and your
+Markdown workspace are in [`getting-started.md`](getting-started.md#update-repair-or-uninstall).
+
 ## `/founder-os-doctor` — what it checks
 
 Each check has a threshold; the doctor reports only the ones that trip and stays
@@ -38,9 +76,10 @@ founder stopped reading, which it cannot fix by editing a file.
 
 ## Common situations
 
-**"It went quiet in week one."** Almost always **Cadence never fired** —
-`/setup-cadences` was never run, so no cron line exists. Run it. Nothing in the
-package writes a schedule until you say yes to that skill.
+**"It went quiet in week one."** First inspect `reviews/daily/`. If it has no
+valid dated brief, activation never completed: rerun `/founder-os-init`. If the
+valid first brief exists but no later weekday brief does, `/setup-cadences` was
+probably never run. No schedule is written until you say yes to that skill.
 
 **"The morning brief stopped appearing."** **Cadence gone quiet.** The machine
 was likely asleep at 08:00, or `claude` isn't on the PATH that cron uses. Check
@@ -80,13 +119,14 @@ that drifts is a second map.
 
 ## FAQ
 
-**Does Founder OS read my email / calendar / bank?** No. The workspace is the
-entire data boundary. It knows only what is in its files or the current session.
-No packaged agent has a browser, shell, or MCP tool.
+**Does Founder OS read my email / calendar / bank?** No. Its persistent business
+state is the Markdown workspace, plus context you explicitly supply in the
+current session. No packaged agent has a browser, shell, or MCP tool.
 
 **Is my data sent anywhere?** Workspace files stay on your machine. The prompts
-and context you send *through Claude Code* are governed by your Claude Code
-environment's data-handling terms — that is separate from Founder OS.
+and context you send through Claude Code or Codex remain governed by that
+environment's data-handling terms — that is separate from Founder OS. Founder OS
+does not claim offline operation or zero transmission by the host environment.
 
 **Do I need cron?** No. Cron only powers the optional scheduled cadences. Every
 cadence also works typed by hand.

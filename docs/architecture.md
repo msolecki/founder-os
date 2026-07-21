@@ -18,6 +18,37 @@ repository, which is **both the plugin marketplace and the source repo**:
 There is no server, no account, and no subscription of its own. It runs inside
 your existing Claude Code environment; your Claude plan and usage stay separate.
 
+## Activation path
+
+The first-run architecture is outcome-first. One `/founder-os-init` invocation
+orchestrates the complete path and the same command resumes it after a failure:
+
+```text
+empty folder
+  → read-only preflight
+  → four question groups (business, customer, quarter, money)
+  → owner-safe writes to offer.md, goals.md, metrics.md, queue.md
+  → minimum-state validation
+  → /daily-brief
+  → reviews/daily/YYYY-MM-DD.md
+  → Activation complete
+```
+
+The daily review is the activation record. There is no hidden completion flag:
+validation and persistence resolve the same workspace, existing populated
+sections are never overwritten, and a partial run resumes from the first
+missing owned output. An already activated workspace routes to
+`/founder-os-doctor` instead of being re-scaffolded.
+
+A valid `reviews/daily/YYYY-MM-DD.md` has all four required headings from
+`ownership.yaml`: `## The one thing`, `## Rotting`, `## The trade`, and
+`## Triage`, with non-empty `## The one thing` and `## The trade`. An empty,
+malformed, or wrong-path file never reaches `Activation complete`.
+
+Workspace files stay on your machine. Prompts and context sent through Claude
+Code or Codex remain subject to that environment's data-handling terms; local
+Markdown state is not a claim that the host operates offline.
+
 ## Repository layout
 
 ```
@@ -42,7 +73,6 @@ founder os/                     ← repo root (marketplace + source)
 ├── tests/                      ← unittest + behavior tests
 ├── examples/studio-north/      ← a fictional, contract-shaped workspace
 ├── docs/                       ← this documentation set
-├── site/                       ← the sales landing page
 └── .github/workflows/ci.yml    ← runs validator, --check, and tests
 ```
 

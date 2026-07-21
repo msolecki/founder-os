@@ -1,11 +1,18 @@
 # Founder OS
 
-A [Claude Code](https://code.claude.com/docs) plugin that gives a company of one — or a founder
-running several — an executive
-team: **13 agents, 49 skills, 10 scheduled cadences** — strategy, offer, pipeline,
-delivery, money, focus and the cross-business portfolio, with one markdown
-workspace per business as shared state and a
-write-time ownership guard keeping the org from corrupting it.
+## Know what matters today
+
+Founder OS turns your goals, cash, pipeline and commitments into one daily
+decision — stored locally and traceable to its source.
+
+**Local Markdown · No automatic sending · Explicit ownership · No hidden
+actions**
+
+It is a [Claude Code](https://code.claude.com/docs) plugin for a company of one
+— or a founder running several. Behind the daily decision are **13 agents, 49
+skills, 10 scheduled cadences** and one Markdown workspace per business. The
+roles own separate decisions; a write-time guard keeps their state from
+silently crossing those boundaries.
 
 **Free and MIT-licensed.** Founder OS runs inside your existing Claude Code
 environment and adds no account or subscription of its own.
@@ -36,7 +43,9 @@ Before installing:
 The 13 agents are specialized roles invoked when needed, not 13 autonomous
 processes running all day. Founder OS knows only what is recorded in its local
 Markdown workspace or supplied in the current session; it does not
-automatically sync a calendar, CRM, inbox, or bank account.
+automatically sync a calendar, CRM, inbox, or bank account. Workspace files stay
+on your machine. Prompts and context sent through Claude Code or Codex remain
+governed by that environment's data-handling terms.
 
 In Claude Code:
 
@@ -48,9 +57,17 @@ In Claude Code:
 Then, once:
 
 ```
-/founder-os-init      # ~20 min onboarding, ends with your first brief
+/founder-os-init      # one resumable flow to a persisted first brief
 /setup-cadences       # optional: cron entries so it runs without being asked
 ```
+
+The flow targets a ten-minute median and stops at fifteen minutes. Activation
+means a valid `reviews/daily/YYYY-MM-DD.md`, not an installed plugin or an empty
+folder. A valid brief has all four required headings from `ownership.yaml` —
+`## The one thing`, `## Rotting`, `## The trade`, and `## Triage` — with
+non-empty `## The one thing` and `## The trade`. If onboarding stops, run
+`/founder-os-init` again; it preserves populated sections and resumes from the
+first missing owner output.
 
 Scheduled jobs run only while that machine and its cron service are running.
 See the complete
@@ -58,8 +75,27 @@ See the complete
 you want the requirements, data boundary, and first-week workflow in one place.
 
 To see the output first, open the fictional but contract-shaped
-[`examples/studio-north/`](examples/studio-north/README.md) workspace and follow
-`q-0720a` from the daily brief into the queue, quarterly bet, week, and review.
+[`daily brief`](examples/studio-north/reviews/daily/2026-07-20.md), then follow
+`q-0720a` through the complete
+[`examples/studio-north/`](examples/studio-north/README.md) workspace into the
+queue, quarterly bet, week, and review.
+
+## Your first five actions
+
+1. Run `/daily-brief` before opening email.
+2. Capture an unstructured thought in `inbox.md`.
+3. Run `/pipeline-review` so each deal has a dated next move.
+4. Run `/weekly-review` before Friday's memory becomes the record.
+5. Ask the **Chief of Staff** to route an uncategorized decision.
+
+## Update, repair, or uninstall
+
+Update with `/plugin marketplace update founder-os`, then
+`/plugin update founder-os@founder-os` and `/reload-plugins`. Diagnose a live
+workspace with `/founder-os-doctor`; it reports before proposing repairs.
+Uninstall with `/plugin uninstall founder-os@founder-os`. Your Markdown
+workspace is separate from the plugin and remains yours. The full recovery
+branches are in [`docs/getting-started.md`](docs/getting-started.md#update-repair-or-uninstall).
 
 ## How it works
 
@@ -143,10 +179,11 @@ second landing-page index.
 pip install pyyaml
 python3 scripts/validate_package.py founder-os   # expect: 13 agent(s), 49 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md (CI checks it)
+python3 scripts/smoke_installed_copy.py          # clean installed-copy lifecycle
 python3 -m unittest discover -s tests            # expect: OK
 ```
 
-CI (`.github/workflows/ci.yml`) runs all three on every push and PR.
+CI (`.github/workflows/ci.yml`) runs all four on every push and PR.
 
 ### Adding a skill
 

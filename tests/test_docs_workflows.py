@@ -13,6 +13,26 @@ BEHAVIOR_TEST = (
     REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
 ).read_text(encoding="utf-8")
 CONTROLLER_SOURCES = ("workflow-library.js", "demo-tabs.js")
+GETTING_STARTED = (REPO_ROOT / "docs" / "getting-started.md").read_text(
+    encoding="utf-8"
+)
+TROUBLESHOOTING = (REPO_ROOT / "docs" / "troubleshooting.md").read_text(
+    encoding="utf-8"
+)
+ARCHITECTURE = (REPO_ROOT / "docs" / "architecture.md").read_text(
+    encoding="utf-8"
+)
+COMMANDS = (REPO_ROOT / "docs" / "commands.md").read_text(encoding="utf-8")
+ROOT_README = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+PLUGIN_README = (REPO_ROOT / "founder-os" / "README.md").read_text(
+    encoding="utf-8"
+)
+EXAMPLE_DAILY = (
+    REPO_ROOT / "examples" / "studio-north" / "reviews" / "daily"
+    / "2026-07-20.md"
+)
+EXAMPLE_QUEUE = REPO_ROOT / "examples" / "studio-north" / "queue.md"
+EXAMPLE_GOALS = REPO_ROOT / "examples" / "studio-north" / "goals.md"
 SECTION_START = HTML.index(
     '<section class="section workflow-library" id="workflows">')
 SECTION = HTML[SECTION_START:HTML.index("</section>", SECTION_START)]
@@ -284,6 +304,159 @@ class WorkflowLibraryContractTest(unittest.TestCase):
             compact,
             r"\.js \.demo-panel\.is-active \{[^}]*display: block",
         )
+
+
+class ActivationCopyContractTest(unittest.TestCase):
+    HERO = HTML[HTML.index('<section class="hero"'):HTML.index(
+        "</section>", HTML.index('<section class="hero"')
+    )]
+
+    def test_hero_leads_with_approved_outcome_and_trust_copy(self):
+        compact = re.sub(r"\s+", " ", self.HERO)
+        self.assertIn("<h1>Know what matters today.</h1>", compact)
+        self.assertIn(
+            "Founder OS turns your goals, cash, pipeline and commitments into "
+            "one daily decision — stored locally and traceable to its source.",
+            compact,
+        )
+        self.assertIn(">Install Founder OS <", compact)
+        self.assertIn(">See the first brief</a>", compact)
+        self.assertIn(
+            "Local Markdown · No automatic sending · Explicit ownership · "
+            "No hidden actions",
+            compact,
+        )
+        self.assertNotIn("13-agent executive team", compact)
+
+    def test_real_brief_and_empty_folder_flow_precede_org_explanation(self):
+        source_brief = (
+            "https://github.com/msolecki/founder-os/blob/main/examples/"
+            "studio-north/reviews/daily/2026-07-20.md"
+        )
+        team_position = HTML.index('<section class="section team" id="team">')
+        self.assertIn(source_brief, HTML)
+        self.assertLess(HTML.index(source_brief), team_position)
+        self.assertLess(HTML.index('<section class="section how"'), team_position)
+
+    def test_onboarding_claims_one_resumable_path_to_persisted_activation(self):
+        compact = re.sub(r"\s+", " ", GETTING_STARTED)
+        self.assertIn("one continuous, resumable flow", compact)
+        self.assertIn("reviews/daily/YYYY-MM-DD.md", GETTING_STARTED)
+        self.assertIn("ten minutes", compact)
+        self.assertIn("fifteen minutes", compact)
+        for document in (HTML, GETTING_STARTED, ROOT_README, PLUGIN_README):
+            with self.subTest(document=document[:24]):
+                lowered = document.lower()
+                self.assertNotIn("20 minutes", lowered)
+                self.assertNotIn("twenty minutes", lowered)
+        self.assertNotIn("hand each answer", COMMANDS.lower())
+
+    def test_activation_requires_a_valid_brief_not_an_existing_file(self):
+        activation_documents = {
+            "landing": HTML,
+            "getting started": GETTING_STARTED,
+            "troubleshooting": TROUBLESHOOTING,
+            "architecture": ARCHITECTURE,
+            "root readme": ROOT_README,
+            "plugin readme": PLUGIN_README,
+        }
+        for name, document in activation_documents.items():
+            with self.subTest(document=name):
+                compact = re.sub(r"\s+", " ", document.lower())
+                self.assertIn("reviews/daily/yyyy-mm-dd.md", compact)
+                self.assertIn("all four required headings", compact)
+                self.assertIn("non-empty", compact)
+                self.assertIn("the one thing", compact)
+                self.assertIn("the trade", compact)
+
+    def test_linked_example_is_local_and_traces_commitment_to_bet(self):
+        sources = {
+            EXAMPLE_DAILY: ("q-0720a", "B1"),
+            EXAMPLE_QUEUE: ("q-0720a", "B1"),
+            EXAMPLE_GOALS: ("B1",),
+        }
+        for path, markers in sources.items():
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                self.assertTrue(path.is_file())
+                source = path.read_text(encoding="utf-8")
+                for marker in markers:
+                    self.assertIn(marker, source)
+
+    def test_first_five_actions_match_activation_receipt(self):
+        start = GETTING_STARTED.index("## Your first five actions")
+        first_five = GETTING_STARTED[start:GETTING_STARTED.index("\n## ", start + 4)]
+        for marker in (
+            "/daily-brief",
+            "inbox.md",
+            "/pipeline-review",
+            "/weekly-review",
+            "Chief of Staff",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, first_five)
+
+    def test_update_repair_and_uninstall_are_explicit(self):
+        for marker in (
+            "/plugin marketplace update founder-os",
+            "/plugin update founder-os@founder-os",
+            "/reload-plugins",
+            "/founder-os-doctor",
+            "/plugin uninstall founder-os@founder-os",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, GETTING_STARTED)
+        self.assertIn("## Activation and install recovery", TROUBLESHOOTING)
+
+    def test_data_handling_is_local_state_not_offline_claim(self):
+        for document in (
+            HTML,
+            GETTING_STARTED,
+            ARCHITECTURE,
+            ROOT_README,
+            PLUGIN_README,
+        ):
+            with self.subTest(document=document[:24]):
+                lowered = re.sub(r"\s+", " ", document.lower())
+                self.assertIn("workspace files stay on your machine", lowered)
+                self.assertIn("data-handling terms", lowered)
+                self.assertIn("prompts", lowered)
+                self.assertIn("context", lowered)
+                for prohibited in (
+                    "works offline",
+                    "never leaves your computer",
+                    "no data leaves",
+                    "zero data transmission",
+                    "nothing leaves your machine",
+                ):
+                    self.assertNotIn(prohibited, lowered)
+
+    def test_architecture_explains_activation_before_the_org(self):
+        activation = ARCHITECTURE.index("## Activation path")
+        agents = ARCHITECTURE.index("## The three moving parts")
+        self.assertLess(activation, agents)
+        self.assertIn("reviews/daily/YYYY-MM-DD.md", ARCHITECTURE)
+        self.assertIn("Activation complete", ARCHITECTURE)
+
+    def test_command_reference_describes_init_and_first_actions_truthfully(self):
+        self.assertIn("## Start here: the first five actions", COMMANDS)
+        init_row = next(
+            line for line in COMMANDS.splitlines()
+            if line.startswith("| `/founder-os-init`")
+        )
+        self.assertIn("first daily brief", init_row)
+        self.assertIn("resum", init_row)
+
+    def test_readmes_put_daily_outcome_before_agent_counts(self):
+        for document in (ROOT_README, PLUGIN_README):
+            with self.subTest(document=document[:24]):
+                outcome = document.index("Know what matters today")
+                agent_markers = [
+                    position for marker in ("13 agents", "thirteen agents")
+                    if (position := document.lower().find(marker)) >= 0
+                ]
+                self.assertTrue(agent_markers)
+                agents = min(agent_markers)
+                self.assertLess(outcome, agents)
 
 
 if __name__ == "__main__":

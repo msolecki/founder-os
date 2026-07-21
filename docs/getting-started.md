@@ -1,11 +1,20 @@
 # Getting started with Founder OS
 
-Founder OS is a free, MIT-licensed Claude Code plugin for a company of one. It
-adds 13 specialized business roles, 49 workflows, and 10 optional operating
-cadences backed by a local Markdown workspace.
+**Know what matters today.** Founder OS turns your goals, cash, pipeline and
+commitments into one daily decision — stored locally and traceable to its
+source. It is a free, MIT-licensed Claude Code plugin for a company of one.
 
-It does not run the company for you. It gives your decisions persistent state,
-an owner, and a review rhythm.
+It does not run the company for you. It persists the decision, its owner, its
+source and the trade you are making in a Markdown workspace you control.
+
+## See the first brief
+
+Start with the fictional but contract-shaped Studio North
+[`reviews/daily/2026-07-20.md`](../examples/studio-north/reviews/daily/2026-07-20.md).
+It selects one queue item tied to a quarterly bet, names the work that will not
+happen, and cites the dates and files behind the decision. Follow `q-0720a` and
+`B1` through the complete [`examples/studio-north/`](../examples/studio-north/)
+workspace before installing.
 
 ## Before you install
 
@@ -19,18 +28,6 @@ an owner, and a review rhythm.
 
 Founder OS itself is free and MIT-licensed. Your existing Claude Code plan and
 usage remain separate; Founder OS does not add another account or subscription.
-
-## What the 13 agents are
-
-The agents are specialized roles, not 13 autonomous processes running all day.
-Each role owns one kind of decision and one part of the workspace. A workflow
-invokes the relevant role when you ask for it; scheduled cadences invoke ten of
-those workflows at defined times.
-
-When you do not know which role or command to use, ask the **Chief of Staff**.
-Routing is its one decision.
-
-The full generated catalogue is [`founder-os/COMMANDS.md`](../founder-os/COMMANDS.md).
 
 ## What Founder OS knows
 
@@ -47,8 +44,8 @@ can draft a message, proposal, or plan, but cannot send, post, pay, sign, or
 transfer anything.
 
 Workspace files stay on your machine. The prompts and context you send through
-Claude Code are still governed by the data-handling terms of your Claude Code
-environment.
+Claude Code or Codex are still governed by that environment's data-handling
+terms.
 
 ## Install
 
@@ -60,9 +57,23 @@ Run these commands in Claude Code, in order:
 /founder-os-init
 ```
 
-`/founder-os-init` takes about 20 minutes. It asks about the business, charter,
-goals, metrics, offer, and voice, then creates a complete workspace and hands
-you the first daily brief.
+`/founder-os-init` is one continuous, resumable flow from an empty folder to a
+persisted first brief. It checks the install and target before writing, then
+asks four short groups about the business, customer, quarter and money. It
+delegates each answer to the role that owns the destination file, validates the
+minimum state, and writes a dated brief at `reviews/daily/YYYY-MM-DD.md`.
+
+A valid brief has all four required headings declared in `ownership.yaml`:
+`## The one thing`, `## Rotting`, `## The trade`, and `## Triage`. `## The one
+thing` and `## The trade` must be non-empty. An empty, malformed, or wrong-path
+file does not activate the workspace.
+
+The median target is ten minutes and the hard stop is fifteen minutes. Unknown
+cash, revenue or burn stays unknown and becomes an owned follow-up; it is never
+filled from inference. `Activation complete` appears only after that valid
+brief passes the same check in the same resolved workspace. If the flow stops, run
+`/founder-os-init` again: populated sections are preserved and the first missing
+stage resumes.
 
 ## Optional: schedule the cadences
 
@@ -80,27 +91,55 @@ can still be invoked manually.
 Multi-business installs keep one workspace and one schedule fence per business.
 The Portfolio Manager is the only role that reads across them.
 
-## See the result before installing
-
-The fictional [`examples/studio-north/`](../examples/studio-north/) workspace
-shows a daily brief linked to a real queue item, quarterly bet, weekly block,
-pipeline action, weekly review, and irreversible decision.
-
-Start with its
-[`reviews/daily/2026-07-20.md`](../examples/studio-north/reviews/daily/2026-07-20.md),
-then follow `q-0720a` and `B1` across the files.
-
-## Your first week
+## Your first five actions
 
 1. Run `/daily-brief` before opening email.
 2. Put unstructured thoughts in `inbox.md`; the next brief or `/triage` drains
    them.
 3. Run `/pipeline-review` before calling a list of conversations a pipeline.
 4. Run `/weekly-review` on Friday before memory rewrites the week.
-5. Use `/founder-os-doctor` if the workspace looks stale or inconsistent.
+5. Ask the **Chief of Staff** to route any uncategorized decision. You do not
+   need to memorize all 49 workflows.
 
-You do not need to memorize all 49 commands. Ask the Chief of Staff what should
-happen next.
+## What the 13 agents are
+
+The agents are specialized roles, not 13 autonomous processes running all day.
+Each role owns one kind of decision and one part of the workspace. A workflow
+invokes the relevant role when you ask for it; scheduled cadences invoke ten of
+those workflows at defined times.
+
+When you do not know which role or command to use, ask the **Chief of Staff**.
+Routing is its one decision. The full generated catalogue is
+[`founder-os/COMMANDS.md`](../founder-os/COMMANDS.md).
+
+## Update, repair, or uninstall
+
+Refresh the marketplace, update the installed plugin, and load the new version
+without restarting Claude Code:
+
+```text
+/plugin marketplace update founder-os
+/plugin update founder-os@founder-os
+/reload-plugins
+```
+
+These are the current
+[Claude Code plugin-management commands](https://code.claude.com/docs/en/discover-plugins).
+
+For a workspace that is missing files, stale, or structurally inconsistent,
+run `/founder-os-doctor`. It reports before proposing any repair. For an
+interrupted first run, rerun `/founder-os-init`; do not delete the workspace or
+manually replay the owner workflows.
+
+To remove the plugin:
+
+```text
+/plugin uninstall founder-os@founder-os
+```
+
+The Markdown workspace under `FOUNDER_OS_HOME` is separate from the installed
+plugin and remains yours. Back it up before deleting it yourself. See
+[`troubleshooting.md`](troubleshooting.md) for recovery branches.
 
 ## Help and source
 

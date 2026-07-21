@@ -11,6 +11,21 @@ Don't know which command? Ask the **chief-of-staff** — routing is its decision
 > from the package by `scripts/generate_commands.py` and checked in CI. If the
 > two ever disagree, the generated one is right.
 
+## Start here: the first five actions
+
+After `/founder-os-init` persists and validates the first brief:
+
+1. Run `/daily-brief` before opening email.
+2. Put an unstructured thought in `inbox.md`; the next brief or `/triage`
+   drains it.
+3. Run `/pipeline-review` so every live deal has a dated next action.
+4. Run `/weekly-review` on Friday before memory rewrites the week.
+5. Ask the **Chief of Staff** to route any uncategorized decision.
+
+The examples use bare commands. If another plugin claims the same name, use the
+qualified form: `/founder-os:daily-brief`,
+`/founder-os:pipeline-review`, or `/founder-os:weekly-review`.
+
 ## The 10 cadences
 
 Scheduled by `/setup-cadences`; every one also works typed by hand. See
@@ -132,7 +147,7 @@ Cross-cutting; not tied to one agent's decision.
 | Command | What it does |
 |---|---|
 | `/context-load` | Load charter, goals, and metrics with dates stamped before any cadence runs — the house-rule-1 check that starts every session. On multi-business installs, step 0 resolves which business the session means. |
-| `/founder-os-init` | First-install onboarding — interview the founder, scaffold the workspace, hand each answer to the agent that owns it. |
+| `/founder-os-init` | Run or resume first-install onboarding through owner-safe state and a valid persisted first daily brief. |
 | `/founder-os-doctor` | Diagnose workspace rot — missing files, stale metrics, goals without bets, orphan clients, silent cadences — and report before repairing anything. |
 | `/guardrails` | Enforce the hard refusals every agent obeys — nothing outbound, nothing paid; tax/legal/medical escalated to a professional. |
 | `/ingestion-gate` | Tier every claim arriving from outside — fact, validate, or disregard — before it enters a file, stamping speaker and date inline. |

@@ -1,8 +1,12 @@
 # Founder OS
 
-> The executive team you can't afford yet — strategy, offer, pipeline, delivery, money and focus for a company of one.
+> **Know what matters today.**
 
-![Org Chart](images/org-chart.png)
+Founder OS turns your goals, cash, pipeline and commitments into one daily
+decision — stored locally and traceable to its source.
+
+**Local Markdown · No automatic sending · Explicit ownership · No hidden
+actions**
 
 Most AI setups hire you staff. This one is the org that holds you accountable.
 
@@ -52,9 +56,14 @@ Then, once:
 /founder-os-init
 ```
 
-An org of agents and an empty directory is not a product yet. Onboarding takes
-about twenty minutes and ends by handing you your first brief — not a filing
-cabinet.
+An org of agents and an empty directory is not activation. Onboarding is one
+continuous, resumable flow that targets a ten-minute median, stops at fifteen
+minutes, and ends only after it persists and validates
+`reviews/daily/YYYY-MM-DD.md`. A valid brief has all four required headings from
+`ownership.yaml` — `## The one thing`, `## Rotting`, `## The trade`, and
+`## Triage` — with non-empty `## The one thing` and `## The trade`. Unknown money
+values stay unknown and become owned follow-ups; existing populated state
+survives a resumed run.
 
 Then, if you want the company to come to you rather than wait to be opened:
 
@@ -72,6 +81,24 @@ contract-shaped
 then follow `q-0720a` and `B1` across its queue, goals, week, pipeline, and
 reviews.
 
+## Your first five actions
+
+1. Run `/daily-brief` before opening email.
+2. Put an unstructured thought in `inbox.md`.
+3. Run `/pipeline-review` so every live deal earns a dated next move.
+4. Run `/weekly-review` on Friday.
+5. Ask the **Chief of Staff** to route an uncategorized decision.
+
+## Update, repair, or uninstall
+
+Update with `/plugin marketplace update founder-os`, then
+`/plugin update founder-os@founder-os` and `/reload-plugins`. Use
+`/founder-os-doctor` for a live workspace that looks stale or structurally
+wrong. Remove the plugin with `/plugin uninstall founder-os@founder-os`.
+Workspace files stay on your machine under `FOUNDER_OS_HOME`; they are separate
+from the installed plugin. Prompts and context sent through Claude Code or Codex
+remain governed by that environment's data-handling terms.
+
 ## What's inside
 
 | Content | Count |
@@ -84,6 +111,8 @@ The full catalogue — every skill, its agent, and its schedule — is
 [`COMMANDS.md`](COMMANDS.md), generated from the package so it cannot drift.
 
 ## The org
+
+![Org Chart](images/org-chart.png)
 
 | Agent | Only this agent decides… |
 |---|---|
@@ -164,11 +193,13 @@ clients, drafts, network, skills, content, voice, systems — and a decision log
 that records *why*, not just what. Six months from now you will want to know
 why you raised rates or dropped a client. That's the file that answers.
 
-**That workspace is the whole data boundary.** Founder OS does not silently
-read a calendar, CRM, inbox, bank, or accounting tool. If a fact is not in the
-workspace or the current session, the agents do not know it. This is why the
-example workspace shows the source file behind every daily-brief claim instead
-of implying a live integration.
+**That workspace is Founder OS's persistent business state.** Founder OS does
+not silently read a calendar, CRM, inbox, bank, or accounting tool. If a fact is
+not in the workspace or the current session, the agents do not know it. The
+files remain local, while prompts and context sent through Claude Code or Codex
+remain subject to that environment's data-handling terms. This is why
+the example workspace shows the source file behind every daily-brief claim
+instead of implying a live integration.
 
 **Every file has exactly one owner.** Agents read anything and write only what
 they own. A `PreToolUse` hook checks every write against
