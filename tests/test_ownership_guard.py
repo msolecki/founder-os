@@ -384,6 +384,27 @@ class TestOwnershipHotPath(unittest.TestCase):
         roots.assert_called_once_with("/tmp/workspace")
 
 
+class TestWorkspaceRoots(unittest.TestCase):
+    def test_relative_founder_os_home_resolves_from_hook_cwd(self):
+        import tempfile
+        guard = load_guard()
+        with tempfile.TemporaryDirectory() as td:
+            cwd = Path(td)
+            expected = (cwd / "business").resolve()
+            with mock.patch.dict(os.environ, {"FOUNDER_OS_HOME": "business",
+                                               "CLAUDE_PROJECT_DIR": ""}, clear=False):
+                roots = guard.workspace_roots(str(cwd))
+            self.assertIn(str(expected), roots)
+
+    def test_missing_founder_os_home_defaults_to_founder_os_under_cwd(self):
+        import tempfile
+        guard = load_guard()
+        with tempfile.TemporaryDirectory() as td:
+            with mock.patch.dict(os.environ, {}, clear=True):
+                roots = guard.workspace_roots(td)
+            self.assertIn(str((Path(td) / "founder-os").resolve()), roots)
+
+
 class TestRegistryRoots(unittest.TestCase):
     """Multi-business: the registry's workspace roots are guarded too.
 

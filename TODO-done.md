@@ -138,3 +138,8 @@
 
 ### [TEST-007] `_patch_paths` is tested for Add/Delete/Update/Move markers and multi-file dedup order
 - **Completed**: Added marker-order, deduplication, and non-string fallback tests; full suite passed with 110 tests.
+
+## 2026-07-21 — workspace roots test batch
+
+### [TEST-006] `workspace_roots` relative/default `FOUNDER_OS_HOME` resolution is tested
+- **Completed**: Added relative-home and default-root contract tests; full suite passed with 112 tests.
