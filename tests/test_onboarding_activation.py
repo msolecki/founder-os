@@ -129,11 +129,91 @@ def assert_preservation_contract(testcase: unittest.TestCase, body: str) -> None
 
     _, resume_and_failure, _ = section_matching(body, r"Resume and failure")
     _, resume, _ = section_matching(resume_and_failure, r"Resume", level=3)
+    resume = resume.replace("`", "")
     preservation = structured_actions(resume).get("preservation")
     testcase.assertIsNotNone(preservation, "missing structured Preservation action")
     recipe = preservation[0]
     for token in ("keep", "byte-for-byte", "create only missing"):
         testcase.assertRegex(recipe, rf"(?i){semantic_pattern(token)}")
+
+
+def assert_cfo_checkpoint_contract(testcase: unittest.TestCase, body: str) -> None:
+    """Require independently recognizable revenue and runway completion."""
+    _, money, _ = section_matching(body, r"Stage 4/4.*Money")
+    actions = structured_actions(money)
+    cases = {
+        "revenue checkpoint": (
+            "/revenue-review",
+            "metrics.md",
+            "## Close — YYYY-MM",
+            "before /runway-forecast",
+        ),
+        "runway checkpoint": (
+            "/runway-forecast",
+            "metrics.md",
+            "## Runway",
+            "before Stage 5",
+        ),
+    }
+    for label, required in cases.items():
+        testcase.assertIn(label, actions)
+        recipe = actions[label][0].replace("`", "")
+        for token in required:
+            testcase.assertRegex(recipe, rf"(?i){semantic_pattern(token)}")
+        testcase.assertRegex(recipe, r"(?i)(?:successful|validat).*persist")
+
+    _, first_brief, _ = section_matching(body, r"Stage 6.*First brief")
+    minimum_state = structured_actions(first_brief).get("minimum-state validation")
+    testcase.assertIsNotNone(minimum_state)
+    minimum_state_text = minimum_state[0].replace("`", "")
+    for marker in ("## Close — YYYY-MM", "## Runway"):
+        testcase.assertRegex(
+            minimum_state_text, rf"(?i){semantic_pattern(marker)}"
+        )
+
+
+def assert_resume_resolution_contract(testcase: unittest.TestCase, body: str) -> None:
+    """Pin changed-slug, changed-home and confirmed-relocation behavior."""
+    _, preflight, _ = section_matching(body, r"Stage 0.*Preflight")
+    cases = {
+        "no explicit resume tuple": (
+            "registry",
+            "FOUNDER_OS_HOME",
+            "normal resolution",
+        ),
+        "changed active slug": (
+            "explicit resume tuple",
+            "recorded workspace",
+            "ignore the registry's active slug",
+        ),
+        "changed home": (
+            "explicit resume tuple",
+            "recorded workspace",
+            "ignore the current FOUNDER_OS_HOME",
+        ),
+        "confirmed relocation": (
+            "old tuple",
+            "new tuple",
+            "founder confirmation",
+            "update the target checkpoint",
+        ),
+    }
+    for state, required in cases.items():
+        row = " | ".join(table_row_for(preflight, state)).replace("`", "")
+        for token in required:
+            testcase.assertRegex(row, rf"(?i){semantic_pattern(token)}")
+
+    _, resume_and_failure, _ = section_matching(body, r"Resume and failure")
+    _, resume, _ = section_matching(resume_and_failure, r"Resume", level=3)
+    resume = resume.replace("`", "")
+    for token in (
+        "explicit resume tuple",
+        "FOUNDER_OS_HOME",
+        "business slug",
+        "resolved workspace path",
+        "confirmed relocation",
+    ):
+        testcase.assertRegex(resume, rf"(?i){semantic_pattern(token)}")
 
 
 def owner_for(path: str, ownership: dict) -> str:
@@ -483,6 +563,36 @@ class OnboardingActivationContract(unittest.TestCase):
         _, halt, _ = section_matching(failure, r"Failure", level=3)
         for token in ("FOUNDER_OS_HOME", "business slug", "resolved workspace"):
             self.assertRegex(halt, rf"(?i){semantic_pattern(token)}")
+
+    def test_resume_resolution_handles_changed_slug_home_and_relocation(self):
+        assert_resume_resolution_contract(self, self.init_body)
+
+    def test_resume_resolution_rejects_changed_target_shortcuts(self):
+        assert_resume_resolution_contract(self, self.init_body)
+        changed_slug = self.init_body.replace(
+            "ignore the registry's active slug",
+            "follow the registry's active slug",
+        )
+        with self.assertRaises(AssertionError):
+            assert_resume_resolution_contract(self, changed_slug)
+
+        changed_home = self.init_body.replace(
+            "ignore the current `FOUNDER_OS_HOME`",
+            "follow the current `FOUNDER_OS_HOME`",
+        )
+        with self.assertRaises(AssertionError):
+            assert_resume_resolution_contract(self, changed_home)
+
+    def test_cfo_operations_have_independent_persisted_checkpoints(self):
+        assert_cfo_checkpoint_contract(self, self.init_body)
+
+    def test_cfo_checkpoint_contract_detects_either_missing_marker(self):
+        assert_cfo_checkpoint_contract(self, self.init_body)
+        for marker in ("## Close — YYYY-MM", "## Runway"):
+            with self.subTest(marker=marker):
+                mutated = self.init_body.replace(marker, "## Financial state")
+                with self.assertRaises(AssertionError):
+                    assert_cfo_checkpoint_contract(self, mutated)
 
     def test_stage_zero_and_stage_six_share_daily_review_validity_invariant(self):
         _, preflight, _ = section_matching(

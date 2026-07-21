@@ -39,27 +39,44 @@ Stage 0 is read-only. Finish every check before the first workspace write:
 1. Confirm the plugin manifest, `CLAUDE.md`, `references/house-rules.md`,
    `references/ownership.yaml`, `references/multi-business.md` and every
    downstream skill named below exist in the installed package.
-2. Resolve `FOUNDER_OS_HOME`, then resolve the business slug from the registry
-   when one exists. Treat the resulting path, `FOUNDER_OS_HOME` and business
-   slug as one frozen **resolved workspace** tuple for the entire run.
-3. Validate the registry without rewriting it. A second-business request
+2. Before normal target resolution, read an **explicit resume tuple** from the
+   invocation when one was supplied. It is complete only when it names the
+   exact recorded `FOUNDER_OS_HOME`, business slug and resolved workspace path;
+   a partial tuple stops instead of being guessed.
+3. Resolve the target using the resume-resolution table below. Treat the
+   resulting path, `FOUNDER_OS_HOME` and business slug as one frozen
+   **resolved workspace** tuple for the entire run.
+4. Validate the registry without rewriting it. A second-business request
    follows `references/multi-business.md`; an ambiguous or invalid slug stops.
-4. Check from filesystem metadata that the target or its nearest existing
+5. Check from filesystem metadata that the target or its nearest existing
    parent is writable. Do not create a probe file.
-5. Confirm the canonical context is present and carries `CLAUDE.md`, the house
+6. Confirm the canonical context is present and carries `CLAUDE.md`, the house
    rules, ownership map and resolved workspace.
-6. Apply the **daily-review validity invariant**: in this resolved workspace,
+7. Apply the **daily-review validity invariant**: in this resolved workspace,
    a candidate `reviews/daily/YYYY-MM-DD.md` is valid only when it contains the
    headings declared for `reviews/daily/` by `references/ownership.yaml`, with
    a non-empty `## The one thing` and `## The trade`. Stage 6 uses this exact
    invariant again; there is no weaker activation check.
-7. If `decisions/YYYY-MM-DD-founder-os-installed.md` already carries a target
-   checkpoint, compare its `FOUNDER_OS_HOME`, business slug and resolved path
-   with the newly resolved tuple. Any checkpoint mismatch must stop before a
-   read or write outside the selected workspace and ask the founder to select
-   the recorded business explicitly.
-8. Read the target's `charter.md`, owned outputs and `reviews/daily/`, then
+8. If the selected workspace's `decisions/*-founder-os-installed.md` already
+   carries a target checkpoint, compare its `FOUNDER_OS_HOME`, business slug
+   and resolved path with the selected tuple. Any mismatch outside the
+   confirmed-relocation case stops before a read or write outside the selected
+   workspace.
+9. Read the target's `charter.md`, owned outputs and `reviews/daily/`, then
    classify exactly one activation state:
+
+### Resume resolution
+
+| Invocation state | Selection rule | Action |
+|---|---|---|
+| `no explicit resume tuple` | Use the registry and current `FOUNDER_OS_HOME` for normal resolution. | Select a new, incomplete or activated workspace by the ordinary rules. |
+| `changed active slug` | The complete explicit resume tuple selects the recorded workspace; ignore the registry's active slug. | Validate the checkpoint at that exact path before reading activation state. |
+| `changed home` | The complete explicit resume tuple selects the recorded workspace; ignore the current `FOUNDER_OS_HOME`. | Continue at the recorded path if it exists; otherwise require confirmed relocation. |
+| `confirmed relocation` | Require the exact old tuple, exact new tuple and founder confirmation that the workspace moved. | Select the new path, validate that its checkpoint carries the old tuple, and update the target checkpoint to the new tuple only after every read-only preflight check succeeds. |
+
+Never scan sibling workspaces to find a checkpoint. Never infer relocation
+from a copied directory or a mismatch. The explicit tuple makes the old target
+discoverable; confirmed relocation is the only rebinding procedure.
 
 | State | Evidence | Action |
 |---|---|---|
@@ -131,7 +148,9 @@ to `/revenue-review` and `/runway-forecast`; do not write `metrics.md` yourself.
 Unknown values stay unknown. Do not estimate cash, infer receivables, discount
 pipeline into cash, or omit founder pay to make runway look longer.
 
-- **Stage checkpoint:** immediately invoke `/revenue-review` and then `/runway-forecast` through the owner allowlist and require their successful persisted `metrics.md` results in the resolved workspace before Stage 5; on resume, continue with the first missing CFO output rather than repeating a valid one.
+- **Stage checkpoint:** immediately invoke `/revenue-review` and then `/runway-forecast` through the owner allowlist, requiring each successful independently persisted `metrics.md` result in the resolved workspace before Stage 5.
+- **Revenue checkpoint:** invoke `/revenue-review` and require a successful persisted `## Close — YYYY-MM` block in `metrics.md` before `/runway-forecast`; on resume, do not repeat a valid close.
+- **Runway checkpoint:** invoke `/runway-forecast` after the revenue checkpoint and require a successful persisted `## Runway` block in `metrics.md` before Stage 5; without that distinct block, Stage 4 remains incomplete.
 
 The interview has a hard stop at fifteen minutes. Anything still unanswered
 moves to `queue.md`: unknown cash on hand goes in `## Doing`; every other
@@ -160,9 +179,11 @@ Wait for each owner result before continuing.
 The Stage 2–4 checkpoints invoke these rows in table order. Stage 5 reconciles
 their persisted results; it does not wait until now to make the first call. The
 two CFO skills share one owner and one file, so `/runway-forecast` reads the
-first-run close that `/revenue-review` just wrote. After each result, re-read
-the owned output from the same resolved workspace. Do not accept a verbal
-“done” as persisted state and do not re-run a valid completed owner output.
+first-run close that `/revenue-review` just wrote. Treat `## Close — YYYY-MM`
+and `## Runway` as independent completion markers. After each result, re-read
+and validate its own block from the same resolved workspace. Do not accept a
+verbal “done” as persisted state and do not re-run a valid completed owner
+output.
 
 The Chief of Staff may write missing-data queue items and update the target
 checkpoint because it owns those paths. The decision record uses the four
@@ -179,7 +200,7 @@ and persistence.
 Use the **daily-review validity invariant** from Stage 0 and its headings from
 `references/ownership.yaml`; do not substitute a file-exists check.
 
-- **Minimum-state validation:** in the same resolved workspace, validate non-empty charter identity plus owner-persisted `offer.md`, `goals.md`, `metrics.md` and `queue.md`; truthful hypotheses and unknowns are valid, fabricated completeness is not.
+- **Minimum-state validation:** in the same resolved workspace, validate non-empty charter identity plus owner-persisted `offer.md`, `goals.md`, `queue.md`, a `metrics.md` `## Close — YYYY-MM` block and a separate `## Runway` block; truthful hypotheses and unknowns are valid, fabricated completeness is not.
 - **Daily-brief invocation:** invoke `/daily-brief` as the Chief of Staff against that same resolved workspace.
 - **Persisted completion:** require a successful persisted write to `reviews/daily/YYYY-MM-DD.md` in that same resolved workspace and validate its declared daily-review headings before continuing.
 
@@ -213,22 +234,24 @@ there is no hidden progress file or second state tracker.
 ### Failure
 
 On a failed preflight, delegation, validation, invocation or write, halt before
-Stage 7. Print the completed stages, the missing stage, the concrete failed
-condition, and `/founder-os-init` as the resume command. On the next line print
-the exact `FOUNDER_OS_HOME`, business slug and resolved workspace path from the
-target checkpoint so the founder can select the same business. Omit the
-success receipt. A caught failure in one owner stage must not erase another
-owner's successful output.
+Stage 7. Print the completed stages, the missing stage and the concrete failed
+condition. Print a copyable `/founder-os-init resume` command carrying the
+explicit resume tuple: the exact `FOUNDER_OS_HOME`, business slug and resolved
+workspace path from the target checkpoint. Omit the success receipt. A caught
+failure in one owner stage must not erase another owner's successful output.
 
 ### Resume
 
 - **Preservation:** keep and preserve every populated section byte-for-byte and create only missing stubs or declared headings before continuing from the first missing stage.
 
-On the next run, derive completed stages from valid owned outputs and compare
-the resolved tuple to the target checkpoint before continuing. Do not
-re-scaffold destructively, re-ask completed stages or copy a carried answer
-into a file owned by someone else. An activated classification still routes to
-the doctor instead of resuming.
+On the next run, use the explicit resume tuple — exact `FOUNDER_OS_HOME`,
+business slug and resolved workspace path — to select the checkpoint before
+consulting current defaults. Derive completed stages from valid owned outputs
+and compare the tuple to the target checkpoint before continuing. A moved
+workspace requires the confirmed relocation procedure from Stage 0; never
+silently rebind it. Do not re-scaffold destructively, re-ask completed stages
+or copy a carried answer into a file owned by someone else. An activated
+classification still routes to the doctor instead of resuming.
 
 ## Output
 
