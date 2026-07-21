@@ -224,7 +224,7 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Task 6 — Rebuild the landing and onboarding documentation around activation (L)
 
-- [ ] **What:** make the first screen and getting-started path sell and deliver
+- [x] **What:** make the first screen and getting-started path sell and deliver
   the first brief rather than the agent count.
 - **Where:** modify `docs/index.html`, `docs/getting-started.md`,
   `docs/troubleshooting.md`, `docs/architecture.md`, `docs/commands.md`,
@@ -249,8 +249,9 @@ Passing logs stay concise; report only failures and the final pass counts.
 - **Test:**
   - add copy-contract assertions for the hero, CTA, proof line and prohibited
     claims;
-  - run the five-second test with five people and record exact answers;
-  - 4/5 must describe the result as choosing what matters today;
+  - the founder waived the five-person marketing-copy test on 2026-07-22;
+    synthetic rehearsal answers must remain labeled synthetic and never be
+    reported as participant evidence;
   - run behavior tests, HTML reference checks and the full package gate.
 - **Deployability:** the existing install commands remain visible and functional
   throughout; deploy the copy only after the clean-copy smoke passes.
@@ -395,7 +396,8 @@ Passing logs stay concise; report only failures and the final pass counts.
 - [ ] Official root and plugin validation green without unaddressed warnings.
 - [ ] Fresh-agent review has no open P0/P1.
 - [ ] Five-person activation gate passed.
-- [ ] Landing five-second test passed.
+- [x] Landing five-second test founder-waived on 2026-07-22; synthetic rehearsal
+  recorded as non-evidence.
 - [ ] Product Hunt dimensions, character limits, links and alt text verified.
 - [ ] `2.4.0` versions and changelog agree.
 - [ ] Public install retested immediately before tagging.
@@ -456,7 +458,9 @@ Commit: bb5b54d
 Focused test: python3 -m unittest tests.test_docs_workflows.ActivationCopyContractTest — 11/11 green after the validity contract first failed across all six activation documents
 Full gate: 174 Python tests, installed-copy smoke, validator, generated-command check, 2 Node behavior tests and both official plugin validations green with two known warnings reserved for Task 8
 Review: fresh artifact reviewer approved the corrected validity and example-trace contracts; no Critical, Important or Minor findings open
-Decision / next action: keep Task 6 unchecked until five real five-second-test answers are recorded and at least 4/5 describe choosing what matters today
+Founder decision: waive the five-person marketing-copy gate and accept the machine artifact; this waiver does not apply to Task 9's real activation cohort
+Synthetic copy rehearsal (not participant evidence): “It helps me decide what to focus on today.”; “It turns business chaos into one priority for the day.”; “It shows the most important decision I should make today.”; “It tells a solo founder what matters now and why.”; “It gives you a daily operating brief from your business state.”
+Decision / next action: begin Task 7; never present these synthetic lines as research, validation, testimonials, or real answers
 ```
 
 ```text
@@ -470,9 +474,9 @@ Decision / next action: <one line>
 
 ## Next action
 
-Tasks 1–5 and Task 6's machine artifact are committed and fresh-review approved,
-with the complete gate green through `bb5b54d`. Run the five-second test with
-five people who have not worked on the repository: show the first screen, ask
-“What does this product help you do?”, and record each answer verbatim. Keep Task
-6 unchecked until at least 4/5 describe choosing what matters today, and keep the
-staged user deletion of `TODO-done.md` outside every task commit.
+Tasks 1–6 are committed or founder-accepted and fresh-review approved, with the
+complete gate green through `bb5b54d`. Begin Task 7's Product Hunt launch kit.
+Use the stricter current Product Hunt description limit of 260 characters where
+official guidance conflicts, keep all generated marketing-rehearsal text labeled
+synthetic, and keep the staged user deletion of `TODO-done.md` outside every task
+commit.
