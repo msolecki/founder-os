@@ -36,8 +36,6 @@ All notable changes to Founder OS. Versions follow the plugin's
 - Claude Code is the verified release path. Codex remains beta/manual until a
   separate clean-install validation; this release makes no cross-host claim.
 
-This is release preparation only: 2.4.0 is not tagged.
-
 ## 2.3.0 — 2026-07-19
 
 **Multi-business.** One founder, several companies of one — without changing

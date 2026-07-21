@@ -69,11 +69,11 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "**Verification.**",
             "**Launch assets.**",
             "Codex remains beta/manual",
-            "not tagged",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, release)
         self.assertNotIn("Codex parity", release)
+        self.assertNotIn("not tagged", release)
 
     def test_ci_keeps_internal_smoke_without_unapproved_cli_download(self):
         workflow = yaml.safe_load(self.ci)
