@@ -172,7 +172,7 @@ Passing logs stay concise; report only failures and the final pass counts.
 
 ## Task 4 — Prove installed-package context and clean-copy behavior (M)
 
-- [ ] **What:** close the gap between source-tree tests and an installed plugin
+- [x] **What:** close the gap between source-tree tests and an installed plugin
   layout without invoking an LLM or sending data.
 - **Where:** create `tests/test_session_context.py` and
   `scripts/smoke_installed_copy.py`; modify `.github/workflows/ci.yml` and
@@ -433,6 +433,15 @@ Decision / next action: begin Task 4 from this green deployable checkpoint
 ```
 
 ```text
+Task 4 — 2026-07-22
+Commit: f7b0ec1
+Focused test: python3 -m unittest tests.test_session_context -v — 8/8 green; source-root mutation rejected while the restored installed root passed
+Full gate: installed-copy smoke, 161 Python tests, validator, generated-command check, 2 Node behavior tests and both official plugin validations green
+Review: fresh artifact reviewer approved; no Critical, Important or Minor findings open
+Decision / next action: implement Task 5's exported landing controllers from this clean-copy checkpoint
+```
+
+```text
 Task N — YYYY-MM-DD
 Commit: <sha>
 Focused test: <command and concise result>
@@ -443,7 +452,7 @@ Decision / next action: <one line>
 
 ## Next action
 
-Tasks 1–3 are committed, individually and batch fresh-review approved, and
-green through `bdefd48`. Begin Task 4's isolated-home lifecycle harness from
-this deployable checkpoint; keep the staged user deletion of `TODO-done.md`
-outside every task commit.
+Tasks 1–4 are committed and fresh-review approved, with the complete gate green
+through `f7b0ec1`. Begin Task 5's controller extraction from this deployable
+checkpoint; keep the staged user deletion of `TODO-done.md` outside every task
+commit.
