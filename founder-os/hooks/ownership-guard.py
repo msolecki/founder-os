@@ -57,10 +57,8 @@ import os
 import re
 import sys
 
-try:
-    import yaml
-except ImportError:  # PyYAML is not stdlib and this runs on strangers' machines.
-    yaml = None
+_YAML_UNSET = object()
+yaml = _YAML_UNSET
 
 # House Rule 0, at the tool layer. Kept deliberately narrow: these three are the
 # ones that can actually reach the outside world in one call. An agent with Bash
@@ -74,6 +72,18 @@ except ImportError:  # PyYAML is not stdlib and this runs on strangers' machines
 # check_ownership below like Write and Edit do, not through this set.
 OUTBOUND_TOOLS = {"Bash", "WebFetch"}
 MCP_TOOL = re.compile(r"^mcp__")
+
+
+def _get_yaml():
+    """Import PyYAML only on paths that need to parse YAML."""
+    global yaml
+    if yaml is _YAML_UNSET:
+        try:
+            import yaml as yaml_module
+        except ImportError:  # PyYAML is optional on strangers' machines.
+            yaml_module = None
+        yaml = yaml_module
+    return yaml
 
 
 def log(msg):
@@ -174,10 +184,11 @@ def load_ownership():
         except OSError as e:
             log("could not read %s (%s)" % (path, e))
             continue
-        if yaml is not None:
+        yaml_module = _get_yaml()
+        if yaml_module is not None:
             try:
-                data = yaml.safe_load(text) or {}
-            except yaml.YAMLError as e:
+                data = yaml_module.safe_load(text) or {}
+            except yaml_module.YAMLError as e:
                 log("%s is not valid YAML (%s)" % (path, e))
                 return None
             owns = data.get("owns") if isinstance(data, dict) else None
@@ -223,8 +234,9 @@ def _registry_roots():
     try:
         with open(path, encoding="utf-8") as fh:
             text = fh.read()
-        if yaml is not None:
-            data = yaml.safe_load(text) or {}
+        yaml_module = _get_yaml()
+        if yaml_module is not None:
+            data = yaml_module.safe_load(text) or {}
         else:
             # The registry shape is intentionally small. On machines without
             # PyYAML, collect only absolute `home:` and `portfolio:` values;

@@ -4,6 +4,7 @@ The guard lives at a dashed path no import statement reaches, so it is loaded
 by file location. Loading it does not run main(): the module guards on
 __name__ == "__main__" and only reads stdin there.
 """
+import builtins
 import importlib.util
 import json
 import os
@@ -11,6 +12,7 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 GUARD_PATH = (Path(__file__).resolve().parents[1]
               / "founder-os" / "hooks" / "ownership-guard.py")
@@ -44,6 +46,22 @@ def load_guard():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+class TestLazyYamlImport(unittest.TestCase):
+    def test_loading_guard_does_not_import_yaml(self):
+        imported = []
+        real_import = builtins.__import__
+
+        def tracked_import(name, *args, **kwargs):
+            if name == "yaml" or name.startswith("yaml."):
+                imported.append(name)
+            return real_import(name, *args, **kwargs)
+
+        with mock.patch("builtins.__import__", side_effect=tracked_import):
+            load_guard()
+
+        self.assertEqual(imported, [])
 
 
 class TestOwnerOfCasefold(unittest.TestCase):
@@ -283,6 +301,19 @@ class TestFallbackParser(unittest.TestCase):
         got = self.guard._parse_owns_without_yaml(self.text)
         self.assertEqual(got, expected)
 
+    def test_load_ownership_without_pyyaml_matches_pyyaml_map(self):
+        import yaml
+        owns = yaml.safe_load(self.text)["owns"]
+        expected = {
+            path.strip(): agent
+            for agent, paths in owns.items()
+            for path in paths
+            if isinstance(path, str) and path.strip()
+        }
+        with mock.patch.object(self.guard, "yaml", None):
+            got = self.guard.load_ownership()
+        self.assertEqual(got, expected)
+
     def test_garbage_returns_none_rather_than_a_guess(self):
         self.assertIsNone(self.guard._parse_owns_without_yaml(
             "owns:\n  - a list where an agent should be\n"))
@@ -327,6 +358,25 @@ class TestRegistryRoots(unittest.TestCase):
                 roots = guard.workspace_roots(None)
             self.assertIn(str(acme.resolve()), roots)
             self.assertIn(str(portfolio.resolve()), roots)
+
+    def test_registry_roots_without_pyyaml_match_yaml_result(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            acme = tmp / "acme" / "founder-os"
+            portfolio = tmp / "portfolio"
+            acme.mkdir(parents=True)
+            portfolio.mkdir(parents=True)
+            home = self._home_with_registry(tmp, (
+                "businesses:\n"
+                "  acme:\n"
+                "    home: %s\n"
+                "portfolio: %s\n" % (acme, portfolio)))
+            guard = load_guard()
+            with mock.patch.object(guard, "yaml", None), \
+                    mock.patch.dict(os.environ, {"HOME": str(home)}):
+                roots = guard._registry_roots()
+            self.assertEqual(roots, [str(acme), str(portfolio)])
 
     def test_broken_registry_fails_open(self):
         import tempfile
