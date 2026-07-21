@@ -78,3 +78,8 @@
 
 ### [ARCH-002] `SYSTEM_SKILLS` / `STANDALONE_SKILLS` / `parse_frontmatter` copy-pasted across both scripts
 - **Completed**: Shared `scripts/_package.py` now owns the constants and parser; both scripts import it and command generation remains current.
+
+## 2026-07-21 — generator robustness batch
+
+### [BUG-004] `generate_commands.load` tracebacks when `skills/` is absent
+- **Completed**: Missing `skills/` now produces a clean `FAIL:` with exit 1; regression test passes. Full suite reached 99 tests.

@@ -41,7 +41,10 @@ def load(root):
         fm, _ = parse_frontmatter(p)
         agents[p.stem] = fm
     skills = {}
-    for d in sorted((root / "skills").iterdir()):
+    sdir = root / "skills"
+    if not sdir.is_dir():
+        return agents, skills
+    for d in sorted(sdir.iterdir()):
         f = d / "SKILL.md"
         if d.is_dir() and f.exists():
             fm, _ = parse_frontmatter(f)
@@ -118,6 +121,9 @@ def main():
     root = Path(args[0] if args else "founder-os")
     if not root.is_dir():
         print("FAIL: plugin root '%s' not found" % root)
+        return 1
+    if not (root / "skills").is_dir():
+        print("FAIL: plugin root '%s' has no skills directory" % root)
         return 1
     out = root / "COMMANDS.md"
     text = render(root)
