@@ -6,6 +6,8 @@ skills:
   - weekly-review
   - monthly-review
   - decision-log
+  - situation-review
+  - strategic-evaluation
   - triage
   - queue
   - founder-os-init

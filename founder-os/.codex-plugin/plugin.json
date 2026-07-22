@@ -1,6 +1,8 @@
 {
   "name": "founder-os",
-  "version": "2.4.0",
+  "version": "2.5.0",
+  "homepage": "https://msolecki.github.io/founder-os/",
+  "repository": "https://github.com/msolecki/founder-os",
   "description": "Know what matters today with one source-linked daily decision from your goals, cash, pipeline, and commitments.",
   "author": {
     "name": "Mateusz Solecki"
@@ -18,17 +20,19 @@
   "interface": {
     "displayName": "Founder OS",
     "shortDescription": "Run a company of one with an executive team.",
-    "longDescription": "Founder OS adds 50 reusable workflows, 13 decision-owning executive agents, and 10 optional operating cadences for solo founders.",
+    "longDescription": "Founder OS adds 52 reusable workflows, 13 decision roles, and 10 optional operating cadences for solo founders.",
     "developerName": "Mateusz Solecki",
     "category": "Productivity",
+    "websiteURL": "https://msolecki.github.io/founder-os/",
+    "privacyPolicyURL": "https://msolecki.github.io/founder-os/trust.html",
     "capabilities": [
       "Read",
       "Write"
     ],
     "defaultPrompt": [
-      "Use Founder OS to plan my week from current state.",
-      "Run the Founder OS daily brief.",
-      "Ask the chief of staff to route this decision."
+      "Describe my business situation and route it to one Founder OS workflow.",
+      "Run a strategic evaluation of this decision before I commit.",
+      "Run the Founder OS daily brief from my current business state."
     ]
   }
 }

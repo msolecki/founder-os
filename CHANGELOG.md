@@ -5,6 +5,12 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+## 2.5.0 — 2026-07-22
+
+**Codex parity.** Added situation review and strategic evaluation workflows,
+Codex skill interfaces for every workflow, dual-host local overlays, and a
+public Trust Center documenting state, permissions, and fail-open boundaries.
+
 **Extensibility.** A founder can add a file, a workflow, or a role their
 business needs without forking — and none of it can weaken the ownership
 contract, the tool allowlist, or house rule 0.

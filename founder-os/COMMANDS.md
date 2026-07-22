@@ -72,6 +72,8 @@ Decides what deserves the founder's attention right now and which specialist han
 | `/weekly-review` | Score the week's commitments against what actually happened and name the pattern across weeks — run Friday afternoon, before the week is remembered kindly |
 | `/monthly-review` | Read the month back against the charter and name the drift — run after the CFO closes the books, never before |
 | `/decision-log` | Record an irreversible decision with the falsifier that would reverse it — run within 24 hours of the decision, while the reason is still the reason |
+| `/situation-review` | Route one unclear business situation to exactly one Founder OS owner and workflow — use when the founder describes what is happening, asks what to do next, or does not know which role to ask |
+| `/strategic-evaluation` | Evaluate one material, hard-to-reverse or cross-domain decision through dated evidence, owned perspectives, a recommendation and a Board challenge — run before the founder decides |
 | `/triage` | Take the founder's pile of unsorted obligations, keep one, cost the rest, and route them by name — run when they arrive with five things and no idea which matters |
 | `/queue` | Hold the founder's live obligations with a cap, an expiry and one owner — run whenever a cadence produces work that would otherwise live in a paragraph nobody reopens |
 

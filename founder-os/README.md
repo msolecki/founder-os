@@ -16,18 +16,18 @@ business is its own workspace, and the thirteenth agent exists to rank between
 them.
 
 **Founder OS is free and MIT-licensed.** It runs inside your existing Claude
-Code environment and adds no account or subscription of its own.
+Code or Codex environment and adds no account or subscription of its own.
 
 [Getting started](../docs/getting-started.md) ·
 [Example workspace](../examples/studio-north/README.md) ·
-[All 50 workflows](COMMANDS.md) ·
+[All 52 workflows](COMMANDS.md) ·
 [Report an issue](https://github.com/msolecki/founder-os/issues)
 
 ## Before you install
 
 | Requirement | Purpose |
 |---|---|
-| Recent [Claude Code](https://code.claude.com/docs) | Founder OS is a plugin, not a standalone app. |
+| Recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) | Founder OS is a plugin, not a standalone app. |
 | Python 3 | Runs the write-time ownership hook. |
 | PyYAML | Enables the full ownership-map check; the hook degrades gracefully without it. |
 | `cron` *(optional)* | Runs scheduled cadences. Every workflow also works manually. |
@@ -104,7 +104,7 @@ remain governed by that environment's data-handling terms.
 | Content | Count |
 |---------|-------|
 | Agents  | 13    |
-| Skills  | 50    |
+| Skills  | 52    |
 | Cadences | 10   |
 
 The full catalogue — every skill, its agent, and its schedule — is

@@ -206,12 +206,12 @@ test('workflow controller executes every approved state transition', () => {
       sell: 4,
       deliver: 4,
       money: 5,
-      focus: 9,
+      focus: 11,
       grow: 8,
       run: 10,
     };
     assert.equal(workflowCatalogue.open, false);
-    assert.equal(workflowCount.textContent, '50 of 50 workflows');
+    assert.equal(workflowCount.textContent, '52 of 52 workflows');
 
     for (const [category, expectedCount] of Object.entries(expectedCounts)) {
       const link = workflowFilterLinks.find(
@@ -223,7 +223,7 @@ test('workflow controller executes every approved state transition', () => {
       assert.equal(workflowCatalogue.open, true, `${category}: catalogue closed`);
       assert.equal(
         workflowCount.textContent,
-        `${expectedCount} of 50 workflows`,
+        `${expectedCount} of 52 workflows`,
         `${category}: wrong result count`,
       );
       assert.equal(
@@ -242,11 +242,11 @@ test('workflow controller executes every approved state transition', () => {
     growLink.listeners.click({ preventDefault() {} });
     workflowSearch.value = 'voice-capture';
     workflowSearch.listeners.input({});
-    assert.equal(workflowCount.textContent, '1 of 50 workflows');
+    assert.equal(workflowCount.textContent, '1 of 52 workflows');
 
     workflowSearch.listeners.keydown({ key: 'Escape' });
     assert.equal(workflowSearch.value, '');
-    assert.equal(workflowCount.textContent, '8 of 50 workflows');
+    assert.equal(workflowCount.textContent, '8 of 52 workflows');
 
     workflowSearch.value = 'review';
     workflowSearch.listeners.input({});
@@ -261,12 +261,12 @@ test('workflow controller executes every approved state transition', () => {
 
     workflowSearch.value = 'no-such-workflow-zz';
     workflowSearch.listeners.input({});
-    assert.equal(workflowCount.textContent, '0 of 50 workflows');
+    assert.equal(workflowCount.textContent, '0 of 52 workflows');
     assert.equal(workflowEmpty.hidden, false);
 
     showAllWorkflows.listeners.click({});
     assert.equal(workflowSearch.value, '');
-    assert.equal(workflowCount.textContent, '50 of 50 workflows');
+    assert.equal(workflowCount.textContent, '52 of 52 workflows');
     assert.equal(
       workflowGroups.every((group) => !group.hidden && !group.open),
       true,

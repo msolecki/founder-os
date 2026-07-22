@@ -2,7 +2,8 @@
 
 **Know what matters today.** Founder OS turns your goals, cash, pipeline and
 commitments into one daily decision — stored locally and traceable to its
-source. It is a free, MIT-licensed Claude Code plugin for a company of one.
+source. It is a free, MIT-licensed plugin for Claude Code and Codex with one
+shared workflow contract for a company of one.
 
 It does not run the company for you. It persists the decision, its owner, its
 source and the trade you are making in a Markdown workspace you control.
@@ -20,13 +21,13 @@ workspace before installing.
 
 | Requirement | Why it is needed |
 |---|---|
-| A recent [Claude Code](https://code.claude.com/docs) installation | Founder OS is a plugin, not a standalone app. |
+| A recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) installation | Founder OS is a plugin, not a standalone app. |
 | Python 3 | Runs the write-time ownership hook. |
 | PyYAML | Enables the full ownership-map check. The hook degrades gracefully when PyYAML is unavailable. |
 | Node.js 20+ *(development/tests only)* | Runs the landing-page behavior contract test. |
 | `cron` *(optional)* | Runs scheduled cadences. Every workflow also works manually without it. |
 
-Founder OS itself is free and MIT-licensed. Your existing Claude Code plan and
+Founder OS itself is free and MIT-licensed. Your existing host plan and
 usage remain separate; Founder OS does not add another account or subscription.
 
 ## What Founder OS knows
@@ -56,6 +57,16 @@ Run these commands in Claude Code, in order:
 /plugin install founder-os@founder-os
 /founder-os-init
 ```
+
+In Codex, install the same package from the repository marketplace:
+
+```text
+codex plugin marketplace add msolecki/founder-os
+codex plugin add founder-os@founder-os
+```
+
+Review and trust bundled hooks when prompted. After updating or reinstalling in
+Codex, start a new conversation so the cached copy is refreshed.
 
 `/founder-os-init` is one continuous, resumable flow from an empty folder to a
 persisted first brief. It checks the install and target before writing, then
@@ -99,7 +110,7 @@ The Portfolio Manager is the only role that reads across them.
 3. Run `/pipeline-review` before calling a list of conversations a pipeline.
 4. Run `/weekly-review` on Friday before memory rewrites the week.
 5. Ask the **Chief of Staff** to route any uncategorized decision. You do not
-   need to memorize all 50 workflows.
+   need to memorize all 52 workflows.
 
 ## What the 13 agents are
 
@@ -148,4 +159,5 @@ plugin and remains yours. Back it up before deleting it yourself. See
 - [Product philosophy and agent map](../founder-os/README.md)
 - [Source code](https://github.com/msolecki/founder-os)
 - [Report an issue](https://github.com/msolecki/founder-os/issues)
+- [Trust Center](trust.md) — data boundaries, permissions, and host parity
 - [MIT license](../LICENSE)

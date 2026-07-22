@@ -42,7 +42,7 @@ EXPECTED_ENTRIES = {
     "sell": (4, "Move a deal"),
     "deliver": (4, "Deliver well"),
     "money": (5, "Know the numbers"),
-    "focus": (9, "Protect focus"),
+    "focus": (11, "Protect focus"),
     "grow": (8, "Grow deliberately"),
     "run": (10, "Run operations"),
 }
@@ -68,6 +68,16 @@ class WorkflowLibraryContractTest(unittest.TestCase):
     def test_launch_page_declares_favicon_and_apple_touch_icon(self):
         self.assertIn('rel="icon" type="image/svg+xml"', HTML)
         self.assertIn('rel="apple-touch-icon"', HTML)
+
+    def test_trust_center_and_host_parity_are_public(self):
+        trust = (REPO_ROOT / "docs" / "trust.md").read_text(encoding="utf-8")
+        for token in (
+            "local Markdown", "Prompts,", "review and trust",
+            "fail open", "not a security sandbox", "cached installed copies",
+            "does not delete", "same `skills",
+        ):
+            self.assertRegex(trust, rf"(?i){re.escape(token)}")
+        self.assertIn("trust.html", HTML)
 
     def test_launch_page_declares_csp_and_referrer_policy(self):
         self.assertIn('http-equiv="Content-Security-Policy"', HTML)
@@ -166,7 +176,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
             category: label for category, (_, label) in EXPECTED_ENTRIES.items()
         })
 
-    def test_category_counts_still_partition_all_50_workflows(self):
+    def test_category_counts_still_partition_all_52_workflows(self):
         counts = Counter()
         groups = re.findall(
                 r'<details class="workflow-group"[^>]*data-category="([^"]+)"'
@@ -177,14 +187,14 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertEqual(dict(counts), {
             category: count for category, (count, _) in EXPECTED_ENTRIES.items()
         })
-        self.assertEqual(sum(counts.values()), 50)
+        self.assertEqual(sum(counts.values()), 52)
 
     def test_complete_catalogue_and_cadence_contract_survives(self):
         commands = re.findall(
             r'<article class="workflow-item".*?<code>(/[^<]+)</code>',
             SECTION, re.S)
-        self.assertEqual(len(commands), 50)
-        self.assertEqual(len(set(commands)), 50)
+        self.assertEqual(len(commands), 52)
+        self.assertEqual(len(set(commands)), 52)
         self.assertEqual(SECTION.count('class="workflow-badge"'), 10)
 
     def test_catalogue_is_native_and_available_without_javascript(self):

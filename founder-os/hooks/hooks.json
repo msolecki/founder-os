@@ -6,7 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.py\"",
+            "statusMessage": "Loading Founder OS context"
           }
         ]
       }
@@ -16,7 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\"",
+            "statusMessage": "Recording Founder OS decision role"
           }
         ]
       }
@@ -27,7 +29,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ownership-guard.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ownership-guard.py\"",
+            "statusMessage": "Checking Founder OS boundaries"
           }
         ]
       }

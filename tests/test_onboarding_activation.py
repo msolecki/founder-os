@@ -720,7 +720,7 @@ class OnboardingActivationContract(unittest.TestCase):
         declared_paths = re.findall(r"`([^`]+)`", declaration.group("paths"))
         self.assertCountEqual(
             declared_paths,
-            self.ownership["owns"]["chief-of-staff"],
+            [p for p in self.ownership["owns"]["chief-of-staff"] if p != "evaluations/"],
         )
         self.assertRegex(delegation, r"(?i)empty lifecycle stub")
 
@@ -1131,6 +1131,58 @@ Status: blocked — cash cap: UNKNOWN
 """
         self.assertEqual(h2_sections(examples_only), [])
         self.assertEqual(structured_actions(examples_only), {})
+
+class DecisionEntryWorkflowContractTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ownership = yaml.safe_load(
+            (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
+        cls.owner_skill_bodies = {}
+        for skill_path in (PLUGIN_ROOT / "skills").glob("*/SKILL.md"):
+            _, body = parse_frontmatter(skill_path)
+            cls.owner_skill_bodies[skill_path.parent.name] = body
+
+    def test_situation_review_is_read_only_and_bounded(self):
+        path = PLUGIN_ROOT / "skills" / "situation-review" / "SKILL.md"
+        frontmatter, body = parse_frontmatter(path)
+        self.assertEqual(skill_holders("situation-review"), ["chief-of-staff"])
+        self.assertNotIn("metadata", frontmatter)
+        for question in (
+            "What decision must be made",
+            "What real options exist",
+            "Why now",
+            "What happens if nothing changes",
+        ):
+            self.assertIn(question, body)
+        self.assertRegex(body, r"(?i)(hard cap|maximum) of four")
+        self.assertIn("Owner: <one Founder OS role>", body)
+        self.assertIn("Run: /<one workflow>", body)
+        self.assertRegex(body, r"(?i)strategic-evaluation")
+
+    def test_strategic_evaluation_pins_state_and_evidence_contract(self):
+        path = PLUGIN_ROOT / "skills" / "strategic-evaluation" / "SKILL.md"
+        frontmatter, body = parse_frontmatter(path)
+        self.assertEqual(skill_holders("strategic-evaluation"), ["chief-of-staff"])
+        self.assertEqual(frontmatter["metadata"]["writes"], ["evaluations/"])
+        for token in (
+            "O1", "I1", "Perspective mode", "founder has not decided",
+            "decision-log", "never call sequential passes independent",
+        ):
+            self.assertIn(token, body)
+        self.assertRegex(body, r"(?i)never overwrite")
+
+    def test_evaluation_sections_are_owned_and_decision_log_links_back(self):
+        sections = self.ownership["sections"]["evaluations/"]
+        self.assertEqual(sections, [
+            "## Decision", "## Scope", "## Observations", "## Interpretations",
+            "## Options", "## Recommendation", "## Challenge",
+            "## Open questions", "## Evidence appendix",
+        ])
+        decision_log = self.owner_skill_bodies["decision-log"]
+        self.assertRegex(decision_log, r"(?i)## Context[\s\S]*Evaluation:")
 
 
 if __name__ == "__main__":

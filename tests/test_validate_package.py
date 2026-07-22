@@ -112,11 +112,15 @@ class ValidatorTestCase(unittest.TestCase):
             # System skills: exempt from beliefs, so no beliefs.
             self.write_skill(slug, body="## Steps\n\n1. Go.\n")
         self.write_skill("daily-brief", writes=["goals.md"])
+        for slug in UNIVERSALS + ["daily-brief"]:
+            self.write_codex_interface(slug)
         self.write_agent("chief-of-staff", skills=["daily-brief"] + UNIVERSALS,
                          tools=DEFAULT_TOOLS + ", Agent(cfo)")
         self.write_agent("cfo", skills=list(UNIVERSALS))
         self.write_ownership(base_ownership())
         self.write_hooks()
+        for skill_path in (self.root / "skills").glob("*/SKILL.md"):
+            self.write_codex_interface(skill_path.parent.name)
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -133,6 +137,29 @@ class ValidatorTestCase(unittest.TestCase):
 
     def write_skill(self, slug, **kw):
         write(self.root / "skills" / slug / "SKILL.md", skill_md(slug, **kw))
+
+    def write_codex_interface(self, slug, data=None, raw=None):
+        payload = data or {"interface": {
+            "display_name": slug.replace("-", " ").title(),
+            "short_description": "Run the shared Founder OS workflow.",
+            "default_prompt": f"Use ${slug} for this Founder OS task.",
+        }}
+        text = raw if raw is not None else yaml.safe_dump(payload, sort_keys=False)
+        write(self.root / "skills" / slug / "agents" / "openai.yaml", text)
+
+    def write_codex_interface(self, slug, data=None, raw=None):
+        payload = data or {"interface": {
+            "display_name": slug.replace("-", " ").title(),
+            "short_description": "Run the shared Founder OS workflow.",
+            "default_prompt": f"Use ${slug} for this Founder OS task.",
+        }}
+        text = raw if raw is not None else yaml.safe_dump(
+            payload, sort_keys=False
+        )
+        write(
+            self.root / "skills" / slug / "agents" / "openai.yaml",
+            text,
+        )
 
     def write_ownership(self, data):
         write(self.root / "references" / "ownership.yaml",
@@ -213,6 +240,84 @@ class TestPlugin(ValidatorTestCase):
         self.assertEqual(
             self.check(V.check_plugin),
             ["plugin.json: 'name' is the one required field and it is missing"])
+
+
+class TestCodexInterfaces(ValidatorTestCase):
+    def test_missing_codex_skill_interface_is_caught(self):
+        (self.root / "skills" / "daily-brief" / "agents" / "openai.yaml").unlink()
+        self.assertIn(
+            "skills/daily-brief: missing agents/openai.yaml for Codex",
+            self.check(V.check_codex_skill_interfaces),
+        )
+
+    def test_codex_skill_interface_requires_shared_skill_prompt(self):
+        self.write_codex_interface("daily-brief", data={"interface": {
+            "display_name": "Daily Brief",
+            "short_description": "Run the shared workflow.",
+            "default_prompt": "Use another workflow.",
+        }})
+        self.assertIn(
+            "skills/daily-brief/agents/openai.yaml: default_prompt must name $daily-brief",
+            self.check(V.check_codex_skill_interfaces),
+        )
+
+
+class TestCodexSkillInterfaces(ValidatorTestCase):
+    def test_missing_codex_skill_interface_is_caught(self):
+        path = (
+            self.root / "skills" / "daily-brief" / "agents" / "openai.yaml"
+        )
+        path.unlink()
+        self.assertIn(
+            "skills/daily-brief: missing agents/openai.yaml for Codex",
+            self.check(V.check_codex_skill_interfaces),
+        )
+
+    def test_invalid_codex_skill_interface_is_caught(self):
+        self.write_codex_interface("daily-brief", raw="interface: [")
+        errors = self.check(V.check_codex_skill_interfaces)
+        self.assertTrue(
+            any(
+                error.startswith(
+                    "skills/daily-brief/agents/openai.yaml: invalid YAML"
+                )
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_codex_skill_interface_requires_all_presentation_fields(self):
+        self.write_codex_interface(
+            "daily-brief",
+            data={"interface": {"display_name": "Daily Brief"}},
+        )
+        errors = self.check(V.check_codex_skill_interfaces)
+        self.assertIn(
+            "skills/daily-brief/agents/openai.yaml: missing short_description",
+            errors,
+        )
+        self.assertIn(
+            "skills/daily-brief/agents/openai.yaml: missing default_prompt",
+            errors,
+        )
+
+    def test_codex_skill_interface_requires_shared_skill_prompt(self):
+        self.write_codex_interface(
+            "daily-brief",
+            data={"interface": {
+                "display_name": "Daily Brief",
+                "short_description": "Run the shared workflow.",
+                "default_prompt": "Use another workflow.",
+            }},
+        )
+        self.assertIn(
+            "skills/daily-brief/agents/openai.yaml: default_prompt must name "
+            "$daily-brief",
+            self.check(V.check_codex_skill_interfaces),
+        )
+
+    def test_complete_codex_skill_interfaces_are_clean(self):
+        self.assertEqual(self.check(V.check_codex_skill_interfaces), [])
 
 
 class TestAgents(ValidatorTestCase):
@@ -602,7 +707,7 @@ class TestReadmeCounts(ValidatorTestCase):
 
 class TestRealPackage(unittest.TestCase):
     def test_shipped_package_passes_every_check(self):
-        """The '13 agents, 50 skills, 0 errors' acceptance line, executable.
+        """The '13 agents, 52 skills, 0 errors' acceptance line, executable.
 
         Every other test here validates a synthetic fixture; this is the only
         one that would catch a regression in the package actually shipped.
@@ -611,7 +716,7 @@ class TestRealPackage(unittest.TestCase):
         agents, errs = V.run_checks(real)
         self.assertEqual(errs, [])
         self.assertEqual(len(agents), 13)
-        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 50)
+        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 52)
 
 
 class TestRunChecksContainment(unittest.TestCase):

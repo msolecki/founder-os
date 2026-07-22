@@ -21,7 +21,7 @@ environment and adds no account or subscription of its own.
 
 [Getting started](docs/getting-started.md) ·
 [Example workspace](examples/studio-north/README.md) ·
-[All 50 workflows](founder-os/COMMANDS.md) ·
+[All 52 workflows](founder-os/COMMANDS.md) ·
 [Product philosophy](founder-os/README.md)
 
 This repository is both the **plugin marketplace** (install straight from it)
@@ -106,7 +106,7 @@ branches are in [`docs/getting-started.md`](docs/getting-started.md#update-repai
 | Piece | Where | What it does |
 |---|---|---|
 | Agents | `founder-os/agents/*.md` | 13 role definitions. Frontmatter: `name`, `description`, `skills[]`, `tools:` allowlist (+ `Agent(...)` edges for managers). Body: four mandated headings. |
-| Skills | `founder-os/skills/*/SKILL.md` | 50 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
+| Skills | `founder-os/skills/*/SKILL.md` | 52 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (what init scaffolds), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | Write-time guard | `founder-os/hooks/ownership-guard.py` | A `PreToolUse` hook. Denies a subagent writing a file it doesn't own, denies subagents any outbound-capable tool (`Bash`, `WebFetch`, `mcp__*`), and denies every subagent `_local/` — the map that governs it. Fails **open**, main thread always allowed. |
 | Validator | `scripts/validate_package.py` | 14 build-time checks (below). CI runs it on every push. |
@@ -180,7 +180,7 @@ second landing-page index.
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os   # expect: 13 agent(s), 50 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os   # expect: 13 agent(s), 52 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md (CI checks it)
 python3 scripts/smoke_installed_copy.py          # clean installed-copy lifecycle
 python3 -m unittest discover -s tests            # expect: OK

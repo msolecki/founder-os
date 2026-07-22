@@ -17,7 +17,7 @@ CHANGELOG_PATH = REPO_ROOT / "CHANGELOG.md"
 CI_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 DEVELOPMENT_PATH = REPO_ROOT / "docs" / "development.md"
 
-RELEASE_VERSION = "2.4.0"
+RELEASE_VERSION = "2.5.0"
 ACTIVATION_DESCRIPTION = (
     "Know what matters today with one source-linked daily decision from your "
     "goals, cash, pipeline, and commitments."
@@ -77,16 +77,31 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         self.assertNotIn("Product Hunt kit", release)
 
     def test_internal_launch_working_material_is_not_shipped(self):
-        internal_paths = (
-            REPO_ROOT / "docs" / "product-hunt",
-            REPO_ROOT / "docs" / "superpowers",
+        product_hunt = REPO_ROOT / "docs" / "product-hunt"
+        self.assertFalse(
+            product_hunt.exists(),
+            "internal launch material is shipped: docs/product-hunt",
         )
-        for path in internal_paths:
-            with self.subTest(path=path.relative_to(REPO_ROOT)):
-                self.assertFalse(
-                    path.exists(),
-                    f"internal launch material is shipped: {path.relative_to(REPO_ROOT)}",
-                )
+
+        superpowers = REPO_ROOT / "docs" / "superpowers"
+        allowed = {"plans", "specs"}
+        unexpected = (
+            [
+                path.relative_to(superpowers)
+                for path in superpowers.iterdir()
+                if path.name not in allowed
+            ]
+            if superpowers.exists()
+            else []
+        )
+        self.assertEqual(unexpected, [])
+        for folder in allowed:
+            for path in (superpowers / folder).glob("*.md"):
+                with self.subTest(path=path.relative_to(REPO_ROOT)):
+                    self.assertRegex(
+                        path.name,
+                        r"^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$",
+                    )
 
     def test_ci_keeps_internal_smoke_without_unapproved_cli_download(self):
         workflow = yaml.safe_load(self.ci)

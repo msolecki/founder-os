@@ -27,6 +27,7 @@ workspace_files:
   - voice.md
   - systems.md
   - decisions/
+  - evaluations/
   - reviews/daily/
   - reviews/weekly/
   - reviews/monthly/
@@ -52,6 +53,7 @@ owns:
     - inbox.md
     - queue.md
     - decisions/
+    - evaluations/
     - reviews/daily/
     - reviews/weekly/
     - reviews/monthly/
@@ -214,6 +216,16 @@ sections:
     - "## Rejected"
     - "## What would change our mind"
     - "## Supersedes"
+  evaluations/:
+    - "## Decision"
+    - "## Scope"
+    - "## Observations"
+    - "## Interpretations"
+    - "## Options"
+    - "## Recommendation"
+    - "## Challenge"
+    - "## Open questions"
+    - "## Evidence appendix"
   reviews/daily/:
     - "## The one thing"
     - "## Rotting"

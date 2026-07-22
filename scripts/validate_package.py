@@ -80,6 +80,58 @@ def check_plugin(root, agents):
     return errs
 
 
+def check_codex_skill_interfaces(root, agents):
+    """Prove every shared workflow has a Codex discovery adapter."""
+    errs = []
+    for skill_path in sorted((root / "skills").glob("*/SKILL.md")):
+        slug = skill_path.parent.name
+        interface_path = skill_path.parent / "agents" / "openai.yaml"
+        if not interface_path.exists():
+            errs.append(
+                "skills/%s: missing agents/openai.yaml for Codex" % slug
+            )
+            continue
+        try:
+            data = yaml.safe_load(
+                interface_path.read_text(encoding="utf-8")
+            ) or {}
+        except yaml.YAMLError as exc:
+            errs.append(
+                "skills/%s/agents/openai.yaml: invalid YAML (%s)"
+                % (slug, exc)
+            )
+            continue
+        interface = data.get("interface") if isinstance(data, dict) else None
+        if not isinstance(interface, dict):
+            errs.append(
+                "skills/%s/agents/openai.yaml: missing interface" % slug
+            )
+            continue
+        for field in (
+            "display_name",
+            "short_description",
+            "default_prompt",
+        ):
+            value = interface.get(field)
+            if not isinstance(value, str) or not value.strip():
+                errs.append(
+                    "skills/%s/agents/openai.yaml: missing %s"
+                    % (slug, field)
+                )
+        prompt = interface.get("default_prompt", "")
+        prompt_names_skill = (
+            isinstance(prompt, str)
+            and prompt.strip()
+            and ("$" + slug) in prompt
+        )
+        if isinstance(prompt, str) and prompt.strip() and not prompt_names_skill:
+            errs.append(
+                "skills/%s/agents/openai.yaml: default_prompt must name $%s"
+                % (slug, slug)
+            )
+    return errs
+
+
 def check_agents(root, agents):
     errs = []
     for slug in sorted(agents):
@@ -454,7 +506,8 @@ def check_readme_counts(root, agents):
     return errs
 
 
-CHECKS = [check_plugin, check_agents, check_agent_tools, check_agent_graph,
+CHECKS = [check_plugin, check_codex_skill_interfaces, check_agents,
+          check_agent_tools, check_agent_graph,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,
           check_sections, check_beliefs, check_hooks, check_readme_counts]

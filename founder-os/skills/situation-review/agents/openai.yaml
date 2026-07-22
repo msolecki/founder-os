@@ -1,0 +1,6 @@
+interface:
+  display_name: "Situation Review"
+  short_description: "Route one unclear situation to one Founder OS workflow."
+  default_prompt: "Use $situation-review to route this business situation to one owner and next workflow."
+policy:
+  allow_implicit_invocation: true

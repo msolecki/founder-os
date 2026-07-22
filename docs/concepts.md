@@ -83,7 +83,7 @@ mechanism.
 skills, a tool allowlist, and (for most) a set of workspace files.
 
 **Skill** — a workflow in `founder-os/skills/<name>/SKILL.md`, invoked as a slash
-command `/<name>`. There are 49. A *role skill* belongs to one agent; a *system
+command `/<name>`. There are 52. A *role skill* belongs to one agent; a *system
 skill* is cross-cutting; a *standalone skill* is run directly by the founder.
 
 **Cadence** — one of the 10 skills that `setup-cadences` can schedule to run on

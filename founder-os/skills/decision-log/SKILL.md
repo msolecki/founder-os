@@ -32,6 +32,7 @@ Read first — house rule 1:
 - `decisions/` — is there a prior entry this one supersedes or contradicts?
 - `metrics.md` — the number the decision rests on, and its date
 - `goals.md` — which bet this serves, or whether it serves none
+- `evaluations/` — the strategic evaluation that informed the call, if one exists
 
 ## Beliefs
 
@@ -84,6 +85,7 @@ Write `decisions/YYYY-MM-DD-<slug>.md`, one file per decision:
     Serves: <bet from goals.md, or "none">
     ## Context
     <the state that forced the call — with the dated number it rests on>
+    Evaluation: <path to the evaluation that informed this call, if any>
     ## Rejected
     <the option not taken, and why it lost>
     ## What would change our mind

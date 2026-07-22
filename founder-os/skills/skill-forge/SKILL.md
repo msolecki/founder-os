@@ -5,7 +5,7 @@ description: Add a workflow, file, or role this package does not ship — run wh
 
 # Skill Forge
 
-Thirteen agents and forty-nine workflows are the shape of a company of one in
+Thirteen agents and fifty workflows are the shape of a company of one in
 general. Nobody runs a company in general. Somewhere in this founder's week
 there is a recurring decision the package has no lane for — a licensing
 partner, a production rhythm, a regulator, a second product with its own
@@ -109,11 +109,13 @@ beliefs matter.
    dress it in a `## Beliefs` heading it has not earned.
 
 6. **Write the source of truth**, at
-   `$FOUNDER_OS_HOME/_local/skills/local-<slug>/SKILL.md`, from
+   `$FOUNDER_OS_HOME/_local/skills/local-<slug>/SKILL.md` and
+   `agents/openai.yaml`, from
    `references/skill-template.md` verbatim: frontmatter with `name` and
    `description`, `metadata.writes` for every path it writes, `## Beliefs`
    before `## Steps`, `## Output` naming the exact file and heading, and
-   `## Guardrails`. The `local-` prefix is not decoration — a packaged skill
+   `agents/openai.yaml` must name `$local-<slug>` in `default_prompt`; the
+   `local-` prefix is not decoration — a packaged skill
    added upstream next year must not silently shadow this one.
 
 7. **Register every new path in the same run.** New file, new directory or new
@@ -125,9 +127,12 @@ beliefs matter.
 
 8. **Install, by name, with consent.** Say the exact path you are about to
    write —
-   `~/.claude/skills/founder-os-local-<business>-<slug>/SKILL.md` — say that it
-   is outside the workspace and outside the plugin, and ask once. Write only on
-   a yes. Report the path you wrote. This is the `setup-cadences` rule applied
+   `~/.claude/skills/founder-os-local-<business>-<slug>/` and
+   `~/.codex/skills/founder-os-local-<business>-<slug>/` — say that both are
+   outside the workspace and plugin, and ask once. Write only on a yes — both
+   destinations are written together or neither is written.
+   Copy the same source directory, including `agents/openai.yaml`, to both
+   destinations and report both paths. This is the `setup-cadences` rule applied
    to a file instead of a cron line, for the same reason: a plugin cannot make
    a host load a workflow, so the founder does, knowingly.
 
@@ -140,13 +145,14 @@ beliefs matter.
 
 ## Output
 
-Three files at most, and every one of them named before it is written:
+Four paths at most, and every one of them named before it is written:
 
 - `$FOUNDER_OS_HOME/_local/skills/local-<slug>/SKILL.md` — the source of truth.
 - `$FOUNDER_OS_HOME/_local/ownership.yaml` — created or extended, additive only.
-- `~/.claude/skills/founder-os-local-<business>-<slug>/SKILL.md` — the installed
-  copy, only on an explicit yes, carrying a first-line comment naming the source
-  path so whoever finds it in six months knows which file to edit.
+- `~/.claude/skills/founder-os-local-<business>-<slug>/` and
+  `~/.codex/skills/founder-os-local-<business>-<slug>/` — identical installed
+  copies, only on an explicit yes, carrying a first-line comment naming the
+  source path so whoever finds either copy knows which file to edit.
 
 Optionally `$FOUNDER_OS_HOME/_local/agents/<slug>.md`, when the founder passed
 the one-decision test in step 4 and not otherwise.

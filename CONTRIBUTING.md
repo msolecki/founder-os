@@ -9,7 +9,7 @@ contribution guide. This file is the short version.
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os   # 13 agent(s), 49 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os   # 13 agent(s), 52 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md if frontmatter changed
 python3 -m unittest discover -s tests            # OK
 ```

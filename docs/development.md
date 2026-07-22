@@ -8,7 +8,7 @@ tests, CI, and releasing.
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os     # 13 agent(s), 49 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os     # 13 agent(s), 52 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os    # regenerate COMMANDS.md if frontmatter changed
 python3 scripts/smoke_installed_copy.py            # installed-copy smoke: PASS
 python3 -m unittest discover -s tests              # OK
@@ -26,6 +26,7 @@ enforce *structure*; they cannot read prose.
 | Check | Fails when… |
 |---|---|
 | `check_plugin` | `.claude-plugin/plugin.json` is missing/invalid, or `name` ≠ `founder-os`. |
+| `check_codex_skill_interfaces` | A shared `skills/<name>/SKILL.md` has no Codex `agents/openai.yaml`, malformed interface YAML, missing presentation fields, or a default prompt that does not name the same `$<name>` skill. |
 | `check_agents` | An agent lacks `name`/`description`/`skills`, its `name` ≠ filename, it lists a skill with no `SKILL.md`, or it omits a universal skill (`guardrails`, `state-integrity`, `ingestion-gate`). |
 | `check_agent_tools` | An agent has no `tools:` (omitting it inherits everything), holds an outbound tool (`Bash`, `WebFetch`, `WebSearch`, `NotebookEdit`, `Task`), or names an unknown tool. Allowed: `Read, Write, Edit, Glob, Grep, Skill, Agent`. |
 | `check_agent_graph` | An `Agent(...)` target isn't a real agent, or an agent tries to summon itself. |

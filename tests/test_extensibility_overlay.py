@@ -70,6 +70,7 @@ class ReferenceContract(unittest.TestCase):
     def test_local_slugs_are_namespaced_and_installed_to_user_scope(self):
         self.assertIn("local-", self.text)
         self.assertIn("~/.claude/skills/", self.text)
+        self.assertIn("~/.codex/skills/", self.text)
 
 
 class OwnershipMapStaysPackaged(unittest.TestCase):
@@ -158,6 +159,7 @@ class SkillForgeContract(unittest.TestCase):
 
     def test_install_is_named_first_and_consented_once(self):
         self.assertIn("~/.claude/skills/founder-os-local-", self.body)
+        self.assertIn("~/.codex/skills/founder-os-local-", self.body)
         body = norm(self.body)
         self.assertRegex(body, r"(?i)ask once")
         self.assertRegex(body, r"(?i)write only on a yes")

@@ -60,8 +60,8 @@ founder os/                     ← repo root (marketplace + source)
 │   ├── COMMANDS.md             ← GENERATED catalogue (do not hand-edit)
 │   ├── README.md               ← product philosophy
 │   ├── agents/*.md             ← 13 agents (role definitions)
-│   ├── skills/<name>/SKILL.md  ← 50 skills (workflows)
-│   │   └── <name>/agents/openai.yaml  ← Codex per-skill interface
+│   ├── skills/<name>/SKILL.md  ← 52 shared skills (workflows)
+│   │   └── <name>/agents/openai.yaml  ← Codex presentation adapter
 │   ├── hooks/                  ← session-context.py, record-agent.py,
 │   │                             ownership-guard.py, hooks.json
 │   ├── references/             ← house-rules, ownership.yaml, linking,
