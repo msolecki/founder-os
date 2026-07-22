@@ -153,3 +153,4 @@ Cross-cutting; not tied to one agent's decision.
 | `/ingestion-gate` | Tier every claim arriving from outside — fact, validate, or disregard — before it enters a file, stamping speaker and date inline. |
 | `/state-integrity` | Resolve every write against the ownership map before making it; refuse and hand off by name when the acting agent is not the owner. |
 | `/setup-cadences` | Turn the cadences into real scheduled jobs on the founder's machine — run once, after the first brief. *(standalone — run it yourself)* |
+| `/skill-forge` | Add a workflow, file, or role this package does not ship — or name the packaged agent that already owns the decision and refuse. Writes the local overlay in your workspace, never the packaged map. *(standalone — run it yourself)* |

@@ -66,9 +66,17 @@ right now*.
 | **Briefs nobody acted on** | 10+ daily reviews and fewer than 1 in 5 `## The one thing` items reached `queue.md` `## Done`/`## Dropped` — the company is writing and nobody's reading. Never repaired. | Chief of Staff |
 | **Portfolio dark** | 2+ active businesses and `portfolio.md` missing, drifted, or `## Review` silent > 21 days. | Portfolio Manager |
 | **Queue rotting** | `## Doing` > 3, `## Queued` > 15, or an item past its clock (21 days queued / 14 blocked / 5 in Doing) — the Friday sweep stalled. | Chief of Staff |
+| **Overlay unreadable** | `_local/ownership.yaml` exists and doesn't parse. The guard has been ignoring it ever since — correctly — so every local path is unowned and any agent may write it. | you (`_local/` is yours) |
+| **Overlay claims a packaged path** | The overlay's `owns:` names a path the packaged map already owns. The guard drops the entry, so nothing is mis-owned — but it reads as active and it isn't. | you |
+| **Overlay incoherent** | A local path with no owner or two owners, or a local skill writing a path its agent doesn't own — the last one denies every time that skill runs. | `/skill-forge` |
+| **Local agent overreaches** | A `_local/agents/*.md` omits `tools:` or names an outbound tool. The guard denies those regardless, so this is early warning, not a breach. | `/skill-forge` |
+| **Local skill off template** | A `_local/skills/*/SKILL.md` has no `## Beliefs` (or fewer than 3, or after `## Steps`), or a slug without the `local-` prefix / colliding with a packaged one. | `/skill-forge` |
+| **Installed copy drift** | A local skill was never installed to `~/.claude/skills/`, or the installed copy no longer matches its `_local/` source. Never synced automatically — the doctor can't tell which side is intended. | `/skill-forge` |
 
 **What the doctor will *not* repair:** the link, inbox, brief-not-acted-on,
-cadence, and queue checks. Each fix is a decision — draining the inbox means
+cadence, queue, and every overlay check. `_local/` is your map, and a doctor
+that edits the map deciding who may write company state has not repaired
+anything — see [`extensibility.md`](#extending-founder-os-for-one-business). Each fix is a decision — draining the inbox means
 deciding what each line is (that's triage); dropping a queue item wants a reason
 written (that's the sweep); a silent cadence's cause is outside the workspace. A
 doctor that acts on "briefs nobody acted on" would be repairing the fact that the
@@ -116,6 +124,58 @@ hand-edited; CI's `--check` fails a stale copy.
 **"The build fails on a count."** `check_readme_counts` — the README's
 Agents/Skills/Cadences table drifted from the package. Fix the number; a count
 that drifts is a second map.
+
+## Extending Founder OS for one business
+
+Thirteen agents and fifty workflows are the shape of a company of one *in
+general*. If your business has a decision none of them covers — a licensing
+partner, a production rhythm, a regulator — you do not have to fork. Run
+`/skill-forge`.
+
+It writes a **local overlay** in your workspace, at `$FOUNDER_OS_HOME/_local/`:
+a skill, the ownership entry for anything it writes, and, if you genuinely need
+one, a local agent. The overlay survives `/plugin update` and `/plugin
+uninstall`, and on a multi-business install each business has its own.
+
+Three things to know before you use it:
+
+- **It can only add.** The overlay may declare a new file, section, skill or
+  agent. It can never reassign or remove one the package ships — an entry that
+  tries is dropped by the guard and reported by the doctor. If a packaged file
+  has the wrong owner for your business, that is an issue upstream, not
+  something to shadow locally.
+- **It is validated by `/founder-os-doctor`, not by CI.** The build validator
+  runs on this repository and will never see your `_local/`. So the checks that
+  hold the overlay to the contract run at diagnosis time, on your machine,
+  weeks later. Run the doctor after forging anything.
+- **A local skill needs installing to be runnable.** `_local/` is the source of
+  truth; the host loads skills from `~/.claude/skills/`. `/skill-forge` names
+  the exact path and asks before writing it — same as `/setup-cadences` with a
+  cron line — and the doctor reports when the two copies drift apart.
+
+The full contract, including the merge rules and what the overlay deliberately
+does *not* enforce, is
+[`founder-os/references/extensibility.md`](https://github.com/msolecki/founder-os/blob/main/founder-os/references/extensibility.md).
+
+## Reporting a bug without publishing your business
+
+Founder OS has no telemetry, so a maintainer reading your issue can see nothing
+about your install except what you paste — and a full doctor report is your
+client names, your runway and your pipeline.
+
+Ask the doctor for the **shareable report**. It is built from a fixed field
+list rather than by redacting the health report, so it carries version, host,
+whether the workspace ever activated, which declared files and headings are
+missing, and the checks that tripped with their numbers — as counts, ages and
+this package's own vocabulary. No file content, no entity slugs, no amounts, no
+paths, no dates.
+
+```
+/founder-os-doctor      # then ask for the shareable report
+```
+
+It is printed in the conversation and never written, filed, or sent: you read
+it, you paste it. Attach it to an issue on the repository.
 
 ## FAQ
 

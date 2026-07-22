@@ -2,7 +2,7 @@
 
 Founder OS is a [Claude Code](https://code.claude.com/docs) plugin (also
 Codex-compatible) that gives a company of one — or a founder running several —
-an executive team: **13 agents, 49 skills, 10 optional cadences**, backed by a
+an executive team: **13 agents, 50 skills, 10 optional cadences**, backed by a
 local Markdown workspace with one owner per file and a write-time guard that
 keeps the org from corrupting its own state.
 
@@ -33,7 +33,7 @@ built to prevent.
 - **[`workspace-state.md`](workspace-state.md)** — every workspace file, its
   owner, its pinned sections, and how work moves through them. Includes the
   guided tour of the `studio-north` example.
-- **[`commands.md`](commands.md)** — all 49 skills grouped by the agent that
+- **[`commands.md`](commands.md)** — all 50 skills grouped by the agent that
   runs them, the system commands, and the cadence schedule.
 - **[`cadences.md`](cadences.md)** — how `setup-cadences` turns workflows into
   real cron jobs, and why there is no cloud scheduler.

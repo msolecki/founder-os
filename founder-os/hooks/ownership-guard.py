@@ -7,12 +7,21 @@ no skill declared a write it didn't own. Nothing checked the actual write. A
 running agent that decided mid-flow to fix a number in someone else's file just
 did it. This hook is the write-time half of that rule.
 
-Two guards, both scoped to subagents:
+Three guards, all scoped to subagents:
 
   1. Ownership. A subagent writing a workspace path it does not own is denied,
      and told who owns it. (House rule 4: stay in your lane.)
   2. Outbound. A subagent reaching for Bash / WebFetch / an MCP tool is denied.
      (House rule 0: agents draft; the founder sends.)
+  3. The map itself. A subagent writing anywhere under `_local/` is denied,
+     whatever the map says. An agent that can edit the map that governs it does
+     not have a map. (references/extensibility.md.)
+
+The map guard 1 reads is the packaged `references/ownership.yaml` merged with
+the founder's optional, additive-only `<workspace>/_local/ownership.yaml`. The
+overlay can add a path; it can never reassign or remove one, and an overlay
+this file cannot read is ignored rather than obeyed. Contract:
+references/extensibility.md.
 
 ## What this is not
 
@@ -72,6 +81,17 @@ yaml = _YAML_UNSET
 # check_ownership below like Write and Edit do, not through this set.
 OUTBOUND_TOOLS = {"Bash", "WebFetch"}
 MCP_TOOL = re.compile(r"^mcp__")
+
+# The founder's local overlay (references/extensibility.md). `_local/` is the
+# directory; the file below it is the additive half of the ownership map.
+LOCAL_DIR = "_local/"
+LOCAL_MAP = "_local/ownership.yaml"
+
+# One overlay read per root per process. A hook process handles one invocation,
+# so this is per-invocation caching — the same property PERF-002 pinned for
+# workspace_roots, for the same reason: a multi-path apply_patch must not
+# re-read the same file once per path.
+_LOCAL_CACHE = {}
 
 
 def _get_yaml():
@@ -165,6 +185,99 @@ def _parse_owns_without_yaml(text):
     return owns or None
 
 
+def _owns_from_text(text, source):
+    """Return the `owns:` mapping from ownership YAML text, or None.
+
+    One parser for both maps. The packaged map and the founder's overlay have
+    the same shape by contract, and giving the overlay its own reader is how
+    the two quietly stop agreeing about what a map is.
+    """
+    yaml_module = _get_yaml()
+    if yaml_module is not None:
+        try:
+            data = _yaml_load(yaml_module, text)
+        except yaml_module.YAMLError as e:
+            log("%s is not valid YAML (%s)" % (source, e))
+            return None
+        owns = data.get("owns") if isinstance(data, dict) else None
+        if not isinstance(owns, dict):
+            log("%s has no usable 'owns:' map" % source)
+            return None
+        return owns
+    owns = _parse_owns_without_yaml(text)
+    if owns is None:
+        log("PyYAML missing and %s is not in the shape the fallback parser "
+            "understands" % source)
+    return owns
+
+
+def _by_path(owns):
+    """Flatten {agent: [path]} to {path: agent}, dropping unusable entries."""
+    out = {}
+    for agent, files in owns.items():
+        if not isinstance(agent, str) or not agent.strip():
+            continue
+        for f in files or []:
+            if isinstance(f, str) and f.strip():
+                out[f.strip()] = agent.strip()
+    return out
+
+
+def local_ownership(root):
+    """Return {entry: owner} from `<root>/_local/ownership.yaml`, or {}.
+
+    The founder's additive overlay (references/extensibility.md). Everything
+    here fails to an empty map rather than to a deny: an overlay we cannot read
+    costs the founder coverage of their own local files, which is not what a
+    false deny costs.
+
+    Read per root on purpose. Business A's overlay is not business B's map.
+    """
+    if root in _LOCAL_CACHE:
+        return _LOCAL_CACHE[root]
+    result = {}
+    path = os.path.join(root, *LOCAL_MAP.split("/"))
+    if os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError as e:
+            log("could not read overlay %s (%s) — ignoring it" % (path, e))
+            text = None
+        if text is not None:
+            owns = _owns_from_text(text, path)
+            if owns is None:
+                log("overlay %s is unusable — ignoring it" % path)
+            else:
+                result = _by_path(owns)
+    _LOCAL_CACHE[root] = result
+    return result
+
+
+def merged_ownership(by_path, root):
+    """The packaged map plus whatever the overlay is allowed to add.
+
+    Additive only, and a collision is a finding rather than a precedence
+    contest: the packaged entry stays, the local entry is dropped with a log
+    line, and founder-os-doctor reports it against the overlay. An overlay that
+    could reassign `metrics.md` would silently take the month's close away from
+    the CFO in one founder's workspace, and nothing upstream would ever see it.
+    """
+    local = local_ownership(root) if root else {}
+    if not local:
+        return by_path
+    packaged = {entry.casefold() for entry in by_path}
+    merged = dict(by_path)
+    for entry, agent in local.items():
+        if entry.casefold() in packaged:
+            log("overlay claims '%s', which the packaged map already owns "
+                "(%s) — ignoring the overlay entry"
+                % (entry, by_path.get(entry, "a packaged agent")))
+            continue
+        merged[entry] = agent
+    return merged
+
+
 def load_ownership():
     """Return {entry: owner} from the plugin's ownership.yaml, or None.
 
@@ -190,30 +303,10 @@ def load_ownership():
         except OSError as e:
             log("could not read %s (%s)" % (path, e))
             continue
-        yaml_module = _get_yaml()
-        if yaml_module is not None:
-            try:
-                data = _yaml_load(yaml_module, text)
-            except yaml_module.YAMLError as e:
-                log("%s is not valid YAML (%s)" % (path, e))
-                return None
-            owns = data.get("owns") if isinstance(data, dict) else None
-            if not isinstance(owns, dict):
-                log("%s has no usable 'owns:' map" % path)
-                return None
-        else:
-            owns = _parse_owns_without_yaml(text)
-            if owns is None:
-                log("PyYAML missing and ownership.yaml is not in the shape the "
-                    "fallback parser understands")
-                return None
-
-        by_path = {}
-        for agent, files in owns.items():
-            for f in files or []:
-                if isinstance(f, str) and f.strip():
-                    by_path[f.strip()] = agent
-        return by_path or None
+        owns = _owns_from_text(text, path)
+        if owns is None:
+            return None
+        return _by_path(owns) or None
 
     log("ownership.yaml not found (looked in: %s)" % ", ".join(roots))
     return None
@@ -311,18 +404,28 @@ def workspace_roots(hook_cwd):
 
 
 def relative_to_workspace(file_path, hook_cwd, roots=None):
-    """Workspace-relative POSIX path for `file_path`, or None if it's outside.
+    """Workspace-relative POSIX path for `file_path`, or None if it's outside."""
+    return resolve_in_workspace(file_path, hook_cwd, roots)[1]
+
+
+def resolve_in_workspace(file_path, hook_cwd, roots=None):
+    """`(root, relative_path)` for `file_path`, or `(None, None)` if outside.
 
     Both sides get realpath'd (which collapses `..` and follows symlinks) and
     also compared literally, so a symlink pointing *into* the workspace is still
     caught and a `..` walk can't spoof a slot. If neither resolution lands inside
     a candidate root, the file is not ours and the caller allows.
+
+    The matched root is returned because the overlay is per workspace: which
+    root a write landed in decides which `_local/ownership.yaml` may speak for
+    it, and a merged map assembled from the wrong workspace is a worse map than
+    none.
     """
     if not os.path.isabs(file_path):
         # Codex apply_patch uses workspace-relative paths. Its hook payload
         # carries the session cwd, so resolve against that explicit value.
         if not isinstance(hook_cwd, str) or not os.path.isabs(hook_cwd):
-            return None
+            return (None, None)
         file_path = os.path.join(hook_cwd, file_path)
     targets = []
     for v in (os.path.realpath(file_path),
@@ -335,8 +438,8 @@ def relative_to_workspace(file_path, hook_cwd, roots=None):
                 continue
             prefix = root.rstrip(os.sep) + os.sep
             if target.startswith(prefix):
-                return target[len(prefix):].replace(os.sep, "/")
-    return None
+                return (root, target[len(prefix):].replace(os.sep, "/"))
+    return (None, None)
 
 
 def owner_of(rel, by_path):
@@ -418,6 +521,30 @@ def _tool_paths(tool_name, tool_input):
     return []
 
 
+def check_local_map(agent_type, rel):
+    """No subagent edits the map that governs it. references/extensibility.md.
+
+    Stricter than "one owner per file" on purpose, and the only place in this
+    file that is. `_local/` is founder-authored by definition — `skill-forge`
+    runs on the main thread, and no packaged agent has ever had a reason to
+    write there — so this costs honest work nothing and closes the one move
+    that would make every other check advisory.
+    """
+    if not rel.casefold().startswith(LOCAL_DIR):
+        return
+    deny(
+        "`%s` is the founder's local overlay, and no agent writes it — "
+        "including this one.\n\n"
+        "`_local/` holds the map that decides what `%s` is allowed to write "
+        "(references/extensibility.md). An agent that can edit that map does "
+        "not have one, so this deny does not depend on ownership and cannot be "
+        "granted by adding an entry.\n\n"
+        "If a local file, skill or agent needs to exist or change, that is "
+        "`/skill-forge` with the founder in the room, not an edit to make on "
+        "the way past." % (rel, agent_type)
+    )
+
+
 def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
     paths = _tool_paths(tool_name, tool_input)
     if not paths:
@@ -427,11 +554,12 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
         allow("no ownership map — the guard is off, not strict")
     roots = workspace_roots(hook_cwd)
     for file_path in paths:
-        rel = relative_to_workspace(file_path, hook_cwd, roots)
+        root, rel = resolve_in_workspace(file_path, hook_cwd, roots)
         if rel is None:
             log("allow: %s is outside the workspace" % file_path)
             continue
-        owner = owner_of(rel, by_path)
+        check_local_map(agent_type, rel)
+        owner = owner_of(rel, merged_ownership(by_path, root))
         if owner is None:
             log("allow: %s has no owner in the map" % rel)
             continue

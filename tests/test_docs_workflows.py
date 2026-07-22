@@ -44,7 +44,7 @@ EXPECTED_ENTRIES = {
     "money": (5, "Know the numbers"),
     "focus": (9, "Protect focus"),
     "grow": (8, "Grow deliberately"),
-    "run": (9, "Run operations"),
+    "run": (10, "Run operations"),
 }
 
 class DocumentContractParser(HTMLParser):
@@ -166,7 +166,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
             category: label for category, (_, label) in EXPECTED_ENTRIES.items()
         })
 
-    def test_category_counts_still_partition_all_49_workflows(self):
+    def test_category_counts_still_partition_all_50_workflows(self):
         counts = Counter()
         groups = re.findall(
                 r'<details class="workflow-group"[^>]*data-category="([^"]+)"'
@@ -177,14 +177,14 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertEqual(dict(counts), {
             category: count for category, (count, _) in EXPECTED_ENTRIES.items()
         })
-        self.assertEqual(sum(counts.values()), 49)
+        self.assertEqual(sum(counts.values()), 50)
 
     def test_complete_catalogue_and_cadence_contract_survives(self):
         commands = re.findall(
             r'<article class="workflow-item".*?<code>(/[^<]+)</code>',
             SECTION, re.S)
-        self.assertEqual(len(commands), 49)
-        self.assertEqual(len(set(commands)), 49)
+        self.assertEqual(len(commands), 50)
+        self.assertEqual(len(set(commands)), 50)
         self.assertEqual(SECTION.count('class="workflow-badge"'), 10)
 
     def test_catalogue_is_native_and_available_without_javascript(self):

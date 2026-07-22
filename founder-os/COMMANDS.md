@@ -175,4 +175,5 @@ Cross-cutting; not tied to one agent's decision.
 | `/guardrails` | Enforce the hard refusals every agent obeys — nothing outbound and nothing paid, ever; tax, legal, and medical questions get escalated to a real professional, never answered |
 | `/ingestion-gate` | Tier every claim arriving from outside the workspace — fact, validate, or disregard — before it enters a canonical file, and stamp its speaker and date inline in the line that carries it |
 | `/setup-cadences` | Turn the cadences into real scheduled jobs on the founder's own machine — run once, after their first brief, so the package stops waiting to be opened *(standalone — run it yourself)* |
+| `/skill-forge` | Add a workflow, file, or role this package does not ship — run when the founder's business needs something the thirteen agents have no lane for, and refuse when one of them already does *(standalone — run it yourself)* |
 | `/state-integrity` | Resolve every workspace write against the ownership map before making it — refuse and hand off by name when the acting agent is not the owner |

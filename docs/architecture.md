@@ -60,7 +60,7 @@ founder os/                     ← repo root (marketplace + source)
 │   ├── COMMANDS.md             ← GENERATED catalogue (do not hand-edit)
 │   ├── README.md               ← product philosophy
 │   ├── agents/*.md             ← 13 agents (role definitions)
-│   ├── skills/<name>/SKILL.md  ← 49 skills (workflows)
+│   ├── skills/<name>/SKILL.md  ← 50 skills (workflows)
 │   │   └── <name>/agents/openai.yaml  ← Codex per-skill interface
 │   ├── hooks/                  ← session-context.py, record-agent.py,
 │   │                             ownership-guard.py, hooks.json
@@ -136,7 +136,7 @@ Three kinds of skill:
 |---|---|---|
 | `SessionStart` (startup/resume/clear/compact) | `session-context.py` | Injects `founder-os/CLAUDE.md` into the session as additional context. This is how the house rules and state map are present in every session. |
 | `SubagentStart` | `record-agent.py` | Records `turn_id → agent_type` for Codex (Claude includes `agent_type` directly; Codex identifies later tool calls by `turn_id`). Lets one guard enforce both hosts. |
-| `PreToolUse` on `Write\|Edit\|NotebookEdit\|apply_patch\|Bash\|WebFetch\|mcp__*` | `ownership-guard.py` | The write-time enforcement of ownership (house rule 4) and the outbound ban (house rule 0). |
+| `PreToolUse` on `Write\|Edit\|NotebookEdit\|apply_patch\|Bash\|WebFetch\|mcp__*` | `ownership-guard.py` | The write-time enforcement of ownership (house rule 4), the outbound ban (house rule 0), and the refusal to let any subagent write `_local/` — the map that governs it. |
 
 The guard is covered in full in [`enforcement.md`](enforcement.md). The key fact:
 it is **operational policy, not a security boundary**, it is scoped to
@@ -166,6 +166,51 @@ Two files are derived from the package so they cannot drift:
 - The **README "What's inside" counts** (Agents / Skills / Cadences) are checked
   against the actual package by `check_readme_counts` in the validator. A count
   that drifts is a build failure, not a review finding.
+
+## Extension: the local overlay
+
+The packaged map is complete for the files the package ships, and no founder
+runs a company in general. `$FOUNDER_OS_HOME/_local/` is where a business adds
+what it needs without forking — a file, a workflow, and if it genuinely earns
+one, an agent. Contract:
+[`founder-os/references/extensibility.md`](https://github.com/msolecki/founder-os/blob/main/founder-os/references/extensibility.md).
+
+```
+$FOUNDER_OS_HOME/_local/
+  ownership.yaml        ← additive only: adds paths, never reassigns one
+  skills/local-<slug>/SKILL.md
+  agents/<slug>.md
+```
+
+Four properties hold it together, and each exists because the alternative fails
+quietly:
+
+1. **Additive by construction.** `merged_ownership()` in the guard adds a local
+   entry only when the packaged map does not already own that path; a collision
+   is dropped, logged, and reported by the doctor. An overlay able to reassign
+   `metrics.md` would take the month's close away from the CFO in one
+   workspace, with nothing upstream ever seeing it.
+2. **Per workspace.** The overlay is read for the root a write actually landed
+   in, so on a multi-business install one business's extension never speaks for
+   another's files.
+3. **Not agent-writable.** The guard denies every subagent any write under
+   `_local/`. An agent that can edit the map governing it does not have a map.
+4. **Validated late, by the doctor.** `scripts/validate_package.py` runs in this
+   repository's CI and will never see a stranger's `_local/`, so the six overlay
+   checks live in `founder-os-doctor` and run weeks later on real state. That is
+   worse than build-time validation and it is the only option; the skill says so
+   rather than implying the overlay was vetted.
+
+`/skill-forge` is the way in, and it is standalone for the same reason
+`setup-cadences` is: running it as a subagent is denied by construction, since
+its first write is `_local/` and its last is outside the workspace entirely.
+Its commonest correct outcome is a refusal naming the packaged agent that
+already owns the decision.
+
+**What the overlay does not do:** constrain main-thread writes. The guard is
+scoped to subagents, so an installed local skill invoked as `/local-foo` is not
+checked against the merged map — the identical property every packaged skill
+has, stated in the docs rather than implied away.
 
 ## Dual-host: Claude Code + Codex
 

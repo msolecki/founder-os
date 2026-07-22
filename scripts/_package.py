@@ -5,9 +5,13 @@ import yaml
 
 SYSTEM_SKILLS = {"founder-os-init", "founder-os-doctor", "context-load",
                  "guardrails", "state-integrity", "ingestion-gate",
-                 "setup-cadences"}
+                 "setup-cadences", "skill-forge"}
 UNIVERSAL_SKILLS = {"guardrails", "state-integrity", "ingestion-gate"}
-STANDALONE_SKILLS = {"setup-cadences"}
+# Skills that belong to no agent by design, because running them as a subagent
+# is denied by construction. setup-cadences edits the founder's crontab;
+# skill-forge writes `_local/` and installs outside the workspace, and the
+# ownership guard denies every subagent that directory (extensibility.md).
+STANDALONE_SKILLS = {"setup-cadences", "skill-forge"}
 
 
 def parse_frontmatter(path):

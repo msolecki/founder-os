@@ -99,7 +99,7 @@ The Portfolio Manager is the only role that reads across them.
 3. Run `/pipeline-review` before calling a list of conversations a pipeline.
 4. Run `/weekly-review` on Friday before memory rewrites the week.
 5. Ask the **Chief of Staff** to route any uncategorized decision. You do not
-   need to memorize all 49 workflows.
+   need to memorize all 50 workflows.
 
 ## What the 13 agents are
 

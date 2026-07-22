@@ -3,6 +3,45 @@
 All notable changes to Founder OS. Versions follow the plugin's
 `founder-os/.claude-plugin/plugin.json`.
 
+## Unreleased
+
+**Extensibility.** A founder can add a file, a workflow, or a role their
+business needs without forking — and none of it can weaken the ownership
+contract, the tool allowlist, or house rule 0.
+
+- **The local overlay** (`founder-os/references/extensibility.md`):
+  `$FOUNDER_OS_HOME/_local/` carries an additive-only `ownership.yaml`, plus
+  optional local skills and agents. It may add a path; it may never reassign or
+  remove one the package ships. A collision is a finding, not a precedence
+  contest — the packaged owner stays and the doctor reports the overlay entry.
+- **`/skill-forge`** (50th workflow, standalone like `setup-cadences` because
+  running it as a subagent is denied by construction). Its commonest correct
+  outcome is a refusal: a packaged agent already owns that decision, named, with
+  the command. It extracts beliefs rather than supplying them, registers every
+  new path in the same run, and installs the runnable copy only after naming the
+  exact file and being told yes.
+- **The guard merges the overlay per workspace** and denies **every subagent**
+  any write under `_local/`. An agent that can edit the map that governs it does
+  not have a map. An unreadable overlay is ignored and logged, never obeyed and
+  never a deny — the fail-open posture is unchanged.
+- **`founder-os-doctor` gains six overlay checks** — unreadable, claims a
+  packaged path, incoherent, local agent overreaches, local skill off template,
+  installed copy drift. None is repairable: the doctor does not edit the map
+  deciding who may write company state. This is late-binding validation and the
+  skill says so, because CI will never see a stranger's `_local/`.
+
+**Feedback channel.**
+
+- `founder-os-doctor` gains a **shareable report**: a paste-able install
+  summary built from a fixed field list rather than by redacting the health
+  report, so it carries version, host, activation state, missing declared files
+  and headings, and the checks that tripped with their numbers — and no file
+  content, entity slug, amount, path or date. Offered once after a run that
+  tripped a structural check; printed in the conversation, never written, filed
+  or sent. House rule 0 covers the package's own bug tracker too.
+- `docs/troubleshooting.md` documents it as the way to report a bug without
+  publishing the business.
+
 ## 2.4.0 — 2026-07-22
 
 **Activation.**

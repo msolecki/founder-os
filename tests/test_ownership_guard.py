@@ -545,5 +545,200 @@ class TestRegistryRoots(unittest.TestCase):
             self.assertIn("cfo", r.stdout)
 
 
+class TestLocalOverlay(unittest.TestCase):
+    """The founder's additive overlay (references/extensibility.md).
+
+    Three properties, and the second is the one the whole design exists for:
+    the overlay may add a path, it may never take one away, and an overlay the
+    guard cannot read is ignored rather than obeyed.
+    """
+
+    OVERLAY = (
+        "workspace_files:\n"
+        "  - partners.md\n"
+        "owns:\n"
+        "  network-manager:\n"
+        "    - partners.md\n"
+        "sections:\n"
+        "  partners.md:\n"
+        "    - \"## Partners\"\n"
+    )
+
+    def _workspace(self, tmp, overlay=None, name="founder-os"):
+        ws = tmp / name
+        (ws / "_local").mkdir(parents=True)
+        if overlay is not None:
+            (ws / "_local" / "ownership.yaml").write_text(
+                overlay, encoding="utf-8")
+        return ws
+
+    def _run(self, workspace, payload, home=None):
+        env = {**os.environ,
+               "FOUNDER_OS_HOME": str(workspace),
+               "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}
+        if home is not None:
+            env["HOME"] = str(home)
+        return subprocess.run([sys.executable, str(GUARD_PATH)],
+                              input=json.dumps(payload), capture_output=True,
+                              text=True, env=env, cwd=str(workspace.parent))
+
+    def _write(self, workspace, agent, rel, home=None):
+        return self._run(workspace, {
+            "agent_type": agent, "tool_name": "Write",
+            "cwd": str(workspace.parent),
+            "tool_input": {"file_path": str(workspace / rel)}}, home=home)
+
+    def test_overlay_path_is_denied_to_a_non_owner(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td), self.OVERLAY)
+            r = self._write(ws, "cfo", "partners.md")
+            self.assertIn("deny", r.stdout, r.stderr)
+            self.assertIn("network-manager", r.stdout)
+
+    def test_overlay_path_is_allowed_to_its_owner(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td), self.OVERLAY)
+            r = self._write(ws, "network-manager", "partners.md")
+            self.assertEqual(r.stdout.strip(), "", r.stderr)
+            self.assertEqual(r.returncode, 0)
+
+    def test_overlay_cannot_reassign_a_packaged_path(self):
+        """The rule the design exists to make structurally true."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td), (
+                "owns:\n"
+                "  network-manager:\n"
+                "    - metrics.md\n"))
+            stolen = self._write(ws, "network-manager", "metrics.md")
+            self.assertIn("deny", stolen.stdout, stolen.stderr)
+            self.assertIn("cfo", stolen.stdout)
+            self.assertIn("already owns", stolen.stderr)
+            kept = self._write(ws, "cfo", "metrics.md")
+            self.assertEqual(kept.stdout.strip(), "", kept.stderr)
+
+    def test_unparseable_overlay_is_ignored_never_denied(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td), ":\nnot yaml: [unclosed\n")
+            r = self._write(ws, "cfo", "partners.md")
+            self.assertEqual(r.stdout.strip(), "", r.stderr)
+            self.assertIn("ignoring it", r.stderr)
+            # and the packaged map is untouched by the broken overlay
+            still = self._write(ws, "network-manager", "metrics.md")
+            self.assertIn("deny", still.stdout)
+            self.assertIn("cfo", still.stdout)
+
+    def test_overlay_without_a_usable_owns_map_is_ignored(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td), "workspace_files:\n  - partners.md\n")
+            r = self._write(ws, "cfo", "partners.md")
+            self.assertEqual(r.stdout.strip(), "", r.stderr)
+
+    def test_overlay_is_honoured_without_pyyaml(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td), self.OVERLAY)
+            guard = load_guard()
+            with mock.patch.object(guard, "yaml", None):
+                self.assertEqual(guard.local_ownership(str(ws)),
+                                 {"partners.md": "network-manager"})
+
+    def test_one_businesss_overlay_does_not_reach_another(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            a = self._workspace(tmp, self.OVERLAY, name="a")
+            b = self._workspace(tmp, None, name="b")
+            (b / "partners.md").write_text("# partners\n", encoding="utf-8")
+            home = tmp / "home"
+            (home / ".founder-os").mkdir(parents=True)
+            (home / ".founder-os" / "businesses.yaml").write_text(
+                "businesses:\n"
+                "  a:\n"
+                "    home: %s\n"
+                "    status: active\n"
+                "  b:\n"
+                "    home: %s\n"
+                "    status: active\n"
+                "default: a\n" % (a, b), encoding="utf-8")
+            # A owns partners.md via its own overlay; B never declared one, so
+            # the same path in B has no owner and nobody is stealing anything.
+            denied = self._write(a, "cfo", "partners.md", home=home)
+            self.assertIn("deny", denied.stdout, denied.stderr)
+            allowed = self._write(b, "cfo", "partners.md", home=home)
+            self.assertEqual(allowed.stdout.strip(), "", allowed.stderr)
+
+    def test_overlay_is_read_once_per_root(self):
+        guard = load_guard()
+        calls = []
+        real = guard._owns_from_text
+
+        def counted(text, source):
+            calls.append(source)
+            return real(text, source)
+
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td), self.OVERLAY)
+            with mock.patch.object(guard, "_owns_from_text", counted):
+                guard.local_ownership(str(ws))
+                guard.local_ownership(str(ws))
+        self.assertEqual(len(calls), 1)
+
+
+class TestLocalMapIsNotAgentWritable(unittest.TestCase):
+    """No subagent edits the map that governs it."""
+
+    def _workspace(self, tmp):
+        ws = tmp / "founder-os"
+        (ws / "_local" / "skills" / "local-thing").mkdir(parents=True)
+        return ws
+
+    def _run(self, ws, payload):
+        env = {**os.environ,
+               "FOUNDER_OS_HOME": str(ws),
+               "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}
+        return subprocess.run([sys.executable, str(GUARD_PATH)],
+                              input=json.dumps(payload), capture_output=True,
+                              text=True, env=env, cwd=str(ws.parent))
+
+    def test_subagent_cannot_write_the_overlay_map(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td))
+            r = self._run(ws, {
+                "agent_type": "ops-engineer", "tool_name": "Write",
+                "cwd": str(ws.parent),
+                "tool_input": {
+                    "file_path": str(ws / "_local" / "ownership.yaml")}})
+            self.assertIn("deny", r.stdout, r.stderr)
+            self.assertIn("skill-forge", r.stdout)
+
+    def test_the_deny_covers_the_whole_directory_not_just_the_map(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td))
+            r = self._run(ws, {
+                "agent_type": "brand-editor", "tool_name": "Write",
+                "cwd": str(ws.parent),
+                "tool_input": {"file_path": str(
+                    ws / "_local" / "skills" / "local-thing" / "SKILL.md")}})
+            self.assertIn("deny", r.stdout, r.stderr)
+
+    def test_the_founder_may_write_it_on_the_main_thread(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = self._workspace(Path(td))
+            r = self._run(ws, {
+                "tool_name": "Write", "cwd": str(ws.parent),
+                "tool_input": {
+                    "file_path": str(ws / "_local" / "ownership.yaml")}})
+            self.assertEqual(r.stdout.strip(), "", r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

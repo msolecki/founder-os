@@ -37,6 +37,9 @@ The build checks structure; review holds the bar. The three that matter:
 ## Scope
 
 Bug fixes, sharper beliefs, new checks for the validator or the doctor, and
-skills that pass the one-decision test are all welcome. Integrations that
+skills that pass the one-decision test are all welcome. A workflow that only
+your business needs is not a PR — it is `/skill-forge` and the local overlay
+(`founder-os/references/extensibility.md`), which exists so you never have to
+fork to get it. Integrations that
 send, pay, or post are out of scope by design — see *What it won't do* in
 [`founder-os/README.md`](founder-os/README.md).

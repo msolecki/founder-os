@@ -1,5 +1,13 @@
 # Workspace file ownership. Everyone reads; only the owner writes.
 # Enforced by the state-integrity skill and scripts/validate_package.py.
+#
+# This is the package's map and it is complete for the files the package ships.
+# A founder who needs a file, skill or agent of their own adds it in
+# `$FOUNDER_OS_HOME/_local/ownership.yaml`, which is additive only and can
+# neither reassign nor remove anything below. The contract, the merge rules and
+# the refusals are in references/extensibility.md; the merge itself is in
+# hooks/ownership-guard.py and its validation is in founder-os-doctor, because
+# a build-time validator cannot see a stranger's workspace.
 workspace_files:
   - inbox.md
   - charter.md
