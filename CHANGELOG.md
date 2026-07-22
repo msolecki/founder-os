@@ -29,10 +29,8 @@ All notable changes to Founder OS. Versions follow the plugin's
   not auto-load it as plugin context, so the `SessionStart` hook injects it and
   `tests/test_session_context.py` pins that behavior.
 
-**Launch assets.**
+**Host status.**
 
-- Added a complete Product Hunt kit: current listing copy, maker comment, demo
-  script, activation-study protocol, source SVGs and exact-size PNG exports.
 - Claude Code is the verified release path. Codex remains beta/manual until a
   separate clean-install validation; this release makes no cross-host claim.
 

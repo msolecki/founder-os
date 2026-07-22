@@ -57,7 +57,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             set(descriptions.values()), {ACTIVATION_DESCRIPTION}, descriptions
         )
 
-    def test_changelog_records_activation_trust_tests_and_launch_assets(self):
+    def test_changelog_records_activation_trust_tests_and_host_status(self):
         release_heading = "## 2.4.0 — 2026-07-22"
         self.assertIn(release_heading, self.changelog)
         release = self.changelog.split(release_heading, 1)[1].split(
@@ -67,13 +67,26 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "**Activation.**",
             "**Trust.**",
             "**Verification.**",
-            "**Launch assets.**",
+            "**Host status.**",
             "Codex remains beta/manual",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, release)
         self.assertNotIn("Codex parity", release)
         self.assertNotIn("not tagged", release)
+        self.assertNotIn("Product Hunt kit", release)
+
+    def test_internal_launch_working_material_is_not_shipped(self):
+        internal_paths = (
+            REPO_ROOT / "docs" / "product-hunt",
+            REPO_ROOT / "docs" / "superpowers",
+        )
+        for path in internal_paths:
+            with self.subTest(path=path.relative_to(REPO_ROOT)):
+                self.assertFalse(
+                    path.exists(),
+                    f"internal launch material is shipped: {path.relative_to(REPO_ROOT)}",
+                )
 
     def test_ci_keeps_internal_smoke_without_unapproved_cli_download(self):
         workflow = yaml.safe_load(self.ci)
