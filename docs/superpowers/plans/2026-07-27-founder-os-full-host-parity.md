@@ -75,12 +75,12 @@
 
 **Size:** L
 
-- [ ] Write table-driven tests with literal expected codes `WORKSPACE_UNRESOLVED`, `PATH_OUTSIDE_WORKSPACE`, and `STATE_IO_ERROR`; include a registry with two businesses and a separate portfolio root.
-- [ ] Run the focused suite and record RED failures for missing resolver and safe-I/O interfaces.
-- [ ] Implement `WorkspaceBinding`, `WorkspaceResolver`, `RoleSessionStore`, `SafeStateIO.list_markdown()`, `SafeStateIO.read_many()`, and `SafeStateIO.read_reference()` with real filesystem fixtures.
-- [ ] Connect resolve/open/list/read/reference/close handlers to `Gateway.call()` and return concise human actions with every stable code.
-- [ ] Re-run focused tests, protocol tests, full Python tests, package validation, generated-command check, and `git diff --check`.
-- [ ] Commit only Task 2 files with an explicit `--only` pathspec and message `feat: add safe Founder OS state reads`.
+- [x] Write table-driven tests with literal expected codes `WORKSPACE_UNRESOLVED`, `PATH_OUTSIDE_WORKSPACE`, and `STATE_IO_ERROR`; include a registry with two businesses and a separate portfolio root.
+- [x] Run the focused suite and record RED failures for missing resolver and safe-I/O interfaces.
+- [x] Implement `WorkspaceBinding`, `WorkspaceResolver`, `RoleSessionStore`, `SafeStateIO.list_markdown()`, `SafeStateIO.read_many()`, and `SafeStateIO.read_reference()` with real filesystem fixtures.
+- [x] Connect resolve/open/list/read/reference/close handlers to `Gateway.call()` and return concise human actions with every stable code.
+- [x] Re-run focused tests, protocol tests, full Python tests, package validation, generated-command check, and `git diff --check`.
+- [x] Commit only Task 2 files with an explicit `--only` pathspec and message `feat: add safe Founder OS state reads`.
 
 ### Task 3: Ownership, Atomic Writes, and Journal
 
@@ -291,3 +291,4 @@ git status --short --branch
 - 2026-07-27: Approved specification committed alone as `e5ec258`; unrelated staged deletion preserved.
 - 2026-07-27: Implementation plan created in `fc146de`; execution began at Task 1.
 - 2026-07-27: Task 1 completed in `e07c4be`. RED: 7 protocol tests produced 6 failures and 1 error because the module and entry point did not exist. GREEN: 7/7 focused tests, 231/231 full Python tests, and 2/2 Node behavior tests passed; package validation reported 13 agents, 52 skills, 0 errors; command generation and `git diff --check` were clean. Independent review found no Critical or Important issues and approved task quality; one schema-assertion coverage note was deferred to the later gateway behavior tests. The unrelated staged deletion remained staged.
+- 2026-07-27: Task 2 completed in `fba8df3` with security hardening in `4da710c`. Initial REDs proved the missing resolver/session/safe-I/O interfaces; GREEN reached 38/38 Task 1–2 tests. Independent review then found three Important fail-closed gaps in registry validation, persisted-session validation, and ancestor-symlink handling. Fix-round RED reproduced all three; the scoped re-review approved the strict single registry parser, exact untrusted-record validation, and trusted-root descriptor walk with no remaining findings. Final GREEN: 45/45 focused/protocol tests, 269/269 full Python tests, and 2/2 Node tests; package validation reported 13 agents, 52 skills, 0 errors; command generation and `git diff --check` were clean. The Task 1 schema-assertion note is resolved by exact seven-schema tests, and the unrelated staged deletion remained staged.
