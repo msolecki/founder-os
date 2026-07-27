@@ -56,12 +56,12 @@
 
 **Size:** M
 
-- [ ] Write protocol tests that start the real subprocess and assert literal JSON-RPC response shapes, including no stdout frame for `notifications/initialized`.
-- [ ] Run `python3 -m unittest tests.test_state_gateway_protocol -v`; record the expected missing-module/entry-point RED failure.
-- [ ] Implement `ProtocolServer.handle_message(message: dict) -> dict | None` and `ProtocolServer.serve(stdin, stdout, stderr) -> int`, with `Gateway.call(name, arguments)` as the only tool boundary.
-- [ ] Re-run the focused tests and the repository Python suite; record GREEN output.
-- [ ] Run `python3 scripts/validate_package.py founder-os`, `python3 scripts/generate_commands.py founder-os --check`, and `git diff --check`.
-- [ ] Commit with `git commit --only --no-gpg-sign -m "feat: add Founder OS MCP protocol shell" -- founder-os/mcp/__init__.py founder-os/mcp/founder_os_state.py founder-os/mcp/protocol.py founder-os/mcp/gateway.py tests/test_state_gateway_protocol.py`.
+- [x] Write protocol tests that start the real subprocess and assert literal JSON-RPC response shapes, including no stdout frame for `notifications/initialized`.
+- [x] Run `python3 -m unittest tests.test_state_gateway_protocol -v`; record the expected missing-module/entry-point RED failure.
+- [x] Implement `ProtocolServer.handle_message(message: dict) -> dict | None` and `ProtocolServer.serve(stdin, stdout, stderr) -> int`, with `Gateway.call(name, arguments)` as the only tool boundary.
+- [x] Re-run the focused tests and the repository Python suite; record GREEN output.
+- [x] Run `python3 scripts/validate_package.py founder-os`, `python3 scripts/generate_commands.py founder-os --check`, and `git diff --check`.
+- [x] Commit with `git commit --only --no-gpg-sign -m "feat: add Founder OS MCP protocol shell" -- founder-os/mcp/__init__.py founder-os/mcp/founder_os_state.py founder-os/mcp/protocol.py founder-os/mcp/gateway.py tests/test_state_gateway_protocol.py`.
 
 ### Task 2: Workspace Resolution, Role Sessions, and Safe Read Surface
 
@@ -289,4 +289,5 @@ git status --short --branch
 ## Progress Log
 
 - 2026-07-27: Approved specification committed alone as `e5ec258`; unrelated staged deletion preserved.
-- 2026-07-27: Implementation plan created; execution pending Task 1.
+- 2026-07-27: Implementation plan created in `fc146de`; execution began at Task 1.
+- 2026-07-27: Task 1 completed in `e07c4be`. RED: 7 protocol tests produced 6 failures and 1 error because the module and entry point did not exist. GREEN: 7/7 focused tests, 231/231 full Python tests, and 2/2 Node behavior tests passed; package validation reported 13 agents, 52 skills, 0 errors; command generation and `git diff --check` were clean. Independent review found no Critical or Important issues and approved task quality; one schema-assertion coverage note was deferred to the later gateway behavior tests. The unrelated staged deletion remained staged.
