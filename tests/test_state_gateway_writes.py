@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 import textwrap
+import threading
 import unittest
 from unittest import mock
 
@@ -794,6 +795,38 @@ class StateGatewayWriteTests(unittest.TestCase):
         self._assert_error(special, code="STATE_IO_ERROR")
         self.assertFalse((self.workspace / "metrics.md").exists())
 
+    def test_unsafe_target_lock_denies_before_state_mutation(self):
+        capability = self._open("cfo")
+        lock_name = ".founder-os-write-{0}.lock".format(
+            hashlib.sha256(b"metrics.md").hexdigest()
+        )
+        lock_path = self.workspace / lock_name
+        outside = self.base / "outside-lock"
+        outside.write_text("must survive\n", encoding="utf-8")
+        lock_path.symlink_to(outside)
+
+        symlinked = self._write(
+            capability,
+            "metrics.md",
+            _metrics(),
+            create_only=True,
+        )
+        self._assert_error(symlinked, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "metrics.md").exists())
+        self.assertEqual("must survive\n", outside.read_text(encoding="utf-8"))
+
+        lock_path.unlink()
+        os.link(outside, lock_path)
+        hardlinked = self._write(
+            capability,
+            "metrics.md",
+            _metrics(),
+            create_only=True,
+        )
+        self._assert_error(hardlinked, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "metrics.md").exists())
+        self.assertEqual("must survive\n", outside.read_text(encoding="utf-8"))
+
     def test_post_replace_journal_failure_reports_landed_write_as_success(self):
         capability = self._open("cfo")
         content = _metrics(close="Committed before journal failure")
@@ -885,6 +918,59 @@ class StateGatewayWriteTests(unittest.TestCase):
                 for entry in self.workspace.iterdir()
             )
         )
+
+    def test_gateway_writers_cannot_race_between_final_check_and_replace(self):
+        initial = _metrics(close="Initial")
+        first = _metrics(close="First committed writer")
+        second = _metrics(close="Second stale writer")
+        initial_hash = hashlib.sha256(initial.encode("utf-8")).hexdigest()
+        target = self.workspace / "metrics.md"
+        target.write_text(initial, encoding="utf-8")
+        second_started = threading.Event()
+        second_finished = threading.Event()
+        second_errors = []
+        second_io = SafeStateIO(self.workspace, self.package)
+        self.addCleanup(second_io.close)
+
+        def competing_writer():
+            second_started.set()
+            try:
+                second_io.atomic_replace(
+                    "metrics.md",
+                    second.encode("utf-8"),
+                    expected_sha256=initial_hash,
+                )
+            except Exception as error:
+                second_errors.append(error)
+            finally:
+                second_finished.set()
+
+        competitor = threading.Thread(target=competing_writer)
+
+        def start_competitor_after_final_check(*unused):
+            competitor.start()
+            self.assertTrue(second_started.wait(1))
+            self.assertFalse(second_finished.wait(0.05))
+
+        first_io = SafeStateIO(
+            self.workspace,
+            self.package,
+            before_commit=start_competitor_after_final_check,
+        )
+        self.addCleanup(first_io.close)
+        result = first_io.atomic_replace(
+            "metrics.md",
+            first.encode("utf-8"),
+            expected_sha256=initial_hash,
+        )
+        competitor.join(1)
+
+        self.assertFalse(competitor.is_alive())
+        self.assertTrue(second_finished.is_set())
+        self.assertEqual("replace", result["operation"])
+        self.assertEqual(first, target.read_text(encoding="utf-8"))
+        self.assertEqual(1, len(second_errors), second_errors)
+        self.assertEqual("STALE_WRITE", second_errors[0].code)
 
     def test_create_only_existing_expected_on_missing_and_stale_hash_are_rejected(self):
         capability = self._open("cfo")
@@ -1003,7 +1089,11 @@ class StateGatewayWriteTests(unittest.TestCase):
         self.assertEqual(before_literal, target.read_text(encoding="utf-8"))
         self.assertEqual(
             entries_before,
-            {entry.name for entry in self.workspace.iterdir()},
+            {
+                entry.name
+                for entry in self.workspace.iterdir()
+                if not entry.name.startswith(".founder-os-write-")
+            },
         )
         event = self._journal_events()[0]
         self._assert_journal_shape(event)

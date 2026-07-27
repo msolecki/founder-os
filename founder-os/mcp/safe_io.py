@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import errno
+import fcntl
 import hashlib
 import json
 import os
@@ -44,6 +45,7 @@ class SafeStateIO:
             Callable[[str, int], None]
         ] = None,
         before_replace: Optional[Callable[[str], None]] = None,
+        before_commit: Optional[Callable[[str], None]] = None,
     ) -> None:
         self.workspace_root = Path(workspace_root).resolve()
         self.packaged_root = Path(packaged_root).resolve()
@@ -52,6 +54,7 @@ class SafeStateIO:
         self.max_total_bytes = max_total_bytes
         self._before_component_open = before_component_open
         self._before_replace = before_replace
+        self._before_commit = before_commit
         self._workspace_fd = -1
         self._packaged_fd = -1
 
@@ -61,6 +64,9 @@ class SafeStateIO:
         ) or (
             before_replace is not None
             and not callable(before_replace)
+        ) or (
+            before_commit is not None
+            and not callable(before_commit)
         ):
             raise SafeStateError("STATE_IO_ERROR")
 
@@ -267,10 +273,41 @@ class SafeStateIO:
         )
         target_descriptor = -1
         temporary_descriptor = -1
+        lock_descriptor = -1
         temporary_name: Optional[str] = None
         before_sha256: Optional[str] = None
 
         try:
+            lock_name = ".founder-os-write-{0}.lock".format(
+                hashlib.sha256(target_name.encode("utf-8")).hexdigest()
+            )
+            lock_flags = os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW
+            if hasattr(os, "O_CLOEXEC"):
+                lock_flags |= os.O_CLOEXEC
+            lock_descriptor = os.open(
+                lock_name,
+                lock_flags,
+                0o600,
+                dir_fd=parent_descriptor,
+            )
+            lock_info = os.fstat(lock_descriptor)
+            if (
+                not stat.S_ISREG(lock_info.st_mode)
+                or lock_info.st_nlink != 1
+            ):
+                raise SafeStateError("STATE_IO_ERROR")
+            fcntl.flock(lock_descriptor, fcntl.LOCK_EX)
+            lock_path_info = os.stat(
+                lock_name,
+                dir_fd=parent_descriptor,
+                follow_symlinks=False,
+            )
+            if (
+                lock_path_info.st_dev != lock_info.st_dev
+                or lock_path_info.st_ino != lock_info.st_ino
+            ):
+                raise SafeStateError("STATE_IO_ERROR")
+
             flags = os.O_RDONLY | os.O_NOFOLLOW
             if hasattr(os, "O_NONBLOCK"):
                 flags |= os.O_NONBLOCK
@@ -404,6 +441,9 @@ class SafeStateIO:
             ):
                 raise self._atomic_error("STALE_WRITE", final_sha256)
 
+            if self._before_commit is not None:
+                self._before_commit(relative_path)
+
             os.replace(
                 temporary_name,
                 target_name,
@@ -435,6 +475,11 @@ class SafeStateIO:
             if temporary_name is not None:
                 try:
                     os.unlink(temporary_name, dir_fd=parent_descriptor)
+                except OSError:
+                    pass
+            if lock_descriptor >= 0:
+                try:
+                    os.close(lock_descriptor)
                 except OSError:
                     pass
             try:
