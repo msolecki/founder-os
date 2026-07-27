@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import secrets
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +12,9 @@ from typing import Any, Mapping, Optional
 
 _UNRESOLVED_CODE = "WORKSPACE_UNRESOLVED"
 _UNRESOLVED_ACTION = "Ask for the business; make no read or write"
+_SLUG_PATTERN = re.compile(r"[a-z0-9-]+")
+_TOP_LEVEL_KEYS = frozenset({"businesses", "default", "portfolio"})
+_BUSINESS_KEYS = frozenset({"home", "status"})
 
 
 class WorkspaceResolutionError(Exception):
@@ -29,8 +33,6 @@ class WorkspaceBinding:
 
 
 class WorkspaceResolver:
-    """Resolve a workspace and issue an opaque, process-local binding."""
-
     def __init__(
         self,
         env: Optional[Mapping[str, str]] = None,
@@ -38,21 +40,23 @@ class WorkspaceResolver:
     ) -> None:
         self._env = dict(os.environ if env is None else env)
         self._home = Path.home() if home is None else Path(home)
-        self._bindings = {}
+        self._bindings: dict[str, WorkspaceBinding] = {}
 
     def resolve(
         self,
         project_dir: Path,
         business_slug: Optional[str] = None,
     ) -> WorkspaceBinding:
-        project_root = Path(project_dir).resolve()
-        registry = self._load_registry()
         try:
+            project_root = Path(project_dir).resolve()
+            registry = self._load_registry()
             root, slug = self._select_workspace(
                 registry,
                 project_root,
                 business_slug,
             )
+        except WorkspaceResolutionError:
+            raise
         except (OSError, TypeError, ValueError, KeyError):
             raise WorkspaceResolutionError()
 
@@ -74,12 +78,12 @@ class WorkspaceResolver:
 
     def _select_workspace(
         self,
-        registry: Optional[Mapping[str, Any]],
+        registry: Optional[dict[str, Any]],
         project_root: Path,
         requested_slug: Optional[str],
     ) -> tuple[Path, Optional[str]]:
         if registry is None:
-            if requested_slug:
+            if requested_slug is not None:
                 raise WorkspaceResolutionError()
             configured = self._env.get("FOUNDER_OS_HOME")
             root = (
@@ -91,52 +95,51 @@ class WorkspaceResolver:
 
         businesses = registry["businesses"]
         portfolio = registry.get("portfolio")
-        if requested_slug:
+
+        if requested_slug is not None:
             if requested_slug == "portfolio":
-                if not isinstance(portfolio, str) or not Path(portfolio).is_absolute():
+                if portfolio is None:
                     raise WorkspaceResolutionError()
                 return Path(portfolio).resolve(), "portfolio"
-            entry = businesses.get(requested_slug)
-            if not isinstance(entry, Mapping):
+            if not self._valid_slug(requested_slug):
                 raise WorkspaceResolutionError()
-            return self._business_root(entry), requested_slug
+            entry = businesses.get(requested_slug)
+            if entry is None:
+                raise WorkspaceResolutionError()
+            return Path(entry["home"]).resolve(), requested_slug
 
         configured = self._env.get("FOUNDER_OS_HOME")
         if configured:
-            configured_root = self._resolve_from_project(project_root, configured)
+            configured_root = self._resolve_from_project(
+                project_root,
+                configured,
+            )
             matches = [
                 slug
                 for slug, entry in businesses.items()
-                if isinstance(entry, Mapping)
-                and self._business_root(entry) == configured_root
+                if Path(entry["home"]).resolve() == configured_root
             ]
-            if isinstance(portfolio, str) and Path(portfolio).is_absolute():
-                if Path(portfolio).resolve() == configured_root:
-                    matches.append("portfolio")
+            if portfolio is not None and Path(portfolio).resolve() == configured_root:
+                matches.append("portfolio")
             if len(matches) != 1:
                 raise WorkspaceResolutionError()
             return configured_root, matches[0]
 
         default = registry.get("default")
-        if isinstance(default, str):
+        if default is not None:
             if default == "portfolio":
-                if not isinstance(portfolio, str) or not Path(portfolio).is_absolute():
-                    raise WorkspaceResolutionError()
                 return Path(portfolio).resolve(), "portfolio"
-            entry = businesses.get(default)
-            if not isinstance(entry, Mapping):
-                raise WorkspaceResolutionError()
-            return self._business_root(entry), default
+            return Path(businesses[default]["home"]).resolve(), default
 
         active = [
             slug
             for slug, entry in businesses.items()
-            if isinstance(entry, Mapping) and entry.get("status") == "active"
+            if entry["status"] == "active"
         ]
         if len(active) != 1:
             raise WorkspaceResolutionError()
         slug = active[0]
-        return self._business_root(businesses[slug]), slug
+        return Path(businesses[slug]["home"]).resolve(), slug
 
     @staticmethod
     def _resolve_from_project(project_root: Path, value: str) -> Path:
@@ -145,15 +148,7 @@ class WorkspaceResolver:
             candidate = project_root / candidate
         return candidate.resolve()
 
-    @staticmethod
-    def _business_root(entry: Mapping[str, Any]) -> Path:
-        home = entry.get("home")
-        status = entry.get("status")
-        if not isinstance(home, str) or status not in ("active", "paused"):
-            raise WorkspaceResolutionError()
-        return Path(home).expanduser().resolve()
-
-    def _load_registry(self) -> Optional[Mapping[str, Any]]:
+    def _load_registry(self) -> Optional[dict[str, Any]]:
         path = self._home / ".founder-os" / "businesses.yaml"
         try:
             if not path.exists():
@@ -161,71 +156,172 @@ class WorkspaceResolver:
             if not path.is_file():
                 raise WorkspaceResolutionError()
             source = path.read_text(encoding="utf-8")
-            parsed = self._parse_yaml(source)
-            if not isinstance(parsed, Mapping):
-                raise WorkspaceResolutionError()
-            businesses = parsed.get("businesses")
-            if not isinstance(businesses, Mapping):
-                raise WorkspaceResolutionError()
-            return parsed
+            registry = self._parse_registry(source)
+            self._validate_registry(registry)
+            return registry
+        except WorkspaceResolutionError:
+            raise
         except (OSError, TypeError, ValueError):
             raise WorkspaceResolutionError()
 
-    @staticmethod
-    def _parse_yaml(source: str) -> Mapping[str, Any]:
-        try:
-            import yaml  # type: ignore
-        except ImportError:
-            return WorkspaceResolver._parse_simple_registry(source)
-
-        try:
-            parsed = yaml.safe_load(source)
-        except Exception:
+    @classmethod
+    def _parse_registry(cls, source: str) -> dict[str, Any]:
+        if not isinstance(source, str) or "\t" in source:
             raise WorkspaceResolutionError()
-        if not isinstance(parsed, Mapping):
-            raise WorkspaceResolutionError()
-        return parsed
 
-    @staticmethod
-    def _parse_simple_registry(source: str) -> Mapping[str, Any]:
-        """Parse the deliberately small canonical registry shape without PyYAML."""
-        result = {}
-        businesses = {}
+        result: dict[str, Any] = {}
+        businesses: dict[str, dict[str, str]] = {}
         in_businesses = False
-        current_slug = None
+        current_slug: Optional[str] = None
 
         for raw_line in source.splitlines():
             if not raw_line.strip() or raw_line.lstrip().startswith("#"):
                 continue
-            indent = len(raw_line) - len(raw_line.lstrip(" "))
+
+            leading = len(raw_line) - len(raw_line.lstrip(" "))
             text = raw_line.strip()
             if ":" not in text:
                 raise WorkspaceResolutionError()
-            key, value = text.split(":", 1)
-            value = value.strip().strip("'\"")
+            key, raw_value = text.split(":", 1)
+            if not key or key != key.strip():
+                raise WorkspaceResolutionError()
+            value = cls._strip_inline_comment(raw_value.strip())
 
-            if indent == 0:
+            if leading == 0:
                 current_slug = None
-                if key == "businesses" and not value:
-                    in_businesses = True
+                if key not in _TOP_LEVEL_KEYS or key in result:
+                    raise WorkspaceResolutionError()
+                if key == "businesses":
+                    if value:
+                        raise WorkspaceResolutionError()
                     result["businesses"] = businesses
-                elif key in ("default", "portfolio") and value:
-                    in_businesses = False
-                    result[key] = value
+                    in_businesses = True
                 else:
-                    raise WorkspaceResolutionError()
-            elif in_businesses and indent == 2 and not value:
-                current_slug = key
-                if not current_slug or current_slug in businesses:
-                    raise WorkspaceResolutionError()
-                businesses[current_slug] = {}
-            elif in_businesses and indent == 4 and current_slug and value:
-                if key not in ("home", "status") or key in businesses[current_slug]:
-                    raise WorkspaceResolutionError()
-                businesses[current_slug][key] = value
-            else:
+                    result[key] = cls._parse_scalar(value)
+                    in_businesses = False
+                continue
+
+            if not in_businesses:
                 raise WorkspaceResolutionError()
 
-        if not businesses:
+            if leading == 2:
+                if value or not cls._valid_slug(key) or key in businesses:
+                    raise WorkspaceResolutionError()
+                businesses[key] = {}
+                current_slug = key
+                continue
+
+            if leading == 4 and current_slug is not None:
+                entry = businesses[current_slug]
+                if key not in _BUSINESS_KEYS or key in entry:
+                    raise WorkspaceResolutionError()
+                entry[key] = cls._parse_scalar(value)
+                continue
+
             raise WorkspaceResolutionError()
+
         return result
+
+    @staticmethod
+    def _strip_inline_comment(value: str) -> str:
+        quote: Optional[str] = None
+        escaped = False
+
+        for index, character in enumerate(value):
+            if quote == '"':
+                if escaped:
+                    escaped = False
+                elif character == "\\":
+                    escaped = True
+                elif character == quote:
+                    quote = None
+                continue
+
+            if quote == "'":
+                if character == quote:
+                    quote = None
+                continue
+
+            if character in ("'", '"'):
+                quote = character
+            elif character == "#" and (
+                index == 0 or value[index - 1].isspace()
+            ):
+                return value[:index].rstrip()
+
+        return value
+
+    @staticmethod
+    def _parse_scalar(value: str) -> str:
+        if not value:
+            raise WorkspaceResolutionError()
+
+        if value[0] in ("'", '"'):
+            quote = value[0]
+            if len(value) < 2 or value[-1] != quote:
+                raise WorkspaceResolutionError()
+            value = value[1:-1]
+            if not value or quote in value:
+                raise WorkspaceResolutionError()
+        elif any(character in value for character in "[]{}"):
+            raise WorkspaceResolutionError()
+
+        if "\x00" in value or "\n" in value or "\r" in value:
+            raise WorkspaceResolutionError()
+        return value
+
+    @classmethod
+    def _validate_registry(cls, registry: dict[str, Any]) -> None:
+        if not isinstance(registry, dict):
+            raise WorkspaceResolutionError()
+        if set(registry) - _TOP_LEVEL_KEYS:
+            raise WorkspaceResolutionError()
+        if "businesses" not in registry:
+            raise WorkspaceResolutionError()
+
+        businesses = registry["businesses"]
+        if not isinstance(businesses, dict) or not businesses:
+            raise WorkspaceResolutionError()
+
+        for slug, entry in businesses.items():
+            if not cls._valid_slug(slug):
+                raise WorkspaceResolutionError()
+            if not isinstance(entry, dict) or set(entry) != _BUSINESS_KEYS:
+                raise WorkspaceResolutionError()
+            home = entry["home"]
+            status = entry["status"]
+            if (
+                not isinstance(home, str)
+                or not home
+                or not Path(home).is_absolute()
+                or status not in ("active", "paused")
+            ):
+                raise WorkspaceResolutionError()
+
+        portfolio = registry.get("portfolio")
+        if portfolio is not None:
+            if (
+                not isinstance(portfolio, str)
+                or not portfolio
+                or not Path(portfolio).is_absolute()
+            ):
+                raise WorkspaceResolutionError()
+
+        default = registry.get("default")
+        if default is None:
+            return
+        if not isinstance(default, str):
+            raise WorkspaceResolutionError()
+        if default == "portfolio":
+            if portfolio is None:
+                raise WorkspaceResolutionError()
+            return
+        if not cls._valid_slug(default):
+            raise WorkspaceResolutionError()
+        entry = businesses.get(default)
+        if entry is None or entry["status"] != "active":
+            raise WorkspaceResolutionError()
+
+    @staticmethod
+    def _valid_slug(value: object) -> bool:
+        return isinstance(value, str) and _SLUG_PATTERN.fullmatch(value) is not None

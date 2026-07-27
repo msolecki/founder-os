@@ -254,6 +254,118 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 self.assertNotIn(binding.root.name, binding.workspace_id)
 
 
+    def test_registry_rejects_malformed_unselected_entries_and_container_scalars(self) -> None:
+        cases = (
+            (
+                "malformed-unselected-entry",
+                (
+                    "businesses:",
+                    "  alpha:",
+                    "    home: {alpha}",
+                    "    status: active",
+                    "  beta: malformed",
+                    "default: alpha",
+                ),
+            ),
+            (
+                "container-default",
+                (
+                    "businesses:",
+                    "  alpha:",
+                    "    home: {alpha}",
+                    "    status: active",
+                    "default: [alpha]",
+                ),
+            ),
+            (
+                "invalid-unselected-status-type",
+                (
+                    "businesses:",
+                    "  alpha:",
+                    "    home: {alpha}",
+                    "    status: active",
+                    "  beta:",
+                    "    home: {beta}",
+                    "    status: true",
+                    "default: alpha",
+                ),
+            ),
+        )
+        for name, lines in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                home = root / "home"
+                alpha = root / "alpha"
+                beta = root / "beta"
+                alpha.mkdir()
+                beta.mkdir()
+                write_registry(
+                    home,
+                    "\n".join(line.format(alpha=alpha, beta=beta) for line in lines),
+                )
+                resolver = WorkspaceResolver(env={}, home=home)
+                self.assert_unresolved(lambda: resolver.resolve(root))
+
+    def test_registry_rejects_unknown_and_inactive_automatic_defaults(self) -> None:
+        for default in ("missing", "paused"):
+            with self.subTest(default=default), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                home = root / "home"
+                active = root / "active"
+                paused = root / "paused"
+                active.mkdir()
+                paused.mkdir()
+                write_registry(
+                    home,
+                    "\n".join(
+                        (
+                            "businesses:",
+                            "  active:",
+                            f"    home: {active.as_posix()}",
+                            "    status: active",
+                            "  paused:",
+                            f"    home: {paused.as_posix()}",
+                            "    status: paused",
+                            f"default: {default}",
+                        )
+                    ),
+                )
+                resolver = WorkspaceResolver(env={}, home=home)
+                self.assert_unresolved(lambda: resolver.resolve(root))
+
+
+    def test_registry_supports_canonical_inline_comments_and_quoted_hashes(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            alpha = root / "alpha#state"
+            portfolio = root / "portfolio#state"
+            alpha.mkdir()
+            portfolio.mkdir()
+            write_registry(
+                home,
+                "\n".join(
+                    (
+                        "businesses: # registered businesses",
+                        "  alpha: # primary business",
+                        f'    home: "{alpha.as_posix()}" # workspace root',
+                        "    status: active # automatic selection",
+                        "default: alpha # selected by default",
+                        f'portfolio: "{portfolio.as_posix()}" # portfolio root',
+                    )
+                ),
+            )
+
+            resolver = WorkspaceResolver(env={}, home=home)
+            self.assertEqual(alpha.resolve(), resolver.resolve(root).root)
+            self.assertEqual(
+                portfolio.resolve(),
+                resolver.resolve(root, business_slug="portfolio").root,
+            )
+
+
 class RoleSessionStoreReadTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
@@ -396,6 +508,52 @@ class RoleSessionStoreReadTests(unittest.TestCase):
         self.assertIn("completed", closed)
 
 
+    def test_resolve_rejects_every_tampered_persisted_field(self) -> None:
+        mutations = (
+            ("extra-field", lambda record: record.__setitem__("unexpected", "value")),
+            ("missing-field", lambda record: record.pop("correlation_id")),
+            ("workspace-type", lambda record: record.__setitem__("workspace_id", [])),
+            ("workspace-blank", lambda record: record.__setitem__("workspace_id", " ")),
+            ("unknown-role", lambda record: record.__setitem__("role", "unknown-role")),
+            ("workflow-type", lambda record: record.__setitem__("workflow", 7)),
+            ("unknown-workflow", lambda record: record.__setitem__("workflow", "missing")),
+            ("correlation-type", lambda record: record.__setitem__("correlation_id", True)),
+            ("expiry-string", lambda record: record.__setitem__("expires_at", "1060")),
+            ("expiry-bool", lambda record: record.__setitem__("expires_at", True)),
+            ("expiry-infinite", lambda record: record.__setitem__("expires_at", float("inf"))),
+            ("invalid-status", lambda record: record.__setitem__("status", "OPEN")),
+            ("open-final-status", lambda record: record.__setitem__("final_status", "done")),
+            ("invalid-hash", lambda record: record.__setitem__("capability_hash", "g" * 64)),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                capability = self.store.open(
+                    "workspace-id",
+                    "cfo",
+                    "correlation-id",
+                    "week-plan",
+                )
+                record_path = self.data_root / (
+                    hashlib.sha256(capability.encode("utf-8")).hexdigest() + ".json"
+                )
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                mutate(record)
+                record_path.write_text(json.dumps(record), encoding="utf-8")
+                self.assert_invalid(lambda: self.store.resolve(capability))
+
+    def test_close_rejects_invalid_final_status(self) -> None:
+        for final_status in ("", " ", True, 7):
+            with self.subTest(final_status=final_status):
+                capability = self.store.open(
+                    "workspace-id",
+                    "cfo",
+                    "correlation-id",
+                )
+                self.assert_invalid(
+                    lambda: self.store.close(capability, final_status=final_status)
+                )
+
+
 class SafeStateIOTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
@@ -430,6 +588,7 @@ class SafeStateIOTests(unittest.TestCase):
             max_results=limits.get("max_results", 20),
             max_file_bytes=limits.get("max_file_bytes", 1024),
             max_total_bytes=limits.get("max_total_bytes", 4096),
+            before_component_open=limits.get("before_component_open"),
         )
 
     def assert_safe_error(self, code, callable_object) -> None:
@@ -653,6 +812,49 @@ class SafeStateIOTests(unittest.TestCase):
                 "references/house-rules.md",
                 role="chief-of-staff",
             ),
+        )
+
+
+    def test_ancestor_swap_cannot_escape_trusted_workspace_descriptor(self) -> None:
+        raced = self.workspace / "raced"
+        raced.mkdir()
+        (raced / "state.md").write_text("inside", encoding="utf-8")
+        outside = self.root / "outside"
+        outside.mkdir()
+        (outside / "state.md").write_text("outside-secret", encoding="utf-8")
+        moved = self.workspace / "raced-original"
+        swapped = False
+
+        def swap_before_open(relative_path: str, index: int) -> None:
+            nonlocal swapped
+            if relative_path == "raced/state.md" and index == 0 and not swapped:
+                raced.rename(moved)
+                raced.symlink_to(outside, target_is_directory=True)
+                swapped = True
+
+        reader = self.io(before_component_open=swap_before_open)
+        with self.assertRaises(SafeStateError) as raised:
+            reader.read_many(["raced/state.md"])
+        self.assertIn(
+            raised.exception.code,
+            ("PATH_OUTSIDE_WORKSPACE", "STATE_IO_ERROR"),
+        )
+        self.assertTrue(swapped)
+
+    def test_listing_json_byte_cap_is_exact_for_multibyte_and_escaped_names(self) -> None:
+        filename = 'quote"-é.md'
+        (self.workspace / filename).write_text("body", encoding="utf-8")
+        encoded_size = len(
+            json.dumps([filename], separators=(",", ":")).encode("utf-8")
+        )
+
+        self.assertEqual(
+            [filename],
+            self.io(max_total_bytes=encoded_size).list_markdown(filename),
+        )
+        self.assert_safe_error(
+            "STATE_IO_ERROR",
+            lambda: self.io(max_total_bytes=encoded_size - 1).list_markdown(filename),
         )
 
 

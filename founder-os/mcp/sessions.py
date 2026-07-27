@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
+import re
 import secrets
 import tempfile
 from dataclasses import dataclass
@@ -14,6 +16,19 @@ from typing import Callable, Optional
 
 _INVALID_CODE = "ROLE_SESSION_INVALID"
 _INVALID_ACTION = "Stop and return control to the main thread"
+_CAPABILITY_HASH_PATTERN = re.compile(r"[0-9a-f]{64}")
+_BASE_RECORD_FIELDS = frozenset(
+    {
+        "capability_hash",
+        "workspace_id",
+        "role",
+        "correlation_id",
+        "workflow",
+        "expires_at",
+        "status",
+    }
+)
+_ALLOWED_STATUSES = frozenset({"open", "closed", "expired"})
 
 
 class RoleSessionError(Exception):
@@ -35,8 +50,6 @@ class RoleSessionMetadata:
 
 
 class RoleSessionStore:
-    """Persist only hashed session capabilities and session metadata."""
-
     def __init__(
         self,
         data_root: Path,
@@ -56,11 +69,26 @@ class RoleSessionStore:
         correlation_id: str,
         workflow: Optional[str] = None,
     ) -> str:
-        if not self._valid_text(workspace_id) or not self._valid_text(correlation_id):
+        if not self._valid_text(workspace_id):
+            raise RoleSessionError()
+        if not self._valid_text(correlation_id):
             raise RoleSessionError()
         if role not in self._roles():
             raise RoleSessionError()
         if workflow is not None and not self._valid_workflow(workflow):
+            raise RoleSessionError()
+
+        now = self._now()
+        if (
+            isinstance(self._ttl_seconds, bool)
+            or not isinstance(self._ttl_seconds, (int, float))
+            or not math.isfinite(float(self._ttl_seconds))
+            or float(self._ttl_seconds) <= 0
+        ):
+            raise RoleSessionError()
+
+        expires_at = now + float(self._ttl_seconds)
+        if not math.isfinite(expires_at) or expires_at <= now:
             raise RoleSessionError()
 
         capability = secrets.token_urlsafe(32)
@@ -70,7 +98,7 @@ class RoleSessionStore:
             "role": role,
             "correlation_id": correlation_id,
             "workflow": workflow,
-            "expires_at": self._clock() + self._ttl_seconds,
+            "expires_at": expires_at,
             "status": "open",
         }
         self._write_record(record)
@@ -94,6 +122,9 @@ class RoleSessionStore:
         capability: str,
         final_status: Optional[str] = None,
     ) -> RoleSessionMetadata:
+        if final_status is not None and not self._valid_text(final_status):
+            raise RoleSessionError()
+
         record = self._load_open_record(capability)
         record["status"] = "closed"
         if final_status is not None:
@@ -101,41 +132,93 @@ class RoleSessionStore:
         self._write_record(record)
         return self._metadata(record)
 
-    def _load_open_record(self, capability: str) -> dict:
+    def _load_open_record(self, capability: str) -> dict[str, object]:
         if not self._valid_text(capability):
             raise RoleSessionError()
+
         capability_hash = self._capability_hash(capability)
         path = self._record_path(capability_hash)
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        except (OSError, TypeError, ValueError):
             raise RoleSessionError()
 
-        required = {
-            "capability_hash",
-            "workspace_id",
-            "role",
-            "correlation_id",
-            "workflow",
-            "expires_at",
-            "status",
-        }
-        if not isinstance(record, dict) or not required.issubset(record):
-            raise RoleSessionError()
-        if record["capability_hash"] != capability_hash:
+        if not self._valid_record(record, expected_hash=capability_hash):
             raise RoleSessionError()
         if record["status"] != "open":
             raise RoleSessionError()
 
-        try:
-            expired = self._clock() >= float(record["expires_at"])
-        except (TypeError, ValueError):
-            raise RoleSessionError()
-        if expired:
+        now = self._now()
+        expires_at = float(record["expires_at"])
+        if now >= expires_at:
             record["status"] = "expired"
             self._write_record(record)
             raise RoleSessionError()
         return record
+
+    def _valid_record(
+        self,
+        record: object,
+        *,
+        expected_hash: Optional[str] = None,
+    ) -> bool:
+        if not isinstance(record, dict):
+            return False
+
+        status = record.get("status")
+        if not isinstance(status, str) or status not in _ALLOWED_STATUSES:
+            return False
+
+        fields = set(record)
+        if status in ("open", "expired"):
+            if fields != _BASE_RECORD_FIELDS:
+                return False
+        elif fields not in (
+            _BASE_RECORD_FIELDS,
+            _BASE_RECORD_FIELDS | {"final_status"},
+        ):
+            return False
+
+        capability_hash = record.get("capability_hash")
+        if (
+            not isinstance(capability_hash, str)
+            or _CAPABILITY_HASH_PATTERN.fullmatch(capability_hash) is None
+            or (
+                expected_hash is not None
+                and capability_hash != expected_hash
+            )
+        ):
+            return False
+
+        if not self._valid_text(record.get("workspace_id")):
+            return False
+        if not self._valid_text(record.get("correlation_id")):
+            return False
+
+        role = record.get("role")
+        if not isinstance(role, str) or role not in self._roles():
+            return False
+
+        workflow = record.get("workflow")
+        if workflow is not None and (
+            not isinstance(workflow, str)
+            or not self._valid_workflow(workflow)
+        ):
+            return False
+
+        expires_at = record.get("expires_at")
+        if (
+            isinstance(expires_at, bool)
+            or not isinstance(expires_at, (int, float))
+            or not math.isfinite(float(expires_at))
+        ):
+            return False
+
+        if "final_status" in record and not self._valid_text(
+            record["final_status"]
+        ):
+            return False
+        return True
 
     def _roles(self) -> set[str]:
         agents = self._packaged_root / "agents"
@@ -160,9 +243,26 @@ class RoleSessionStore:
             return False
         return candidate.is_dir() and (candidate / "SKILL.md").is_file()
 
+    def _now(self) -> float:
+        try:
+            value = self._clock()
+        except Exception:
+            raise RoleSessionError()
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+        ):
+            raise RoleSessionError()
+        return float(value)
+
     @staticmethod
     def _valid_text(value: object) -> bool:
-        return isinstance(value, str) and bool(value.strip())
+        return (
+            isinstance(value, str)
+            and bool(value.strip())
+            and "\x00" not in value
+        )
 
     @staticmethod
     def _capability_hash(capability: str) -> str:
@@ -171,38 +271,54 @@ class RoleSessionStore:
     def _record_path(self, capability_hash: str) -> Path:
         return self._data_root / (capability_hash + ".json")
 
-    def _write_record(self, record: dict) -> None:
-        capability_hash = record.get("capability_hash")
-        if not isinstance(capability_hash, str):
+    def _write_record(self, record: dict[str, object]) -> None:
+        if not self._valid_record(record):
             raise RoleSessionError()
-        self._data_root.mkdir(parents=True, exist_ok=True)
-        destination = self._record_path(capability_hash)
-        descriptor, temporary_name = tempfile.mkstemp(
-            prefix=".session-",
-            suffix=".tmp",
-            dir=str(self._data_root),
-        )
+
+        temporary_name: Optional[str] = None
         try:
+            self._data_root.mkdir(parents=True, exist_ok=True)
+            destination = self._record_path(str(record["capability_hash"]))
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=".session-",
+                suffix=".tmp",
+                dir=str(self._data_root),
+            )
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-                json.dump(record, handle, sort_keys=True, separators=(",", ":"))
+                json.dump(
+                    record,
+                    handle,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
                 handle.flush()
                 os.fsync(handle.fileno())
             os.replace(temporary_name, destination)
-        except OSError:
-            try:
-                os.unlink(temporary_name)
-            except OSError:
-                pass
+            temporary_name = None
+        except (OSError, TypeError, ValueError):
             raise RoleSessionError()
+        finally:
+            if temporary_name is not None:
+                try:
+                    os.unlink(temporary_name)
+                except OSError:
+                    pass
 
     @staticmethod
-    def _metadata(record: dict) -> RoleSessionMetadata:
+    def _metadata(record: dict[str, object]) -> RoleSessionMetadata:
+        final_status = record.get("final_status")
         return RoleSessionMetadata(
-            workspace_id=record["workspace_id"],
-            role=record["role"],
-            correlation_id=record["correlation_id"],
-            workflow=record["workflow"],
+            workspace_id=str(record["workspace_id"]),
+            role=str(record["role"]),
+            correlation_id=str(record["correlation_id"]),
+            workflow=(
+                str(record["workflow"])
+                if record["workflow"] is not None
+                else None
+            ),
             expires_at=float(record["expires_at"]),
-            status=record["status"],
-            final_status=record.get("final_status"),
+            status=str(record["status"]),
+            final_status=(
+                str(final_status) if final_status is not None else None
+            ),
         )
