@@ -8,6 +8,7 @@ import math
 import os
 import re
 import secrets
+import stat
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,6 +37,13 @@ class RoleSessionError(Exception):
         super().__init__(_INVALID_CODE)
         self.code = _INVALID_CODE
         self.action = _INVALID_ACTION
+
+
+class JournalError(Exception):
+    def __init__(self) -> None:
+        super().__init__("STATE_IO_ERROR")
+        self.code = "STATE_IO_ERROR"
+        self.action = "Preserve the original file and surface the error"
 
 
 @dataclass(frozen=True)
@@ -219,6 +227,102 @@ class RoleSessionStore:
         ):
             return False
         return True
+
+    def preflight_journal(self) -> int:
+        descriptor: Optional[int] = None
+        try:
+            if not hasattr(os, "O_NOFOLLOW"):
+                raise OSError("O_NOFOLLOW is required")
+            self._data_root.mkdir(parents=True, exist_ok=True)
+            flags = (
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_APPEND
+                | os.O_NOFOLLOW
+            )
+            if hasattr(os, "O_NONBLOCK"):
+                flags |= os.O_NONBLOCK
+            if hasattr(os, "O_CLOEXEC"):
+                flags |= os.O_CLOEXEC
+            descriptor = os.open(
+                str(self._data_root / "operations.jsonl"),
+                flags,
+                0o600,
+            )
+            if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+                raise OSError("journal is not a regular file")
+            return descriptor
+        except (OSError, TypeError, ValueError):
+            if descriptor is not None:
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
+            raise JournalError()
+
+    def append_journal(
+        self,
+        metadata: RoleSessionMetadata,
+        *,
+        path: str,
+        operation: str,
+        result: str,
+        before_sha256: Optional[str],
+        after_sha256: Optional[str],
+        descriptor: Optional[int] = None,
+    ) -> None:
+        if (
+            not isinstance(metadata, RoleSessionMetadata)
+            or not self._valid_text(path)
+            or operation not in {"create", "replace"}
+            or not self._valid_text(result)
+        ):
+            raise JournalError()
+        for digest in (before_sha256, after_sha256):
+            if digest is not None and re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+                raise JournalError()
+
+        event = {
+            "timestamp": self._now(),
+            "correlation_id": metadata.correlation_id,
+            "role": metadata.role,
+            "workspace_id": metadata.workspace_id,
+            "path": path,
+            "operation": operation,
+            "result": result,
+            "before_sha256": before_sha256,
+            "after_sha256": after_sha256,
+        }
+        encoded = (
+            json.dumps(
+                event,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8")
+        owns_descriptor = descriptor is None
+        try:
+            if descriptor is None:
+                descriptor = self.preflight_journal()
+            offset = 0
+            while offset < len(encoded):
+                written = os.write(descriptor, encoded[offset:])
+                if written <= 0:
+                    raise OSError("short journal write")
+                offset += written
+            os.fsync(descriptor)
+        except JournalError:
+            raise
+        except (OSError, TypeError, ValueError, RoleSessionError):
+            raise JournalError()
+        finally:
+            if owns_descriptor and descriptor is not None:
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
 
     def _roles(self) -> set[str]:
         agents = self._packaged_root / "agents"

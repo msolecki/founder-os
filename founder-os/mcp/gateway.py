@@ -13,8 +13,9 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional
 
+from .ownership import OwnershipError, OwnershipSchema
 from .safe_io import SafeStateError, SafeStateIO
-from .sessions import RoleSessionError, RoleSessionStore
+from .sessions import JournalError, RoleSessionError, RoleSessionStore
 from .workspaces import WorkspaceResolutionError, WorkspaceResolver
 
 
@@ -173,8 +174,6 @@ class Gateway:
         """Dispatch a known tool through its bounded state interface."""
         if name not in self._TOOL_NAMES:
             raise UnknownToolError(name)
-        if name == "write_owned_state":
-            return self._write_placeholder(name)
         if not isinstance(arguments, Mapping):
             error = (
                 WorkspaceResolutionError()
@@ -194,10 +193,18 @@ class Gateway:
                 payload = self._read_state(arguments)
             elif name == "read_reference":
                 payload = self._read_reference(arguments)
+            elif name == "write_owned_state":
+                payload = self._write_owned_state(arguments)
             else:
                 payload = self._close_role_session(arguments)
             return self._success(payload)
-        except (WorkspaceResolutionError, RoleSessionError, SafeStateError) as error:
+        except (
+            WorkspaceResolutionError,
+            RoleSessionError,
+            JournalError,
+            OwnershipError,
+            SafeStateError,
+        ) as error:
             return self._error(error)
         except (OSError, UnicodeError, TypeError, ValueError, KeyError):
             return self._error(SafeStateError("STATE_IO_ERROR"))
@@ -264,6 +271,111 @@ class Gateway:
             )
         }
 
+    def _write_owned_state(
+        self,
+        arguments: Mapping[str, Any],
+    ) -> Dict[str, Any]:
+        capability = arguments.get("capability")
+        if not self._text(capability):
+            raise RoleSessionError()
+        metadata, binding = self._session_workspace(capability)
+
+        raw_path = arguments.get("path")
+        journal_path = raw_path if isinstance(raw_path, str) else ""
+        create_only = arguments.get("create_only")
+        expected_sha256 = arguments.get("expected_sha256")
+        operation = "create" if create_only is True else "replace"
+        io_handle: Optional[SafeStateIO] = None
+        journal_descriptor = self._sessions.preflight_journal()
+
+        try:
+            try:
+                if not self._text(raw_path):
+                    raise OwnershipError("PATH_OUTSIDE_WORKSPACE")
+                content = arguments.get("content")
+                if not isinstance(content, str):
+                    raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
+
+                valid_expected = (
+                    isinstance(expected_sha256, str)
+                    and len(expected_sha256) == 64
+                    and all(
+                        character in "0123456789abcdef"
+                        for character in expected_sha256
+                    )
+                )
+                valid_create = create_only is True
+                if valid_create == valid_expected:
+                    raise OwnershipError("STALE_WRITE")
+                if "create_only" in arguments and not valid_create:
+                    raise OwnershipError("STALE_WRITE")
+                if "expected_sha256" in arguments and not valid_expected:
+                    raise OwnershipError("STALE_WRITE")
+
+                schema = OwnershipSchema.load(
+                    self._packaged_root / "references" / "ownership.yaml"
+                )
+                owner = schema.owner_for(raw_path)
+                if owner is None:
+                    raise OwnershipError("PATH_OUTSIDE_WORKSPACE")
+                if metadata.role != owner:
+                    raise OwnershipError("ROLE_NOT_OWNER", owner=owner)
+                schema.validate_document(raw_path, content)
+                try:
+                    content_bytes = content.encode("utf-8", errors="strict")
+                except UnicodeEncodeError:
+                    raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
+
+                io_handle = self._io(binding.root)
+                payload = io_handle.atomic_replace(
+                    raw_path,
+                    content_bytes,
+                    expected_sha256=(
+                        expected_sha256 if valid_expected else None
+                    ),
+                    create_only=valid_create,
+                )
+            except (OwnershipError, SafeStateError) as error:
+                if journal_path:
+                    self._sessions.append_journal(
+                        metadata,
+                        path=journal_path,
+                        operation=operation,
+                        result=error.code,
+                        before_sha256=getattr(
+                            error,
+                            "before_sha256",
+                            None,
+                        ),
+                        after_sha256=getattr(error, "after_sha256", None),
+                        descriptor=journal_descriptor,
+                    )
+                raise
+            finally:
+                if io_handle is not None:
+                    io_handle.close()
+
+            try:
+                self._sessions.append_journal(
+                    metadata,
+                    path=raw_path,
+                    operation=str(payload["operation"]),
+                    result="OK",
+                    before_sha256=payload["before_sha256"],
+                    after_sha256=payload["after_sha256"],
+                    descriptor=journal_descriptor,
+                )
+            except Exception:
+                # The atomic replace already landed. Reporting failure here
+                # would invite a retry that overwrites a successful write.
+                pass
+            return payload
+        finally:
+            try:
+                os.close(journal_descriptor)
+            except OSError:
+                pass
+
     def _close_role_session(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         capability = arguments.get("capability")
         final_status = arguments.get("final_status")
@@ -328,21 +440,5 @@ class Gateway:
             ],
             "structuredContent": payload,
         }
-
-    @staticmethod
-    def _write_placeholder(name: str) -> Dict[str, Any]:
-        return {
-            "isError": True,
-            "content": [
-                {
-                    "type": "text",
-                    "text": (
-                        "The Founder OS state operation '{}' is not implemented "
-                        "in this protocol shell."
-                    ).format(name),
-                }
-            ],
-        }
-
 
 TOOL_SCHEMAS = Gateway._TOOL_SCHEMAS

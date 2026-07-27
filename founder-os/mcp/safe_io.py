@@ -6,9 +6,10 @@ import errno
 import hashlib
 import json
 import os
+import secrets
 import stat
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 
 class SafeStateError(Exception):
@@ -17,6 +18,7 @@ class SafeStateError(Exception):
             "Refuse without retrying a modified path guess"
         ),
         "STATE_IO_ERROR": "Preserve the original file and surface the error",
+        "STALE_WRITE": "Re-read, reconcile deliberately, then retry once",
     }
 
     def __init__(self, code: str) -> None:
@@ -41,6 +43,7 @@ class SafeStateIO:
         before_component_open: Optional[
             Callable[[str, int], None]
         ] = None,
+        before_replace: Optional[Callable[[str], None]] = None,
     ) -> None:
         self.workspace_root = Path(workspace_root).resolve()
         self.packaged_root = Path(packaged_root).resolve()
@@ -48,12 +51,16 @@ class SafeStateIO:
         self.max_file_bytes = max_file_bytes
         self.max_total_bytes = max_total_bytes
         self._before_component_open = before_component_open
+        self._before_replace = before_replace
         self._workspace_fd = -1
         self._packaged_fd = -1
 
         if (
             before_component_open is not None
             and not callable(before_component_open)
+        ) or (
+            before_replace is not None
+            and not callable(before_replace)
         ):
             raise SafeStateError("STATE_IO_ERROR")
 
@@ -183,6 +190,257 @@ class SafeStateIO:
             self._packaged_fd,
             relative.as_posix(),
         )
+
+    @staticmethod
+    def _atomic_error(
+        code: str,
+        before_sha256: Optional[str] = None,
+    ) -> SafeStateError:
+        error = SafeStateError(code)
+        error.before_sha256 = before_sha256
+        error.after_sha256 = None
+        return error
+
+    def _open_parent(
+        self,
+        relative: Path,
+        relative_path: str,
+    ) -> Tuple[int, str]:
+        parts = relative.parts
+        if self._workspace_fd < 0 or not parts:
+            raise SafeStateError("STATE_IO_ERROR")
+        try:
+            current = os.dup(self._workspace_fd)
+        except OSError:
+            raise SafeStateError("STATE_IO_ERROR")
+        try:
+            for index, component in enumerate(parts[:-1]):
+                if self._before_component_open is not None:
+                    self._before_component_open(relative_path, index)
+                flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+                if hasattr(os, "O_CLOEXEC"):
+                    flags |= os.O_CLOEXEC
+                next_descriptor = os.open(
+                    component,
+                    flags,
+                    dir_fd=current,
+                )
+                os.close(current)
+                current = next_descriptor
+            return current, parts[-1]
+        except OSError as error:
+            try:
+                os.close(current)
+            except OSError:
+                pass
+            raise self._open_error(error)
+
+    def atomic_replace(
+        self,
+        relative_path: str,
+        content_bytes: bytes,
+        expected_sha256: Optional[str] = None,
+        create_only: bool = False,
+    ) -> Dict[str, object]:
+        if (
+            not isinstance(content_bytes, bytes)
+            or len(content_bytes) > self.max_file_bytes
+        ):
+            raise SafeStateError("STATE_IO_ERROR")
+        has_expected = (
+            isinstance(expected_sha256, str)
+            and len(expected_sha256) == 64
+            and all(
+                character in "0123456789abcdef"
+                for character in expected_sha256
+            )
+        )
+        if (create_only is True) == has_expected:
+            raise SafeStateError("STATE_IO_ERROR")
+
+        relative = self._validate_file_path(relative_path)
+        if relative.parts and relative.parts[0] == "_local":
+            raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
+        parent_descriptor, target_name = self._open_parent(
+            relative,
+            relative_path,
+        )
+        target_descriptor = -1
+        temporary_descriptor = -1
+        temporary_name: Optional[str] = None
+        before_sha256: Optional[str] = None
+
+        try:
+            flags = os.O_RDONLY | os.O_NOFOLLOW
+            if hasattr(os, "O_NONBLOCK"):
+                flags |= os.O_NONBLOCK
+            if hasattr(os, "O_CLOEXEC"):
+                flags |= os.O_CLOEXEC
+            try:
+                target_descriptor = os.open(
+                    target_name,
+                    flags,
+                    dir_fd=parent_descriptor,
+                )
+            except OSError as error:
+                if error.errno != errno.ENOENT:
+                    raise self._open_error(error)
+
+            if target_descriptor >= 0:
+                info = os.fstat(target_descriptor)
+                if (
+                    not stat.S_ISREG(info.st_mode)
+                    or info.st_size > self.max_file_bytes
+                ):
+                    raise SafeStateError("STATE_IO_ERROR")
+                chunks = []
+                total = 0
+                while total <= self.max_file_bytes:
+                    chunk = os.read(
+                        target_descriptor,
+                        min(65536, self.max_file_bytes + 1 - total),
+                    )
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                    total += len(chunk)
+                if total > self.max_file_bytes:
+                    raise SafeStateError("STATE_IO_ERROR")
+                before_sha256 = hashlib.sha256(b"".join(chunks)).hexdigest()
+                os.close(target_descriptor)
+                target_descriptor = -1
+
+            if create_only is True:
+                operation = "create"
+                if before_sha256 is not None:
+                    raise self._atomic_error("STALE_WRITE", before_sha256)
+            else:
+                operation = "replace"
+                if (
+                    before_sha256 is None
+                    or before_sha256 != expected_sha256
+                ):
+                    raise self._atomic_error("STALE_WRITE", before_sha256)
+
+            temporary_name = ".{0}.{1}.tmp".format(
+                target_name,
+                secrets.token_hex(16),
+            )
+            temporary_flags = (
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | os.O_NOFOLLOW
+            )
+            if hasattr(os, "O_CLOEXEC"):
+                temporary_flags |= os.O_CLOEXEC
+            temporary_descriptor = os.open(
+                temporary_name,
+                temporary_flags,
+                0o600,
+                dir_fd=parent_descriptor,
+            )
+            offset = 0
+            while offset < len(content_bytes):
+                written = os.write(
+                    temporary_descriptor,
+                    content_bytes[offset:],
+                )
+                if written <= 0:
+                    raise OSError("short state write")
+                offset += written
+            os.fsync(temporary_descriptor)
+            os.close(temporary_descriptor)
+            temporary_descriptor = -1
+
+            if self._before_replace is not None:
+                self._before_replace(relative_path)
+
+            final_sha256: Optional[str] = None
+            try:
+                target_descriptor = os.open(
+                    target_name,
+                    flags,
+                    dir_fd=parent_descriptor,
+                )
+            except OSError as error:
+                if error.errno != errno.ENOENT:
+                    raise self._open_error(error)
+            if target_descriptor >= 0:
+                final_info = os.fstat(target_descriptor)
+                if (
+                    not stat.S_ISREG(final_info.st_mode)
+                    or final_info.st_size > self.max_file_bytes
+                ):
+                    raise SafeStateError("STATE_IO_ERROR")
+                final_chunks = []
+                final_total = 0
+                while final_total <= self.max_file_bytes:
+                    chunk = os.read(
+                        target_descriptor,
+                        min(
+                            65536,
+                            self.max_file_bytes + 1 - final_total,
+                        ),
+                    )
+                    if not chunk:
+                        break
+                    final_chunks.append(chunk)
+                    final_total += len(chunk)
+                if final_total > self.max_file_bytes:
+                    raise SafeStateError("STATE_IO_ERROR")
+                final_sha256 = hashlib.sha256(
+                    b"".join(final_chunks)
+                ).hexdigest()
+                os.close(target_descriptor)
+                target_descriptor = -1
+
+            if (
+                (operation == "create" and final_sha256 is not None)
+                or (
+                    operation == "replace"
+                    and final_sha256 != before_sha256
+                )
+            ):
+                raise self._atomic_error("STALE_WRITE", final_sha256)
+
+            os.replace(
+                temporary_name,
+                target_name,
+                src_dir_fd=parent_descriptor,
+                dst_dir_fd=parent_descriptor,
+            )
+            temporary_name = None
+            return {
+                "path": relative_path,
+                "operation": operation,
+                "before_sha256": before_sha256,
+                "after_sha256": hashlib.sha256(content_bytes).hexdigest(),
+            }
+        except SafeStateError:
+            raise
+        except OSError:
+            raise self._atomic_error("STATE_IO_ERROR", before_sha256)
+        finally:
+            if target_descriptor >= 0:
+                try:
+                    os.close(target_descriptor)
+                except OSError:
+                    pass
+            if temporary_descriptor >= 0:
+                try:
+                    os.close(temporary_descriptor)
+                except OSError:
+                    pass
+            if temporary_name is not None:
+                try:
+                    os.unlink(temporary_name, dir_fd=parent_descriptor)
+                except OSError:
+                    pass
+            try:
+                os.close(parent_descriptor)
+            except OSError:
+                pass
 
     def _read_file(
         self,

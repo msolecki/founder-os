@@ -1,5 +1,6 @@
 # Workspace file ownership. Everyone reads; only the owner writes.
-# Enforced by the state-integrity skill and scripts/validate_package.py.
+# The MCP state gateway is the authoritative runtime write boundary;
+# the state-integrity skill and scripts/validate_package.py are defense in depth.
 #
 # This is the package's map and it is complete for the files the package ships.
 # A founder who needs a file, skill or agent of their own adds it in
