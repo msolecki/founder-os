@@ -430,7 +430,9 @@ def assert_receipt_order(testcase: unittest.TestCase, text: str) -> None:
         testcase.assertIn(label, actions)
     positions = {label: actions[label][1] for label in required}
     testcase.assertRegex(
-        actions["daily-brief invocation"][0], r"(?i)(?:invoke|run).*?/daily-brief"
+        actions["daily-brief invocation"][0],
+        r"(?i)(?:(?:invoke|run).*?/daily-brief|"
+        r"return.*?/daily-brief.*?main thread)",
     )
     testcase.assertRegex(
         actions["persisted completion"][0],
@@ -685,10 +687,8 @@ class OnboardingActivationContract(unittest.TestCase):
                 matching_rows = [
                     row
                     for row in rows
-                    if any(
-                        re.fullmatch(rf"`?/{re.escape(skill_name)}`?", cell)
-                        for cell in row
-                    )
+                    if row
+                    and re.fullmatch(rf"`?/{re.escape(skill_name)}`?", row[0])
                 ]
                 self.assertEqual(len(matching_rows), 1, (skill_name, rows))
                 row_text = " | ".join(matching_rows[0])
@@ -1190,6 +1190,146 @@ class DecisionEntryWorkflowContractTest(unittest.TestCase):
         ])
         decision_log = self.owner_skill_bodies["decision-log"]
         self.assertRegex(decision_log, r"(?i)## Context[\s\S]*Evaluation:")
+
+
+class PersistedSiblingWorkflowContract(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.bodies = {
+            slug: parse_frontmatter(
+                PLUGIN_ROOT / "skills" / slug / "SKILL.md"
+            )[1]
+            for slug in (
+                "founder-os-init",
+                "strategic-evaluation",
+                "situation-review",
+                "kill-or-continue",
+            )
+        }
+
+    def test_onboarding_uses_the_exact_ordered_sibling_sequence(self):
+        _, sequence, _ = section_matching(
+            self.bodies["founder-os-init"],
+            r"Sibling checkpoint sequence",
+            level=3,
+        )
+        data_rows = [
+            row for row in markdown_table_rows(sequence)
+            if row and row[0].isdigit()
+        ]
+        actual = [
+            (row[1].strip("`"), row[2].strip("`/")) for row in data_rows
+        ]
+        self.assertEqual(
+            actual,
+            [
+                ("chief-of-staff", "founder-os-init"),
+                ("positioning-advisor", "icp-definition"),
+                ("strategist", "quarterly-planning"),
+                ("cfo", "revenue-review"),
+                ("cfo", "runway-forecast"),
+                ("chief-of-staff", "daily-brief"),
+            ],
+        )
+
+    def test_onboarding_gates_every_fresh_session_and_resumes_at_first_invalid(self):
+        body = self.bodies["founder-os-init"]
+        _, sequence, _ = section_matching(
+            body, r"Sibling checkpoint sequence", level=3
+        )
+        for token in (
+            "fresh role session",
+            "open_role_session",
+            "capability",
+            "re-read",
+            "close_role_session",
+            "before advancing",
+            "separate sessions",
+            "first invalid checkpoint",
+            "4096",
+            "unchanged",
+        ):
+            self.assertRegex(sequence, rf"(?i){semantic_pattern(token)}")
+        _, resume_and_failure, _ = section_matching(body, r"Resume and failure")
+        self.assertRegex(
+            resume_and_failure,
+            r"(?is)first invalid checkpoint.*(?:do not|never).*re-(?:run|open)",
+        )
+
+    def test_strategic_evaluation_is_four_gated_sibling_phases(self):
+        body = self.bodies["strategic-evaluation"]
+        _, protocol, _ = section_matching(body, r"Sibling checkpoint protocol")
+        phases = (
+            "Chief of Staff routing",
+            "Perspective siblings",
+            "Board Member challenge",
+            "Chief of Staff persistence",
+        )
+        offsets = [protocol.index(phase) for phase in phases]
+        self.assertEqual(offsets, sorted(offsets))
+        for token in (
+            "two or three",
+            "attributed",
+            "read-only",
+            "expected_persistence: []",
+            "fresh role session",
+            "re-read",
+            "close_role_session",
+            "evaluations/",
+        ):
+            self.assertRegex(protocol, rf"(?i){semantic_pattern(token)}")
+        self.assertRegex(
+            protocol,
+            r"(?is)perspective.*never.*(?:prior|another) perspective.*(?:result|answer)",
+        )
+        self.assertRegex(
+            protocol,
+            r"(?is)controller.*does not.*(?:author|write|decide).*specialist",
+        )
+
+    def test_situation_review_returns_only_the_shared_request(self):
+        body = self.bodies["situation-review"]
+        _, output, _ = section_matching(body, r"Output")
+        fields = set(re.findall(r"(?m)^- `([a-z_]+)`: ", output))
+        self.assertEqual(
+            fields,
+            {
+                "role",
+                "workflow",
+                "workspace_id",
+                "correlation_id",
+                "handoff",
+                "expected_persistence",
+            },
+        )
+        for token in ("main thread", "do not execute", "4096", "carried answer"):
+            self.assertRegex(body, rf"(?i){semantic_pattern(token)}")
+
+    def test_kill_or_continue_uses_persisted_sibling_handoffs(self):
+        body = self.bodies["kill-or-continue"]
+        _, handoffs, _ = section_matching(body, r"Sibling handoffs")
+        for field in (
+            "role",
+            "workflow",
+            "workspace_id",
+            "correlation_id",
+            "handoff",
+            "expected_persistence",
+        ):
+            self.assertIn("`%s`" % field, handoffs)
+        for token in (
+            "main thread",
+            "fresh role session",
+            "re-read",
+            "close_role_session",
+            "metrics.md",
+            "evaluations/",
+            "goals.md",
+            "reviews/quarterly/",
+            "decisions/",
+        ):
+            self.assertRegex(handoffs, rf"(?i){semantic_pattern(token)}")
+        self.assertNotRegex(operative_markdown(body), r"(?i)\bsummon\b|\bcome back\b")
 
 
 if __name__ == "__main__":

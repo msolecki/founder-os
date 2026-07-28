@@ -35,6 +35,16 @@ Read first — house rule 1:
 - `decisions/` — the entry where this bet was committed: what did they believe?
 - `reviews/quarterly/` — has this bet already been extended once?
 
+## Shared sibling request
+
+Every role transition returns one request to the main thread with exactly
+`role`, `workflow`, `workspace_id`, `correlation_id`, `handoff`, and
+`expected_persistence`. It carries one bounded handoff of at most 4096 UTF-8
+bytes. The main thread passes the carried answer unchanged and executes the
+request; this workflow never executes another role. Native and generic
+execution use the byte-identical packaged role under
+`references/orchestration.md`.
+
 ## Beliefs
 
 - Attention is a verdict, and it is issued weeks before anybody says it out loud.
@@ -53,6 +63,34 @@ Read first — house rule 1:
   quarter. Say it plainly: this is not a character test, and the kill is not
   evidence about them.
 
+## Sibling handoffs
+
+The Strategist never opens another role. When a sibling is required, return the
+shared `role`, `workflow`, `workspace_id`, `correlation_id`, `handoff`, and
+`expected_persistence` request to the main thread and stop the current pass.
+
+For a close older than 60 days, request the CFO's `/revenue-review` with
+`metrics.md` in `expected_persistence`. The main thread closes the Strategist
+session, opens a fresh role session for the CFO, re-reads the persisted
+`metrics.md` checkpoint, calls `close_role_session`, and only then opens a new
+Strategist pass. The carried answer is the original decision scope unchanged
+plus validated state paths and hashes, never CFO prose relayed as Strategist
+judgment.
+
+For a kill freeing more than a month, request the Chief of Staff's
+`/strategic-evaluation` with the new `evaluations/` path in
+`expected_persistence`. Its own sibling protocol gathers attributed read-only
+perspectives and a Board challenge. The main thread re-reads the persisted
+evaluation, closes that session, and starts a fresh Strategist pass that reads
+the evaluation from state.
+
+After the verdict, only the Strategist writes `goals.md` and
+`reviews/quarterly/`; the main thread re-reads both before closing the
+Strategist session. A kill then returns a separate Chief of Staff
+`/decision-log` request with its new `decisions/` path. The main thread opens
+and closes that sibling independently. Every transition uses one bounded
+handoff of at most 4096 UTF-8 bytes and passes the carried answer unchanged.
+
 ## Steps
 
 1. **Find the threshold. If there is none, the verdict is kill.** This is the
@@ -62,8 +100,8 @@ Read first — house rule 1:
    technicality to be repaired retroactively; it is the finding.
 2. **Get the number from `metrics.md`, dated.** Not the founder's sense of
    momentum. If the close is over 30 days old, the number is a guess and you
-   say so out loud (house rule 2); if it is over 60, hand to the **CFO** and
-   come back.
+   say so out loud (house rule 2); if it is over 60, return the CFO request from
+   the sibling handoff protocol and stop this pass.
 3. **Name the sunk cost before the verdict, not after.** "You have put 84 hours
    and 12k into this. That is gone in both directions and it is not an
    argument." Say it first, because it is the thing actually driving the room,
@@ -74,16 +112,15 @@ Read first — house rule 1:
    harder one instead — "is it too early to tell?" — which has no answer and is
    therefore comfortable.
 5. **For a kill that frees more than a month of capacity, convene before the
-   verdict.** Ask the **Chief of Staff** to summon the two or three agents whose
-   files the bet touches — the **CFO** on its economics, the **Delivery Lead**
-   on its hours, the **Pipeline Coach** if revenue hangs on it — and have each
-   state its position in writing: two or three sentences, from its own book,
-   with numbers and dates. Then the **Board Member** red-teams the leading
-   verdict. A specialist who commits a position in writing cannot quietly agree
-   with the outcome afterwards, and the written debate goes into the decision
-   record via step 8 — six months from now "who argued for keeping it" is a
-   question with an answer. Below that threshold, skip this: convening the org
-   over a small kill is deliberation costing more than the mistake.
+   verdict.** Return the Chief of Staff `/strategic-evaluation` request from the
+   sibling handoff protocol. It obtains the CFO view on economics, Delivery
+   Lead view on hours, Pipeline Coach view when revenue hangs on it, and the
+   Board Member challenge as attributable sibling passes. A specialist who
+   commits a position in writing cannot quietly agree with the outcome
+   afterwards, and the persisted evaluation goes into the decision record via
+   step 8 — six months from now "who argued for keeping it" is a question with
+   an answer. Below that threshold, skip this: convening the org over a small
+   kill is deliberation costing more than the mistake.
 6. **Give one of three verdicts.**
    - **Ahead of its case** → continue, with a new threshold and a new judgement
      date. A continue without a new date is not a continue; it is a bet that has
@@ -95,10 +132,11 @@ Read first — house rule 1:
 7. **Reallocate the freed capacity today, by name.** Into a specific bet in
    `goals.md`. Unallocated capacity is reabsorbed by the busiest thing on the
    list within a week, and the kill will have bought nothing.
-8. **Hand the kill to the Chief of Staff for `decisions/`.** You do not write
-   there. In six months the founder will ask why this stopped, and the answer
-   has to exist somewhere they will look — including the written positions from
-   step 5, when it ran.
+8. **Return the kill's Chief of Staff `/decision-log` request.** You do not
+   write `decisions/`. The main thread runs that fresh sibling only after it has
+   validated the Strategist-owned verdict. In six months the founder will ask
+   why this stopped, and the answer has to exist somewhere they will look —
+   including the written positions from step 5, when it ran.
 
 ## Output
 

@@ -32,6 +32,16 @@ workspace before preflight succeeds.
 - the canonical Founder OS context injected into this session;
 - existing workspace files and `reviews/daily/`, read before any question.
 
+### Shared sibling request
+
+Every owner transition returns one request to the main thread with exactly
+`role`, `workflow`, `workspace_id`, `correlation_id`, `handoff`, and
+`expected_persistence`. It carries one bounded handoff of at most 4096 UTF-8
+bytes. The main thread passes that carried answer unchanged; it validates and
+executes the request, while this workflow does not execute another role. Native
+and generic execution both use the byte-identical packaged role under
+`references/orchestration.md`.
+
 ## Stage 0 — Preflight
 
 Stage 0 is read-only. Finish every check before the first workspace write:
@@ -122,7 +132,7 @@ session for `/icp-definition`; do not write it to `offer.md` yourself.
 If any part is unknown, carry the known examples and label the missing evidence
 as unknown. Do not turn a preference into customer evidence.
 
-- **Stage checkpoint:** immediately invoke `/icp-definition` through the owner allowlist and require its successful persisted `offer.md` result in the resolved workspace before Stage 3; until that write validates, Stage 2 is incomplete rather than an accepted answer held only in memory.
+- **Stage checkpoint:** return the Positioning Advisor `/icp-definition` delegation request to the main thread; it opens a fresh sibling session and requires its successful persisted `offer.md` result in the resolved workspace before Stage 3; until that re-read validates, Stage 2 is incomplete rather than an accepted answer held only in memory.
 
 ## Stage 3/4 — Quarter
 
@@ -135,7 +145,7 @@ hours and cash available to pursue it. Carry the answer for
 A missing capacity or cash cap stays unknown. The first bet may be thin, but it
 may not be unsized while pretending to be complete.
 
-- **Stage checkpoint:** immediately invoke `/quarterly-planning` through the owner allowlist and require a successful persisted `goals.md` whose `## Bets` contains `Activation status: ready`, exactly one `### Bet`, and non-empty `Proposed:`, `Outcome:`, `Cost:` and `Kill if:` lines before Stage 4; `Activation status: blocked` is resumable persisted state but must halt at Stage 3 rather than advance or re-ask completed interview answers.
+- **Stage checkpoint:** return the Strategist `/quarterly-planning` delegation request to the main thread; it opens a fresh sibling session and requires a successful persisted `goals.md` whose `## Bets` contains `Activation status: ready`, exactly one `### Bet`, and non-empty `Proposed:`, `Outcome:`, `Cost:` and `Kill if:` lines before Stage 4; `Activation status: blocked` is resumable persisted state but must halt at Stage 3 rather than advance or re-ask completed interview answers.
 
 ## Stage 4/4 — Money
 
@@ -148,9 +158,9 @@ to `/revenue-review` and `/runway-forecast`; do not write `metrics.md` yourself.
 Unknown values stay unknown. Do not estimate cash, infer receivables, discount
 pipeline into cash, or omit founder pay to make runway look longer.
 
-- **Stage checkpoint:** immediately invoke `/revenue-review` and then `/runway-forecast` through the owner allowlist, requiring each successful independently persisted `metrics.md` result in the resolved workspace before Stage 5.
-- **Revenue checkpoint:** invoke `/revenue-review` and require a successful persisted `## Close — YYYY-MM` contract in `metrics.md` with heading matcher: `^## Close — \d{4}-\d{2}$` and `Close type: activation-baseline` before `/runway-forecast`; on resume, do not repeat a valid activation close.
-- **Runway checkpoint:** invoke `/runway-forecast` after the revenue checkpoint and require a successful persisted `## Runway` contract in `metrics.md` with heading matcher: `^## Runway — as of \d{4}-\d{2}-\d{2}$` before Stage 5; without that distinct dated block, Stage 4 remains incomplete.
+- **Stage checkpoint:** return `/revenue-review` and then `/runway-forecast` as two CFO delegation requests to the main thread, requiring each successful independently persisted `metrics.md` result in the resolved workspace before Stage 5.
+- **Revenue checkpoint:** run `/revenue-review` in its own CFO sibling session and require a successful persisted `## Close — YYYY-MM` contract in `metrics.md` with heading matcher: `^## Close — \d{4}-\d{2}$` and `Close type: activation-baseline` before `/runway-forecast`; on resume, do not repeat a valid activation close.
+- **Runway checkpoint:** run `/runway-forecast` in a new CFO sibling session after the revenue checkpoint and require a successful persisted `## Runway` contract in `metrics.md` with heading matcher: `^## Runway — as of \d{4}-\d{2}-\d{2}$` before Stage 5; without that distinct dated block, Stage 4 remains incomplete.
 
 The interview has a hard stop at fifteen minutes. Anything still unanswered
 moves to `queue.md`: unknown cash on hand goes in `## Doing`; every other
@@ -165,9 +175,33 @@ The Chief of Staff writes only `charter.md`, `queue.md`, `decisions/`,
 scaffolds other paths as empty lifecycle stubs and delegates all content to the
 owner declared by `references/ownership.yaml`.
 
-Use the Chief of Staff's explicit agent allowlist. Pass each carried answer,
-the resolved workspace tuple and the fact that this is a bounded first run.
-Wait for each owner result before continuing.
+Return each owner request to the main thread. Pass the carried answer, resolved
+workspace tuple and bounded-first-run marker unchanged. The main thread alone
+opens the sibling, validates its capability, and advances the sequence; the
+controller does not author, rewrite, score or decide owner business content.
+
+### Sibling checkpoint sequence
+
+| Order | Role | Workflow | Expected persistence |
+|---:|---|---|---|
+| 1 | `chief-of-staff` | `/founder-os-init` | `charter.md`, `queue.md`, install decision checkpoint |
+| 2 | `positioning-advisor` | `/icp-definition` | `offer.md` |
+| 3 | `strategist` | `/quarterly-planning` | `goals.md`, `reviews/quarterly/` |
+| 4 | `cfo` | `/revenue-review` | `metrics.md` close checkpoint |
+| 5 | `cfo` | `/runway-forecast` | `metrics.md` runway checkpoint |
+| 6 | `chief-of-staff` | `/daily-brief` | `reviews/daily/YYYY-MM-DD.md` |
+
+For every row, the main thread calls `open_role_session` for a fresh role
+session, passes that row's capability, waits for the role result, re-reads the
+listed checkpoint, and calls `close_role_session` before advancing. The two CFO
+rows are separate sessions with separate capabilities even though they share
+one owner and file. The next row receives no prior role prose: only the original
+carried answer unchanged plus validated state paths and hashes.
+
+Each request uses the six fields in the shared sibling request above and one
+bounded handoff of at most 4096 UTF-8 bytes. Resume derives a cursor from the
+first invalid checkpoint. It preserves every earlier valid checkpoint and does
+not re-run or re-open its completed sibling session.
 
 | Skill | Holder | Declared writes | Required first-run result |
 |---|---|---|---|
@@ -176,8 +210,8 @@ Wait for each owner result before continuing.
 | `/revenue-review` | `cfo` | `metrics.md` | Only supplied or computable close values; every unavailable input stays explicit. |
 | `/runway-forecast` | `cfo` | `metrics.md` | Real cash and burn arithmetic, or an explicit gap and owned queue item. |
 
-The Stage 2–4 checkpoints invoke these rows in table order. Stage 5 reconciles
-their persisted results; it does not wait until now to make the first call. The
+The Stage 2–4 checkpoints execute these rows in table order. Stage 5 reconciles
+their persisted results; it does not wait until now to make the first request. The
 two CFO skills share one owner and one file, so `/runway-forecast` reads the
 first-run close that `/revenue-review` just wrote. Treat a dated `## Close —
 YYYY-MM` with `Close type: activation-baseline` and a dated `## Runway` matching
@@ -202,7 +236,7 @@ Use the **daily-review validity invariant** from Stage 0 and its headings from
 `references/ownership.yaml`; do not substitute a file-exists check.
 
 - **Minimum-state validation:** in the same resolved workspace, validate non-empty charter identity plus owner-persisted `offer.md`, `queue.md`, a `goals.md` `## Bets` with `Activation status: ready` and its complete committed `### Bet`, a `metrics.md` `## Close — YYYY-MM` block with `Close type: activation-baseline`, and a separate dated `## Runway` block matching Stage 4; truthful financial unknowns are valid, but a blocked quarter or fabricated completeness is not.
-- **Daily-brief invocation:** invoke `/daily-brief` as the Chief of Staff against that same resolved workspace.
+- **Daily-brief invocation:** return the `/daily-brief` request to the main thread, which opens a fresh Chief of Staff sibling session against that same resolved workspace.
 - **Persisted completion:** require a successful persisted write to `reviews/daily/YYYY-MM-DD.md` in that same resolved workspace and validate its declared daily-review headings before continuing.
 
 Minimum state is not “every field known.” It is enough truthful state for the
@@ -248,7 +282,9 @@ failure in one owner stage must not erase another owner's successful output.
 On the next run, use the explicit resume tuple — exact `FOUNDER_OS_HOME`,
 business slug and resolved workspace path — to select the checkpoint before
 consulting current defaults. Derive completed stages from valid owned outputs
-and compare the tuple to the target checkpoint before continuing. A moved
+and continue from the first invalid checkpoint; do not re-run or re-open a
+valid completed sibling. Compare the tuple to the target checkpoint before
+continuing. A moved
 workspace requires the confirmed relocation procedure from Stage 0; never
 silently rebind it. Do not re-scaffold destructively, re-ask completed stages
 or copy a carried answer into a file owned by someone else. An activated

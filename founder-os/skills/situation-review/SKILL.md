@@ -18,6 +18,15 @@ Use `triage` for a pile of obligations.
 Run `context-load` first. Reuse facts already supplied by the founder and read
 only the state needed to identify the decision domain.
 
+## Shared sibling request
+
+Return one request to the main thread with exactly `role`, `workflow`,
+`workspace_id`, `correlation_id`, `handoff`, and `expected_persistence`. It
+carries one bounded handoff of at most 4096 UTF-8 bytes. The main thread passes
+the carried answer unchanged and executes the request; this workflow does not.
+Native and generic execution use the byte-identical packaged role under
+`references/orchestration.md`.
+
 ## Beliefs
 
 - Routing is a decision, not a polite preface to generic advice.
@@ -32,16 +41,22 @@ only the state needed to identify the decision domain.
 3. Reduce the situation to one decision sentence.
 4. Select exactly one owner and one workflow from the Chief of Staff routing table.
 5. If it is material, hard to reverse, and crosses two or more decision domains, route to `/strategic-evaluation`.
-6. Return the routing record and stop.
+6. Return the exact shared sibling request and stop. Do not execute it. The main
+   thread validates the resolved workspace, correlation, target owner,
+   workflow, bounded handoff and expected persistence before it closes this
+   session and opens the target sibling.
 
 ## Output
 
-    Decision: <one sentence>
-    Business: <resolved slug or single-business workspace>
-    Owner: <one Founder OS role>
-    Run: /<one workflow>
-    Why this route: <one evidence-based sentence>
-    Missing state: <none or the exact file/observation still required>
+- `role`: Owner: <one Founder OS role>
+- `workflow`: Run: /<one workflow>
+- `workspace_id`: <the already resolved workspace identifier>
+- `correlation_id`: <the active main-thread flow identifier>
+- `handoff`: <the decision, why this route, and missing state as one carried answer>
+- `expected_persistence`: <safe paths declared by the selected workflow, or [] when read-only>
+
+Return no extra field and no specialist answer. The main thread executes the
+request only after validation; this routing workflow ends here.
 
 ## Guardrails
 

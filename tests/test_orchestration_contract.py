@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 import tempfile
 import unittest
@@ -292,6 +293,44 @@ class TestExecutableOrchestrationEnvelope(unittest.TestCase):
             any("byte-identical to ../README.md" in error for error in errors),
             errors,
         )
+
+
+class TestMigratedWorkflowHandoffs(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.bodies = {
+            slug: package_validator.parse_frontmatter(
+                PLUGIN_ROOT / "skills" / slug / "SKILL.md"
+            )[1]
+            for slug in (
+                "founder-os-init",
+                "strategic-evaluation",
+                "situation-review",
+                "kill-or-continue",
+            )
+        }
+
+    def test_every_migrated_workflow_uses_the_shared_request_shape(self):
+        for slug, body in self.bodies.items():
+            with self.subTest(workflow=slug):
+                for field in DELEGATION_FIELDS:
+                    self.assertIn("`%s`" % field, body)
+                for phrase in (
+                    "main thread",
+                    "one bounded handoff",
+                    "4096 UTF-8 bytes",
+                    "unchanged",
+                ):
+                    self.assertRegex(
+                        body, re.escape(phrase).replace(r"\ ", r"\s+")
+                    )
+
+    def test_migrated_workflows_have_no_legacy_nested_edge(self):
+        for slug, body in self.bodies.items():
+            with self.subTest(workflow=slug):
+                self.assertNotIn("Agent(", body)
+                self.assertNotRegex(body, r"(?i)owner allowlist")
+                self.assertNotRegex(body, r"(?i)\bsummon\b")
 
 
 if __name__ == "__main__":
