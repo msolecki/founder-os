@@ -94,12 +94,12 @@
 
 **Size:** L
 
-- [ ] Write real-filesystem and controllable-clock tests; name the mutation each test catches and assert literal before/after hashes independently.
-- [ ] Run focused tests and record RED failures for missing role/session/write behavior.
-- [ ] Implement `OwnershipSchema`, add metadata-only journal append/final-status support to `RoleSessionStore`, implement `SafeStateIO.atomic_replace()`, and connect `write_owned_state` to the gateway.
-- [ ] Re-run focused tests; then run Tasks 1–3 suites together and confirm protocol stdout contains no diagnostic or journal text.
-- [ ] Run full Python tests, package validation, generated-command check, and `git diff --check`.
-- [ ] Commit only Task 3 files with an explicit `--only` pathspec and message `feat: enforce role-owned atomic state writes`.
+- [x] Write real-filesystem and controllable-clock tests; name the mutation each test catches and assert literal before/after hashes independently.
+- [x] Run focused tests and record RED failures for missing role/session/write behavior.
+- [x] Implement `OwnershipSchema`, add metadata-only journal append/final-status support to `RoleSessionStore`, implement `SafeStateIO.atomic_replace()`, and connect `write_owned_state` to the gateway.
+- [x] Re-run focused tests; then run Tasks 1–3 suites together and confirm protocol stdout contains no diagnostic or journal text.
+- [x] Run full Python tests, package validation, generated-command check, and `git diff --check`.
+- [x] Commit only Task 3 files with an explicit `--only` pathspec and message `feat: enforce role-owned atomic state writes`.
 
 ### Task 4: Claude/Codex MCP Adapters and Hook Identity Roundtrip
 
@@ -292,3 +292,4 @@ git status --short --branch
 - 2026-07-27: Implementation plan created in `fc146de`; execution began at Task 1.
 - 2026-07-27: Task 1 completed in `e07c4be`. RED: 7 protocol tests produced 6 failures and 1 error because the module and entry point did not exist. GREEN: 7/7 focused tests, 231/231 full Python tests, and 2/2 Node behavior tests passed; package validation reported 13 agents, 52 skills, 0 errors; command generation and `git diff --check` were clean. Independent review found no Critical or Important issues and approved task quality; one schema-assertion coverage note was deferred to the later gateway behavior tests. The unrelated staged deletion remained staged.
 - 2026-07-27: Task 2 completed in `fba8df3` with security hardening in `4da710c`. Initial REDs proved the missing resolver/session/safe-I/O interfaces; GREEN reached 38/38 Task 1–2 tests. Independent review then found three Important fail-closed gaps in registry validation, persisted-session validation, and ancestor-symlink handling. Fix-round RED reproduced all three; the scoped re-review approved the strict single registry parser, exact untrusted-record validation, and trusted-root descriptor walk with no remaining findings. Final GREEN: 45/45 focused/protocol tests, 269/269 full Python tests, and 2/2 Node tests; package validation reported 13 agents, 52 skills, 0 errors; command generation and `git diff --check` were clean. The Task 1 schema-assertion note is resolved by exact seven-schema tests, and the unrelated staged deletion remained staged.
+- 2026-07-27: Task 3 completed in `960878c` with concurrency hardening in `154a79b`. RED began with the missing ownership module; GREEN added strict ownership/section parsing, capability-bound owner writes, exact preconditions, descriptor-relative temp/fsync/replace, and a nine-field redacted journal. Author review exposed journal preflight, fenced-heading, post-commit truthfulness, approved-code, and final-recheck gaps; regression tests closed them. Independent review then found a remaining final-check/replace TOCTOU; fix-round RED reproduced it and the scoped re-review approved a persistent per-target lock held across validation and replacement. Final GREEN: 24/24 write tests, 69/69 Task 1–3 tests, 293/293 full Python tests, and 2/2 Node tests; package validation reported 13 agents, 52 skills, 0 errors; command generation and `git diff --check` were clean. The unrelated staged deletion remained staged.
