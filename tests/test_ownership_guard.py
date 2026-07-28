@@ -5,11 +5,14 @@ by file location. Loading it does not run main(): the module guards on
 __name__ == "__main__" and only reads stdin there.
 """
 import builtins
+import hashlib
 import importlib.util
 import json
 import os
 import subprocess
 import sys
+import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -132,7 +135,6 @@ class TestHookIntegration(unittest.TestCase):
                 input=json.dumps(payload), capture_output=True, text=True,
                 env=env, cwd=str(REPO_ROOT))
         self.assertIn("deny", result.stdout)
-        self.assertIn("strategist", result.stdout)
 
     def test_notebookedit_by_wrong_agent_is_denied(self):
         p = run_hook({"agent_type": "pipeline-coach",
@@ -141,7 +143,6 @@ class TestHookIntegration(unittest.TestCase):
                       "tool_input": {
                           "notebook_path": str(PLUGIN_ROOT / "goals.md")}})
         self.assertIn("deny", p.stdout, p.stderr)
-        self.assertIn("strategist", p.stdout)
 
     def test_write_case_bypass_is_denied(self):
         p = run_hook({"agent_type": "pipeline-coach",
@@ -150,7 +151,6 @@ class TestHookIntegration(unittest.TestCase):
                       "tool_input": {
                           "file_path": str(PLUGIN_ROOT / "Goals.md")}})
         self.assertIn("deny", p.stdout)
-        self.assertIn("strategist", p.stdout)
 
     def test_main_thread_is_always_allowed(self):
         p = run_hook({"tool_name": "NotebookEdit",
@@ -179,9 +179,8 @@ class TestHookIntegration(unittest.TestCase):
             }
             p = run_codex_hook(payload, td)
         self.assertIn("deny", p.stdout)
-        self.assertIn("strategist", p.stdout)
 
-    def test_codex_apply_patch_owner_is_allowed(self):
+    def test_codex_apply_patch_owner_is_still_denied_direct_access(self):
         import tempfile
         with tempfile.TemporaryDirectory() as td:
             mapping = Path(td) / "agent-types"
@@ -199,7 +198,7 @@ class TestHookIntegration(unittest.TestCase):
                     "*** End Patch\n")},
             }
             p = run_codex_hook(payload, td)
-        self.assertEqual(p.stdout.strip(), "")
+        self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
 
 
@@ -245,6 +244,61 @@ class TestAgentTypeFor(unittest.TestCase):
                              clear=False):
             self.assertIsNone(self.guard.agent_type_for({"turn_id": "turn-1"}))
 
+    def test_mapping_symlink_is_not_trusted_as_subagent_identity(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            mapping = root / "agent-types"
+            mapping.mkdir()
+            source = root / "forged.json"
+            source.write_text('{"agent_type":"cfo"}\n', encoding="utf-8")
+            (mapping / "turn-1.json").symlink_to(source)
+            with mock.patch.dict(
+                os.environ,
+                {"PLUGIN_DATA": temp_dir},
+                clear=False,
+            ):
+                resolved = self.guard.agent_type_for({"turn_id": "turn-1"})
+
+        self.assertIsNone(resolved)
+
+    def test_unresolved_safe_turn_id_is_denied_instead_of_treated_as_main(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_codex_hook(
+                {
+                    "turn_id": "missing-subagent-turn",
+                    "tool_name": "Write",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "file_path": str(PLUGIN_ROOT / "metrics.md"),
+                    },
+                },
+                temp_dir,
+            )
+
+        self.assertIn("deny", result.stdout, result.stderr)
+
+    def test_present_invalid_identity_markers_are_not_treated_as_main(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for marker in (
+                {"agent_type": ""},
+                {"agent_type": ["cfo"]},
+                {"turn_id": "bad/id"},
+                {"turn_id": ["turn-1"]},
+            ):
+                with self.subTest(marker=marker):
+                    result = run_codex_hook(
+                        {
+                            **marker,
+                            "tool_name": "Write",
+                            "cwd": str(REPO_ROOT),
+                            "tool_input": {
+                                "file_path": str(PLUGIN_ROOT / "metrics.md"),
+                            },
+                        },
+                        temp_dir,
+                    )
+                    self.assertIn("deny", result.stdout, result.stderr)
+
 
 class TestOutboundGuard(unittest.TestCase):
     """House rule 0 at the tool layer — the half of the hook nothing covered.
@@ -274,12 +328,10 @@ class TestOutboundGuard(unittest.TestCase):
                       "cwd": str(REPO_ROOT), "tool_input": {}})
         self.assertIn("deny", p.stdout)
 
-    def test_websearch_is_not_outbound_here(self):
-        # Deliberately narrower than the validator's OUTBOUND_TOOLS: a live
-        # WebSearch is not a send, and denying it mid-run is a false deny.
+    def test_websearch_by_subagent_is_denied(self):
         p = run_hook({"agent_type": "cfo", "tool_name": "WebSearch",
                       "cwd": str(REPO_ROOT), "tool_input": {}})
-        self.assertEqual(p.stdout.strip(), "")
+        self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
 
     def test_bash_on_main_thread_is_allowed(self):
@@ -289,14 +341,14 @@ class TestOutboundGuard(unittest.TestCase):
         self.assertEqual(p.returncode, 0)
 
 
-class TestOwnershipAllowPaths(unittest.TestCase):
-    """The positive cases: the guard must stay out of honest work's way."""
+class TestDirectFileBoundary(unittest.TestCase):
+    """A role never bypasses capabilities with a direct file tool."""
 
-    def test_owner_writing_its_own_file_is_allowed(self):
+    def test_owner_writing_its_own_file_is_denied(self):
         p = run_hook({"agent_type": "strategist", "tool_name": "Write",
                       "cwd": str(REPO_ROOT),
                       "tool_input": {"file_path": str(PLUGIN_ROOT / "goals.md")}})
-        self.assertEqual(p.stdout.strip(), "")
+        self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
 
     def test_unmapped_custom_agent_is_denied_on_an_owned_path(self):
@@ -306,21 +358,19 @@ class TestOwnershipAllowPaths(unittest.TestCase):
                       "cwd": str(REPO_ROOT),
                       "tool_input": {"file_path": str(PLUGIN_ROOT / "goals.md")}})
         self.assertIn("deny", p.stdout)
-        self.assertIn("strategist", p.stdout)
 
-    def test_unmapped_path_in_workspace_is_allowed(self):
-        # A scratch file has no owner to be stolen from.
+    def test_unmapped_path_in_workspace_is_denied(self):
         p = run_hook({"agent_type": "cfo", "tool_name": "Write",
                       "cwd": str(REPO_ROOT),
                       "tool_input": {"file_path": str(PLUGIN_ROOT / "scratch.md")}})
-        self.assertEqual(p.stdout.strip(), "")
+        self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
 
-    def test_path_outside_workspace_is_allowed(self):
+    def test_path_outside_workspace_is_denied(self):
         p = run_hook({"agent_type": "cfo", "tool_name": "Write",
                       "cwd": str(REPO_ROOT),
                       "tool_input": {"file_path": "/tmp/elsewhere.md"}})
-        self.assertEqual(p.stdout.strip(), "")
+        self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
 
 
@@ -336,9 +386,7 @@ class TestFailOpen(unittest.TestCase):
         self.assertEqual(p.stdout.strip(), "")
         self.assertEqual(p.returncode, 0)
 
-    def test_missing_ownership_map_is_allowed(self):
-        # Copy the guard somewhere with no references/ownership.yaml in sight,
-        # so both lookup roots come up empty.
+    def test_missing_ownership_map_does_not_enable_direct_role_writes(self):
         import shutil
         import tempfile
         tmp = Path(tempfile.mkdtemp())
@@ -356,9 +404,8 @@ class TestFailOpen(unittest.TestCase):
                                   "cwd": str(tmp),
                                   "tool_input": {"file_path": str(ws / "goals.md")}}),
                 capture_output=True, text=True, env=env, cwd=str(tmp))
-            self.assertEqual(p.stdout.strip(), "")
+            self.assertIn("deny", p.stdout)
             self.assertEqual(p.returncode, 0)
-            self.assertIn("guard is off", p.stderr)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
@@ -542,7 +589,6 @@ class TestRegistryRoots(unittest.TestCase):
                                input=json.dumps(payload), capture_output=True,
                                text=True, env=env, cwd=str(tmp))
             self.assertIn("deny", r.stdout, r.stderr)
-            self.assertIn("cfo", r.stdout)
 
 
 class TestLocalOverlay(unittest.TestCase):
@@ -594,14 +640,13 @@ class TestLocalOverlay(unittest.TestCase):
             ws = self._workspace(Path(td), self.OVERLAY)
             r = self._write(ws, "cfo", "partners.md")
             self.assertIn("deny", r.stdout, r.stderr)
-            self.assertIn("network-manager", r.stdout)
 
-    def test_overlay_path_is_allowed_to_its_owner(self):
+    def test_overlay_owner_still_uses_the_gateway(self):
         import tempfile
         with tempfile.TemporaryDirectory() as td:
             ws = self._workspace(Path(td), self.OVERLAY)
             r = self._write(ws, "network-manager", "partners.md")
-            self.assertEqual(r.stdout.strip(), "", r.stderr)
+            self.assertIn("deny", r.stdout, r.stderr)
             self.assertEqual(r.returncode, 0)
 
     def test_overlay_cannot_reassign_a_packaged_path(self):
@@ -614,29 +659,24 @@ class TestLocalOverlay(unittest.TestCase):
                 "    - metrics.md\n"))
             stolen = self._write(ws, "network-manager", "metrics.md")
             self.assertIn("deny", stolen.stdout, stolen.stderr)
-            self.assertIn("cfo", stolen.stdout)
-            self.assertIn("already owns", stolen.stderr)
             kept = self._write(ws, "cfo", "metrics.md")
-            self.assertEqual(kept.stdout.strip(), "", kept.stderr)
+            self.assertIn("deny", kept.stdout, kept.stderr)
 
-    def test_unparseable_overlay_is_ignored_never_denied(self):
+    def test_unparseable_overlay_does_not_enable_direct_writes(self):
         import tempfile
         with tempfile.TemporaryDirectory() as td:
             ws = self._workspace(Path(td), ":\nnot yaml: [unclosed\n")
             r = self._write(ws, "cfo", "partners.md")
-            self.assertEqual(r.stdout.strip(), "", r.stderr)
-            self.assertIn("ignoring it", r.stderr)
-            # and the packaged map is untouched by the broken overlay
+            self.assertIn("deny", r.stdout, r.stderr)
             still = self._write(ws, "network-manager", "metrics.md")
             self.assertIn("deny", still.stdout)
-            self.assertIn("cfo", still.stdout)
 
-    def test_overlay_without_a_usable_owns_map_is_ignored(self):
+    def test_overlay_without_a_usable_owns_map_does_not_enable_direct_writes(self):
         import tempfile
         with tempfile.TemporaryDirectory() as td:
             ws = self._workspace(Path(td), "workspace_files:\n  - partners.md\n")
             r = self._write(ws, "cfo", "partners.md")
-            self.assertEqual(r.stdout.strip(), "", r.stderr)
+            self.assertIn("deny", r.stdout, r.stderr)
 
     def test_overlay_is_honoured_without_pyyaml(self):
         import tempfile
@@ -665,12 +705,10 @@ class TestLocalOverlay(unittest.TestCase):
                 "    home: %s\n"
                 "    status: active\n"
                 "default: a\n" % (a, b), encoding="utf-8")
-            # A owns partners.md via its own overlay; B never declared one, so
-            # the same path in B has no owner and nobody is stealing anything.
             denied = self._write(a, "cfo", "partners.md", home=home)
             self.assertIn("deny", denied.stdout, denied.stderr)
-            allowed = self._write(b, "cfo", "partners.md", home=home)
-            self.assertEqual(allowed.stdout.strip(), "", allowed.stderr)
+            also_denied = self._write(b, "cfo", "partners.md", home=home)
+            self.assertIn("deny", also_denied.stdout, also_denied.stderr)
 
     def test_overlay_is_read_once_per_root(self):
         guard = load_guard()
@@ -716,7 +754,6 @@ class TestLocalMapIsNotAgentWritable(unittest.TestCase):
                 "tool_input": {
                     "file_path": str(ws / "_local" / "ownership.yaml")}})
             self.assertIn("deny", r.stdout, r.stderr)
-            self.assertIn("skill-forge", r.stdout)
 
     def test_the_deny_covers_the_whole_directory_not_just_the_map(self):
         import tempfile
@@ -738,6 +775,333 @@ class TestLocalMapIsNotAgentWritable(unittest.TestCase):
                 "tool_input": {
                     "file_path": str(ws / "_local" / "ownership.yaml")}})
             self.assertEqual(r.stdout.strip(), "", r.stderr)
+
+
+class TestGatewayCapabilityBoundary(unittest.TestCase):
+    """The guard permits only a capability-bound local gateway path."""
+
+    def _issue_capability(self, data_root, role="cfo"):
+        sys.path.insert(0, str(PLUGIN_ROOT))
+        try:
+            from mcp.sessions import RoleSessionStore
+        finally:
+            sys.path.pop(0)
+        store = RoleSessionStore(
+            data_root=Path(data_root) / "state-gateway",
+            packaged_root=PLUGIN_ROOT,
+            clock=time.time,
+            ttl_seconds=300.0,
+        )
+        return store.open(
+            workspace_id="workspace-1",
+            role=role,
+            correlation_id="corr-1",
+        )
+
+    def _deny_payload(self, result):
+        self.assertTrue(result.stdout, result.stderr)
+        payload = json.loads(result.stdout)
+        output = payload["hookSpecificOutput"]
+        self.assertEqual(output["hookEventName"], "PreToolUse")
+        self.assertEqual(output["permissionDecision"], "deny")
+        self.assertTrue(output["permissionDecisionReason"])
+
+    def _gateway_call(self, capability, data_root, agent_type="cfo"):
+        return run_codex_hook(
+            {
+                "agent_type": agent_type,
+                "tool_name": "mcp__founder-os-state__read_state",
+                "cwd": str(REPO_ROOT),
+                "tool_input": {
+                    "capability": capability,
+                    "paths": ["metrics.md"],
+                },
+            },
+            data_root,
+        )
+
+    def test_claude_role_can_call_known_gateway_with_its_capability(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir)
+            result = run_codex_hook(
+                {
+                    "agent_type": "cfo",
+                    "tool_name": "mcp__founder-os-state__read_state",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "capability": capability,
+                        "paths": ["metrics.md"],
+                    },
+                },
+                temp_dir,
+            )
+        self.assertEqual(result.stdout, "", result.stderr)
+
+    def test_unknown_gateway_tool_is_denied(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir)
+            result = run_codex_hook(
+                {
+                    "agent_type": "cfo",
+                    "tool_name": "mcp__founder-os-state__delete_state",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {"capability": capability},
+                },
+                temp_dir,
+            )
+        self._deny_payload(result)
+
+    def test_subagent_cannot_open_its_own_role_session(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_codex_hook(
+                {
+                    "agent_type": "cfo",
+                    "tool_name": (
+                        "mcp__founder-os-state__open_role_session"
+                    ),
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {"role": "cfo"},
+                },
+                temp_dir,
+            )
+        self._deny_payload(result)
+
+    def test_role_bound_gateway_call_requires_a_live_capability(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_codex_hook(
+                {
+                    "agent_type": "cfo",
+                    "tool_name": "mcp__founder-os-state__read_state",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {"paths": ["metrics.md"]},
+                },
+                temp_dir,
+            )
+        self._deny_payload(result)
+
+    def test_unencodable_capability_cannot_trigger_the_outer_fail_open(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_codex_hook(
+                {
+                    "agent_type": "cfo",
+                    "tool_name": "mcp__founder-os-state__read_state",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "capability": "\ud800",
+                        "paths": ["metrics.md"],
+                    },
+                },
+                temp_dir,
+            )
+        self._deny_payload(result)
+
+    def test_malformed_tool_name_cannot_trigger_the_outer_fail_open(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_codex_hook(
+                {
+                    "agent_type": "cfo",
+                    "tool_name": ["mcp__founder-os-state__read_state"],
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {},
+                },
+                temp_dir,
+            )
+        self._deny_payload(result)
+
+    def test_clock_failure_invalidates_capability_instead_of_escaping(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir)
+            guard = load_guard()
+            with mock.patch.dict(
+                os.environ,
+                {"PLUGIN_DATA": temp_dir},
+                clear=False,
+            ), mock.patch.object(
+                guard.time,
+                "time",
+                side_effect=OSError("clock unavailable"),
+            ):
+                role = guard._session_role({"capability": capability})
+
+        self.assertIsNone(role)
+
+    def test_every_malformed_persisted_session_shape_is_denied(self):
+        mutations = (
+            ("closed", lambda record: record.update(status="closed")),
+            ("expired", lambda record: record.update(expires_at=0)),
+            (
+                "wrong hash",
+                lambda record: record.update(capability_hash="0" * 64),
+            ),
+            ("extra field", lambda record: record.update(extra=True)),
+            ("blank workspace", lambda record: record.update(workspace_id="")),
+            (
+                "blank correlation",
+                lambda record: record.update(correlation_id=""),
+            ),
+            ("blank workflow", lambda record: record.update(workflow="")),
+            ("unknown role", lambda record: record.update(role="unknown")),
+        )
+        for label, mutate in mutations:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temp_dir:
+                capability = self._issue_capability(temp_dir)
+                digest = hashlib.sha256(capability.encode("utf-8")).hexdigest()
+                record_path = (
+                    Path(temp_dir) / "state-gateway" / (digest + ".json")
+                )
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                mutate(record)
+                record_path.write_text(json.dumps(record), encoding="utf-8")
+
+                result = self._gateway_call(capability, temp_dir)
+
+                self._deny_payload(result)
+
+    def test_unsafe_or_oversized_session_record_is_denied(self):
+        for shape in ("oversized", "symlink", "directory"):
+            with self.subTest(shape=shape), tempfile.TemporaryDirectory() as temp_dir:
+                capability = self._issue_capability(temp_dir)
+                digest = hashlib.sha256(capability.encode("utf-8")).hexdigest()
+                record_path = (
+                    Path(temp_dir) / "state-gateway" / (digest + ".json")
+                )
+                if shape == "oversized":
+                    record_path.write_text(" " * (16 * 1024 + 1), encoding="utf-8")
+                else:
+                    saved = record_path.with_suffix(".saved")
+                    record_path.replace(saved)
+                    if shape == "symlink":
+                        record_path.symlink_to(saved)
+                    else:
+                        record_path.mkdir()
+
+                result = self._gateway_call(capability, temp_dir)
+
+                self._deny_payload(result)
+
+    def test_native_role_must_match_capability_role(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir, role="cfo")
+            result = run_codex_hook(
+                {
+                    "agent_type": "strategist",
+                    "tool_name": "mcp__founder-os-state__read_state",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "capability": capability,
+                        "paths": ["metrics.md"],
+                    },
+                },
+                temp_dir,
+            )
+        self._deny_payload(result)
+
+    def test_generic_fallback_uses_the_capability_role(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir, role="cfo")
+            result = run_codex_hook(
+                {
+                    "agent_type": "default",
+                    "tool_name": "mcp__founder-os-state__read_state",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "capability": capability,
+                        "paths": ["metrics.md"],
+                    },
+                },
+                temp_dir,
+            )
+        self.assertEqual(result.stdout, "", result.stderr)
+
+    def test_real_codex_turn_identity_roundtrip_allows_normalized_server_name(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir, role="cfo")
+            record = subprocess.run(
+                [
+                    sys.executable,
+                    str(PLUGIN_ROOT / "hooks" / "record-agent.py"),
+                ],
+                input=json.dumps(
+                    {
+                        "hook_event_name": "SubagentStart",
+                        "turn_id": "codex-turn-1",
+                        "agent_type": "cfo",
+                    }
+                ),
+                capture_output=True,
+                text=True,
+                cwd=str(REPO_ROOT),
+                env={
+                    **os.environ,
+                    "FOUNDER_OS_HOME": str(PLUGIN_ROOT),
+                    "PLUGIN_ROOT": str(PLUGIN_ROOT),
+                    "PLUGIN_DATA": temp_dir,
+                },
+            )
+            self.assertEqual(record.returncode, 0, record.stderr)
+
+            result = run_codex_hook(
+                {
+                    "turn_id": "codex-turn-1",
+                    "tool_name": (
+                        "mcp__founder_os_state__write_owned_state"
+                    ),
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "capability": capability,
+                        "path": "metrics.md",
+                        "content": "# Metrics\n",
+                        "create_only": True,
+                    },
+                },
+                temp_dir,
+            )
+        self.assertEqual(result.stdout, "", result.stderr)
+
+    def test_roles_are_denied_direct_tools_and_non_gateway_mcp(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for tool_name, tool_input in (
+                ("Bash", {"command": "pwd"}),
+                ("WebFetch", {"url": "https://example.test"}),
+                ("WebSearch", {"query": "founder os"}),
+                (
+                    "Read",
+                    {"file_path": str(PLUGIN_ROOT / "metrics.md")},
+                ),
+                ("Glob", {"pattern": "**/*.md"}),
+                ("Grep", {"pattern": "secret"}),
+                (
+                    "Write",
+                    {
+                        "file_path": str(PLUGIN_ROOT / "metrics.md"),
+                        "content": "x",
+                    },
+                ),
+                (
+                    "Edit",
+                    {
+                        "file_path": str(PLUGIN_ROOT / "metrics.md"),
+                        "old_string": "x",
+                        "new_string": "y",
+                    },
+                ),
+                ("NotebookEdit", {"notebook_path": "x.ipynb"}),
+                ("apply_patch", {"patch": "*** Begin Patch"}),
+                ("mcp__other__anything", {}),
+            ):
+                with self.subTest(tool_name=tool_name):
+                    result = run_codex_hook(
+                        {
+                            "agent_type": "cfo",
+                            "tool_name": tool_name,
+                            "cwd": str(REPO_ROOT),
+                            "tool_input": tool_input,
+                        },
+                        temp_dir,
+                    )
+                    self._deny_payload(result)
 
 
 if __name__ == "__main__":

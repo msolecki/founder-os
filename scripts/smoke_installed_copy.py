@@ -116,58 +116,140 @@ def _empty_allow_output(result, label):
     return None
 
 
+def _issue_installed_capability(installed_plugin, data_root, role):
+    """Create a real role session from the installed copy in isolation."""
+    code = (
+        "import sys,time\n"
+        "from pathlib import Path\n"
+        "from mcp.sessions import RoleSessionStore\n"
+        "store=RoleSessionStore(Path(sys.argv[2]),Path(sys.argv[1]),time.time,300)\n"
+        "print(store.open('installed-workspace',sys.argv[3],'installed-smoke'))\n"
+    )
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(installed_plugin)
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            code,
+            str(installed_plugin),
+            str(data_root / "state-gateway"),
+            role,
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(data_root.parent),
+        env=env,
+        timeout=30,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        raise SmokeFailure(
+            "installed role session could not be created: %s"
+            % (result.stderr.strip() or "no capability")
+        )
+    return result.stdout.strip()
+
+
 def check_ownership_guard(installed_plugin, workspace_root):
-    """Check owner allow, wrong-owner deny, and main-thread allow paths."""
+    """Check gateway allow, direct/elevation/mismatch deny, and main allow."""
     installed_plugin = Path(installed_plugin)
     workspace_root = Path(workspace_root)
     workspace_root.mkdir(parents=True, exist_ok=True)
+    data_root = workspace_root / ".plugin-data"
+    data_root.mkdir()
+    capability = _issue_installed_capability(
+        installed_plugin, data_root, "cfo"
+    )
     target = workspace_root / "metrics.md"
     guard_path = installed_plugin / "hooks" / "ownership-guard.py"
     env = _hook_environment(
-        installed_plugin, FOUNDER_OS_HOME=workspace_root
+        installed_plugin,
+        FOUNDER_OS_HOME=workspace_root,
+        PLUGIN_DATA=data_root,
     )
-    base_payload = {
+    direct_payload = {
         "tool_name": "Write",
         "cwd": str(workspace_root),
         "tool_input": {"file_path": str(target)},
     }
 
-    allowed = _run_hook(
+    gateway_allowed = _run_hook(
         guard_path,
-        {**base_payload, "agent_type": "cfo"},
+        {
+            "agent_type": "cfo",
+            "tool_name": "mcp__founder-os-state__read_state",
+            "cwd": str(workspace_root),
+            "tool_input": {
+                "capability": capability,
+                "paths": ["metrics.md"],
+            },
+        },
         env,
         workspace_root,
-        "ownership/allowed-owner",
+        "gateway/allowed-role",
     )
-    wrong_owner = _run_hook(
+    direct_denied = _run_hook(
         guard_path,
-        {**base_payload, "agent_type": "strategist"},
+        {**direct_payload, "agent_type": "cfo"},
         env,
         workspace_root,
-        "ownership/wrong-owner",
+        "gateway/direct-file-denied",
+    )
+    wrong_role = _run_hook(
+        guard_path,
+        {
+            "agent_type": "strategist",
+            "tool_name": "mcp__founder-os-state__read_state",
+            "cwd": str(workspace_root),
+            "tool_input": {
+                "capability": capability,
+                "paths": ["metrics.md"],
+            },
+        },
+        env,
+        workspace_root,
+        "gateway/wrong-role",
+    )
+    elevation = _run_hook(
+        guard_path,
+        {
+            "agent_type": "cfo",
+            "tool_name": "mcp__founder-os-state__open_role_session",
+            "cwd": str(workspace_root),
+            "tool_input": {"role": "cfo"},
+        },
+        env,
+        workspace_root,
+        "gateway/elevation",
     )
     main_thread = _run_hook(
         guard_path,
-        base_payload,
+        direct_payload,
         env,
         workspace_root,
-        "ownership/main-thread",
+        "gateway/main-thread",
     )
 
-    denied = _json_output(wrong_owner, "ownership/wrong-owner")
-    deny_output = denied.get("hookSpecificOutput", {})
-    if deny_output.get("permissionDecision") != "deny":
-        raise SmokeFailure("wrong-owner write was not denied")
-    if "cfo" not in deny_output.get("permissionDecisionReason", ""):
-        raise SmokeFailure("wrong-owner denial did not name the cfo owner")
+    denied = {}
+    for label, result in (
+        ("direct_file", direct_denied),
+        ("wrong_role", wrong_role),
+        ("elevation", elevation),
+    ):
+        output = _json_output(result, "gateway/" + label)
+        if output.get("hookSpecificOutput", {}).get(
+            "permissionDecision"
+        ) != "deny":
+            raise SmokeFailure("%s was not denied" % label)
+        denied[label] = output
 
     return {
-        "allowed_owner": _empty_allow_output(
-            allowed, "ownership/allowed-owner"
+        "gateway_allowed": _empty_allow_output(
+            gateway_allowed, "gateway/allowed-role"
         ),
-        "wrong_owner": denied,
+        **denied,
         "main_thread": _empty_allow_output(
-            main_thread, "ownership/main-thread"
+            main_thread, "gateway/main-thread"
         ),
     }
 

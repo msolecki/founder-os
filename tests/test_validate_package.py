@@ -131,6 +131,28 @@ class ValidatorTestCase(unittest.TestCase):
         text = raw if raw is not None else json.dumps(data)
         write(self.root / ".claude-plugin" / "plugin.json", text)
 
+    def write_host_adapters(self):
+        write(self.root / ".mcp.json", json.dumps({"mcpServers": {
+            "founder-os-state": {
+                "command": "python3",
+                "args": [
+                    "${CLAUDE_PLUGIN_ROOT}/mcp/founder_os_state.py"
+                ],
+            },
+        }}))
+        write(self.root / ".codex-plugin" / "plugin.json", json.dumps({
+            "name": "founder-os",
+            "mcpServers": {
+                "founder-os-state": {
+                    "command": "python3",
+                    "args": [
+                        "${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"
+                    ],
+                },
+            },
+        }))
+        write(self.root / "mcp" / "founder_os_state.py", "x = 1\n")
+
     def write_agent(self, slug, **kw):
         kw.setdefault("name", slug)
         write(self.root / "agents" / (slug + ".md"), agent_md(**kw))
@@ -168,9 +190,11 @@ class ValidatorTestCase(unittest.TestCase):
     def write_hooks(self):
         write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
             "PreToolUse": [{"matcher":
-                "^(Write|Edit|NotebookEdit|Bash|WebFetch|apply_patch|mcp__.*)$",
+                "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
+                "WebSearch|apply_patch|mcp__.*)$",
                 "hooks": []}]}}))
         write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        write(self.root / "hooks" / "record-agent.py", "x = 1\n")
 
     def check(self, fn):
         return fn(self.root, V.load_agents(self.root))
@@ -185,6 +209,7 @@ class TestFixture(ValidatorTestCase):
         self.assertIn("## What you do", body)
 
     def test_minimal_package_is_clean(self):
+        self.write_host_adapters()
         self.assertEqual(all_errors(self.root), [])
 
     def test_fixture_frontmatter_is_what_we_think_it_is(self):
@@ -627,7 +652,10 @@ class TestCheckHooks(unittest.TestCase):
             "PreToolUse": [{"matcher": "^(Write|Edit)$", "hooks": []}]}}))
         write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
         errs = V.check_hooks(self.root, {})
-        for tool in ("Edit", "NotebookEdit", "Bash", "WebFetch", "apply_patch", "mcp__"):
+        for tool in (
+            "Read", "Edit", "NotebookEdit", "Glob", "Grep", "Bash",
+            "WebFetch", "WebSearch", "apply_patch", "mcp__",
+        ):
             self.assertTrue(any(tool in e for e in errs), (tool, errs))
 
     def test_edit_hidden_inside_notebookedit_is_detected(self):

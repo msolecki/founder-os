@@ -69,7 +69,7 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
                     hook_plugin_root=SOURCE_PLUGIN,
                 )
 
-    def test_installed_ownership_guard_covers_three_authority_paths(self):
+    def test_installed_guard_covers_gateway_authority_paths(self):
         smoke = load_smoke_module()
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
@@ -80,11 +80,21 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
                 installed, temp_root / "workspace"
             )
 
-        self.assertIsNone(outcomes["allowed_owner"])
+        self.assertIsNone(outcomes["gateway_allowed"])
         self.assertIsNone(outcomes["main_thread"])
-        denied = outcomes["wrong_owner"]["hookSpecificOutput"]
-        self.assertEqual(denied["permissionDecision"], "deny")
-        self.assertIn("cfo", denied["permissionDecisionReason"])
+        self.assertEqual(
+            set(outcomes),
+            {
+                "gateway_allowed",
+                "direct_file",
+                "wrong_role",
+                "elevation",
+                "main_thread",
+            },
+        )
+        for key in ("direct_file", "wrong_role", "elevation"):
+            denied = outcomes[key]["hookSpecificOutput"]
+            self.assertEqual(denied["permissionDecision"], "deny")
 
     def test_package_tools_accept_installed_copy(self):
         smoke = load_smoke_module()

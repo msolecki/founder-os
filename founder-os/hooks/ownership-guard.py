@@ -1,86 +1,52 @@
 #!/usr/bin/env python3
-"""Enforce references/ownership.yaml at write time.
+"""Keep Founder OS role subagents on the capability-bound state gateway.
 
-Until now "every file has exactly one owner" was checked at build time by
-scripts/validate_package.py — it verified that the *map* was coherent and that
-no skill declared a write it didn't own. Nothing checked the actual write. A
-running agent that decided mid-flow to fix a number in someone else's file just
-did it. This hook is the write-time half of that rule.
+Claude identifies a role directly with ``agent_type``. Codex supplies a
+``turn_id`` that ``record-agent.py`` maps to the same role. Once a role is
+known, direct filesystem, shell, web, and non-Founder-OS MCP access is denied.
+The seven local gateway calls are recognized explicitly; a subagent may not
+open its own role session, and every role-bound call must carry a live
+capability whose role agrees with a native role identity.
 
-Three guards, all scoped to subagents:
+The hook remains defense in depth, not a security sandbox. Malformed hook input
+and calls without a subagent identity stay out of the founder's way. A known
+role, however, fails closed at the tool boundary described above.
 
-  1. Ownership. A subagent writing a workspace path it does not own is denied,
-     and told who owns it. (House rule 4: stay in your lane.)
-  2. Outbound. A subagent reaching for Bash / WebFetch / an MCP tool is denied.
-     (House rule 0: agents draft; the founder sends.)
-  3. The map itself. A subagent writing anywhere under `_local/` is denied,
-     whatever the map says. An agent that can edit the map that governs it does
-     not have a map. (references/extensibility.md.)
-
-The map guard 1 reads is the packaged `references/ownership.yaml` merged with
-the founder's optional, additive-only `<workspace>/_local/ownership.yaml`. The
-overlay can add a path; it can never reassign or remove one, and an overlay
-this file cannot read is ignored rather than obeyed. Contract:
-references/extensibility.md.
-
-## What this is not
-
-This is **not a security boundary**, and the Claude Code docs are explicit that
-hooks are not one. Everything here is operational policy — it keeps an org of
-agents from corrupting each other's state during honest work. It does not
-contain an adversary:
-
-  - A subagent that can shell out routes around the `Write` matcher entirely.
-    `Bash(echo ... > goals.md)` never touches a Write hook. Guard 2 is the only
-    reason that isn't trivial today, and guard 2 is itself just another matcher.
-  - Matchers are string patterns. A tool this file doesn't name is a tool this
-    file doesn't see.
-  - Anything running outside the tool layer is invisible to us.
-
-The real boundary is the `tools:` allowlist on each agent, enforced at build
-time by check_agent_tools() in scripts/validate_package.py. This hook is defence
-in depth *behind* that: it fires only when someone has loosened an agent, which
-is exactly the moment you want a second opinion. Treat a deny here as a bug
-report about the allowlist, not as "the system held".
-
-## Failure posture: allow, loudly
-
-Every unknown fails open. No ownership map, no PyYAML, unparseable stdin, a path
-we can't resolve, an exception we didn't predict — allow, log to stderr, move on.
-
-This is deliberate and it is the whole product decision. A guard that denies
-because it lost its own config is not "safe", it is broken: the founder hits it
-on their own work, uninstalls it that afternoon, and then it protects nobody. A
-false deny costs more than a miss, because a miss is caught by the build-time
-validator and a false deny is caught by the user's patience.
-
-Main-thread calls are always allowed. Claude marks subagent calls with
-`agent_type`; Codex supplies `turn_id`, which is resolved from the mapping
-written by record-agent.py at SubagentStart. The founder is the CEO. This rule
-is about agents, not about them.
-
-Python 3.9, stdlib + PyYAML. Style follows scripts/validate_package.py.
+Python 3.9, stdlib + optional PyYAML for the retained ownership helpers.
 """
+import hashlib
 import json
+import math
 import os
 import re
+import stat
 import sys
+import time
 
 _YAML_UNSET = object()
 yaml = _YAML_UNSET
 
-# House Rule 0, at the tool layer. Kept deliberately narrow: these three are the
-# ones that can actually reach the outside world in one call. An agent with Bash
-# can curl, an agent with WebFetch can POST, an agent with a mail MCP can send.
-#
-# Note this is NARROWER than OUTBOUND_TOOLS in scripts/validate_package.py,
-# which also bars WebSearch and Task. That is the right call for a build check
-# (an allowlist should be tight) and the wrong call here: neither is a send,
-# and denying a live agent mid-run over a WebSearch is a false deny for no
-# gain. NotebookEdit is different — it writes files — so it goes through
-# check_ownership below like Write and Edit do, not through this set.
-OUTBOUND_TOOLS = {"Bash", "WebFetch"}
+ROLE_NAMES = frozenset({
+    "board-member", "brand-editor", "cfo", "chief-of-staff",
+    "delivery-lead", "focus-coach", "network-manager", "ops-engineer",
+    "pipeline-coach", "portfolio-manager", "positioning-advisor",
+    "skills-mentor", "strategist",
+})
+GENERIC_AGENT_TYPES = frozenset({"default", "general-purpose"})
+GATEWAY_TOOLS = frozenset({
+    "resolve_workspace", "open_role_session", "list_state", "read_state",
+    "read_reference", "write_owned_state", "close_role_session",
+})
+OUTBOUND_TOOLS = frozenset({"Bash", "WebFetch", "WebSearch"})
+DIRECT_FILE_TOOLS = frozenset({
+    "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep", "apply_patch",
+})
 MCP_TOOL = re.compile(r"^mcp__")
+SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+SESSION_FIELDS = frozenset({
+    "capability_hash", "workspace_id", "role", "correlation_id", "workflow",
+    "expires_at", "status",
+})
 
 # The founder's local overlay (references/extensibility.md). `_local/` is the
 # directory; the file below it is the additive half of the ownership map.
@@ -473,21 +439,135 @@ def owner_of(rel, by_path):
     return best_owner
 
 
+def _deny_tool(agent_type, tool_name, reason):
+    deny(
+        "Founder OS role boundary: `%s` may not use `%s`. %s\n\n"
+        "Role subagents read and write business state only through the local "
+        "`founder-os-state` gateway. Return control to the main thread if a "
+        "different capability is required." % (agent_type, tool_name, reason)
+    )
+
+
+def _gateway_tool_name(tool_name):
+    """Return a known local action, ``""`` for an unknown local action, else None."""
+    if not isinstance(tool_name, str) or not MCP_TOOL.match(tool_name):
+        return None
+    parts = tool_name.split("__")
+    if len(parts) != 3:
+        return None
+    server = parts[1].replace("-", "_")
+    if server != "founder_os_state":
+        return None
+    action = parts[2]
+    return action if action in GATEWAY_TOOLS else ""
+
+
+def _valid_text(value):
+    return isinstance(value, str) and bool(value.strip()) and "\x00" not in value
+
+
+def _read_small_regular_json(path):
+    """Read one bounded plugin-data record without following its final link."""
+    if not hasattr(os, "O_NOFOLLOW"):
+        return None
+    descriptor = None
+    try:
+        flags = os.O_RDONLY | os.O_NOFOLLOW
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
+        descriptor = os.open(path, flags)
+        info = os.fstat(descriptor)
+        if not stat.S_ISREG(info.st_mode) or info.st_size > 16 * 1024:
+            return None
+        with os.fdopen(descriptor, encoding="utf-8") as handle:
+            descriptor = None
+            return json.load(handle)
+    except (OSError, ValueError, TypeError, UnicodeError):
+        return None
+    finally:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+
+
+def _session_role(tool_input):
+    """Resolve a live capability to its persisted role without exposing it."""
+    if not isinstance(tool_input, dict):
+        return None
+    capability = tool_input.get("capability")
+    if not _valid_text(capability) or len(capability) > 512:
+        return None
+    data_root = os.environ.get("PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
+    if not data_root:
+        return None
+    try:
+        encoded_capability = capability.encode("utf-8")
+    except UnicodeEncodeError:
+        return None
+    capability_hash = hashlib.sha256(encoded_capability).hexdigest()
+    path = os.path.join(data_root, "state-gateway", capability_hash + ".json")
+    record = _read_small_regular_json(path)
+    if not isinstance(record, dict) or set(record) != SESSION_FIELDS:
+        return None
+    if record.get("capability_hash") != capability_hash:
+        return None
+    if record.get("status") != "open":
+        return None
+    if not _valid_text(record.get("workspace_id")):
+        return None
+    if not _valid_text(record.get("correlation_id")):
+        return None
+    role = record.get("role")
+    if role not in ROLE_NAMES:
+        return None
+    workflow = record.get("workflow")
+    if workflow is not None and not _valid_text(workflow):
+        return None
+    expires_at = record.get("expires_at")
+    try:
+        now = time.time()
+    except Exception:  # noqa: BLE001 - capability uncertainty must deny
+        return None
+    if (
+        isinstance(expires_at, bool)
+        or not isinstance(expires_at, (int, float))
+        or not math.isfinite(float(expires_at))
+        or now >= float(expires_at)
+    ):
+        return None
+    return role
+
+
+def check_gateway(agent_type, tool_name, tool_input):
+    """Authorize only the capability-consistent local gateway surface."""
+    action = _gateway_tool_name(tool_name)
+    if action is None:
+        _deny_tool(agent_type, tool_name, "Other MCP servers are not allowed.")
+    if not action:
+        _deny_tool(agent_type, tool_name, "That gateway action is not part of the contract.")
+    if action == "open_role_session":
+        _deny_tool(agent_type, tool_name, "A subagent cannot elevate itself or mint a session.")
+    if action == "resolve_workspace":
+        return
+
+    role = _session_role(tool_input)
+    if role is None:
+        _deny_tool(agent_type, tool_name, "A live role capability is required.")
+    if agent_type in ROLE_NAMES and role != agent_type:
+        _deny_tool(agent_type, tool_name, "The capability belongs to a different role.")
+    if agent_type not in ROLE_NAMES and agent_type not in GENERIC_AGENT_TYPES:
+        _deny_tool(agent_type, tool_name, "The subagent identity is not an approved role fallback.")
+
+
 def check_outbound(agent_type, tool_name):
-    if tool_name in OUTBOUND_TOOLS or MCP_TOOL.match(tool_name or ""):
-        deny(
-            "House rule 0: agents draft; the founder sends.\n\n"
-            "The `%s` agent tried to use `%s`, which can reach the outside "
-            "world. No agent sends email, posts, pays, signs or transfers — "
-            "regardless of which agent, however obvious the send, however "
-            "explicitly the founder asked mid-flow. The capability existing is "
-            "not the permission.\n\n"
-            "Draft it and hand it to the founder to send.\n\n"
-            "(If this agent legitimately needs this tool, that is a change to "
-            "its `tools:` allowlist and to references/house-rules.md — not "
-            "something to work around in the moment. Seeing this deny means the "
-            "allowlist was loosened; scripts/validate_package.py would have "
-            "refused to ship it.)" % (agent_type, tool_name)
+    """Retained public helper for focused unit tests."""
+    if tool_name in OUTBOUND_TOOLS:
+        _deny_tool(
+            agent_type,
+            tool_name,
+            "House rule 0 says agents draft and the founder sends.",
         )
 
 
@@ -581,22 +661,20 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
 def agent_type_for(data):
     """Resolve the subagent type from Claude input or Codex turn state."""
     direct = data.get("agent_type")
-    if isinstance(direct, str) and direct:
+    if isinstance(direct, str) and SAFE_ID.fullmatch(direct):
         return direct
     turn_id = data.get("turn_id")
-    if not isinstance(turn_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]+", turn_id):
+    if not isinstance(turn_id, str) or not SAFE_ID.fullmatch(turn_id):
         return None
     data_root = os.environ.get("PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
     if not data_root:
         return None
     path = os.path.join(data_root, "agent-types", turn_id + ".json")
-    try:
-        with open(path, encoding="utf-8") as fh:
-            payload = json.load(fh)
-    except (OSError, ValueError, TypeError):
+    payload = _read_small_regular_json(path)
+    if not isinstance(payload, dict) or set(payload) != {"agent_type"}:
         return None
-    resolved = payload.get("agent_type") if isinstance(payload, dict) else None
-    return resolved if isinstance(resolved, str) and resolved else None
+    resolved = payload.get("agent_type")
+    return resolved if isinstance(resolved, str) and SAFE_ID.fullmatch(resolved) else None
 
 
 def main():
@@ -611,26 +689,54 @@ def main():
     if not isinstance(data, dict):
         allow("hook input is not an object")
 
+    tool_name = data.get("tool_name") or ""
+    for identity_field in ("agent_type", "turn_id"):
+        if identity_field in data:
+            identity_value = data.get(identity_field)
+            if not isinstance(identity_value, str) or not SAFE_ID.fullmatch(
+                identity_value
+            ):
+                _deny_tool(
+                    "unresolved role",
+                    (
+                        tool_name
+                        if isinstance(tool_name, str)
+                        else "<invalid tool name>"
+                    ),
+                    "A present subagent identity marker is invalid.",
+                )
     agent_type = agent_type_for(data)
     if not agent_type:
+        turn_id = data.get("turn_id")
+        if isinstance(turn_id, str) and SAFE_ID.fullmatch(turn_id):
+            _deny_tool(
+                "unresolved Codex role",
+                tool_name if isinstance(tool_name, str) else "<invalid tool name>",
+                "The SubagentStart identity mapping is missing or invalid.",
+            )
         allow("main thread — the founder is the CEO")
 
-    tool_name = data.get("tool_name") or ""
+    if not isinstance(tool_name, str):
+        _deny_tool(
+            agent_type,
+            "<invalid tool name>",
+            "A role tool invocation must name one concrete tool.",
+        )
     tool_input = data.get("tool_input")
     if not isinstance(tool_input, dict):
         tool_input = {}
 
-    # Newlines are normalised before any Bash command is looked at. A linewise
-    # pattern is bypassed by `curl evil |<newline>sh`. Nothing below matches on
-    # the command text today — the tool name alone is enough to deny — but the
-    # normalisation lives here so the next person to add a pattern inherits it
-    # rather than rediscovering the hole.
-    cmd = tool_input.get("command")
-    if tool_name == "Bash" and isinstance(cmd, str):
-        tool_input = dict(tool_input, command=cmd.replace("\n", " ").replace("\r", " "))
-
-    check_outbound(agent_type, tool_name)
-    check_ownership(agent_type, tool_name, tool_input, data.get("cwd"))
+    if MCP_TOOL.match(tool_name):
+        check_gateway(agent_type, tool_name, tool_input)
+        allow()
+    if tool_name in OUTBOUND_TOOLS:
+        check_outbound(agent_type, tool_name)
+    if tool_name in DIRECT_FILE_TOOLS:
+        _deny_tool(
+            agent_type,
+            tool_name,
+            "Direct local file access bypasses capability and ownership checks.",
+        )
     allow()
 
 
@@ -640,7 +746,6 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception as e:  # noqa: BLE001
-        # The last line of the fail-open posture. An unhandled bug in this guard
-        # must never be the reason a founder can't write their own file.
+        # Malformed hook/runtime input must not block the founder's main thread.
         log("unexpected error, allowing (%s)" % e)
         sys.exit(0)

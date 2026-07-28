@@ -80,6 +80,66 @@ def check_plugin(root, agents):
     return errs
 
 
+def check_host_adapters(root, agents):
+    """Validate Claude and Codex point at the same packaged stdio gateway."""
+    errs = []
+    claude_path = root / ".mcp.json"
+    codex_path = root / ".codex-plugin" / "plugin.json"
+    claude_expected = {
+        "mcpServers": {
+            "founder-os-state": {
+                "command": "python3",
+                "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/founder_os_state.py"],
+            },
+        },
+    }
+    codex_expected = {
+        "founder-os-state": {
+            "command": "python3",
+            "args": ["${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"],
+        },
+    }
+
+    if not claude_path.is_file():
+        errs.append(".mcp.json: missing Claude founder-os-state adapter")
+    else:
+        try:
+            claude = json.loads(claude_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            errs.append(".mcp.json: invalid JSON (%s)" % exc)
+        else:
+            if claude != claude_expected:
+                errs.append(
+                    ".mcp.json: founder-os-state must use python3 and "
+                    "${CLAUDE_PLUGIN_ROOT}/mcp/founder_os_state.py"
+                )
+
+    if not codex_path.is_file():
+        errs.append(".codex-plugin/plugin.json: missing Codex adapter manifest")
+    else:
+        try:
+            codex = json.loads(codex_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            errs.append(".codex-plugin/plugin.json: invalid JSON (%s)" % exc)
+        else:
+            if codex.get("mcpServers") != codex_expected:
+                errs.append(
+                    ".codex-plugin/plugin.json: mcpServers must inline "
+                    "founder-os-state via ${CODEX_PLUGIN_ROOT}/mcp/"
+                    "founder_os_state.py"
+                )
+
+    entry = root / "mcp" / "founder_os_state.py"
+    if not entry.is_file():
+        errs.append("mcp/founder_os_state.py: missing shared gateway entry")
+    else:
+        try:
+            compile(entry.read_text(encoding="utf-8"), str(entry), "exec")
+        except (OSError, SyntaxError) as exc:
+            errs.append("mcp/founder_os_state.py: does not compile (%s)" % exc)
+    return errs
+
+
 def check_codex_skill_interfaces(root, agents):
     """Prove every shared workflow has a Codex discovery adapter."""
     errs = []
@@ -390,7 +450,7 @@ def check_beliefs(root, agents):
 
 
 def check_hooks(root, agents):
-    """The write-time layer is one JSON file and one script; prove both load.
+    """Validate matcher coverage and compile both identity-boundary hooks.
 
     A typo in the matcher or a syntax error in the guard ships silently today:
     every other check validates prose and map, and the one layer that acts at
@@ -424,7 +484,10 @@ def check_hooks(root, agents):
                 patterns.remove(pat)
         return False
 
-    for tool in ("Write", "Edit", "NotebookEdit", "Bash", "WebFetch", "apply_patch", "mcp__x"):
+    for tool in (
+        "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep",
+        "Bash", "WebFetch", "WebSearch", "apply_patch", "mcp__x",
+    ):
         if not covered(tool):
             if tool == "mcp__x":
                 errs.append("hooks/hooks.json: PreToolUse matcher does not "
@@ -440,6 +503,14 @@ def check_hooks(root, agents):
             compile(guard.read_text(encoding="utf-8"), str(guard), "exec")
         except SyntaxError as e:
             errs.append("hooks/ownership-guard.py: does not compile (%s)" % e)
+    recorder = root / "hooks" / "record-agent.py"
+    if not recorder.exists():
+        errs.append("hooks/record-agent.py: missing")
+    else:
+        try:
+            compile(recorder.read_text(encoding="utf-8"), str(recorder), "exec")
+        except SyntaxError as e:
+            errs.append("hooks/record-agent.py: does not compile (%s)" % e)
     return errs
 
 
@@ -506,7 +577,7 @@ def check_readme_counts(root, agents):
     return errs
 
 
-CHECKS = [check_plugin, check_codex_skill_interfaces, check_agents,
+CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check_agents,
           check_agent_tools, check_agent_graph,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,

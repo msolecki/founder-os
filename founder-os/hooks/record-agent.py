@@ -10,6 +10,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -33,9 +34,31 @@ def main():
     target_dir = Path(data_root) / "agent-types"
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / (turn_id + ".json")
-    tmp = target.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"agent_type": agent_type}) + "\n", encoding="utf-8")
-    os.replace(tmp, target)
+    temporary_name = None
+    try:
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix="." + turn_id + ".",
+            suffix=".tmp",
+            dir=str(target_dir),
+        )
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(
+                {"agent_type": agent_type},
+                handle,
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, target)
+        temporary_name = None
+    finally:
+        if temporary_name is not None:
+            try:
+                os.unlink(temporary_name)
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":

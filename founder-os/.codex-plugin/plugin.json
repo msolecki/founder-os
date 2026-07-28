@@ -17,6 +17,14 @@
     "focus"
   ],
   "skills": "./skills/",
+  "mcpServers": {
+    "founder-os-state": {
+      "command": "python3",
+      "args": [
+        "${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"
+      ]
+    }
+  },
   "interface": {
     "displayName": "Founder OS",
     "shortDescription": "Run a company of one with an executive team.",
