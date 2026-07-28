@@ -49,17 +49,15 @@ def load_agents(root):
 
 def _tool_names(tools):
     """Split a `tools:` value into bare names. `Agent(a, b)` -> `Agent`."""
-    if not tools:
-        return []
-    if isinstance(tools, list):
+    if isinstance(tools, str):
+        raw = re.split(r",\s*(?![^()]*\))", tools)
+    elif isinstance(tools, list) and all(
+            isinstance(value, str) for value in tools):
         raw = tools
     else:
-        raw = re.split(r",\s*(?![^()]*\))", str(tools))
+        raise ValueError("tools must be a string or a list of strings")
     names = []
     for value in raw:
-        if not isinstance(value, str):
-            names.append("<invalid-tool-type:%s>" % type(value).__name__)
-            continue
         token = value.strip()
         if not token:
             continue
@@ -376,16 +374,69 @@ def check_agent_headings(root, agents):
     return errs
 
 
-def _ownership_by_path(root):
+def _ownership_string_list(value, label):
+    if (not isinstance(value, list)
+            or any(not isinstance(item, str) for item in value)):
+        raise ValueError(
+            "ownership.yaml: %s must be a list of strings" % label
+        )
+    return list(value)
+
+
+def load_ownership_schema(root):
+    """Load and type-check the one ownership/section schema."""
     p = root / "references" / "ownership.yaml"
     if not p.exists():
-        return {}
-    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        return None
+    data = yaml.safe_load(p.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("ownership.yaml: root must be a mapping")
+
+    owns = data.get("owns", {})
+    if not isinstance(owns, dict):
+        raise ValueError("ownership.yaml: owns must be a mapping")
+    normalized_owns = {}
+    for agent, paths in owns.items():
+        if not isinstance(agent, str):
+            raise ValueError("ownership.yaml: owns keys must be strings")
+        normalized_owns[agent] = _ownership_string_list(
+            paths, "owns.%s" % agent
+        )
+
+    sections = data.get("sections", {})
+    if not isinstance(sections, dict):
+        raise ValueError("ownership.yaml: sections must be a mapping")
+    normalized_sections = {}
+    for path, headings in sections.items():
+        if not isinstance(path, str):
+            raise ValueError("ownership.yaml: sections keys must be strings")
+        normalized_sections[path] = _ownership_string_list(
+            headings, "sections.%s" % path
+        )
+
+    return {
+        "workspace_files": _ownership_string_list(
+            data.get("workspace_files", []), "workspace_files"
+        ),
+        "portfolio_files": _ownership_string_list(
+            data.get("portfolio_files", []), "portfolio_files"
+        ),
+        "owns": normalized_owns,
+        "sections": normalized_sections,
+    }
+
+
+def _ownership_by_path_from_schema(data):
     by_path = {}
-    for agent, files in (data.get("owns") or {}).items():
-        for f in files or []:
+    for agent, files in data["owns"].items():
+        for f in files:
             by_path[f] = agent
     return by_path
+
+
+def _ownership_by_path(root):
+    data = load_ownership_schema(root)
+    return _ownership_by_path_from_schema(data) if data is not None else {}
 
 
 def check_ownership(root, agents):
@@ -393,21 +444,21 @@ def check_ownership(root, agents):
     p = root / "references" / "ownership.yaml"
     if not p.exists():
         return ["references/ownership.yaml: missing"]
-    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    data = load_ownership_schema(root)
     seen = {}
-    for agent, files in (data.get("owns") or {}).items():
+    for agent, files in data["owns"].items():
         if agent not in agents:
             errs.append("ownership.yaml: '%s' is not a real agent" % agent)
-        for f in files or []:
+        for f in files:
             if f in seen:
                 errs.append("ownership.yaml: '%s' is owned by both '%s' and '%s'"
                             % (f, seen[f], agent))
             else:
                 seen[f] = agent
-    for f in data.get("workspace_files") or []:
+    for f in data["workspace_files"]:
         if f not in seen:
             errs.append("ownership.yaml: workspace file '%s' has no owner" % f)
-    for f in data.get("portfolio_files") or []:
+    for f in data["portfolio_files"]:
         if f not in seen:
             errs.append("ownership.yaml: portfolio file '%s' has no owner" % f)
     return errs
@@ -427,14 +478,14 @@ def check_workspace_files_complete(root, agents):
     p = root / "references" / "ownership.yaml"
     if not p.exists():
         return errs
-    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-    declared = set(data.get("workspace_files") or [])
+    data = load_ownership_schema(root)
+    declared = set(data["workspace_files"])
     # portfolio_files: is the second scaffold promise — the portfolio workspace,
     # scaffolded by founder-os-init when the registry gains a second business.
     # A path in either list has a scaffolder; a path in neither has none.
-    declared |= set(data.get("portfolio_files") or [])
-    for agent, files in (data.get("owns") or {}).items():
-        for f in files or []:
+    declared |= set(data["portfolio_files"])
+    for agent, files in data["owns"].items():
+        for f in files:
             if f not in declared:
                 errs.append("ownership.yaml: '%s' is owned by '%s' but is not in "
                             "workspace_files: or portfolio_files: — "
@@ -478,9 +529,9 @@ def check_sections(root, agents):
     p = root / "references" / "ownership.yaml"
     if not p.exists():
         return errs
-    data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-    sections = data.get("sections") or {}
-    own_path = _ownership_by_path(root)
+    data = load_ownership_schema(root)
+    sections = data["sections"]
+    own_path = _ownership_by_path_from_schema(data)
     for path in sections:
         if path not in own_path:
             errs.append("ownership.yaml: sections declares '%s', which no agent owns" % path)

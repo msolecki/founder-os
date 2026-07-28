@@ -17,6 +17,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 from _package import SYSTEM_SKILLS, STANDALONE_SKILLS, parse_frontmatter
 
 HEADER = """\
@@ -126,7 +128,11 @@ def main():
         print("FAIL: plugin root '%s' has no skills directory" % root)
         return 1
     out = root / "COMMANDS.md"
-    text = render(root)
+    try:
+        text = render(root)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        print("FAIL: %s" % exc)
+        return 1
     if check:
         current = out.read_text(encoding="utf-8") if out.exists() else ""
         if current != text:

@@ -16,9 +16,11 @@ Two rules this file follows, both learned the hard way:
 """
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import yaml
@@ -214,6 +216,20 @@ class ValidatorTestCase(unittest.TestCase):
 
 
 class TestFixture(ValidatorTestCase):
+    def test_frontmatter_accepts_only_mapping_or_null_roots(self):
+        path = self.root / "agents" / "shape.md"
+        for yaml_root, expected in (("{}", {}), ("null", {})):
+            with self.subTest(valid=yaml_root):
+                write(path, "---\n%s\n---\nbody\n" % yaml_root)
+                frontmatter, body = V.parse_frontmatter(path)
+                self.assertEqual(frontmatter, expected)
+                self.assertEqual(body, "body\n")
+        for yaml_root in ("[]", "false", "1", "not-a-mapping"):
+            with self.subTest(invalid=yaml_root):
+                write(path, "---\n%s\n---\nbody\n" % yaml_root)
+                with self.assertRaisesRegex(ValueError, "mapping or null"):
+                    V.parse_frontmatter(path)
+
     def test_frontmatter_accepts_crlf(self):
         path = self.root / "agents" / "crlf.md"
         write(path, agent_md("crlf").replace("\n", "\r\n"))
@@ -388,6 +404,25 @@ class TestAgentTools(ValidatorTestCase):
     can curl; an agent holding WebFetch can POST. Prose asking it not to is not
     the same object as the capability not existing.
     """
+
+    def test_tool_names_accept_only_string_or_list_of_strings(self):
+        self.assertEqual(V._tool_names("Read, Write"), ["Read", "Write"])
+        self.assertEqual(V._tool_names(["Read", "Write"]), ["Read", "Write"])
+        for value in (None, False, 7, {}, ["Read", 7]):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(
+                    ValueError, "tools must be a string or a list of strings"
+                ):
+                    V._tool_names(value)
+
+    def test_false_empty_and_mixed_tools_are_controlled_findings(self):
+        for tools in (False, [], ["Read", 7]):
+            with self.subTest(tools=tools):
+                self.write_agent("cfo", skills=list(UNIVERSALS), tools=tools)
+                _, errors = V.run_checks(self.root)
+                self.assertTrue(
+                    any("tools" in error for error in errors), errors
+                )
 
     def test_bash_is_caught(self):
         self.write_agent("cfo", skills=list(UNIVERSALS),
@@ -566,6 +601,67 @@ class TestAgentHeadings(ValidatorTestCase):
 
 
 class TestOwnership(ValidatorTestCase):
+    def test_ownership_loader_rejects_every_invalid_container_shape(self):
+        cases = {
+            "root": "- not\n- a mapping\n",
+            "scalar root": "ownership\n",
+            "scalar owns": "owns: chief-of-staff\n",
+            "scalar workspace paths": "workspace_files: goals.md\nowns: {}\n",
+            "mixed portfolio paths": (
+                "portfolio_files: [portfolio.md, 7]\nowns: {}\n"
+            ),
+            "scalar owned paths": (
+                "owns:\n  chief-of-staff: goals.md\n"
+            ),
+            "mixed owned paths": (
+                "owns:\n  chief-of-staff: [goals.md, 7]\n"
+            ),
+            "scalar sections": "owns: {}\nsections: goals.md\n",
+            "scalar section headings": (
+                "owns: {}\nsections:\n  goals.md: '## Bets'\n"
+            ),
+            "mixed section headings": (
+                "owns: {}\nsections:\n  goals.md: ['## Bets', 7]\n"
+            ),
+        }
+        ownership_path = self.root / "references" / "ownership.yaml"
+        for label, raw in cases.items():
+            with self.subTest(shape=label):
+                write(ownership_path, raw)
+                with self.assertRaisesRegex(ValueError, "ownership.yaml"):
+                    V.load_ownership_schema(self.root)
+
+    def test_all_ownership_checks_use_the_shared_loader(self):
+        original = V.load_ownership_schema
+        checks = (
+            V.check_ownership,
+            V.check_workspace_files_complete,
+            V.check_skill_writes,
+            V.check_sections,
+        )
+        for check in checks:
+            with self.subTest(check=check.__name__):
+                with mock.patch.object(
+                    V, "load_ownership_schema", wraps=original
+                ) as loader:
+                    check(self.root, V.load_agents(self.root))
+                self.assertGreaterEqual(loader.call_count, 1)
+
+    def test_invalid_ownership_shape_is_a_fail_line_without_traceback(self):
+        write(
+            self.root / "references" / "ownership.yaml",
+            "owns:\n  chief-of-staff: goals.md\n",
+        )
+        result = subprocess.run(
+            [sys.executable, str(Path(V.__file__)), str(self.root)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("FAIL: ownership.yaml", result.stdout)
+        self.assertNotIn("Traceback", result.stderr)
+
     def test_file_with_two_owners_is_caught(self):
         own = base_ownership()
         own["owns"]["cfo"] = ["goals.md"]

@@ -19,4 +19,12 @@ def parse_frontmatter(path):
     m = re.match(r"^---\n(.*?)\n---\n?(.*)$", text, re.S)
     if not m:
         raise ValueError("%s: missing YAML frontmatter" % path)
-    return (yaml.safe_load(m.group(1)) or {}), m.group(2)
+    data = yaml.safe_load(m.group(1))
+    if data is None:
+        data = {}
+    elif not isinstance(data, dict):
+        raise ValueError(
+            "%s: YAML frontmatter must be a mapping or null (got %s)"
+            % (path, type(data).__name__)
+        )
+    return data, m.group(2)

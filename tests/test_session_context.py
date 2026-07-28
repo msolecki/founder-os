@@ -1,5 +1,7 @@
 """Installed-copy smoke-test contracts."""
 import importlib.util
+import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -10,6 +12,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SMOKE_SCRIPT = REPO_ROOT / "scripts" / "smoke_installed_copy.py"
 SOURCE_PLUGIN = REPO_ROOT / "founder-os"
+SESSION_HOOK = SOURCE_PLUGIN / "hooks" / "session-context.py"
 
 
 def load_smoke_module():
@@ -131,6 +134,49 @@ class TestInstalledCopySmokeWiring(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("python3 scripts/smoke_installed_copy.py", guide)
+
+
+class TestSessionContextFailureVisibility(unittest.TestCase):
+    def _run_broken_install(self, setup):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            plugin_root = Path(temp_dir) / "installed" / "founder-os"
+            plugin_root.mkdir(parents=True)
+            setup(plugin_root / "CLAUDE.md")
+            env = os.environ.copy()
+            env["PLUGIN_ROOT"] = str(plugin_root)
+            result = subprocess.run(
+                [sys.executable, str(SESSION_HOOK)],
+                capture_output=True,
+                text=True,
+                cwd=temp_dir,
+                env=env,
+                check=False,
+            )
+            resolved_root = str(plugin_root.resolve())
+        return result, resolved_root
+
+    def test_missing_unreadable_and_invalid_guidance_are_model_visible(self):
+        cases = {
+            "missing": lambda path: None,
+            "unreadable": lambda path: path.mkdir(),
+            "invalid UTF-8": lambda path: path.write_bytes(b"\xff\xfe"),
+        }
+        for expected_reason, setup in cases.items():
+            with self.subTest(reason=expected_reason):
+                result, resolved_root = self._run_broken_install(setup)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                output = json.loads(result.stdout)
+                hook = output["hookSpecificOutput"]
+                self.assertEqual(hook["hookEventName"], "SessionStart")
+                warning = hook["additionalContext"]
+                self.assertEqual(result.stderr, warning + "\n")
+                self.assertIn(resolved_root, warning)
+                self.assertIn(expected_reason, warning)
+                self.assertRegex(
+                    warning,
+                    r"(?i)do not give Founder OS advice until .*restored",
+                )
 
 
 if __name__ == "__main__":
