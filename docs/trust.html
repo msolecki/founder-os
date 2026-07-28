@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Founder OS data boundaries, permissions, host behavior, and operational guardrails.">
+  <meta name="theme-color" content="#f2eee4">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self';">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="canonical" href="https://msolecki.github.io/founder-os/trust.html">
+  <title>Trust Center — Founder OS</title>
+  <style>
+    :root {
+      --paper: #f2eee4;
+      --paper-strong: #fffaf0;
+      --ink: #122127;
+      --ink-soft: #526064;
+      --line: rgba(18, 33, 39, 0.2);
+      --orange: #f15a35;
+      --lime: #d7f36b;
+      --night: #102025;
+      --white: #fffdf7;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 92% 2%, rgba(215, 243, 107, 0.42), transparent 24rem),
+        var(--paper);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+    a { color: inherit; text-underline-offset: 0.2em; }
+    a:focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
+    .skip-link {
+      position: fixed;
+      top: 0.75rem;
+      left: 0.75rem;
+      z-index: 10;
+      padding: 0.7rem 1rem;
+      color: var(--white);
+      background: var(--night);
+      border-radius: 0.5rem;
+      transform: translateY(-160%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+    .container { width: min(calc(100% - 2rem), 70rem); margin-inline: auto; }
+    header { padding: 1.2rem 0; border-bottom: 1px solid var(--line); }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .brand { font-weight: 850; text-decoration: none; letter-spacing: -0.03em; }
+    .back { font-size: 0.92rem; font-weight: 700; }
+    .hero { padding: clamp(4.5rem, 10vw, 8rem) 0 3.5rem; }
+    .eyebrow { margin: 0 0 0.7rem; color: #9b2f1b; font-size: 0.78rem; font-weight: 850; letter-spacing: 0.15em; text-transform: uppercase; }
+    h1, h2 { line-height: 1.08; letter-spacing: -0.045em; }
+    h1 { max-width: 13ch; margin: 0; font-size: clamp(3rem, 9vw, 6.7rem); }
+    .lede { max-width: 45rem; margin: 1.5rem 0 0; color: var(--ink-soft); font-size: clamp(1.1rem, 2.2vw, 1.35rem); }
+    nav { margin: 0 0 3rem; padding: 1rem; background: var(--paper-strong); border: 1px solid var(--line); border-radius: 1rem; }
+    nav ul { display: flex; flex-wrap: wrap; gap: 0.6rem 1.3rem; margin: 0; padding: 0; list-style: none; }
+    nav a { font-weight: 750; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding-bottom: 4rem; }
+    article { padding: clamp(1.4rem, 4vw, 2.4rem); background: rgba(255, 250, 240, 0.84); border: 1px solid var(--line); border-radius: 1.2rem; }
+    article.wide { grid-column: 1 / -1; }
+    h2 { margin: 0 0 1rem; font-size: clamp(1.7rem, 4vw, 2.5rem); }
+    p { margin: 0.8rem 0 0; }
+    .boundary { border-top: 0.45rem solid var(--orange); }
+    .promise { color: var(--white); background: var(--night); border-color: var(--night); }
+    .promise strong { color: var(--lime); }
+    footer { padding: 2rem 0 3rem; border-top: 1px solid var(--line); }
+    .footer-inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+    @media (max-width: 42rem) {
+      .grid { grid-template-columns: 1fr; }
+      article.wide { grid-column: auto; }
+      .header-inner { align-items: flex-start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to trust boundaries</a>
+  <header>
+    <div class="container header-inner">
+      <a class="brand" href="index.html">Founder OS</a>
+      <a class="back" href="index.html#how-it-works">How it works →</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero container" aria-labelledby="trust-title">
+      <p class="eyebrow">Trust Center</p>
+      <h1 id="trust-title">Local state. Human authority.</h1>
+      <p class="lede">Founder OS is one product on Claude Code and Codex. This page names what stays local, what reaches the model host, and where operational guardrails end.</p>
+    </section>
+
+    <nav class="container" aria-label="Trust Center sections">
+      <ul>
+        <li><a href="#one-product">One product</a></li>
+        <li><a href="#data-boundary">Data boundary</a></li>
+        <li><a href="#authority">Authority</a></li>
+        <li><a href="#hooks">Hooks</a></li>
+        <li><a href="#installed-copy">Installed copies</a></li>
+      </ul>
+    </nav>
+
+    <section class="container grid" aria-label="Founder OS trust commitments">
+      <article id="one-product">
+        <p class="eyebrow">Host parity</p>
+        <h2>One product, two host adapters.</h2>
+        <p>The same packaged workflow files are the business logic on Claude Code and Codex. Discovery changes by host; workflow, ownership, persistence, and guardrail contracts do not.</p>
+      </article>
+
+      <article id="data-boundary" class="boundary">
+        <p class="eyebrow">Data boundary</p>
+        <h2>The durable state is local Markdown.</h2>
+        <p>Role reads and writes pass through a local state gateway. Founder OS has no cloud service, network sync, or telemetry, and it does not automatically connect to calendars, CRMs, inboxes, banks, or accounting systems.</p>
+        <p>Prompts, attached context, and tool results sent through Claude Code or Codex remain governed by that model host's account and data settings. Local state does not mean model context never leaves the machine.</p>
+      </article>
+
+      <article id="authority" class="promise">
+        <p class="eyebrow">Human authority</p>
+        <h2>It <strong>never sends</strong> and <strong>never pays</strong>.</h2>
+        <p>Founder OS may draft, calculate, compare, and recommend. It never sends, publishes, signs, pays, transfers, buys, subscribes, cancels, or files anything. The founder performs every outbound or financial action.</p>
+      </article>
+
+      <article id="ownership">
+        <p class="eyebrow">Write boundary</p>
+        <h2>Every file has one owner.</h2>
+        <p>Roles may read shared business state, but each role writes only the files and sections assigned to it. Capability-bound sessions and hash-checked atomic replacement enforce that contract for packaged role writes.</p>
+      </article>
+
+      <article id="hooks" class="wide boundary">
+        <p class="eyebrow">Enforcement boundary</p>
+        <h2>Hooks are guardrails, not a security sandbox.</h2>
+        <p>Bundled hooks require review and trust where the host asks for it. If they are disabled or untrusted, session guidance and runtime guard coverage are absent. Main-thread founder activity remains outside the role boundary by design.</p>
+      </article>
+
+      <article id="installed-copy" class="wide">
+        <p class="eyebrow">Lifecycle</p>
+        <h2>The host runs an installed copy.</h2>
+        <p>Codex uses cached installed copies, and both hosts load package guidance when a conversation starts. After updating or reinstalling, review hook trust if prompted and start a new conversation. Uninstalling the plugin does not delete the founder's Markdown workspace or local overlay.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>Founder OS · Trust Center</span>
+      <span><a href="trust.md">Detailed boundary notes</a> · <a href="enforcement.md">Enforcement</a> · <a href="getting-started.md">Getting started</a> · <a href="https://github.com/msolecki/founder-os/issues">Report an issue</a></span>
+    </div>
+  </footer>
+</body>
+</html>

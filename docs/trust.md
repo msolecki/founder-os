@@ -4,6 +4,8 @@ Founder OS is one workflow system on Claude Code and Codex. The host adapter
 changes discovery; it does not change the workflow, workspace write, output, or
 guardrail contract.
 
+The deployable version of this page is the [public Trust Center](trust.html).
+
 ## One product on Claude Code and Codex
 
 The same `skills/<name>/SKILL.md` is the business logic on both hosts. Claude
@@ -19,11 +21,18 @@ attached context, and tool results sent through Claude Code or Codex are still
 governed by that model host's account and data settings. Local workspace does
 not mean that model context never leaves the machine.
 
+Packaged role reads and writes pass through a local state gateway. Every
+workspace file has one owner; roles can read shared state but write only their
+owned paths and sections.
+
 ## What Founder OS can and cannot do
 
 Workflows draft but never send, publish, pay, sign, cancel, transfer, or buy.
 No packaged role has shell or network-capable tools. Tax, legal, medical, and
 investment questions are escalated to a qualified professional.
+
+In short: Founder OS never sends and never pays. The founder performs every
+outbound or financial action.
 
 ## Hooks, ownership, and the fail-open boundary
 

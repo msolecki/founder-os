@@ -65,6 +65,43 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_static_trust_center_matches_the_canonical_claims(self):
+        trust_path = REPO_ROOT / "docs" / "trust.html"
+        self.assertTrue(trust_path.is_file())
+        trust_html = trust_path.read_text(encoding="utf-8")
+        trust_md = (REPO_ROOT / "docs" / "trust.md").read_text(
+            encoding="utf-8"
+        )
+        claims = (
+            "one product",
+            "local state gateway",
+            "no cloud service",
+            "telemetry",
+            "one owner",
+            "never sends",
+            "never pays",
+            "model host",
+            "cached installed copies",
+            "not a security sandbox",
+        )
+        for claim in claims:
+            with self.subTest(claim=claim):
+                self.assertRegex(trust_md, rf"(?i){re.escape(claim)}")
+                self.assertRegex(trust_html, rf"(?i){re.escape(claim)}")
+
+        for marker in (
+            'class="skip-link" href="#main"',
+            '<main id="main">',
+            'aria-label="Trust Center sections"',
+            '<meta name="viewport"',
+            'http-equiv="Content-Security-Policy"',
+            'name="referrer"',
+        ):
+            self.assertIn(marker, trust_html)
+        self.assertNotIn("<script", trust_html)
+        self.assertIn('href="index.html"', trust_html)
+        self.assertIn('href="trust.html"', HTML)
+
     def test_launch_page_declares_favicon_and_apple_touch_icon(self):
         self.assertIn('rel="icon" type="image/svg+xml"', HTML)
         self.assertIn('rel="apple-touch-icon"', HTML)
