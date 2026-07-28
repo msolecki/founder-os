@@ -4422,6 +4422,7 @@
 
   <script src="workflow-library.js"></script>
   <script src="demo-tabs.js"></script>
+  <script src="workspace-demo.js"></script>
   <script>
     window.addEventListener('error', () => {
       document.querySelectorAll('.reveal').forEach((item) => {
@@ -4447,78 +4448,9 @@
         });
       });
 
-      const workspaceTriggers = [...document.querySelectorAll('[data-workspace-open]')];
-      const workspaceFileLinks = [...document.querySelectorAll('[data-workspace-file]')];
-      const workspacePanels = [...document.querySelectorAll('[data-workspace-panel]')];
-      const workspaceCurrentPath = document.querySelector('#workspace-current-path');
-
-      function openWorkspaceFile(name) {
-        const activePanel = workspacePanels.find((panel) => panel.dataset.workspacePanel === name);
-        if (!activePanel) return;
-
-        workspacePanels.forEach((panel) => {
-          const isActive = panel === activePanel;
-          panel.classList.toggle('is-active', isActive);
-          panel.setAttribute('aria-hidden', String(!isActive));
-        });
-
-        workspaceFileLinks.forEach((link) => {
-          if (link.dataset.workspaceFile === name) link.setAttribute('aria-current', 'true');
-          else link.removeAttribute('aria-current');
-        });
-
-        if (workspaceCurrentPath) workspaceCurrentPath.textContent = activePanel.dataset.path || '';
-      }
-
-      workspaceTriggers.forEach((trigger) => {
-        trigger.addEventListener('click', () => openWorkspaceFile(trigger.dataset.workspaceOpen));
-      });
-
-      function syncWorkspaceFromHash() {
-        const panel = workspacePanels.find((item) => `#${item.id}` === window.location.hash);
-        if (panel) openWorkspaceFile(panel.dataset.workspacePanel);
-        else if (!window.location.hash || window.location.hash === '#sample-workspace') openWorkspaceFile('daily');
-      }
-
-      window.addEventListener('hashchange', syncWorkspaceFromHash);
-      const initialWorkspacePanel = workspacePanels.find((panel) => `#${panel.id}` === window.location.hash);
-      openWorkspaceFile(initialWorkspacePanel?.dataset.workspacePanel || 'daily');
-
       window.FounderOSWorkflowLibrary?.initWorkflowLibrary?.(document);
       window.FounderOSDemoTabs?.initDemoTabs?.(document);
-
-      const copyStatus = document.querySelector('#copy-status');
-
-      async function copyText(text) {
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(text);
-          return;
-        }
-
-        const input = document.createElement('textarea');
-        input.value = text;
-        input.setAttribute('readonly', '');
-        input.style.position = 'fixed';
-        input.style.opacity = '0';
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        input.remove();
-      }
-
-      document.querySelectorAll('[data-copy]').forEach((button) => {
-        button.addEventListener('click', async () => {
-          try {
-            await copyText(button.dataset.copy);
-            const original = button.textContent;
-            button.textContent = '✓';
-            if (copyStatus) copyStatus.textContent = 'Command copied to clipboard.';
-            window.setTimeout(() => { button.textContent = original; }, 1400);
-          } catch {
-            if (copyStatus) copyStatus.textContent = 'Could not copy the command.';
-          }
-        });
-      });
+      window.FounderOSWorkspaceDemo?.initWorkspaceDemo?.(document, window, navigator);
 
       const reveals = document.querySelectorAll('.reveal');
       if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
