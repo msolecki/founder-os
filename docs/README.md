@@ -1,10 +1,10 @@
 # Founder OS — Documentation
 
-Founder OS is a [Claude Code](https://code.claude.com/docs) plugin (also
-Codex-compatible) that gives a company of one — or a founder running several —
+Founder OS is one plugin for [Claude Code](https://code.claude.com/docs) and
+[Codex](https://developers.openai.com/codex/plugins/build) that gives a company of one — or a founder running several —
 an executive team: **13 agents, 52 skills, 10 optional cadences**, backed by a
-local Markdown workspace with one owner per file and a write-time guard that
-keeps the org from corrupting its own state.
+local Markdown workspace with one owner per file, an authoritative local state
+gateway, and host hooks that keep the org from corrupting its own state.
 
 It does not run the company for you. It gives your decisions persistent state,
 an owner, and a review rhythm.
@@ -45,16 +45,16 @@ built to prevent.
 - **[`data-integrity.md`](data-integrity.md)** — how outside claims are tiered
   before they enter a file, how entities are linked, and how the package learns
   your voice.
-- **[`troubleshooting.md`](troubleshooting.md)** — `founder-os-doctor`, the
-  fail-open posture, and the questions people actually ask.
+- **[`troubleshooting.md`](troubleshooting.md)** — `founder-os-doctor`, stable
+  gateway failures, host-hook boundaries, and the questions people actually ask.
 
 ## Building on it
 
-- **[`architecture.md`](architecture.md)** — plugin layout, the agent/skill/hook
-  model, the build-time validator, generated files, and dual-host (Claude Code +
-  Codex) support.
-- **[`enforcement.md`](enforcement.md)** — the ownership-map + write-time-hook +
-  build-validator triad, and exactly what is and is not a security boundary.
+- **[`architecture.md`](architecture.md)** — plugin layout, the shared
+  seven-tool state gateway, sibling orchestration, generated files, and
+  dual-host adapters.
+- **[`enforcement.md`](enforcement.md)** — the ownership map, authoritative
+  gateway, host-hook defense, build validator, and security-boundary limits.
 - **[`development.md`](development.md)** — how to add a skill or an agent, every
   check the validator runs, the test suite, CI, and versioning.
 

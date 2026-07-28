@@ -2,8 +2,9 @@
 
 Founder OS keeps everything in a directory of Markdown files —
 `FOUNDER_OS_HOME`, default `./founder-os/`. **One file, one owner.** Agents read
-anything and write only what they own. This page is the full map of that state:
-every file, who owns it, and the headings that must live inside it.
+bounded workspace state and write only what they own through the local
+`founder-os-state` gateway. This page is the full map of that state: every file,
+who owns it, and the headings that must live inside it.
 
 The source of truth is [`references/ownership.yaml`](../founder-os/references/ownership.yaml).
 It has two halves that together form one contract:
@@ -14,9 +15,11 @@ It has two halves that together form one contract:
   too. A heading may carry a dated suffix (`## Close — 2026-07`); the section
   *name* is pinned, the suffix is free.
 
-Both halves are enforced three ways: `founder-os-init` scaffolds exactly these
-headings, `founder-os-doctor` reports a file that has lost one or grown one, and
-the build validator fails if a skill writes a path the map does not declare.
+Both halves are enforced four ways: `founder-os-init` scaffolds exactly these
+headings; the gateway resolves ownership and required structure before a
+hash-guarded atomic write; `founder-os-doctor` reports a live file that has lost
+or grown a section; and the build validator fails if a skill declares a path the
+map does not own.
 
 ## The files
 
@@ -52,6 +55,12 @@ those paths the sections above are the *vocabulary* each member file uses,
 enforced at write time by the skill that owns the template.
 `clients/_capacity.md` is an aggregate, not a client file, and carries none of
 the client sections.
+
+The main thread never substitutes for the owner. It opens a short-lived role
+capability, invokes one sibling role, re-reads the expected persisted path, and
+closes the session before another sibling runs. A stale hash, wrong owner,
+invalid section shape, escaping path, or closed capability leaves the prior
+file intact and returns a stable gateway error.
 
 ## The files with special jobs
 

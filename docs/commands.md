@@ -6,6 +6,8 @@ slug first — `/founder-os:daily-brief acme`.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 
+This reference covers all 52 workflows shipped by the package.
+
 > This page is the annotated, grouped reference. The **generated, always-current
 > catalogue** is [`founder-os/COMMANDS.md`](../founder-os/COMMANDS.md), derived
 > from the package by `scripts/generate_commands.py` and checked in CI. If the
@@ -55,6 +57,8 @@ Scheduled by `/setup-cadences`; every one also works typed by hand. See
 | `/decision-log` | Record an irreversible decision with the falsifier that would reverse it, within 24 hours. |
 | `/triage` | Keep one obligation, cost the rest, route them by name — when the founder arrives with five things. |
 | `/queue` | Hold live obligations with a cap, an expiry, and one owner. |
+| `/situation-review` | Route one unclear business situation to exactly one owner and workflow, returning one bounded delegation request. |
+| `/strategic-evaluation` | Evaluate a material cross-domain decision through dated sibling perspectives, Board challenge, and final Chief of Staff persistence. |
 
 ### strategist — bets
 | Command | What it does |

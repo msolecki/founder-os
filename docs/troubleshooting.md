@@ -45,8 +45,8 @@ Markdown workspace are in [`getting-started.md`](getting-started.md#update-repai
 
 ## `/founder-os-doctor` — what it checks
 
-Each check has a threshold; the doctor reports only the ones that trip and stays
-quiet about the rest (a screen of green trains you to skim). It diagnoses the
+The doctor runs 20 health checks. Each has a threshold; it reports only the ones
+that trip and stays quiet about the rest (a screen of green trains you to skim). It diagnoses the
 whole workspace first, then reports ranked by *what is producing wrong advice
 right now*.
 
@@ -66,12 +66,12 @@ right now*.
 | **Briefs nobody acted on** | 10+ daily reviews and fewer than 1 in 5 `## The one thing` items reached `queue.md` `## Done`/`## Dropped` — the company is writing and nobody's reading. Never repaired. | Chief of Staff |
 | **Portfolio dark** | 2+ active businesses and `portfolio.md` missing, drifted, or `## Review` silent > 21 days. | Portfolio Manager |
 | **Queue rotting** | `## Doing` > 3, `## Queued` > 15, or an item past its clock (21 days queued / 14 blocked / 5 in Doing) — the Friday sweep stalled. | Chief of Staff |
-| **Overlay unreadable** | `_local/ownership.yaml` exists and doesn't parse. The guard has been ignoring it ever since — correctly — so every local path is unowned and any agent may write it. | you (`_local/` is yours) |
+| **Overlay unreadable** | `_local/ownership.yaml` exists and doesn't parse, so the overlay owner cannot be resolved. Packaged roles cannot use it as gateway authority; founder-run local workflows remain outside the role gateway. | you (`_local/` is yours) |
 | **Overlay claims a packaged path** | The overlay's `owns:` names a path the packaged map already owns. The guard drops the entry, so nothing is mis-owned — but it reads as active and it isn't. | you |
 | **Overlay incoherent** | A local path with no owner or two owners, or a local skill writing a path its agent doesn't own — the last one denies every time that skill runs. | `/skill-forge` |
 | **Local agent overreaches** | A `_local/agents/*.md` omits `tools:` or names an outbound tool. The guard denies those regardless, so this is early warning, not a breach. | `/skill-forge` |
 | **Local skill off template** | A `_local/skills/*/SKILL.md` has no `## Beliefs` (or fewer than 3, or after `## Steps`), or a slug without the `local-` prefix / colliding with a packaged one. | `/skill-forge` |
-| **Installed copy drift** | A local skill was never installed to `~/.claude/skills/`, or the installed copy no longer matches its `_local/` source. Never synced automatically — the doctor can't tell which side is intended. | `/skill-forge` |
+| **Installed copy drift** | A local skill is missing from `~/.claude/skills/` or `~/.codex/skills/`, or either installed copy differs from `_local/`. Never synced automatically — the doctor can't tell which side is intended. | `/skill-forge` |
 
 **What the doctor will *not* repair:** the link, inbox, brief-not-acted-on,
 cadence, queue, and every overlay check. `_local/` is your map, and a doctor
@@ -94,22 +94,23 @@ was likely asleep at 08:00, or `claude` isn't on the PATH that cron uses. Check
 the per-cadence logs (`~/.founder-os/logs/<slug>/…` on multi-business installs);
 re-run `/setup-cadences` to rewrite the fence.
 
-**"An agent refused to write a file."** That is the write-time guard doing its
-job (house rule 4): a subagent tried to write a file it doesn't own. The deny
-names the owner — hand off to them. If an agent legitimately needs to write that
-file, that is a change to `ownership.yaml`, a decision for the founder, not an
-edit made on the way past. See [`enforcement.md`](enforcement.md).
+**"An agent refused to write a file."** Read the stable gateway code. A
+`ROLE_NOT_OWNER` denial names the canonical owner; hand off to that role.
+`STALE_WRITE` means the file changed after the role read it; re-read and
+reconcile once. `INVALID_DOCUMENT_STRUCTURE` means the proposed full document
+does not match `ownership.yaml`. Do not route around any of these with a direct
+file tool. See [`enforcement.md`](enforcement.md).
 
 **"An agent refused to send / post / pay."** By design (house rule 0). No agent
 sends, ever. It drafts to `drafts/…`; you press the button. Saying "just send it"
 does not change this — the agent hands you the finished text.
 
-**"The guard isn't blocking anything."** Two likely causes, both fine: the call
-is on the **main thread** (the founder is the CEO — always allowed), or the guard
-**failed open** because it couldn't read its map (no PyYAML, no `ownership.yaml`).
-The guard is defence-in-depth behind the `tools:` allowlist, not a security
-boundary; a deny from it is a bug report about a loosened allowlist, not "the
-system held." See [`enforcement.md`](enforcement.md).
+**"The guard isn't blocking anything."** First distinguish the host hook from
+the state boundary. The hook can stay silent for main-thread or malformed
+non-role traffic; it is defense in depth, not a security sandbox. A known role,
+however, has no direct file tool and must present a live role capability to the
+local `founder-os-state` gateway. Gateway write uncertainty fails closed. See
+[`enforcement.md`](enforcement.md).
 
 **"Advice landed against the wrong company."** Multi-business resolution. Name the
 business in the invocation (`/founder-os:daily-brief acme`) or set `default:` in
@@ -127,7 +128,7 @@ that drifts is a second map.
 
 ## Extending Founder OS for one business
 
-Thirteen agents and fifty workflows are the shape of a company of one *in
+Thirteen agents and fifty-two workflows are the shape of a company of one *in
 general*. If your business has a decision none of them covers — a licensing
 partner, a production rhythm, a regulator — you do not have to fork. Run
 `/skill-forge`.
@@ -149,9 +150,10 @@ Three things to know before you use it:
   hold the overlay to the contract run at diagnosis time, on your machine,
   weeks later. Run the doctor after forging anything.
 - **A local skill needs installing to be runnable.** `_local/` is the source of
-  truth; the host loads skills from `~/.claude/skills/`. `/skill-forge` names
-  the exact path and asks before writing it — same as `/setup-cadences` with a
-  cron line — and the doctor reports when the two copies drift apart.
+  truth; Claude Code and Codex load cached copies from `~/.claude/skills/` and
+  `~/.codex/skills/`. `/skill-forge` names both exact paths and asks before
+  writing them — same as `/setup-cadences` with a cron line — and the doctor
+  reports when either copy drifts apart.
 
 The full contract, including the merge rules and what the overlay deliberately
 does *not* enforce, is
@@ -181,7 +183,8 @@ it, you paste it. Attach it to an issue on the repository.
 
 **Does Founder OS read my email / calendar / bank?** No. Its persistent business
 state is the Markdown workspace, plus context you explicitly supply in the
-current session. No packaged agent has a browser, shell, or MCP tool.
+current session. Packaged roles have no browser, shell, direct file tool, or
+external MCP tool; their only MCP surface is the bounded local state gateway.
 
 **Is my data sent anywhere?** Workspace files stay on your machine. The prompts
 and context you send through Claude Code or Codex remain governed by that
@@ -191,9 +194,10 @@ does not claim offline operation or zero transmission by the host environment.
 **Do I need cron?** No. Cron only powers the optional scheduled cadences. Every
 cadence also works typed by hand.
 
-**Do I need PyYAML?** It enables the full ownership check in the guard. Without
-it, the guard uses a minimal fallback parser and otherwise fails open — it
-degrades, it does not break.
+**Do I need PyYAML?** The installed gateway and hooks keep dependency-light
+ownership readers, including the packaged fallback parser. Repository
+development and the full package validator install PyYAML. Missing PyYAML does
+not turn a role capability into permission to write an unknown owner.
 
 **Can I run more than one business?** Yes — one workspace per business plus a
 registry. See [`multi-business.md`](multi-business.md).

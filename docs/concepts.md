@@ -48,7 +48,8 @@ the only map — if a file's contents and the map disagree, the map wins. The CF
 owns `metrics.md`; nobody else writes it. The Chief of Staff owns `queue.md`;
 eight other cadences *propose* into it but none of them may write it.
 
-This is enforced at write time by a hook, not just requested in prose. See
+This is enforced by the local `founder-os-state` gateway at the actual write,
+with the host hook as defense in depth. See
 [`enforcement.md`](enforcement.md).
 
 ## 4. It drafts; you send. It never touches money.
@@ -58,11 +59,11 @@ email, no message, no post, no invoice, no transfer, no signature — regardless
 of which agent, however obvious the send, however explicitly you asked mid-flow.
 The agents draft; you press the button.
 
-This holds even when the tooling would allow a send. No packaged agent has a
-shell, a browser, or an MCP tool — their allowlists are file tools plus, for
-managers, the `Agent(...)` edges of the org chart. The capability existing is
-not the permission. A wrong opinion costs an argument; a sent email costs a
-client.
+This holds even when the host has a send-capable integration. Packaged roles
+have no shell, browser, direct file tool, external MCP, or nested-agent edge;
+their only MCP surface is the seven-tool local state gateway. The capability
+existing is not the permission. A wrong opinion costs an argument; a sent email
+costs a client.
 
 ## 5. It comes to you, on a rhythm.
 
@@ -99,8 +100,13 @@ agent obeys. Rule 0 (never outbound, never money) is the one that matters most.
 **Ownership map** — [`references/ownership.yaml`](../founder-os/references/ownership.yaml):
 who may write each file (`owns:`) and what headings live inside it (`sections:`).
 
-**The guard / the hook** — `hooks/ownership-guard.py`, the `PreToolUse` hook that
-checks each subagent write against the ownership map and blocks outbound tools.
+**State gateway** — the local `founder-os-state` process that resolves one
+workspace and gives a role a short-lived capability for bounded reads and
+owner-checked atomic writes. It is the authoritative write boundary.
+
+**The guard / the hook** — `hooks/ownership-guard.py`, the `PreToolUse` defense
+that maps host identity, denies role direct/outbound tools, and requires
+capability-consistent local gateway calls.
 
 **Provenance** — the inline stamp on a claim that came from outside, e.g.
 `(per Anna, buyer at Acme, call, 12 May)`. A file's timestamp says when it was
@@ -117,7 +123,7 @@ names is a `[[slug]]`, not a retyped name. See
 names the businesses, and a portfolio workspace holds `portfolio.md`, the one
 decision that ranks between businesses. See [`multi-business.md`](multi-business.md).
 
-**Fail-open** — the guard's posture: any unknown (no map, no PyYAML, unparseable
-input) results in *allow*, not deny. A guard that blocks a founder's own work
-because it lost its config gets uninstalled that afternoon and then protects
-nobody.
+**Fail closed** — the gateway's write posture: unknown workspace, role session,
+path, owner, structure, or file version produces a stable denial and no
+mutation. Malformed non-role hook traffic can remain silent without granting a
+role any gateway authority.

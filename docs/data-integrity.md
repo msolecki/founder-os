@@ -7,6 +7,13 @@ quotes as evidence — house rule 2 turned into a laundering machine. Three
 mechanisms keep the workspace worth reading: the **ingestion gate**, **entity
 linking**, and the **voice / drafts** loop.
 
+These semantic checks sit above the mechanical write boundary. A role first
+reads bounded state through `founder-os-state`; its role capability then limits
+the write to a canonically owned path, and the gateway requires the current
+SHA-256 plus the declared heading structure before atomic replacement. That
+proves who wrote which version safely. It does not make the claim true — the
+three mechanisms below do that work.
+
 ## 1. The ingestion gate — tier every claim
 
 Every claim entering a canonical file is tiered first (house rule 5). The full

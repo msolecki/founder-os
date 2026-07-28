@@ -28,8 +28,8 @@ Code or Codex environment and adds no account or subscription of its own.
 | Requirement | Purpose |
 |---|---|
 | Recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) | Founder OS is a plugin, not a standalone app. |
-| Python 3 | Runs the write-time ownership hook. |
-| PyYAML | Enables the full ownership-map check; the hook degrades gracefully without it. |
+| Python 3.9+ | Runs the local state gateway and host hooks. |
+| PyYAML *(development only)* | Runs the full package validator; installed runtime readers remain dependency-light. |
 | `cron` *(optional)* | Runs scheduled cadences. Every workflow also works manually. |
 
 The agents are specialized roles invoked when needed, not thirteen autonomous
@@ -38,16 +38,25 @@ schedule; the rest run when you call them or when the Chief of Staff routes a
 question.
 
 Founder OS knows only what is recorded in its Markdown workspace or supplied
-in the current Claude Code session. It does **not** automatically sync your
+in the current host session. It does **not** automatically sync your
 calendar, CRM, inbox, bank account, or accounting system. Workspace files stay
-on your machine; Claude Code's own data-handling terms still apply to prompts
-and context sent through it.
+on your machine; Claude Code or Codex data-handling terms still apply to prompts
+and context sent through that host.
 
 ## Install
+
+Claude Code:
 
 ```
 /plugin marketplace add msolecki/founder-os
 /plugin install founder-os@founder-os
+```
+
+Codex:
+
+```
+codex plugin marketplace add msolecki/founder-os
+codex plugin add founder-os@founder-os
 ```
 
 Then, once:
@@ -94,7 +103,11 @@ reviews.
 Update with `/plugin marketplace update founder-os`, then
 `/plugin update founder-os@founder-os` and `/reload-plugins`. Use
 `/founder-os-doctor` for a live workspace that looks stale or structurally
-wrong. Remove the plugin with `/plugin uninstall founder-os@founder-os`.
+wrong. In Codex, run `codex plugin marketplace upgrade founder-os`, replace the
+cached install with `codex plugin remove founder-os@founder-os` followed by
+`codex plugin add founder-os@founder-os`, and start a new conversation. Remove
+the Claude plugin with `/plugin uninstall founder-os@founder-os`, or the Codex
+plugin with `codex plugin remove founder-os@founder-os`.
 Workspace files stay on your machine under `FOUNDER_OS_HOME`; they are separate
 from the installed plugin. Prompts and context sent through Claude Code or Codex
 remain governed by that environment's data-handling terms.
@@ -138,8 +151,9 @@ They are role definitions, not always-on workers. A command invokes the role
 that owns its decision; a scheduled cadence invokes one at its configured time.
 
 Ask the **chief-of-staff** when you don't know who to ask. Routing is its one
-decision, and it can summon the rest of the org; they cannot summon each other
-sideways. The org chart is the agent graph, not a diagram in a README.
+decision. It returns one bounded delegation request; the main thread invokes
+the requested role as a sibling, verifies the persisted result, and then opens
+the next sibling if the workflow requires one. No subagent summons another.
 
 ## A day with Founder OS
 
@@ -201,12 +215,14 @@ remain subject to that environment's data-handling terms. This is why
 the example workspace shows the source file behind every daily-brief claim
 instead of implying a live integration.
 
-**Every file has exactly one owner.** Agents read anything and write only what
-they own. A `PreToolUse` hook checks every write against
-`references/ownership.yaml` and refuses the ones that cross a line — so it is a
-rule the runtime applies, not a promise the prose makes. (It is operational
-policy, not a security boundary: hooks act at the tool call, and anything with
-a shell can route around them. Our agents have no shell.)
+**Every file has exactly one owner.** Agents read business state and write only
+what they own through the local `founder-os-state` gateway. The main thread
+opens a short-lived role capability bound to one role, workspace, workflow, and
+run. The gateway resolves the canonical owner, required headings, and current
+SHA-256 before an atomic replacement; unknown authority fails closed. A
+`PreToolUse` host hook is defense in depth, denying direct file tools and
+outbound-capable tools to roles. It is operational policy, not a security
+sandbox.
 
 **Work doesn't evaporate.** A brief that says "follow up with Anna" leaves an
 item in `queue.md`, not a feeling. It has an id, a bet it serves, and a date —
@@ -253,12 +269,13 @@ which is the only place your edits to our prose survive the session. A drafting
 tool whose drafts die when you close the tab is one that quietly asks you to do
 the work twice.
 
-This one isn't a promise either: **no agent in this package has a shell, a
-browser, or an MCP tool.** Their tool allowlists hold file tools (`Read, Write,
-Edit, Glob, Grep`) plus, for managers only, the `Agent(...)` edges of the org
-chart — and nothing that can reach the outside world. The board-member cannot
-even write. If your setup connects a mailbox, the agents still cannot reach it. A wrong opinion costs an argument; a sent email costs a
-client.
+This one isn't a promise either: **no role in this package has a shell, browser,
+direct file tool, or external MCP tool.** Every role exposes only the seven
+bounded `founder-os-state` actions. A known native role must agree with its role
+capability; the generic-agent fallback receives the same unchanged packaged
+role, active workflow, bounded handoff, workspace, and capability. If your
+setup connects a mailbox, the roles still cannot reach it. A wrong opinion
+costs an argument; a sent email costs a client.
 
 **The CFO gives no tax or legal advice. The Focus Coach gives no medical
 advice.** Both will tell you which professional to see and what number or
@@ -291,10 +308,8 @@ position can be improved, a platitude can only be nodded at.
 `references/ownership.yaml` is the map: who owns each file, and which sections
 live inside it. Add a skill, declare what it writes, and make sure its agent
 owns that path — the validator (`scripts/validate_package.py`, in the source
-repo alongside the tests) fails the build if it doesn't.
-
-Requires a recent Claude Code — the agent tooling this relies on has moved
-fast.
+repo alongside the tests) fails the build if it doesn't. The same shared skill
+and role files drive Claude Code and Codex; host files are adapters only.
 
 ## License
 

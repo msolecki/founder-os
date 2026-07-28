@@ -16,7 +16,8 @@ repository, which is **both the plugin marketplace and the source repo**:
 ```
 
 There is no server, no account, and no subscription of its own. It runs inside
-your existing Claude Code environment; your Claude plan and usage stay separate.
+your existing Claude Code or Codex environment; host plans and usage stay
+separate.
 
 ## Activation path
 
@@ -27,7 +28,7 @@ orchestrates the complete path and the same command resumes it after a failure:
 empty folder
   → read-only preflight
   → four question groups (business, customer, quarter, money)
-  → owner-safe writes to offer.md, goals.md, metrics.md, queue.md
+  → sibling owner sessions persist offer.md, goals.md, metrics.md, queue.md
   → minimum-state validation
   → /daily-brief
   → reviews/daily/YYYY-MM-DD.md
@@ -55,6 +56,7 @@ Markdown state is not a claim that the host operates offline.
 founder os/                     ← repo root (marketplace + source)
 ├── founder-os/                 ← the plugin itself
 │   ├── .claude-plugin/plugin.json   ← Claude Code manifest (name, version)
+│   ├── .mcp.json                    ← Claude local state-gateway adapter
 │   ├── .codex-plugin/plugin.json    ← Codex manifest
 │   ├── CLAUDE.md               ← guidance injected into every session
 │   ├── COMMANDS.md             ← GENERATED catalogue (do not hand-edit)
@@ -64,12 +66,15 @@ founder os/                     ← repo root (marketplace + source)
 │   │   └── <name>/agents/openai.yaml  ← Codex presentation adapter
 │   ├── hooks/                  ← session-context.py, record-agent.py,
 │   │                             ownership-guard.py, hooks.json
+│   ├── mcp/                    ← seven-tool local state gateway
 │   ├── references/             ← house-rules, ownership.yaml, linking,
-│   │                             multi-business, ingestion-gate, skill-template
+│   │                             orchestration, multi-business, skill-template
 │   └── images/                 ← org chart, etc.
 ├── scripts/
 │   ├── validate_package.py     ← build-time validator (the bar for structure)
-│   └── generate_commands.py    ← regenerates COMMANDS.md from the package
+│   ├── generate_commands.py    ← regenerates COMMANDS.md from the package
+│   ├── smoke_installed_copy.py ← copied-package lifecycle
+│   └── check_local_links.py    ← tracked local targets and anchors
 ├── tests/                      ← unittest + behavior tests
 ├── examples/studio-north/      ← a fictional, contract-shaped workspace
 ├── docs/                       ← this documentation set
@@ -85,18 +90,19 @@ Each `agents/<slug>.md` is a Markdown file with YAML frontmatter and a body.
 - **Frontmatter**: `name` (must equal the filename), `description` (the routing
   blurb), `skills:` (the skills this agent may run), and `tools:` (an explicit
   allowlist).
-- **`tools:`** is the real safety boundary. It may contain only
-  `Read, Write, Edit, Glob, Grep` and — for managers — `Agent(...)` naming the
-  reports they may summon. Nothing that can reach the outside world. The
-  board-member holds only `Read, Glob, Grep`: it advises, it does not even write.
+- **`tools:`** contains the same seven-tool local gateway surface for every
+  role: workspace resolution, role-session lifecycle, bounded state/reference
+  reads, and owner-checked writes. No direct file, shell, web, external MCP, or
+  nested-agent tool appears in a role allowlist.
 - **Body**: four mandated headings in order — `## What triggers you`,
   `## What you do`, `## What you produce`, `## Who you hand off to`. The
   validator enforces their presence and order.
 
 Agents are invoked, not always-on. A slash command runs the skill; the skill's
-owning agent is the role that acts. Managers can summon their reports via the
-`Agent(...)` edges; nobody can summon sideways. See [`agents.md`](agents.md) for
-the full org chart.
+owning agent is the role that acts. A manager returns a bounded delegation
+request to the main thread, which opens a new sibling role session, waits for
+its persisted result, and validates that result before advancing. Subagents
+never spawn subagents. See [`agents.md`](agents.md) for the full org chart.
 
 ### Skills — workflows
 
@@ -125,8 +131,9 @@ Three kinds of skill:
   workspace file of their own (init scaffolds the whole workspace regardless of
   owner). Every agent lists the three *universal* ones: `guardrails`,
   `state-integrity`, `ingestion-gate`.
-- **Standalone skills** — `setup-cadences`. Run by the founder directly; it edits
-  the crontab, which no agent may do, so it belongs to no agent by design.
+- **Standalone skills** — `setup-cadences` and `skill-forge`. The founder runs
+  them directly because they modify host schedule state or the founder-owned
+  local overlay; neither operation belongs to a role subagent.
 
 ### Hooks — the runtime layer
 
@@ -136,12 +143,14 @@ Three kinds of skill:
 |---|---|---|
 | `SessionStart` (startup/resume/clear/compact) | `session-context.py` | Injects `founder-os/CLAUDE.md` into the session as additional context. This is how the house rules and state map are present in every session. |
 | `SubagentStart` | `record-agent.py` | Records `turn_id → agent_type` for Codex (Claude includes `agent_type` directly; Codex identifies later tool calls by `turn_id`). Lets one guard enforce both hosts. |
-| `PreToolUse` on `Write\|Edit\|NotebookEdit\|apply_patch\|Bash\|WebFetch\|mcp__*` | `ownership-guard.py` | The write-time enforcement of ownership (house rule 4), the outbound ban (house rule 0), and the refusal to let any subagent write `_local/` — the map that governs it. |
+| `PreToolUse` on direct file, shell, web, and MCP tools | `ownership-guard.py` | Denies known roles direct file/outbound/unknown-MCP access, denies self-elevation, and checks gateway capabilities against native role identity. |
 
-The guard is covered in full in [`enforcement.md`](enforcement.md). The key fact:
-it is **operational policy, not a security boundary**, it is scoped to
-*subagents* (the founder as CEO is always allowed), and it **fails open** — any
-unknown results in allow.
+The gateway and guard are covered in full in
+[`enforcement.md`](enforcement.md). The gateway is the authoritative state
+boundary and role writes fail closed. The hook is **operational defense in
+depth, not a security boundary**: malformed hook traffic stays out of the
+founder's way, but a known role is denied direct access or invalid capability
+use.
 
 ## Session start: what happens
 
@@ -152,8 +161,31 @@ unknown results in allow.
    `goals.md`, and `metrics.md` with their dates stamped, and — on a
    multi-business install — resolves *which business* the session means before
    opening any file, stamping the slug into the context line.
-3. The relevant agent acts, reading the files it needs and writing only the ones
-   it owns. Any write is checked by the guard.
+3. The main thread resolves the workspace and opens a short-lived role
+   capability. The relevant sibling agent reads through `founder-os-state` and
+   writes only its owned paths; the controller re-reads persisted state before
+   closing the session or invoking the next sibling.
+
+## The seven-tool state gateway
+
+`founder-os-state` is a local Python stdio MCP process shared by both hosts. It
+makes no network request and exposes no shell or arbitrary filesystem browser.
+
+- `resolve_workspace` applies the single/multi-business rules and returns an
+  opaque workspace identifier.
+- `open_role_session` binds a short-lived role capability to one workspace,
+  role, workflow, and orchestration correlation id.
+- `list_state`, `read_state`, and `read_reference` provide bounded UTF-8 reads
+  below the resolved workspace or from an explicit package-reference allowlist.
+- `write_owned_state` checks the capability, canonical owner, required heading
+  order, and expected SHA-256 before atomic replacement and metadata-only
+  journaling.
+- `close_role_session` invalidates the capability; closed and expired values
+  cannot be reused.
+
+Write uncertainty fails closed with one of seven stable domain error codes.
+The main thread may orchestrate and mint a capability, but it does not author a
+specialist-owned result.
 
 ## Generated, not hand-maintained
 
@@ -217,18 +249,25 @@ has, stated in the docs rather than implied away.
 The same package runs under Claude Code and Codex:
 
 - **Claude Code** reads `.claude-plugin/plugin.json`, `agents/*.md`, and
-  `skills/*/SKILL.md`.
+  `skills/*/SKILL.md`; `.mcp.json` points at the shared gateway with
+  `${CLAUDE_PLUGIN_ROOT}`.
 - **Codex** reads `.codex-plugin/plugin.json` (which points `skills` at
   `./skills/`) and, per skill, `skills/<name>/agents/openai.yaml` — a small
-  interface file (`display_name`, `short_description`, `default_prompt`).
+  interface file (`display_name`, `short_description`, `default_prompt`). Its
+  inline `mcpServers` entry points at the same gateway with
+  `${CODEX_PLUGIN_ROOT}`.
 - The `SessionStart` and guard hooks are written to handle both: Claude supplies
   `agent_type` on tool calls directly; Codex supplies `turn_id`, resolved through
   the `record-agent.py` mapping. `AGENTS.md` at the repo root points Codex at
   `founder-os/CLAUDE.md` as the canonical guidance.
+- The main thread prefers a named native role where the host exposes it. The
+  portable generic-agent fallback receives the byte-identical packaged role
+  file, one active workflow, one bounded handoff, and the same role capability;
+  Codex parity does not depend on undocumented `agents/*.md` discovery.
 
 ## Versioning
 
 The version lives in `founder-os/.claude-plugin/plugin.json` (and mirrored in
 `.codex-plugin/plugin.json`); the [`CHANGELOG.md`](../CHANGELOG.md) tracks it.
-Current: **2.3.0** (multi-business). Releases follow SemVer against the plugin
+Current: **2.5.0** (full Claude Code and Codex parity). Releases follow SemVer against the plugin
 manifest. See [`development.md`](development.md) for the release checklist.

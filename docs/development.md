@@ -13,23 +13,25 @@ python3 scripts/generate_commands.py founder-os    # regenerate COMMANDS.md if f
 python3 scripts/smoke_installed_copy.py            # installed-copy smoke: PASS
 python3 -m unittest discover -s tests              # OK
 node --test tests/*.behavior.test.js               # landing behavior: pass
+python3 scripts/check_local_links.py                # local links: PASS
 ```
 
-CI runs all five on every push and PR (`.github/workflows/ci.yml`). A red build
+CI runs all six on every push and PR (`.github/workflows/ci.yml`). A red build
 is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
 
-`scripts/validate_package.py` runs these checks (each named function). They
-enforce *structure*; they cannot read prose.
+`scripts/validate_package.py` runs 16 build-time checks (each named function).
+They enforce *structure*; they cannot decide whether business advice is good.
 
 | Check | Fails when… |
 |---|---|
-| `check_plugin` | `.claude-plugin/plugin.json` is missing/invalid, or `name` ≠ `founder-os`. |
+| `check_plugin` | Claude/Codex manifests are missing or invalid, identities/descriptions disagree, or the plugin name is not `founder-os`. |
+| `check_host_adapters` | The Claude `.mcp.json` or Codex `mcpServers` adapter is missing, malformed, or does not point at the one shared local gateway entry. |
 | `check_codex_skill_interfaces` | A shared `skills/<name>/SKILL.md` has no Codex `agents/openai.yaml`, malformed interface YAML, missing presentation fields, or a default prompt that does not name the same `$<name>` skill. |
 | `check_agents` | An agent lacks `name`/`description`/`skills`, its `name` ≠ filename, it lists a skill with no `SKILL.md`, or it omits a universal skill (`guardrails`, `state-integrity`, `ingestion-gate`). |
-| `check_agent_tools` | An agent has no `tools:` (omitting it inherits everything), holds an outbound tool (`Bash`, `WebFetch`, `WebSearch`, `NotebookEdit`, `Task`), or names an unknown tool. Allowed: `Read, Write, Edit, Glob, Grep, Skill, Agent`. |
-| `check_agent_graph` | An `Agent(...)` target isn't a real agent, or an agent tries to summon itself. |
+| `check_agent_tools` | An agent has no `tools:`, names a direct/outbound/unknown tool, or differs from the bounded `founder-os-state` gateway allowlist. |
+| `check_one_level_orchestration` | A role lacks the shared state/delegation contract, names a nested-agent edge, carries an unbounded handoff, or uses an invalid gateway tool. |
 | `check_role_skill_exclusivity` | A non-system skill is held by two agents. |
 | `check_orphans` | A skill directory is held by no agent and not declared standalone. |
 | `check_agent_headings` | An agent is missing one of the four mandated headings or has them out of order (`## What triggers you` → `## What you do` → `## What you produce` → `## Who you hand off to`). |
@@ -38,15 +40,15 @@ enforce *structure*; they cannot read prose.
 | `check_skill_writes` | A skill's `metadata.writes` names a path no agent owns, or a path owned by an agent other than the one holding the skill. |
 | `check_sections` | `sections:` declares a path nobody owns, or a skill writes a path `ownership.yaml` declares no sections for. |
 | `check_beliefs` | A role skill has no `## Beliefs`, has it *after* `## Steps`, or has fewer than 3 bullets. |
-| `check_hooks` | `hooks.json` is missing/invalid, the `PreToolUse` matcher doesn't cover `Write/Edit/NotebookEdit/Bash/WebFetch/mcp__*`, or `ownership-guard.py` doesn't compile. |
+| `check_hooks` | Hook config or matchers are invalid/incomplete, or the guard, recorder, or gateway entry does not compile. |
 | `check_readme_counts` | The README "What's inside" table's Agents/Skills/Cadences counts don't match the package. |
 
 The **system skills** (`founder-os-init`, `founder-os-doctor`, `context-load`,
 `guardrails`, `state-integrity`, `ingestion-gate`) are exempt from the
 writes/beliefs checks — they are cross-cutting and write no workspace file of
-their own. `setup-cadences` is **standalone** (belongs to no agent by design).
-Both sets are defined at the top of `validate_package.py`, and that code — not
-any prose — is the authority on which skills are exempt.
+their own. `setup-cadences` and `skill-forge` are **standalone** (belong to no
+agent by design). Both sets are defined in `scripts/_package.py`, and that code
+— not any prose — is the authority on which skills are exempt.
 
 ## What the validator cannot check (review holds the bar)
 
@@ -93,8 +95,9 @@ ownership claim the agent doesn't have.
 2. Body: the four mandated headings, in order.
 3. If it owns files, add them under `owns:` in `ownership.yaml`, ensure each is in
    `workspace_files:` (or `portfolio_files:`), and declare its `sections:`.
-4. Wire `Agent(...)` edges only if it is a manager that legitimately summons
-   reports. Nobody summons themselves; targets must be real agents.
+4. Give it the same bounded state-gateway tools and shared sibling contract as
+   every other role. If it routes work, it returns the canonical six-field
+   delegation request; it never invokes another agent itself.
 5. Update the README counts (or let `check_readme_counts` tell you).
 
 Owning nothing must be a *decision* (as the board can defend), not an omission.
@@ -112,8 +115,10 @@ A hand edit to either is a second map, and second maps go stale silently.
 Under `tests/`:
 
 - `test_validate_package.py` — the validator's own behavior.
-- `test_ownership_guard.py` — the write-time hook (subprocess tests: main-thread
-  allow, subagent ownership deny, outbound deny, fail-open paths).
+- `test_state_gateway_*.py` — protocol framing, workspace/session reads,
+  ownership, optimistic concurrency, atomic writes, and journal redaction.
+- `test_ownership_guard.py` — host defense in depth: native/Codex identity,
+  capability agreement, direct/outbound denial, and malformed-hook paths.
 - `test_session_context.py` — copies the plugin into a temporary marketplace,
   checks every `SessionStart` source and exercises ownership from that copy.
 - `test_release_metadata.py` — pins release versions, activation-led metadata,
@@ -123,7 +128,8 @@ Under `tests/`:
 
 Run `python3 scripts/smoke_installed_copy.py` for the clean-copy lifecycle and
 `python3 -m unittest discover -s tests` for the complete Python suite. The smoke
-uses local subprocesses only; it does not invoke an LLM or make network calls.
+starts the copied gateway over stdio and uses local subprocesses only; it does
+not invoke an LLM or make network calls.
 
 ## Releasing
 
@@ -132,7 +138,7 @@ uses local subprocesses only; it does not invoke an LLM or make network calls.
    `founder-os/.codex-plugin/plugin.json`.
 2. Add a `CHANGELOG.md` entry (SemVer, dated).
 3. Run every command from **Before you open a PR**, then run both official local
-   gates from **Official Claude validation** below.
+   Claude gates and the Codex plugin validator below.
 4. Tag / publish only after the release plan's remaining gates are complete.
    The repo *is* the marketplace, so a merge to the default branch ships it.
 
@@ -159,11 +165,20 @@ These local official commands are a release gate, not CI coverage. Adding a
 pinned Claude CLI package to CI would download and execute an npm dependency;
 that requires explicit founder approval before the workflow may change.
 
+Validate the Codex package shape from the installed plugin-creator tooling:
+
+```bash
+python3 /Users/msolecki/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py founder-os
+```
+
 ## Dual-host notes
 
-- Claude Code reads `.claude-plugin/plugin.json` + `agents/*.md` + `skills/*/SKILL.md`.
+- Claude Code reads `.claude-plugin/plugin.json` + `.mcp.json` + the shared role
+  and workflow files.
 - Codex reads `.codex-plugin/plugin.json` + `skills/<name>/agents/openai.yaml`;
-  `AGENTS.md` at the repo root points it at `founder-os/CLAUDE.md`.
+  the manifest's inline `mcpServers` points at the same Python gateway.
 - The `SessionStart` and guard hooks handle both hosts: Claude supplies
   `agent_type` directly; Codex supplies `turn_id`, resolved through
-  `record-agent.py`. Keep both manifests' `version` in sync.
+  `record-agent.py`. Named native roles and the generic fallback receive the
+  same packaged role bytes and role capability. Keep both manifests' `version`
+  in sync.

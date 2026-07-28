@@ -22,8 +22,8 @@ workspace before installing.
 | Requirement | Why it is needed |
 |---|---|
 | A recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) installation | Founder OS is a plugin, not a standalone app. |
-| Python 3 | Runs the write-time ownership hook. |
-| PyYAML | Enables the full ownership-map check. The hook degrades gracefully when PyYAML is unavailable. |
+| Python 3.9+ | Runs the local state gateway and host hooks. |
+| PyYAML *(development/tests only)* | Runs the full package validator; the installed runtime remains dependency-light. |
 | Node.js 20+ *(development/tests only)* | Runs the landing-page behavior contract test. |
 | `cron` *(optional)* | Runs scheduled cadences. Every workflow also works manually without it. |
 
@@ -33,16 +33,17 @@ usage remain separate; Founder OS does not add another account or subscription.
 ## What Founder OS knows
 
 Founder OS knows only what is recorded in its Markdown workspace or supplied in
-the current Claude Code session. It does **not** automatically sync your:
+the current host session. It does **not** automatically sync your:
 
 - calendar;
 - CRM or pipeline tool;
 - inbox or social accounts;
 - bank account, accounting system, or payment provider.
 
-This is deliberate. No packaged agent has a browser, shell, or MCP tool. Agents
-can draft a message, proposal, or plan, but cannot send, post, pay, sign, or
-transfer anything.
+This is deliberate. Packaged roles have no browser, shell, direct file tool, or
+external MCP tool. Their only MCP surface is the bounded local state gateway.
+They can draft a message, proposal, or plan, but cannot send, post, pay, sign,
+or transfer anything.
 
 Workspace files stay on your machine. The prompts and context you send through
 Claude Code or Codex are still governed by that environment's data-handling
@@ -71,8 +72,9 @@ Codex, start a new conversation so the cached copy is refreshed.
 `/founder-os-init` is one continuous, resumable flow from an empty folder to a
 persisted first brief. It checks the install and target before writing, then
 asks four short groups about the business, customer, quarter and money. It
-delegates each answer to the role that owns the destination file, validates the
-minimum state, and writes a dated brief at `reviews/daily/YYYY-MM-DD.md`.
+delegates each answer through a short-lived role capability to the sibling that
+owns the destination file, validates each persisted checkpoint, and ends with a
+dated brief at `reviews/daily/YYYY-MM-DD.md`.
 
 A valid brief has all four required headings declared in `ownership.yaml`:
 `## The one thing`, `## Rotting`, `## The trade`, and `## Triage`. `## The one
@@ -137,6 +139,15 @@ without restarting Claude Code:
 These are the current
 [Claude Code plugin-management commands](https://code.claude.com/docs/en/discover-plugins).
 
+Codex keeps a marketplace snapshot and an installed cache. Refresh and replace
+that cached copy, then start a new conversation:
+
+```text
+codex plugin marketplace upgrade founder-os
+codex plugin remove founder-os@founder-os
+codex plugin add founder-os@founder-os
+```
+
 For a workspace that is missing files, stale, or structurally inconsistent,
 run `/founder-os-doctor`. It reports before proposing any repair. For an
 interrupted first run, rerun `/founder-os-init`; do not delete the workspace or
@@ -147,6 +158,8 @@ To remove the plugin:
 ```text
 /plugin uninstall founder-os@founder-os
 ```
+
+In Codex, use `codex plugin remove founder-os@founder-os`.
 
 The Markdown workspace under `FOUNDER_OS_HOME` is separate from the installed
 plugin and remains yours. Back it up before deleting it yourself. See

@@ -11,10 +11,13 @@ contribution guide. This file is the short version.
 pip install pyyaml
 python3 scripts/validate_package.py founder-os   # 13 agent(s), 52 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md if frontmatter changed
+python3 scripts/smoke_installed_copy.py          # copied local gateway lifecycle
 python3 -m unittest discover -s tests            # OK
+node --test tests/*.behavior.test.js              # landing behavior
+python3 scripts/check_local_links.py              # local docs and anchors
 ```
 
-CI runs all three on every push and PR, and a red build is a no from the
+CI runs all six on every push and PR, and a red build is a no from the
 machine before it is a review comment from a human.
 
 ## The rules the validator cannot read
@@ -33,6 +36,9 @@ The build checks structure; review holds the bar. The three that matter:
 3. **House rule 0 is not negotiable.** No agent gets a tool that can reach
    the outside world, and no PR that loosens an allowlist will be merged —
    agents draft, the founder sends.
+4. **One host-independent role contract.** Claude Code and Codex adapters may
+   differ, but the role file, workflow, bounded sibling handoff, role
+   capability, ownership rule, and persisted result may not.
 
 ## Scope
 

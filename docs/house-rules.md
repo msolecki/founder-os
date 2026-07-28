@@ -29,8 +29,9 @@ enforced two ways below rather than merely asked for in prose:
 
 - **Build time** — no agent's `tools:` allowlist may contain a tool that reaches
   the outside world. The validator refuses to ship a package that violates this.
-- **Write time** — the guard denies any subagent reaching for `Bash`,
-  `WebFetch`, or an `mcp__*` tool.
+- **Role tool time** — the host guard denies direct files, shell, web, and every
+  non-Founder-OS MCP tool; the local gateway exposes no send, payment, publish,
+  delete, shell, or arbitrary-browser action.
 
 Concretely: `outreach-draft` drafts, it does not mail. `proposal-draft` drafts,
 it does not sign or invoice. `content-draft` drafts, it does not publish.
@@ -64,14 +65,15 @@ will ask why they raised rates or dropped a client. That file is the answer.
 
 Never write a file you don't own. The map is
 [`references/ownership.yaml`](../founder-os/references/ownership.yaml), enforced
-by the `state-integrity` skill and the write-time guard (see
+by the `state-integrity` skill and the authoritative local state gateway, with
+the host guard as defense in depth (see
 [`enforcement.md`](enforcement.md)). If you need a change in someone else's file,
 hand off to its owner and say so.
 
-A handoff is **spoken, not spawned.** Only the Chief of Staff summons the org,
-and a manager summons its own reports; everyone else hands off by naming the
-agent to the founder and saying what they want back. The `Agent(...)` allowlist
-is the org chart's manager→report edges, not a convenience.
+A handoff is **structured, not nested.** A manager returns a bounded delegation
+request naming the role, workflow, workspace, run, handoff, and expected
+persistence. The main thread invokes that role as a sibling and re-reads the
+persisted result. Subagents never spawn subagents.
 
 ## Rule 5 — Tier what comes in, and stamp where it came from
 

@@ -10,14 +10,15 @@ decision — stored locally and traceable to its source.
 **Local Markdown · No automatic sending · Explicit ownership · No hidden
 actions**
 
-It is a [Claude Code](https://code.claude.com/docs) plugin for a company of one
-— or a founder running several. Behind the daily decision are **13 agents, 50
+It is a plugin for [Claude Code](https://code.claude.com/docs) and
+[Codex](https://developers.openai.com/codex/plugins/build) for a company of one
+— or a founder running several. Behind the daily decision are **13 agents, 52
 skills, 10 scheduled cadences** and one Markdown workspace per business. The
-roles own separate decisions; a write-time guard keeps their state from
-silently crossing those boundaries.
+roles own separate decisions; a local state gateway keeps their state from
+silently crossing those boundaries on either host.
 
-**Free and MIT-licensed.** Founder OS runs inside your existing Claude Code
-environment and adds no account or subscription of its own.
+**Free and MIT-licensed.** Founder OS runs inside your existing Claude Code or
+Codex environment and adds no account or subscription of its own.
 
 [Getting started](docs/getting-started.md) ·
 [Example workspace](examples/studio-north/README.md) ·
@@ -37,9 +38,9 @@ Before installing:
 
 | Requirement | Purpose |
 |---|---|
-| Recent [Claude Code](https://code.claude.com/docs) | Founder OS is a plugin, not a standalone app. |
-| Python 3 | Runs the ownership hook. |
-| PyYAML | Enables the full ownership-map check; the hook degrades gracefully without it. |
+| Recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) | Founder OS is a plugin, not a standalone app. |
+| Python 3.9+ | Runs the local state gateway and host hooks. |
+| PyYAML *(development only)* | Runs the full package validator; installed runtime parsers remain dependency-light. |
 | `cron` *(optional)* | Runs scheduled cadences. Manual workflows do not need it. |
 
 The 13 agents are specialized roles invoked when needed, not 13 autonomous
@@ -54,6 +55,13 @@ In Claude Code:
 ```
 /plugin marketplace add msolecki/founder-os
 /plugin install founder-os@founder-os
+```
+
+In Codex:
+
+```
+codex plugin marketplace add msolecki/founder-os
+codex plugin add founder-os@founder-os
 ```
 
 Then, once:
@@ -95,9 +103,13 @@ queue, quarterly bet, week, and review.
 Update with `/plugin marketplace update founder-os`, then
 `/plugin update founder-os@founder-os` and `/reload-plugins`. Diagnose a live
 workspace with `/founder-os-doctor`; it reports before proposing repairs.
-Uninstall with `/plugin uninstall founder-os@founder-os`. Your Markdown
-workspace is separate from the plugin and remains yours. The full recovery
-branches are in [`docs/getting-started.md`](docs/getting-started.md#update-repair-or-uninstall).
+For Codex, refresh with `codex plugin marketplace upgrade founder-os`, replace
+the cached install with `codex plugin remove founder-os@founder-os` followed by
+`codex plugin add founder-os@founder-os`, then start a new conversation.
+Uninstall with the host's corresponding `plugin uninstall`/`plugin remove`
+command. Your Markdown workspace is separate from the plugin and remains yours.
+The full recovery branches are in
+[`docs/getting-started.md`](docs/getting-started.md#update-repair-or-uninstall).
 
 ## How it works
 
@@ -105,11 +117,12 @@ branches are in [`docs/getting-started.md`](docs/getting-started.md#update-repai
 
 | Piece | Where | What it does |
 |---|---|---|
-| Agents | `founder-os/agents/*.md` | 13 role definitions. Frontmatter: `name`, `description`, `skills[]`, `tools:` allowlist (+ `Agent(...)` edges for managers). Body: four mandated headings. |
+| Agents | `founder-os/agents/*.md` | 13 role definitions. Every role exposes the same bounded state-gateway tool surface and four mandated headings. |
 | Skills | `founder-os/skills/*/SKILL.md` | 52 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (what init scaffolds), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
-| Write-time guard | `founder-os/hooks/ownership-guard.py` | A `PreToolUse` hook. Denies a subagent writing a file it doesn't own, denies subagents any outbound-capable tool (`Bash`, `WebFetch`, `mcp__*`), and denies every subagent `_local/` — the map that governs it. Fails **open**, main thread always allowed. |
-| Validator | `scripts/validate_package.py` | 14 build-time checks (below). CI runs it on every push. |
+| State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
+| Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Maps Claude `agent_type` or Codex `turn_id`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the seven gateway tools. |
+| Validator | `scripts/validate_package.py` | 16 build-time checks (below). CI runs it on every push. |
 | Cadences | `founder-os/skills/setup-cadences/SKILL.md` | 10 cron lines on *your* machine calling skills headless — a plugin cannot ship a schedule, so this writes one, with your consent, once per business. Fences are slugged per business (`# BEGIN founder-os:<slug>`) so two businesses never clobber each other's schedule. |
 | Local overlay | `founder-os/references/extensibility.md` | Per-business extension without a fork: `$FOUNDER_OS_HOME/_local/` may **add** a file, skill or agent and can never reassign or remove one the package ships. Merged into the guard's map per workspace; validated by `founder-os-doctor`, because a build-time validator cannot see a stranger's workspace. Forged by `/skill-forge`, whose commonest correct answer is "a packaged agent already owns this decision". |
 | Multi-business | `founder-os/references/multi-business.md` | One workspace per business + a registry (`~/.founder-os/businesses.yaml`) + a portfolio workspace. The hook resolves all registered roots; `context-load` step 0 picks the business before any file opens. |
@@ -119,9 +132,11 @@ branches are in [`docs/getting-started.md`](docs/getting-started.md#update-repai
 
 Every workspace file has exactly one owning agent (`owns:`); every skill
 declares which paths it writes (`metadata.writes`), and the validator fails the
-build if a skill writes a path its agent doesn't own. What's *inside* a file is
-pinned too: `sections:` lists the allowed `##` headings per path, init
-scaffolds exactly those, and `founder-os-doctor` reports drift in a live
+build if a skill writes a path its agent doesn't own. At run time, that owner
+uses a role capability to read through and persist through `founder-os-state`;
+the main thread orchestrates sibling roles but never substitutes its own write.
+What's *inside* a file is pinned too: `sections:` lists the allowed `##`
+headings per path, init scaffolds exactly those, and `founder-os-doctor` reports drift in a live
 workspace. Claims entering the workspace are tiered (FACT / VALIDATE /
 DISREGARD, `references/ingestion-gate.md`) and stamped with provenance inline;
 entities shared across files are `[[slug]]` links (`references/linking.md`),
@@ -132,18 +147,18 @@ button.
 
 ### Enforcement is layered, deliberately
 
-1. **Build time** — `scripts/validate_package.py`: plugin manifest; agent
-   frontmatter, headings, tool allowlists (nothing outbound), `Agent()` graph
-   sanity; role-skill exclusivity; no orphan skills; ownership map coherence in
-   both directions; skill-writes vs ownership join; sections coverage; ≥3
-   beliefs per role skill placed before steps; hooks load and cover the right
-   tools; README counts match the package.
-2. **Write time** — `hooks/ownership-guard.py`, scoped to subagents only.
-   **Not a security boundary** (the file says so at length): it's operational
-   policy behind the real boundary, which is each agent's `tools:` allowlist.
-   Unknown states fail open and log to stderr — a guard that denies because it
-   lost its own config protects nobody after the uninstall.
-3. **Run time, weeks later** — `founder-os-doctor`: 14 checks against a real
+1. **Build time** — `scripts/validate_package.py`: 16 build-time checks cover
+   both manifests/adapters, strict frontmatter and tools, one-level sibling
+   orchestration, ownership/section joins, beliefs, hooks, and public counts.
+2. **State access** — the local `founder-os-state` gateway is the authoritative
+   write boundary. Role reads require a live role capability; write uncertainty
+   fails closed with one of seven stable error codes, and successful writes use
+   optimistic SHA-256 checks plus atomic replacement.
+3. **Host tool time** — `hooks/ownership-guard.py` is defense in depth, not a
+   security sandbox. A known role cannot use direct file tools, shell, web, an
+   unknown MCP server, or a capability belonging to another role. Malformed
+   non-role hook traffic does not grant role state authority.
+4. **Run time, weeks later** — `founder-os-doctor`: 20 checks against a real
    workspace (missing files, section drift, stale metrics, broken links,
    undrained inbox, rotting queue, briefs nobody acts on, …).
 
@@ -161,12 +176,13 @@ founder-os/                       # the plugin (what gets installed)
   README.md                       # the product: org, philosophy, refusals
   COMMANDS.md                     # generated catalogue: every command, owner, schedule
   agents/           (13)
-  skills/           (50)
+  skills/           (52)
+  mcp/                            # one seven-tool local state gateway
   hooks/                          # hooks.json + ownership-guard.py
   references/                     # ownership.yaml, house-rules, skill-template,
                                   # ingestion-gate, linking, multi-business
   images/                         # org chart (mermaid + png)
-scripts/validate_package.py       # build-time validator (14 checks)
+scripts/validate_package.py       # build-time validator (16 checks)
 scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it
 tests/                            # validator mutations + hook subprocess + registry roots
 CHANGELOG.md                      # what shipped in each version
@@ -184,9 +200,11 @@ python3 scripts/validate_package.py founder-os   # expect: 13 agent(s), 52 skill
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md (CI checks it)
 python3 scripts/smoke_installed_copy.py          # clean installed-copy lifecycle
 python3 -m unittest discover -s tests            # expect: OK
+node --test tests/*.behavior.test.js              # landing behavior
+python3 scripts/check_local_links.py              # docs files + anchors
 ```
 
-CI (`.github/workflows/ci.yml`) runs all four on every push and PR.
+CI (`.github/workflows/ci.yml`) runs all six on every push and PR.
 
 ### Adding a skill
 
@@ -206,21 +224,21 @@ CI (`.github/workflows/ci.yml`) runs all four on every push and PR.
 ### Adding an agent
 
 One agent = one decision no other agent can make — that's the test every
-existing agent had to pass. Explicit `tools:` allowlist (never omit it: omitting
-inherits everything, including Bash), the four mandated headings, the three
+existing agent had to pass. The exact seven-tool `founder-os-state` allowlist,
+the shared sibling/delegation contract, the four mandated headings, the three
 universal skills (`guardrails`, `state-integrity`, `ingestion-gate`), and an
 entry in `ownership.yaml` if it owns anything. Owning nothing must be a
 decision, not an omission — the board-member is the worked example.
 
 ## Porting the pattern
 
-The ownership map + write-time hook + build validator are domain-agnostic:
-`ownership-guard.py` enforces *any* `owns:` map over *any* workspace directory,
-and the validator's core checks (frontmatter, allowlists, ownership joins,
-sections) carry over with renames. What you rewrite is the map and the agent
-content — that's the product. One caveat for code repos: the outbound guard
-denies subagents `Bash`, which engineering subagents need; scope
-`check_outbound` to mapped agents, or drop it and keep the ownership half.
+The ownership map + local state gateway + host guard + build validator are
+domain-agnostic: the gateway enforces any `owns:`/`sections:` map over a bounded
+workspace, and the validator's core checks (frontmatter, capability allowlists,
+ownership joins, sections) carry over with renames. What you rewrite is the map
+and the agent content — that's the product. A code-repository port would need a
+different bounded tool contract; Founder OS intentionally exposes no shell
+proxy or arbitrary filesystem browser to roles.
 
 ## Contributing & history
 

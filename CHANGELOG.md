@@ -5,11 +5,34 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
-## 2.5.0 — 2026-07-22
+## 2.5.0 — 2026-07-27
 
-**Codex parity.** Added situation review and strategic evaluation workflows,
-Codex skill interfaces for every workflow, dual-host local overlays, and a
-public Trust Center documenting state, permissions, and fail-open boundaries.
+**Full host parity.** Claude Code and Codex now execute the same packaged role
+and workflow instructions through one local `founder-os-state` process. Its
+seven gateway tools resolve a workspace, open a short-lived role capability,
+list/read bounded Markdown state and approved references, atomically write only
+role-owned state, and close the session. State writes fail closed on unknown
+identity, ownership, path, structure, capability, or current-file hash.
+
+Managers no longer attempt nested agents. The main thread invokes sibling roles
+from structured delegation requests and validates persisted checkpoints before
+advancing. A named native role and the portable generic-agent fallback receive
+the same role bytes, workflow, bounded handoff, workspace, and capability.
+
+**Trust and reliability.** The public Trust Center now ships at the manifest
+URL. SessionStart failures are visible to the model and stderr; invalid YAML
+container shapes become controlled validator findings; workspace-demo focus
+moves out of a hidden panel; and clipboard success is announced only after a
+confirmed native or fallback copy.
+
+**Verification.** The release gate covers the copied MCP lifecycle, real
+SubagentStart identity mapping, role-owned writes and denials, both plugin
+validators, Claude/Codex installed-host discovery and role I/O, all local links,
+Python tests, Node behavior tests, generated commands, and package validation.
+
+**Codex parity foundation.** Added situation review and strategic evaluation
+workflows, Codex skill interfaces for every workflow, dual-host local overlays,
+and the Trust Center source contract.
 
 **Extensibility.** A founder can add a file, a workflow, or a role their
 business needs without forking — and none of it can weaken the ownership

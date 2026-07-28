@@ -34,8 +34,9 @@
     "websiteURL": "https://msolecki.github.io/founder-os/",
     "privacyPolicyURL": "https://msolecki.github.io/founder-os/trust.html",
     "capabilities": [
-      "Read",
-      "Write"
+      "Local state gateway",
+      "Role-owned Markdown writes",
+      "Sibling role orchestration"
     ],
     "defaultPrompt": [
       "Describe my business situation and route it to one Founder OS workflow.",

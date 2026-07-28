@@ -1,105 +1,122 @@
 # Ownership and enforcement
 
-"Every file has exactly one owner" and "no agent sends" are not promises the
-prose makes — they are enforced by a triad of a **map**, a **write-time hook**,
-and a **build-time validator**. This page explains how the three fit together and,
-just as importantly, what they are *not*.
+"Every file has exactly one owner" and "no agent sends" are not promises left
+to prose. They are enforced by a canonical map, the local state gateway, host
+hooks, and a build validator. The gateway is the authoritative write boundary.
+Hooks are defense in depth and explicitly not a security sandbox.
 
-## The three layers
+## The four layers
 
 | Layer | File | When | Catches |
 |---|---|---|---|
-| The map | `references/ownership.yaml` | — | The single source of truth: who owns each file, what sections it has. |
-| The build validator | `scripts/validate_package.py` | CI / before merge | A package whose *structure* is incoherent — an agent with an outbound tool, a skill writing a file it doesn't own, a missing belief. |
-| The write-time guard | `hooks/ownership-guard.py` | Every subagent tool call | A running agent that decides *mid-flow* to write someone else's file or reach outside. |
+| Canonical map | `references/ownership.yaml` | Every build and write | Who owns each path and which `##` sections that document may contain. |
+| Local gateway | `mcp/founder_os_state.py` | Every role state call | Unsafe paths, invalid/expired capability, wrong owner, stale content, invalid structure, and I/O failure. |
+| Host hooks | `hooks/*.py` | Session/subagent start and role tool calls | Missing context, Claude/Codex identity mapping, direct file/outbound access, self-elevation, and capability-role mismatch. |
+| Build validator | `scripts/validate_package.py` | CI / before merge | Incoherent manifests, adapters, roles, tools, sibling orchestration, skills, ownership, sections, beliefs, hooks, and public counts. |
 
-The validator checks the map is coherent and no skill *declares* a write it
-doesn't own. The guard is the runtime half: it checks the *actual* write. Before
-the guard existed, an agent that decided mid-flow to fix a number in someone
-else's file just did it.
+The validator proves the package is internally coherent. The gateway enforces
+the actual read or write against the workspace and session that were resolved
+for this run. The host hook prevents a known role from bypassing that gateway
+through a direct file, shell, web, or unrelated MCP tool.
 
-## What the guard does
+## The authoritative state gateway
 
-`ownership-guard.py` runs on `PreToolUse` for
-`Write|Edit|NotebookEdit|apply_patch|Bash|WebFetch|mcp__*`. Two guards, both
-**scoped to subagents**:
+Both Claude Code and Codex start the same local stdio process named
+`founder-os-state`. It exposes exactly seven actions:
 
-1. **Ownership** — a subagent writing a workspace path it does not own is denied
-   and told who owns it (house rule 4). Matching is longest-prefix (a nested
-   entry beats a broader one), case-folded (APFS is case-insensitive), and
-   resolves symlinks and `..` walks on both sides so the map can't be dodged.
-2. **Outbound** — a subagent reaching for `Bash`, `WebFetch`, or any `mcp__*`
-   tool is denied (house rule 0). These three are the ones that can reach the
-   outside world in one call: an agent with `Bash` can curl, one with `WebFetch`
-   can POST, one with a mail MCP can send.
+- `resolve_workspace`
+- `open_role_session`
+- `list_state`
+- `read_state`
+- `read_reference`
+- `write_owned_state`
+- `close_role_session`
 
-**Main-thread calls are always allowed.** Claude marks subagent calls with
-`agent_type`; Codex supplies `turn_id`, resolved from the mapping written by
-`record-agent.py` at `SubagentStart`. The founder is the CEO — this rule is about
-agents, not about them.
+The main thread resolves one workspace and opens a short-lived role capability.
+That capability is bound to the resolved workspace, role, workflow, and
+orchestration correlation id. A specialist uses it directly; the main thread
+does not write the specialist's file on its behalf.
 
-## The fail-open posture (read this before you rely on it)
+`write_owned_state` fails closed before mutation when any authority is unknown.
+It rejects paths outside the workspace and everything under `_local/`, resolves
+the canonical owner, validates the document's required headings, and requires
+either create-only state or the SHA-256 observed by the preceding read. It then
+writes and fsyncs a temporary file beside the target and atomically replaces
+the destination. The journal stores only metadata and hashes, never business
+content, prompts, or the raw capability.
 
-Every unknown **fails open**: no ownership map, no PyYAML, unparseable stdin, a
-path it can't resolve, an unpredicted exception — the guard *allows*, logs to
-stderr, and moves on.
+Failures use one stable code and one recovery action:
 
-This is deliberate and it is the whole product decision. A guard that denies
-because it lost its own config is not "safe," it is broken: the founder hits it
-on their own work, uninstalls it that afternoon, and then it protects nobody. A
-false deny costs more than a miss — because a miss is caught by the build-time
-validator, and a false deny is caught by the user's patience. The guard even
-ships a minimal `owns:` parser for machines without PyYAML, so it degrades to
-best-effort rather than a silent no-op.
+| Code | Meaning |
+|---|---|
+| `WORKSPACE_UNRESOLVED` | No unique business workspace; ask, then make no read or write. |
+| `ROLE_SESSION_INVALID` | Capability missing, expired, closed, forged, or mismatched; return to the main thread. |
+| `PATH_OUTSIDE_WORKSPACE` | Path or symlink escaped the bounded root; refuse without guessing another path. |
+| `ROLE_NOT_OWNER` | The role does not own the target; hand off to the canonical owner. |
+| `STALE_WRITE` | The file changed since read; re-read, reconcile, then retry once. |
+| `INVALID_DOCUMENT_STRUCTURE` | Required headings or lifecycle shape are absent; correct the proposed document first. |
+| `STATE_IO_ERROR` | A bounded filesystem operation failed; preserve the original and surface the error. |
 
-## What this is NOT: a security boundary
+## What the host guard does
 
-Say this plainly, because the Claude Code docs do too: **hooks are not a security
-boundary, and this hook is not one either.** It is operational policy — it keeps
-an org of agents from corrupting each other's state during honest work. It does
-not contain an adversary:
+`ownership-guard.py` runs for direct file tools, `Bash`, web tools, and all MCP
+tools. Claude supplies `agent_type`; Codex supplies a `turn_id` recorded by
+`record-agent.py` at `SubagentStart`.
 
-- A subagent that can shell out routes around the `Write` matcher entirely —
-  `Bash(echo ... > goals.md)` never touches a Write hook. Guard 2 (the outbound
-  ban) is the only reason that isn't trivial, and guard 2 is itself just another
-  matcher.
-- Matchers are string patterns. A tool this file doesn't name is a tool it
-  doesn't see.
-- Anything running outside the tool layer is invisible to it.
+For a known packaged role or approved generic fallback, the guard:
 
-**The real boundary is the `tools:` allowlist on each agent**, enforced at build
-time. No agent's allowlist may contain an outbound tool, so no agent has a shell,
-a browser, or an MCP tool to route around anything. The board-member cannot even
-write. The guard is defence in depth *behind* that allowlist: it fires only when
-someone has loosened an agent — which is exactly the moment you want a second
-opinion. **Treat a deny from the guard as a bug report about the allowlist, not
-as "the system held."**
+1. denies `Read`, `Write`, `Edit`, `NotebookEdit`, `Glob`, `Grep`, and
+   `apply_patch` so role state cannot bypass the gateway;
+2. denies shell, web, and every non-Founder-OS MCP tool under house rule 0;
+3. permits only the seven known local gateway actions;
+4. denies `open_role_session` to subagents so they cannot mint or elevate their
+   own authority; and
+5. requires a live capability and, for a named native role, requires the
+   capability-bound role to match that identity.
 
-## Two allowlists, slightly different on purpose
+Malformed hook input or a call with no resolvable subagent identity stays out
+of the founder's main-thread permission flow. That narrow fail-open behavior is
+not role state authority: a known role with an invalid capability, unknown MCP
+action, or direct file tool is denied. The gateway remains fail closed
+regardless of what the hook can observe.
 
-The set of "outbound" tools is defined in two places, and they differ:
+## What this is not
 
-| Set | Where | Members |
-|---|---|---|
-| Build-time ban | `OUTBOUND_TOOLS` in `validate_package.py` | `Bash`, `WebFetch`, `WebSearch`, `NotebookEdit`, `Task` |
-| Write-time deny | `OUTBOUND_TOOLS` in `ownership-guard.py` (+ `mcp__*`) | `Bash`, `WebFetch` |
+Hooks are operational policy, **not a security boundary**. Matchers observe host
+tool calls; they do not contain an adversarial process. The system therefore
+does not rely on the hook alone:
 
-The build check is deliberately *tighter*: an allowlist should be conservative,
-so it also bars `WebSearch` and `Task`. The runtime deny is deliberately
-*narrower*: neither `WebSearch` nor `Task` is a *send*, and denying a live agent
-mid-run over a `WebSearch` would be a false deny for no gain. `NotebookEdit`
-writes files, so at runtime it goes through the **ownership** check like `Write`
-and `Edit`, not through the outbound set.
+- role frontmatter exposes only the bounded gateway tool surface;
+- the host guard rejects direct and outbound tools if an allowlist is loosened;
+- the gateway independently binds every state call to a live role capability;
+- the ownership and section map is revalidated at the actual write boundary.
 
-The tools an agent *may* hold: `Read, Write, Edit, Glob, Grep, Skill, Agent`
-(`ALLOWED_AGENT_TOOLS`). Anything else fails the build.
+There is no shell proxy, arbitrary filesystem browser, delete tool, remote MCP
+service, network request, authentication integration, or telemetry in the
+gateway. The hook's existence does not make arbitrary local execution safe.
 
-## Multi-business coverage
+## Sibling orchestration
 
-On a multi-business install a session routinely writes a workspace other than the
-one `FOUNDER_OS_HOME` names — the portfolio-manager writing `portfolio.md` is the
-everyday case. The guard reads `~/.founder-os/businesses.yaml` and resolves every
-registered business workspace root plus the portfolio workspace, so a
-cross-business write is checked against the map rather than being invisible. The
-same fail-open posture applies to the registry: unreadable YAML costs *coverage*,
-never a write.
+Subagents never spawn subagents. A manager returns a structured delegation
+request containing the role, workflow, workspace id, correlation id, bounded
+handoff, and expected persistence. The main thread opens the requested role
+session and invokes that role as a sibling.
+
+Where a host exposes the packaged role natively, it may select that role.
+Otherwise the generic-agent fallback receives exactly one unchanged role file,
+one active workflow, one bounded handoff, and one role capability. The input
+bytes and ownership boundary are the same, so host discovery does not change
+the business behavior.
+
+## Multi-business and overlays
+
+`resolve_workspace` applies the registry rules before state opens. Every later
+gateway action uses the opaque workspace id and server-side canonical path,
+never a caller-supplied absolute path. Two active businesses without a unique
+selection fail with `WORKSPACE_UNRESOLVED`; the system does not guess.
+
+The packaged ownership map remains authoritative. A business-local
+`_local/ownership.yaml` may add paths but cannot reassign packaged paths, and no
+role capability may write anywhere under `_local/`. `/skill-forge` runs with
+the founder on the main thread because an agent that can edit the map governing
+it does not have a meaningful boundary.

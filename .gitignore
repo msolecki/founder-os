@@ -1,5 +1,4 @@
 .superpowers/
-docs/superpowers
 __pycache__/
 *.pyc
 .DS_Store

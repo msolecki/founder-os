@@ -12,7 +12,18 @@ HTML = (REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
 BEHAVIOR_TEST = (
     REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
 ).read_text(encoding="utf-8")
-CONTROLLER_SOURCES = ("workflow-library.js", "demo-tabs.js")
+CONTROLLER_SOURCES = (
+    "workflow-library.js", "demo-tabs.js", "workspace-demo.js",
+)
+SKILL_COUNT = len(list((REPO_ROOT / "founder-os" / "skills").glob("*/SKILL.md")))
+CADENCE_SOURCE = (
+    REPO_ROOT / "founder-os" / "skills" / "setup-cadences" / "SKILL.md"
+).read_text(encoding="utf-8")
+CADENCE_COUNT = len(re.findall(
+    r"^\|\s*`/[a-z0-9-]+`\s*\|[^|]*\|\s*`[^`]+`\s*\|\s*$",
+    CADENCE_SOURCE,
+    re.MULTILINE,
+))
 GETTING_STARTED = (REPO_ROOT / "docs" / "getting-started.md").read_text(
     encoding="utf-8"
 )
@@ -224,15 +235,15 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertEqual(dict(counts), {
             category: count for category, (count, _) in EXPECTED_ENTRIES.items()
         })
-        self.assertEqual(sum(counts.values()), 52)
+        self.assertEqual(sum(counts.values()), SKILL_COUNT)
 
     def test_complete_catalogue_and_cadence_contract_survives(self):
         commands = re.findall(
             r'<article class="workflow-item".*?<code>(/[^<]+)</code>',
             SECTION, re.S)
-        self.assertEqual(len(commands), 52)
-        self.assertEqual(len(set(commands)), 52)
-        self.assertEqual(SECTION.count('class="workflow-badge"'), 10)
+        self.assertEqual(len(commands), SKILL_COUNT)
+        self.assertEqual(len(set(commands)), SKILL_COUNT)
+        self.assertEqual(SECTION.count('class="workflow-badge"'), CADENCE_COUNT)
 
     def test_catalogue_is_native_and_available_without_javascript(self):
         compact = re.sub(r"\s+", " ", HTML)

@@ -11,38 +11,34 @@ invokes the role that owns its decision. When you don't know who to ask, ask the
 
 ## The org chart
 
-Only the Chief of Staff can summon the whole org; a few managers can summon
-specific reports; everyone else hands off by **naming** the agent to the founder
-in prose (a spoken handoff, not a spawned one). The `Agent(...)` allowlist in an
-agent's frontmatter *is* the org chart's manager→report edges — it is not a
-convenience.
+The chart is decision ownership, not a nested process tree. No role invokes
+another role. Managers return a bounded delegation request to the main thread;
+the main thread opens a role capability, invokes the requested specialist as a
+sibling, validates its persisted result, closes that session, and only then
+advances.
 
 ```
-                          founder (CEO)
-                               │
-                        Chief of Staff ──────────────────── summons all 12
-                               │
-   ┌───────────────┬───────────┼───────────────┬──────────────┐
-Strategist   Positioning    Delivery Lead   Focus Coach    (everyone else:
-             Advisor            │                │           handoff by name)
-                │           ┌───┴───┐            │
-        ┌───────┼──────┐   CFO   Ops Engineer  Skills Mentor
-   Pipeline  Brand   Network
-    Coach    Editor  Manager
+founder / main thread (technical orchestrator)
+  │
+  ├─ resolve workspace + open one role session
+  ├─ invoke one named role or the generic-agent fallback
+  ├─ re-read expected persisted state + close the session
+  └─ repeat for the next sibling named by the workflow
 ```
 
-Edges that exist in the package (`Agent(...)` in each agent's `tools:`):
+Manager routing relationships remain explicit without becoming nested edges:
 
-| Manager | May summon |
+| Manager | May request as a sibling |
 |---|---|
 | Chief of Staff | all 12 other agents |
 | Positioning Advisor | Pipeline Coach, Brand Editor, Network Manager |
 | Delivery Lead | CFO, Ops Engineer |
 | Focus Coach | Skills Mentor |
 
-The **Board Member** has no reports and no write access at all — it holds only
-`Read, Glob, Grep`. A board that can quietly edit the company's state, or that
-agrees with the CEO, is decoration.
+The **Board Member** has no reports and owns no workspace path. It may read
+bounded state through `founder-os-state`; any attempted persistence has no
+owner match and fails closed. A board that can quietly edit the company's state,
+or that agrees with the CEO, is decoration.
 
 ## The thirteen
 
@@ -58,9 +54,10 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 - **Owns:** `charter.md`, `inbox.md`, `queue.md`, `decisions/`, `reviews/daily/`,
   `reviews/weekly/`, `reviews/monthly/`.
 - **Skills:** `daily-brief`, `weekly-review`, `monthly-review`, `decision-log`,
-  `triage`, `queue` (plus the system skills `founder-os-init`,
-  `founder-os-doctor`, `context-load`).
-- **Notes:** the default entry point and the only agent that summons the org.
+  `triage`, `queue`, `situation-review`, `strategic-evaluation` (plus the system
+  skills `founder-os-init`, `founder-os-doctor`, `context-load`).
+- **Notes:** the default entry point and the role that decides routing. It
+  returns the canonical delegation request; the main thread executes it.
   `queue.md` is the state between a cadence that produces an obligation and the
   day it is done or dropped — eight cadences *propose* into it, only this agent
   writes it. Owns the retrospectives but not the numbers: it narrates what the
@@ -71,7 +68,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 - **Owns:** *nothing.* It advises; its findings reach the workspace only if the
   founder logs them via `decision-log`. Tools: `Read, Glob, Grep`.
 - **Skills:** `red-team`, `assumption-audit`, `premortem`.
-- **Notes:** summoned before something irreversible, and specifically when the
+- **Notes:** requested before something irreversible, and specifically when the
   founder sounds *certain*. Certainty is its trigger, not doubt.
 
 ### Strategist
@@ -84,7 +81,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 - **Decides:** exactly who the company serves and what it sells them.
 - **Owns:** `offer.md`.
 - **Skills:** `icp-definition`, `offer-design`, `pricing-strategy`.
-- **May summon:** Pipeline Coach, Brand Editor, Network Manager.
+- **May request as siblings:** Pipeline Coach, Brand Editor, Network Manager.
 
 ### Pipeline Coach
 - **Decides:** what happens next with each prospect.
@@ -97,7 +94,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
   good enough.
 - **Owns:** `clients/`.
 - **Skills:** `capacity-check`, `scope-guard`, `client-health`, `delivery-retro`.
-- **May summon:** CFO, Ops Engineer.
+- **May request as siblings:** CFO, Ops Engineer.
 
 ### CFO
 - **Decides:** whether the company can afford something and whether it actually
@@ -112,7 +109,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 - **Decides:** what goes in the calendar, and what comes out.
 - **Owns:** `week.md`.
 - **Skills:** `week-plan`, `calendar-audit`, `energy-audit`.
-- **May summon:** Skills Mentor.
+- **May request as a sibling:** Skills Mentor.
 - **Refuses:** medical advice.
 
 ### Skills Mentor
