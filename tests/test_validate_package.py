@@ -3,7 +3,7 @@
 Ported from the paperclipai/agentcompanies suite. Every test that encoded a bug
 we actually shipped survived the port; the ones that died are the ones whose
 subject died with the old runtime (COMPANY.md, TEAM.md, TASK.md, .paperclip.yaml
-routines). Their replacements are check_plugin and check_agent_graph.
+routines). Their replacements are check_plugin and one-level orchestration.
 
 Two rules this file follows, both learned the hard way:
 
@@ -29,14 +29,28 @@ import validate_package as V
 
 
 UNIVERSALS = ["guardrails", "state-integrity", "ingestion-gate"]
-DEFAULT_TOOLS = "Read, Write, Edit, Glob, Grep"
+DEFAULT_TOOLS = (
+    "mcp__founder-os-state__resolve_workspace, "
+    "mcp__founder-os-state__list_state, "
+    "mcp__founder-os-state__read_state, "
+    "mcp__founder-os-state__read_reference, "
+    "mcp__founder-os-state__write_owned_state, "
+    "mcp__founder-os-state__close_role_session"
+)
 
 # The four headings every agent body must carry, in this order.
-AGENT_BODY = ("\nBody.\n\n"
+STATE_CONTRACT = ("\n## State and handoff contract\n\n"
+                  "The main thread provides one capability. Read what is "
+                  "needed, write only state you own, never spawn or invoke "
+                  "another role, and return expected_persistence.\n")
+AGENT_BODY = ("\nBody.\n" + STATE_CONTRACT + "\n"
               "## What triggers you\nx\n\n"
               "## What you do\nx\n\n"
               "## What you produce\nx\n\n"
               "## Who you hand off to\nx\n")
+MANAGER_BODY = (AGENT_BODY + "\n## Delegation request\n\nReturn to the main "
+                "thread; do not execute. `role`, `workflow`, `workspace_id`, "
+                "`correlation_id`, `handoff`, `expected_persistence`.\n")
 
 BELIEFS_OK = ("## Beliefs\n\n"
               "- One a generic advisor would not say.\n"
@@ -100,8 +114,7 @@ class ValidatorTestCase(unittest.TestCase):
     """The minimal package that must validate clean, plus mutation helpers.
 
     Two agents. chief-of-staff holds the one role skill (daily-brief, which
-    writes goals.md, which chief-of-staff owns) and may summon cfo. cfo holds
-    only the universals.
+    writes goals.md, which chief-of-staff owns). cfo holds only the universals.
     """
 
     def setUp(self):
@@ -115,7 +128,7 @@ class ValidatorTestCase(unittest.TestCase):
         for slug in UNIVERSALS + ["daily-brief"]:
             self.write_codex_interface(slug)
         self.write_agent("chief-of-staff", skills=["daily-brief"] + UNIVERSALS,
-                         tools=DEFAULT_TOOLS + ", Agent(cfo)")
+                         tools=DEFAULT_TOOLS, body=MANAGER_BODY)
         self.write_agent("cfo", skills=list(UNIVERSALS))
         self.write_ownership(base_ownership())
         self.write_hooks()
@@ -223,8 +236,8 @@ class TestFixture(ValidatorTestCase):
         self.assertEqual(cos_fm["name"], "chief-of-staff")
         self.assertEqual(cos_fm["skills"], ["daily-brief"] + UNIVERSALS)
         self.assertEqual(V._tool_names(cos_fm["tools"]),
-                         ["Read", "Write", "Edit", "Glob", "Grep", "Agent"])
-        self.assertEqual(V._agent_targets(cos_fm["tools"]), ["cfo"])
+                         V._tool_names(DEFAULT_TOOLS))
+        self.assertEqual(V._agent_targets(cos_fm["tools"]), [])
         for heading in V.AGENT_HEADINGS:
             self.assertIn(heading, cos_body)
 
@@ -421,21 +434,89 @@ class TestAgentTools(ValidatorTestCase):
         self.assertEqual(self.check(V.check_agent_tools), [])
 
 
-class TestAgentGraph(ValidatorTestCase):
+class TestOneLevelOrchestration(ValidatorTestCase):
     def test_dangling_agent_target_is_caught(self):
         self.write_agent("chief-of-staff", skills=["daily-brief"] + UNIVERSALS,
                          tools=DEFAULT_TOOLS + ", Agent(ghost)")
-        self.assertIn("agents/chief-of-staff.md: Agent(ghost) is not a real agent",
-                      self.check(V.check_agent_graph))
+        errors = self.check(V.check_one_level_orchestration)
+        self.assertTrue(any("one-level" in error for error in errors), errors)
 
     def test_self_summon_is_caught(self):
         self.write_agent("cfo", skills=list(UNIVERSALS),
                          tools=DEFAULT_TOOLS + ", Agent(cfo)")
-        self.assertIn("agents/cfo.md: may not summon itself",
-                      self.check(V.check_agent_graph))
+        errors = self.check(V.check_one_level_orchestration)
+        self.assertTrue(any("one-level" in error for error in errors), errors)
 
-    def test_real_agent_target_is_clean(self):
-        self.assertEqual(self.check(V.check_agent_graph), [])
+    def test_real_agent_target_is_also_rejected(self):
+        self.write_agent("chief-of-staff", skills=["daily-brief"] + UNIVERSALS,
+                         tools=DEFAULT_TOOLS + ", Agent(cfo)")
+        errors = self.check(V.check_one_level_orchestration)
+        self.assertTrue(any("one-level" in error for error in errors), errors)
+
+    def test_task_direct_write_and_unknown_gateway_are_rejected(self):
+        for tool in (
+            "Task",
+            "Write",
+            "mcp__founder-os-state__delete_state",
+            "mcp__founder-os-state__resolve_workspace(evil)",
+        ):
+            with self.subTest(tool=tool):
+                self.write_agent(
+                    "cfo",
+                    skills=list(UNIVERSALS),
+                    tools=DEFAULT_TOOLS + ", " + tool,
+                )
+                errors = self.check(V.check_one_level_orchestration)
+                self.assertTrue(any(tool in error for error in errors), errors)
+
+    def test_positive_nested_spawn_claim_is_rejected(self):
+        self.write_agent(
+            "cfo",
+            skills=list(UNIVERSALS),
+            body=AGENT_BODY + "\nYou spawn another role to finish the work.\n",
+        )
+        errors = self.check(V.check_one_level_orchestration)
+        self.assertTrue(any("nested-spawn" in error for error in errors), errors)
+
+    def test_role_worded_nested_invoke_claim_is_rejected(self):
+        for claim in (
+            "This role invokes another role.",
+            "Summon another agent.",
+            "A manager dispatches its reports.",
+            "I invoke another role.",
+            "The chief of staff invokes another role.",
+            "Dispatch the CFO.",
+        ):
+            with self.subTest(claim=claim):
+                self.write_agent(
+                    "cfo",
+                    skills=list(UNIVERSALS),
+                    body=AGENT_BODY + "\n" + claim + "\n",
+                )
+                errors = self.check(V.check_one_level_orchestration)
+                self.assertTrue(
+                    any("nested-spawn" in error for error in errors), errors
+                )
+
+    def test_missing_shared_contract_is_rejected(self):
+        self.write_agent("cfo", skills=list(UNIVERSALS), body="\n".join(
+            line for line in AGENT_BODY.splitlines()
+            if "State and handoff contract" not in line
+        ))
+        errors = self.check(V.check_one_level_orchestration)
+        self.assertTrue(any("shared state contract" in error for error in errors), errors)
+
+    def test_manager_without_delegation_shape_is_rejected(self):
+        self.write_agent(
+            "chief-of-staff",
+            skills=["daily-brief"] + UNIVERSALS,
+            body=AGENT_BODY,
+        )
+        errors = self.check(V.check_one_level_orchestration)
+        self.assertTrue(any("Delegation request" in error for error in errors), errors)
+
+    def test_gateway_only_agents_are_clean(self):
+        self.assertEqual(self.check(V.check_one_level_orchestration), [])
 
 
 class TestRoleSkillExclusivity(ValidatorTestCase):

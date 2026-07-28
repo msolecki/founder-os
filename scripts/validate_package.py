@@ -10,7 +10,7 @@ gone rather than kept "just in case" — a second map goes stale silently.
 import json
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import yaml
 
@@ -23,7 +23,15 @@ from _package import (SYSTEM_SKILLS, STANDALONE_SKILLS, UNIVERSAL_SKILLS,
 # so no agent gets a tool that can reach the outside world — the capability
 # existing is the thing the rule is about.
 OUTBOUND_TOOLS = {"Bash", "WebFetch", "WebSearch", "NotebookEdit", "Task"}
-ALLOWED_AGENT_TOOLS = {"Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent"}
+ROLE_GATEWAY_TOOLS = {
+    "mcp__founder-os-state__resolve_workspace",
+    "mcp__founder-os-state__list_state",
+    "mcp__founder-os-state__read_state",
+    "mcp__founder-os-state__read_reference",
+    "mcp__founder-os-state__write_owned_state",
+    "mcp__founder-os-state__close_role_session",
+}
+ALLOWED_AGENT_TOOLS = ROLE_GATEWAY_TOOLS
 
 AGENT_HEADINGS = ["## What triggers you", "## What you do",
                   "## What you produce", "## Who you hand off to"]
@@ -47,7 +55,18 @@ def _tool_names(tools):
         raw = tools
     else:
         raw = re.split(r",\s*(?![^()]*\))", str(tools))
-    return [re.sub(r"\(.*\)", "", t).strip() for t in raw if t and t.strip()]
+    names = []
+    for value in raw:
+        if not isinstance(value, str):
+            names.append("<invalid-tool-type:%s>" % type(value).__name__)
+            continue
+        token = value.strip()
+        if not token:
+            continue
+        if re.fullmatch(r"Agent\([^)]*\)", token):
+            token = "Agent"
+        names.append(token)
+    return names
 
 
 def _agent_targets(tools):
@@ -232,16 +251,81 @@ def check_agent_tools(root, agents):
     return errs
 
 
-def check_agent_graph(root, agents):
-    """Every Agent(...) target is a real agent; nobody can summon themselves."""
+def check_one_level_orchestration(root, agents):
+    """Require sibling roles with one gateway contract and no nested edges."""
     errs = []
     for slug in sorted(agents):
-        fm, _ = agents[slug]
-        for target in _agent_targets(fm.get("tools")):
-            if target not in agents:
-                errs.append("agents/%s.md: Agent(%s) is not a real agent" % (slug, target))
-            elif target == slug:
-                errs.append("agents/%s.md: may not summon itself" % slug)
+        fm, body = agents[slug]
+        declared = fm.get("tools")
+        names = set(_tool_names(declared))
+        if _agent_targets(declared or "") or "Agent" in names:
+            errs.append(
+                "agents/%s.md: one-level execution forbids Agent(...)" % slug
+            )
+        for tool in sorted(ROLE_GATEWAY_TOOLS - names):
+            errs.append(
+                "agents/%s.md: one-level gateway contract is missing %s"
+                % (slug, tool)
+            )
+        for tool in sorted(names - ROLE_GATEWAY_TOOLS):
+            errs.append(
+                "agents/%s.md: one-level execution forbids tool %s"
+                % (slug, tool)
+            )
+
+        lower = body.lower()
+        required = (
+            "## state and handoff contract",
+            "main thread",
+            "capability",
+            "only state you own",
+            "never spawn or invoke another role",
+            "expected_persistence",
+        )
+        absent = [phrase for phrase in required if phrase not in lower]
+        if absent:
+            errs.append(
+                "agents/%s.md: shared state contract is missing %s"
+                % (slug, ", ".join(absent))
+            )
+
+        active_orchestration = lower.replace(
+            "never spawn or invoke another role", ""
+        ).replace(
+            "do not execute the request or invoke its role", ""
+        )
+        if re.search(
+                r"\b(?:spawn|spawns|summon|summons|invoke|invokes|"
+                r"dispatch|dispatches)\b",
+                active_orchestration):
+            errs.append(
+                "agents/%s.md: nested-spawn instructions are forbidden" % slug
+            )
+
+        if slug in {
+                "chief-of-staff", "delivery-lead", "focus-coach",
+                "positioning-advisor"}:
+            marker = "## delegation request"
+            if marker not in lower:
+                errs.append(
+                    "agents/%s.md: manager is missing '## Delegation request'"
+                    % slug
+                )
+            else:
+                section = lower.split(marker, 1)[1]
+                fields = {
+                    "role", "workflow", "workspace_id", "correlation_id",
+                    "handoff", "expected_persistence",
+                }
+                missing_fields = [
+                    field for field in sorted(fields)
+                    if "`%s`" % field not in section
+                ]
+                if missing_fields:
+                    errs.append(
+                        "agents/%s.md: delegation request is missing %s"
+                        % (slug, ", ".join(missing_fields))
+                    )
     return errs
 
 
@@ -578,7 +662,7 @@ def check_readme_counts(root, agents):
 
 
 CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check_agents,
-          check_agent_tools, check_agent_graph,
+          check_agent_tools, check_one_level_orchestration,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,
           check_sections, check_beliefs, check_hooks, check_readme_counts]
@@ -603,6 +687,199 @@ def run_checks(root):
             errs.append("%s (check '%s' aborted at first bad file)"
                         % (e, fn.__name__))
     return agents, errs
+
+
+def _agent_parts(record):
+    if isinstance(record, (tuple, list)) and len(record) == 2:
+        return record[0], record[1]
+    return record, ""
+
+
+def _agent_skills(record):
+    frontmatter, _ = _agent_parts(record)
+    value = frontmatter.get("skills", []) if isinstance(frontmatter, dict) else []
+    if isinstance(value, str):
+        return {part.strip() for part in value.split(",") if part.strip()}
+    return {part for part in value if isinstance(part, str)} if isinstance(value, list) else set()
+
+
+def _workflow_writes(package_root, workflow):
+    """Return declared workflow writes, or None when its contract is invalid."""
+    path = package_root / "skills" / workflow / "SKILL.md"
+    try:
+        frontmatter, _ = parse_frontmatter(path)
+    except (OSError, ValueError, yaml.YAMLError):
+        return None
+    if "metadata" not in frontmatter:
+        return []
+    metadata = frontmatter.get("metadata")
+    if not isinstance(metadata, dict):
+        return None
+    if "writes" not in metadata:
+        return []
+    writes = metadata.get("writes")
+    if isinstance(writes, str):
+        writes = [writes]
+    if (not isinstance(writes, list)
+            or any(not _nonblank(value) for value in writes)):
+        return None
+    return writes
+
+
+def _nonblank(value):
+    return isinstance(value, str) and bool(value.strip()) and "\x00" not in value
+
+
+def _safe_state_path(value):
+    if not isinstance(value, str) or not value or "\x00" in value or "\\" in value:
+        return None
+    path = PurePosixPath(value)
+    if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+        return None
+    return path if path.as_posix() == value else None
+
+
+def _owner_for(ownership, path):
+    matches = []
+    for prefix, owner in ownership.items():
+        raw_prefix = str(prefix)
+        prefix_path = PurePosixPath(raw_prefix)
+        parts = prefix_path.parts
+        is_owned = (
+            path == prefix_path
+            if not raw_prefix.endswith("/")
+            else len(path.parts) > len(parts)
+            and path.parts[:len(parts)] == parts
+        )
+        if is_owned:
+            matches.append((len(parts), owner))
+    return max(matches)[1] if matches else None
+
+
+def delegation_request_errors(package_root, agents, request,
+                              current_workspace_id, current_correlation_id):
+    fields = {"role", "workflow", "workspace_id", "correlation_id", "handoff", "expected_persistence"}
+    if not isinstance(request, dict):
+        return ["delegation request must contain exactly six fields"]
+    errors = []
+    actual = set(request)
+    if actual != fields:
+        errors.append("delegation request must contain exactly role, workflow, workspace_id, correlation_id, handoff, expected_persistence; missing=%s extra=%s" % (sorted(fields - actual), sorted(actual - fields)))
+    role, workflow = request.get("role"), request.get("workflow")
+    workflow_writes = None
+    if not _nonblank(role) or role not in agents:
+        errors.append("unknown delegation role %r" % role)
+    elif (not _nonblank(workflow)
+          or workflow in SYSTEM_SKILLS
+          or workflow not in _agent_skills(agents[role])):
+        errors.append("workflow %r is not held by role %s" % (workflow, role))
+    else:
+        workflow_writes = _workflow_writes(package_root, workflow)
+        if workflow_writes is None:
+            errors.append("workflow %s has no valid persistence contract" % workflow)
+    for field in ("workspace_id", "correlation_id"):
+        if not _nonblank(request.get(field)):
+            errors.append("%s must be a nonblank NUL-free string" % field)
+    if not _nonblank(current_workspace_id):
+        errors.append("current workspace_id must be a trusted nonblank string")
+    elif request.get("workspace_id") != current_workspace_id:
+        errors.append("workspace_id must match the resolved workspace")
+    if not _nonblank(current_correlation_id):
+        errors.append("current correlation_id must be a trusted nonblank string")
+    elif request.get("correlation_id") != current_correlation_id:
+        errors.append("correlation_id must match the active main-thread flow")
+    handoff = request.get("handoff")
+    if not _nonblank(handoff):
+        errors.append("handoff must be a nonblank NUL-free string")
+    else:
+        try:
+            size = len(handoff.encode("utf-8"))
+        except UnicodeEncodeError:
+            size = 4097
+        if size > 4096:
+            errors.append("handoff exceeds 4096 UTF-8 bytes")
+    paths = request.get("expected_persistence")
+    if not isinstance(paths, list):
+        errors.append("expected_persistence must be a list")
+        return errors
+    if len(paths) > 16:
+        errors.append("expected_persistence exceeds 16 paths")
+    if workflow_writes and not paths:
+        errors.append(
+            "expected_persistence may be empty only for a read-only workflow"
+        )
+    strings = [path for path in paths if isinstance(path, str)]
+    if len(strings) != len(paths) or len(strings) != len(set(strings)):
+        errors.append("expected_persistence must contain unique path strings")
+    ownership = _ownership_by_path(package_root)
+    for value in paths:
+        path = _safe_state_path(value)
+        if path is None:
+            errors.append("unsafe expected_persistence path %r" % value)
+        elif _owner_for(ownership, path) != role:
+            errors.append("expected_persistence path %s is not owned by %s" % (value, role))
+    return errors
+
+
+def execution_envelope_errors(package_root, agents, native, fallback):
+    fields = {"role", "role_file", "role_instructions", "workflow", "handoff", "capability"}
+    errors = []
+    for label, envelope in (("native", native), ("fallback", fallback)):
+        if not isinstance(envelope, dict) or set(envelope) != fields:
+            errors.append("%s envelope must contain exactly six fields" % label)
+            continue
+        role = envelope.get("role")
+        role_is_valid = _nonblank(role) and role in agents
+        if not role_is_valid:
+            errors.append("%s envelope has unknown role" % label)
+        elif (not _nonblank(envelope.get("workflow"))
+              or envelope.get("workflow") in SYSTEM_SKILLS
+              or envelope.get("workflow") not in _agent_skills(agents[role])):
+            errors.append("%s envelope workflow is not held by role" % label)
+        expected_role_file = "agents/%s.md" % role if role_is_valid else None
+        if envelope.get("role_file") != expected_role_file:
+            errors.append("%s envelope uses the wrong role file" % label)
+        if not isinstance(envelope.get("role_instructions"), bytes):
+            errors.append("%s role_instructions must be bytes" % label)
+        handoff = envelope.get("handoff")
+        if not _nonblank(handoff) or not _nonblank(envelope.get("capability")):
+            errors.append("%s envelope requires one handoff and one capability" % label)
+        else:
+            try:
+                handoff_size = len(handoff.encode("utf-8"))
+            except UnicodeEncodeError:
+                errors.append("%s envelope handoff must be valid UTF-8" % label)
+            else:
+                if handoff_size > 4096:
+                    errors.append(
+                        "%s envelope handoff exceeds 4096 UTF-8 bytes" % label
+                    )
+    if isinstance(native, dict) and isinstance(fallback, dict):
+        if native.get("role_file") != fallback.get("role_file"):
+            errors.append("native and fallback must use the same role path")
+        if native.get("role_instructions") != fallback.get("role_instructions"):
+            errors.append("native and fallback role instructions must be byte-identical")
+        for field in ("role", "workflow", "handoff", "capability"):
+            if native.get(field) != fallback.get(field):
+                errors.append("native and fallback must carry the same %s" % field)
+        role = native.get("role")
+        role_file = native.get("role_file")
+        instructions = native.get("role_instructions")
+        expected_role_file = (
+            "agents/%s.md" % role
+            if _nonblank(role) and role in agents
+            else None
+        )
+        if (role_file == expected_role_file
+                and isinstance(instructions, bytes)):
+            try:
+                source = (package_root / "agents" / (role + ".md")).read_bytes()
+            except OSError:
+                errors.append("cannot read role file %s" % role_file)
+            else:
+                if source != instructions:
+                    errors.append("role instructions must be byte-identical to %s" % role_file)
+    return errors
 
 
 def main():

@@ -647,6 +647,17 @@ class OnboardingActivationContract(unittest.TestCase):
             PLUGIN_ROOT / "agents" / "chief-of-staff.md"
         )
         allowlist = chief_frontmatter.get("tools", "")
+        self.assertEqual(
+            {tool.strip() for tool in allowlist.split(",")},
+            {
+                "mcp__founder-os-state__resolve_workspace",
+                "mcp__founder-os-state__list_state",
+                "mcp__founder-os-state__read_state",
+                "mcp__founder-os-state__read_reference",
+                "mcp__founder-os-state__write_owned_state",
+                "mcp__founder-os-state__close_role_session",
+            },
+        )
 
         for skill_name in (
             "icp-definition",
@@ -684,10 +695,6 @@ class OnboardingActivationContract(unittest.TestCase):
                 self.assertRegex(row_text, rf"(?i)\b{re.escape(holder)}\b")
                 for write_path in writes:
                     self.assertIn(write_path, row_text)
-                self.assertRegex(
-                    allowlist,
-                    rf"(?i)\b{re.escape(holder)}\b",
-                )
 
         _, first_brief, _ = section_matching(
             self.init_body, r"Stage 6.*First brief"

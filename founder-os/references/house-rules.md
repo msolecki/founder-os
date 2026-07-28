@@ -61,12 +61,11 @@ Never write a file you don't own. The ownership map is
 `references/ownership.yaml` and it is enforced by the `state-integrity` skill.
 If you need a change in someone else's file, hand off to its owner and say so.
 
-A handoff is spoken, not spawned. Only the **Chief of Staff** summons the org,
-and a manager summons its own reports — everyone else hands off by naming the
-agent to the founder and saying what they want back. The `Agent(...)` allowlist
-in each agent's frontmatter is the org chart's manager→report edges, not a
-convenience, and a handoff section naming an agent outside your list is an
-instruction to the founder, not to the runtime.
+No role spawns or invokes another role. Every role is a sibling opened by the
+main thread with its own bounded capability and session. When a manager needs a
+specialist, it returns a structured delegation request to the main thread; it
+does not execute the request. The main thread validates the requested role,
+workflow, handoff, and expected persistence before opening the sibling.
 
 ## 5. Tier what comes in, and stamp where it came from
 
