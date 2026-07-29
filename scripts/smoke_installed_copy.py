@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Exercise Founder OS from a temporary installed marketplace copy."""
 import json
+import hashlib
 import os
+import select
 import shutil
 import subprocess
 import sys
@@ -17,6 +19,33 @@ CONTEXT_PREFIX = "Founder OS canonical guidance (shared with Claude Code):\n\n"
 
 class SmokeFailure(AssertionError):
     """An installed-copy contract did not hold."""
+
+
+def tree_fingerprint(root):
+    """Hash a source tree without treating interpreter caches as source."""
+    root = Path(root)
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root)
+        if "__pycache__" in relative.parts or path.suffix in (".pyc", ".pyo"):
+            continue
+        if path.is_symlink():
+            payload = os.readlink(path).encode("utf-8", errors="surrogateescape")
+            kind = b"link"
+        elif path.is_file():
+            payload = path.read_bytes()
+            kind = b"file"
+        else:
+            continue
+        digest.update(kind + b"\0" + relative.as_posix().encode("utf-8") + b"\0")
+        digest.update(hashlib.sha256(payload).digest())
+    return digest.hexdigest()
+
+
+def assert_tree_unchanged(root, expected_fingerprint):
+    """Fail when an installed-copy probe mutates the repository package."""
+    if tree_fingerprint(root) != expected_fingerprint:
+        raise SmokeFailure("source package changed during installed-copy smoke")
 
 
 def create_installed_copy(source_plugin, marketplace_root):
@@ -108,6 +137,34 @@ def check_session_context(installed_plugin, cwd, hook_plugin_root=None):
     return results
 
 
+def check_session_context_warning(installed_plugin, cwd):
+    """Prove a broken installed guidance path is visible to the model."""
+    installed_plugin = Path(installed_plugin)
+    missing_root = Path(cwd) / "missing-installed-plugin"
+    hook_path = installed_plugin / "hooks" / "session-context.py"
+    env = _hook_environment(missing_root)
+    payload = {
+        "session_id": "installed-copy-warning",
+        "transcript_path": str(Path(cwd) / "warning.jsonl"),
+        "cwd": str(cwd),
+        "hook_event_name": "SessionStart",
+        "source": "startup",
+    }
+    process = _run_hook(
+        hook_path, payload, env, cwd, "SessionStart/missing-guidance"
+    )
+    output = _json_output(process, "SessionStart/missing-guidance")
+    context = output.get("hookSpecificOutput", {}).get("additionalContext")
+    stderr = process.stderr.rstrip("\n")
+    if not isinstance(context, str) or context != stderr:
+        raise SmokeFailure(
+            "SessionStart warning was not identical in model context and stderr"
+        )
+    if "missing" not in context or "Do not give Founder OS advice" not in context:
+        raise SmokeFailure("SessionStart warning omitted its fail-visible instruction")
+    return {"output": output, "stderr": stderr}
+
+
 def _empty_allow_output(result, label):
     if result.stdout.strip():
         raise SmokeFailure("%s should allow silently, got: %s" % (
@@ -150,6 +207,31 @@ def _issue_installed_capability(installed_plugin, data_root, role):
     return result.stdout.strip()
 
 
+def _record_installed_turn(installed_plugin, data_root, workspace_root, turn_id, role):
+    """Run the copied SubagentStart hook instead of injecting agent_type."""
+    hook_path = Path(installed_plugin) / "hooks" / "record-agent.py"
+    env = _hook_environment(installed_plugin, PLUGIN_DATA=data_root)
+    result = _run_hook(
+        hook_path,
+        {
+            "hook_event_name": "SubagentStart",
+            "turn_id": turn_id,
+            "agent_type": role,
+        },
+        env,
+        workspace_root,
+        "SubagentStart/%s" % role,
+    )
+    _empty_allow_output(result, "SubagentStart/%s" % role)
+    mapping = Path(data_root) / "agent-types" / (turn_id + ".json")
+    try:
+        recorded = json.loads(mapping.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SmokeFailure("SubagentStart/%s did not persist turn mapping" % role) from exc
+    if recorded != {"agent_type": role}:
+        raise SmokeFailure("SubagentStart/%s persisted the wrong role" % role)
+
+
 def check_ownership_guard(installed_plugin, workspace_root):
     """Check gateway allow, direct/elevation/mismatch deny, and main allow."""
     installed_plugin = Path(installed_plugin)
@@ -157,6 +239,11 @@ def check_ownership_guard(installed_plugin, workspace_root):
     workspace_root.mkdir(parents=True, exist_ok=True)
     data_root = workspace_root / ".plugin-data"
     data_root.mkdir()
+    turns = {"cfo": "installed-cfo-turn", "strategist": "installed-strategist-turn"}
+    for role, turn_id in turns.items():
+        _record_installed_turn(
+            installed_plugin, data_root, workspace_root, turn_id, role
+        )
     capability = _issue_installed_capability(
         installed_plugin, data_root, "cfo"
     )
@@ -176,7 +263,7 @@ def check_ownership_guard(installed_plugin, workspace_root):
     gateway_allowed = _run_hook(
         guard_path,
         {
-            "agent_type": "cfo",
+            "turn_id": turns["cfo"],
             "tool_name": "mcp__founder-os-state__read_state",
             "cwd": str(workspace_root),
             "tool_input": {
@@ -188,17 +275,54 @@ def check_ownership_guard(installed_plugin, workspace_root):
         workspace_root,
         "gateway/allowed-role",
     )
+    native_allowed = _run_hook(
+        guard_path,
+        {
+            "agent_type": "cfo",
+            "tool_name": "mcp__founder-os-state__read_state",
+            "cwd": str(workspace_root),
+            "tool_input": {
+                "capability": capability,
+                "paths": ["metrics.md"],
+            },
+        },
+        env,
+        workspace_root,
+        "gateway/native-role",
+    )
+    fallback_allowed = _run_hook(
+        guard_path,
+        {
+            "agent_type": "default",
+            "tool_name": "mcp__founder-os-state__read_state",
+            "cwd": str(workspace_root),
+            "tool_input": {
+                "capability": capability,
+                "paths": ["metrics.md"],
+            },
+        },
+        env,
+        workspace_root,
+        "gateway/generic-fallback",
+    )
     direct_denied = _run_hook(
         guard_path,
-        {**direct_payload, "agent_type": "cfo"},
+        {**direct_payload, "turn_id": turns["cfo"]},
         env,
         workspace_root,
         "gateway/direct-file-denied",
     )
+    fallback_direct_denied = _run_hook(
+        guard_path,
+        {**direct_payload, "agent_type": "default"},
+        env,
+        workspace_root,
+        "gateway/fallback-direct-file-denied",
+    )
     wrong_role = _run_hook(
         guard_path,
         {
-            "agent_type": "strategist",
+            "turn_id": turns["strategist"],
             "tool_name": "mcp__founder-os-state__read_state",
             "cwd": str(workspace_root),
             "tool_input": {
@@ -213,7 +337,7 @@ def check_ownership_guard(installed_plugin, workspace_root):
     elevation = _run_hook(
         guard_path,
         {
-            "agent_type": "cfo",
+            "turn_id": turns["cfo"],
             "tool_name": "mcp__founder-os-state__open_role_session",
             "cwd": str(workspace_root),
             "tool_input": {"role": "cfo"},
@@ -233,6 +357,7 @@ def check_ownership_guard(installed_plugin, workspace_root):
     denied = {}
     for label, result in (
         ("direct_file", direct_denied),
+        ("fallback_direct_denied", fallback_direct_denied),
         ("wrong_role", wrong_role),
         ("elevation", elevation),
     ):
@@ -247,10 +372,429 @@ def check_ownership_guard(installed_plugin, workspace_root):
         "gateway_allowed": _empty_allow_output(
             gateway_allowed, "gateway/allowed-role"
         ),
+        "native_allowed": _empty_allow_output(
+            native_allowed, "gateway/native-role"
+        ),
+        "fallback_allowed": _empty_allow_output(
+            fallback_allowed, "gateway/generic-fallback"
+        ),
         **denied,
         "main_thread": _empty_allow_output(
             main_thread, "gateway/main-thread"
         ),
+        "recorded_turns": set(turns),
+    }
+
+
+class _McpClient:
+    """Small synchronous JSON-RPC client for the copied stdio server."""
+
+    def __init__(self, command, cwd, env, label):
+        self.label = label
+        self.next_id = 1
+        self.process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            cwd=str(cwd),
+            env=env,
+        )
+
+    def request(self, method, params=None):
+        request_id = self.next_id
+        self.next_id += 1
+        message = {"jsonrpc": "2.0", "id": request_id, "method": method}
+        if params is not None:
+            message["params"] = params
+        self._send(message)
+        ready, _, _ = select.select([self.process.stdout], [], [], 30)
+        if not ready:
+            self._abort("timed out waiting for JSON-RPC response")
+        raw = self.process.stdout.readline()
+        if not raw:
+            self._abort("closed stdout before a JSON-RPC response")
+        try:
+            response = json.loads(raw)
+        except ValueError as exc:
+            self._abort("emitted invalid JSON-RPC: %s" % exc)
+        if response.get("id") != request_id:
+            self._abort("returned a mismatched JSON-RPC id")
+        return response
+
+    def notify(self, method, params=None):
+        message = {"jsonrpc": "2.0", "method": method}
+        if params is not None:
+            message["params"] = params
+        self._send(message)
+
+    def _send(self, message):
+        if self.process.stdin is None:
+            self._abort("has no stdin")
+        try:
+            self.process.stdin.write(json.dumps(message, separators=(",", ":")) + "\n")
+            self.process.stdin.flush()
+        except (BrokenPipeError, OSError) as exc:
+            self._abort("could not send JSON-RPC: %s" % exc)
+
+    def _abort(self, reason):
+        self.process.terminate()
+        try:
+            self.process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            self.process.kill()
+            self.process.wait(timeout=5)
+        diagnostic = ""
+        if self.process.stderr is not None:
+            diagnostic = self.process.stderr.read().strip()
+        if self.process.stdin is not None and not self.process.stdin.closed:
+            self.process.stdin.close()
+        if self.process.stdout is not None:
+            self.process.stdout.close()
+        if self.process.stderr is not None:
+            self.process.stderr.close()
+        suffix = ": %s" % diagnostic if diagnostic else ""
+        raise SmokeFailure("%s %s%s" % (self.label, reason, suffix))
+
+    def close(self):
+        if self.process.stdin is not None and not self.process.stdin.closed:
+            self.process.stdin.close()
+        try:
+            returncode = self.process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            self._abort("did not exit after stdin closed")
+        diagnostic = ""
+        if self.process.stderr is not None:
+            diagnostic = self.process.stderr.read().strip()
+        if self.process.stdout is not None:
+            self.process.stdout.close()
+        if self.process.stderr is not None:
+            self.process.stderr.close()
+        if returncode != 0 or diagnostic:
+            raise SmokeFailure(
+                "%s exited %d%s"
+                % (
+                    self.label,
+                    returncode,
+                    ": " + diagnostic if diagnostic else "",
+                )
+            )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, _exc, _traceback):
+        if exc_type is None:
+            self.close()
+        elif self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait(timeout=5)
+        if exc_type is not None:
+            if self.process.stdin is not None and not self.process.stdin.closed:
+                self.process.stdin.close()
+            if self.process.stdout is not None:
+                self.process.stdout.close()
+            if self.process.stderr is not None:
+                self.process.stderr.close()
+        return False
+
+
+def _adapter_command(installed_plugin, host):
+    installed_plugin = Path(installed_plugin).resolve()
+    if host == "claude":
+        manifest_path = installed_plugin / ".mcp.json"
+        root_variable = "${CLAUDE_PLUGIN_ROOT}"
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            server = manifest["mcpServers"]["founder-os-state"]
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise SmokeFailure("Claude installed adapter is unreadable") from exc
+    elif host == "codex":
+        manifest_path = installed_plugin / ".codex-plugin" / "plugin.json"
+        root_variable = "${CODEX_PLUGIN_ROOT}"
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            server = manifest["mcpServers"]["founder-os-state"]
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise SmokeFailure("Codex installed adapter is unreadable") from exc
+    else:
+        raise SmokeFailure("unknown installed adapter: %s" % host)
+
+    if (
+        not isinstance(server, dict)
+        or server.get("command") != "python3"
+        or not isinstance(server.get("args"), list)
+        or len(server["args"]) != 1
+        or not isinstance(server["args"][0], str)
+    ):
+        raise SmokeFailure("%s installed adapter has an invalid command" % host)
+    argument = server["args"][0].replace(root_variable, str(installed_plugin))
+    if root_variable in argument:
+        raise SmokeFailure("%s installed adapter root did not expand" % host)
+    entry = Path(argument).resolve()
+    try:
+        entry.relative_to(installed_plugin)
+    except ValueError as exc:
+        raise SmokeFailure("%s installed adapter escapes the plugin" % host) from exc
+    if not entry.is_file():
+        raise SmokeFailure("%s installed adapter entry does not exist" % host)
+    return [server["command"], str(entry)]
+
+
+def _tool_call(client, name, arguments):
+    response = client.request(
+        "tools/call", {"name": name, "arguments": arguments}
+    )
+    if "error" in response:
+        raise SmokeFailure("%s returned a protocol error" % name)
+    result = response.get("result")
+    if not isinstance(result, dict):
+        raise SmokeFailure("%s omitted its MCP result" % name)
+    return result
+
+
+def _success_payload(result, label):
+    if result.get("isError") is not False:
+        raise SmokeFailure("%s unexpectedly failed" % label)
+    payload = result.get("structuredContent")
+    if not isinstance(payload, dict):
+        raise SmokeFailure("%s omitted structuredContent" % label)
+    return payload
+
+
+def _error_code(result, label):
+    if result.get("isError") is not True:
+        raise SmokeFailure("%s unexpectedly succeeded" % label)
+    try:
+        code = result["structuredContent"]["error"]["code"]
+    except (KeyError, TypeError) as exc:
+        raise SmokeFailure("%s omitted its stable error code" % label) from exc
+    if not isinstance(code, str):
+        raise SmokeFailure("%s emitted a non-string error code" % label)
+    return code
+
+
+def check_mcp_lifecycle(installed_plugin, workspace_root, host):
+    """Run initialize/list/call and a complete role I/O cycle via one adapter."""
+    installed_plugin = Path(installed_plugin).resolve()
+    workspace_root = Path(workspace_root).resolve()
+    workspace_root.mkdir(parents=True, exist_ok=True)
+    initial_content = (
+        "## Close\nInitial probe\n\n"
+        "## Runway\nUnknown\n\n"
+        "## Profitability\nUnknown\n\n"
+        "## Rate\nUnknown\n"
+    )
+    updated_content = initial_content.replace("Initial probe", "Persisted probe")
+    metrics_path = workspace_root / "metrics.md"
+    metrics_path.write_text(initial_content, encoding="utf-8")
+
+    runtime_root = workspace_root.parent / ("." + host + "-runtime")
+    home_root = runtime_root / "home"
+    home_root.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env["HOME"] = str(home_root)
+    env["FOUNDER_OS_HOME"] = str(workspace_root)
+    env["PLUGIN_DATA"] = str(runtime_root / "plugin-data")
+    env.pop("CLAUDE_PLUGIN_DATA", None)
+    command = _adapter_command(installed_plugin, host)
+
+    with _McpClient(command, workspace_root.parent, env, host + "/MCP") as client:
+        initialized = client.request(
+            "initialize",
+            {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {},
+                "clientInfo": {"name": "installed-host-probe", "version": "1"},
+            },
+        )
+        try:
+            server = initialized["result"]["serverInfo"]
+        except (KeyError, TypeError) as exc:
+            raise SmokeFailure("%s initialize omitted serverInfo" % host) from exc
+        if server.get("name") != "founder-os-state":
+            raise SmokeFailure("%s initialized the wrong server" % host)
+        client.notify("notifications/initialized")
+        listed_tools = client.request("tools/list").get("result", {}).get("tools")
+        if not isinstance(listed_tools, list) or len(listed_tools) != 7:
+            raise SmokeFailure("%s did not discover all seven tools" % host)
+
+        resolved = _success_payload(
+            _tool_call(
+                client,
+                "resolve_workspace",
+                {"project_dir": str(workspace_root.parent)},
+            ),
+            host + "/resolve",
+        )
+        workspace_id = resolved.get("workspace_id")
+        if not isinstance(workspace_id, str) or not workspace_id:
+            raise SmokeFailure("%s resolve omitted workspace_id" % host)
+
+        cfo = _success_payload(
+            _tool_call(
+                client,
+                "open_role_session",
+                {
+                    "workspace_id": workspace_id,
+                    "role": "cfo",
+                    "correlation_id": host + "-cfo-probe",
+                    "workflow": "revenue-review",
+                },
+            ),
+            host + "/open-cfo",
+        )["capability"]
+        strategist = _success_payload(
+            _tool_call(
+                client,
+                "open_role_session",
+                {
+                    "workspace_id": workspace_id,
+                    "role": "strategist",
+                    "correlation_id": host + "-strategist-probe",
+                    "workflow": "quarterly-planning",
+                },
+            ),
+            host + "/open-strategist",
+        )["capability"]
+
+        paths = _success_payload(
+            _tool_call(
+                client, "list_state", {"capability": cfo, "pattern": "*.md"}
+            ),
+            host + "/list",
+        )["paths"]
+        if "metrics.md" not in paths:
+            raise SmokeFailure("%s list did not include metrics.md" % host)
+        read = _success_payload(
+            _tool_call(
+                client,
+                "read_state",
+                {"capability": cfo, "paths": ["metrics.md"]},
+            ),
+            host + "/read",
+        )["files"][0]
+        initial_sha256 = read["sha256"]
+        _success_payload(
+            _tool_call(
+                client,
+                "read_reference",
+                {
+                    "capability": cfo,
+                    "path": "skills/revenue-review/SKILL.md",
+                },
+            ),
+            host + "/read-reference",
+        )
+
+        wrong_owner = _error_code(
+            _tool_call(
+                client,
+                "write_owned_state",
+                {
+                    "capability": strategist,
+                    "path": "metrics.md",
+                    "content": updated_content,
+                    "expected_sha256": initial_sha256,
+                },
+            ),
+            host + "/wrong-owner",
+        )
+        written = _success_payload(
+            _tool_call(
+                client,
+                "write_owned_state",
+                {
+                    "capability": cfo,
+                    "path": "metrics.md",
+                    "content": updated_content,
+                    "expected_sha256": initial_sha256,
+                },
+            ),
+            host + "/write",
+        )
+        persisted_sha256 = written["after_sha256"]
+        stale_write = _error_code(
+            _tool_call(
+                client,
+                "write_owned_state",
+                {
+                    "capability": cfo,
+                    "path": "metrics.md",
+                    "content": updated_content,
+                    "expected_sha256": initial_sha256,
+                },
+            ),
+            host + "/stale-write",
+        )
+        bad_structure = _error_code(
+            _tool_call(
+                client,
+                "write_owned_state",
+                {
+                    "capability": cfo,
+                    "path": "metrics.md",
+                    "content": "# invalid\n",
+                    "expected_sha256": persisted_sha256,
+                },
+            ),
+            host + "/bad-structure",
+        )
+        _success_payload(
+            _tool_call(
+                client,
+                "close_role_session",
+                {"capability": strategist, "final_status": "denied"},
+            ),
+            host + "/close-strategist",
+        )
+        _success_payload(
+            _tool_call(
+                client,
+                "close_role_session",
+                {"capability": cfo, "final_status": "completed"},
+            ),
+            host + "/close-cfo",
+        )
+        closed_reuse = _error_code(
+            _tool_call(
+                client,
+                "read_state",
+                {"capability": cfo, "paths": ["metrics.md"]},
+            ),
+            host + "/closed-reuse",
+        )
+
+    landed_sha256 = hashlib.sha256(metrics_path.read_bytes()).hexdigest()
+    if landed_sha256 != persisted_sha256:
+        raise SmokeFailure("%s persisted hash did not match disk" % host)
+    expected_codes = {
+        "wrong_owner": (wrong_owner, "ROLE_NOT_OWNER"),
+        "stale_write": (stale_write, "STALE_WRITE"),
+        "bad_structure": (bad_structure, "INVALID_DOCUMENT_STRUCTURE"),
+        "closed_reuse": (closed_reuse, "ROLE_SESSION_INVALID"),
+    }
+    for label, (actual, expected) in expected_codes.items():
+        if actual != expected:
+            raise SmokeFailure(
+                "%s %s returned %s instead of %s"
+                % (host, label, actual, expected)
+            )
+    return {
+        "version": server.get("version"),
+        "tool_count": len(listed_tools),
+        "initial_sha256": initial_sha256,
+        "persisted_sha256": persisted_sha256,
+        "wrong_owner": wrong_owner,
+        "stale_write": stale_write,
+        "bad_structure": bad_structure,
+        "closed_reuse": closed_reuse,
     }
 
 
@@ -292,16 +836,26 @@ def check_package_tools(repo_root, installed_plugin):
 def run_smoke(repo_root=REPO_ROOT, hook_plugin_root=None):
     """Run the complete smoke lifecycle in an isolated temporary directory."""
     repo_root = Path(repo_root)
-    with tempfile.TemporaryDirectory(prefix="founder-os-installed-") as temp_dir:
-        temp_root = Path(temp_dir)
-        installed = create_installed_copy(
-            repo_root / "founder-os", temp_root / "marketplace"
-        )
-        check_session_context(
-            installed, temp_root, hook_plugin_root=hook_plugin_root
-        )
-        check_ownership_guard(installed, temp_root / "workspace")
-        check_package_tools(repo_root, installed)
+    source_plugin = repo_root / "founder-os"
+    source_before = tree_fingerprint(source_plugin)
+    try:
+        with tempfile.TemporaryDirectory(prefix="founder-os-installed-") as temp_dir:
+            temp_root = Path(temp_dir)
+            installed = create_installed_copy(
+                source_plugin, temp_root / "marketplace"
+            )
+            check_session_context(
+                installed, temp_root, hook_plugin_root=hook_plugin_root
+            )
+            check_session_context_warning(installed, temp_root)
+            check_ownership_guard(installed, temp_root / "guard-workspace")
+            for host in ("claude", "codex"):
+                check_mcp_lifecycle(
+                    installed, temp_root / (host + "-workspace"), host
+                )
+            check_package_tools(repo_root, installed)
+    finally:
+        assert_tree_unchanged(source_plugin, source_before)
 
 
 def main():

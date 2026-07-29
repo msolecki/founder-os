@@ -84,20 +84,91 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
             )
 
         self.assertIsNone(outcomes["gateway_allowed"])
+        self.assertIsNone(outcomes["native_allowed"])
+        self.assertIsNone(outcomes["fallback_allowed"])
         self.assertIsNone(outcomes["main_thread"])
         self.assertEqual(
             set(outcomes),
             {
                 "gateway_allowed",
+                "native_allowed",
+                "fallback_allowed",
+                "fallback_direct_denied",
                 "direct_file",
                 "wrong_role",
                 "elevation",
                 "main_thread",
+                "recorded_turns",
             },
         )
-        for key in ("direct_file", "wrong_role", "elevation"):
+        self.assertEqual(outcomes["recorded_turns"], {"cfo", "strategist"})
+        for key in (
+            "direct_file",
+            "fallback_direct_denied",
+            "wrong_role",
+            "elevation",
+        ):
             denied = outcomes[key]["hookSpecificOutput"]
             self.assertEqual(denied["permissionDecision"], "deny")
+
+    def test_session_context_warning_is_model_visible_from_installed_hook(self):
+        smoke = load_smoke_module()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            installed = smoke.create_installed_copy(
+                SOURCE_PLUGIN, temp_root / "marketplace"
+            )
+            warning = smoke.check_session_context_warning(installed, temp_root)
+
+        self.assertEqual(
+            warning["output"]["hookSpecificOutput"]["additionalContext"],
+            warning["stderr"],
+        )
+        self.assertIn("missing", warning["stderr"])
+        self.assertIn("Do not give Founder OS advice", warning["stderr"])
+
+    def test_both_installed_adapters_run_the_complete_role_io_lifecycle(self):
+        smoke = load_smoke_module()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            installed = smoke.create_installed_copy(
+                SOURCE_PLUGIN, temp_root / "marketplace"
+            )
+            reports = {
+                host: smoke.check_mcp_lifecycle(
+                    installed,
+                    temp_root / (host + "-workspace"),
+                    host,
+                )
+                for host in ("claude", "codex")
+            }
+
+        for host, report in reports.items():
+            with self.subTest(host=host):
+                self.assertEqual(report["version"], "2.5.0")
+                self.assertEqual(report["tool_count"], 7)
+                self.assertEqual(report["wrong_owner"], "ROLE_NOT_OWNER")
+                self.assertEqual(report["stale_write"], "STALE_WRITE")
+                self.assertEqual(
+                    report["bad_structure"], "INVALID_DOCUMENT_STRUCTURE"
+                )
+                self.assertEqual(report["closed_reuse"], "ROLE_SESSION_INVALID")
+                self.assertNotEqual(
+                    report["initial_sha256"], report["persisted_sha256"]
+                )
+                self.assertRegex(report["persisted_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_source_tree_fingerprint_detects_repository_mutation(self):
+        smoke = load_smoke_module()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source = Path(temp_dir) / "source"
+            source.mkdir()
+            target = source / "contract.md"
+            target.write_text("before\n", encoding="utf-8")
+            before = smoke.tree_fingerprint(source)
+            target.write_text("after\n", encoding="utf-8")
+            with self.assertRaisesRegex(smoke.SmokeFailure, "source package changed"):
+                smoke.assert_tree_unchanged(source, before)
 
     def test_package_tools_accept_installed_copy(self):
         smoke = load_smoke_module()
