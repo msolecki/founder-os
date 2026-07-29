@@ -241,10 +241,10 @@
 
 **Size:** L
 
-- [ ] Add failing installed-copy/host-probe tests for config path use, MCP lifecycle, role I/O, wrong owner, stale write, structure failure, and hard-fail unavailable host behavior.
-- [ ] Run focused tests and record RED failures because the current smoke injects `agent_type` and never starts the gateway or real hosts.
-- [ ] Extend installed-copy smoke and implement isolated CLI probes without changing global marketplace/config files or publishing anything.
-- [ ] Run the exact final matrix:
+- [x] Add failing installed-copy/host-probe tests for config path use, MCP lifecycle, role I/O, wrong owner, stale write, structure failure, and hard-fail unavailable host behavior.
+- [x] Run focused tests and record RED failures because the current smoke injects `agent_type` and never starts the gateway or real hosts.
+- [x] Extend installed-copy smoke and implement isolated CLI probes without changing global marketplace/config files or publishing anything.
+- [x] Run the exact final matrix:
 
 ```bash
 python3 scripts/validate_package.py founder-os
@@ -261,12 +261,12 @@ git diff --check
 git status --short --branch
 ```
 
-- [ ] Verify `git status --short --branch` shows the pre-existing staged deletion plus only Task 11 implementation changes; record all command exit codes and concise output in the task report.
-- [ ] Commit only `scripts/probe_installed_hosts.py`, `tests/test_installed_host_probes.py`, `scripts/smoke_installed_copy.py`, `tests/test_session_context.py`, and `.github/workflows/ci.yml` with message `test: prove installed Claude and Codex role IO`.
-- [ ] Run a fresh task review, fix all Critical/Important findings through the task fix loop, and obtain both spec-compliance and quality approval.
-- [ ] Dispatch a fresh whole-branch reviewer using the approved spec, this completed plan, the SDD ledger, and the full branch diff; one author/reviewer pair may not be the same agent.
-- [ ] If final review finds issues, use one fresh fix agent and one scoped re-review, then re-run the entire final matrix.
-- [ ] Update every task checkbox and append the final evidence/status section to this plan; commit only this plan with `--only --no-gpg-sign`.
+- [x] Verify `git status --short --branch` shows the pre-existing staged deletion plus only Task 11 implementation changes; record all command exit codes and concise output in the task report.
+- [x] Commit only `scripts/probe_installed_hosts.py`, `tests/test_installed_host_probes.py`, `scripts/smoke_installed_copy.py`, `tests/test_session_context.py`, and `.github/workflows/ci.yml` with message `test: prove installed Claude and Codex role IO`.
+- [x] Run a fresh task review, fix all Critical/Important findings through the task fix loop, and obtain both spec-compliance and quality approval.
+- [x] Dispatch a fresh whole-branch reviewer using the approved spec, this completed plan, the SDD ledger, and the full branch diff; one author/reviewer pair may not be the same agent.
+- [x] If final review finds issues, use one fresh fix agent and one scoped re-review, then re-run the entire final matrix.
+- [x] Update every task checkbox and append the final evidence/status section to this plan; commit only this plan with `--only --no-gpg-sign`.
 
 ## Coverage Matrix
 
@@ -300,3 +300,5 @@ git status --short --branch
 - 2026-07-27: Task 8 completed in `d27ce99`. RED ran 41 focused tests with one expected failure and nine expected errors because the deployable Trust Center and link checker were absent. The shipped static page carries the Markdown trust claims with accessible landmarks, CSP/referrer metadata, responsive local styling, and no JavaScript or remote assets. The stdlib checker scans tracked Markdown/HTML, decodes local targets, indexes headings and HTML anchors, and fails deterministically on missing files/anchors, duplicate anchors, or repository escape; CI runs it. Author and independent review approved with no findings. Final GREEN: 41/41 focused tests, real local-link scan PASS, 358/358 full Python tests, 2/2 Node behavior tests, validator 13/52/0, and `git diff --check` clean. The unrelated staged deletion and `_Context.md` remained untouched.
 - 2026-07-27: Task 9 completed in `5eae554`. After the missing-module RED, the extracted legacy behavior produced four semantic failures for hidden focus, false fallback success, thrown fallback cleanup, and missing same-origin integration. The exported controller now transfers focus only from an in-panel `.sample-next`, confirms clipboard success strictly, cleans up and restores focus on every fallback path, and preserves truthful button/live-region state across retries. Independent review found one rapid-repeat reset-timer race; its regression failed `2 !== 1` before the per-button timer fix, and scoped re-review approved the result. Final GREEN: 11/11 Node behavior tests, 41/41 focused docs/link tests, 358/358 full Python tests, real local-link scan PASS, validator 13/52/0, and `git diff --check` clean. The unrelated staged deletion and `_Context.md` remained untouched.
 - 2026-07-27: Task 10 completed in `62186b1`. Contract-first RED produced 26 failures across stale 2.4.0 metadata, ignored plans, drifted public counts, and superseded host/security prose. The 2.5.0 release surfaces now derive and publish 13 agents, 52 workflows, 10 cadences, 16 build checks, and 20 doctor checks; current documentation names the seven-tool fail-closed state gateway, role capabilities, main-thread sibling orchestration, byte-identical generic fallback, and both host lifecycles while preserving historical 2.4.0 text. Author and independent review approved after a fresh whole-suite evidence pass. Final GREEN: 125/125 focused tests, 363/363 full Python tests, 11/11 Node behavior tests, installed-copy smoke PASS, generator current, local links PASS, validator 13/52/0, both Claude validators and the official Codex validator exit 0, and `git diff --check` clean. The unrelated staged deletion, `_Context.md`, and untracked audit plan remained untouched.
+- 2026-07-27: Task 11 completed in `ef6c5bd`. Initial RED produced 3 failures and 7 errors because the host probe, subprocess lifecycle, fail-visible installed warning, source sentinel, and real `turn_id` results did not exist. The copied package now starts both declared stdio adapters and proves initialize/list/call, workspace resolution, native/Codex/generic identity paths, bounded reads and references, CFO persistence, wrong-owner/stale/structure denials, close/reuse denial, on-disk SHA-256, and source immutability. Claude and Codex install from the local marketplace into isolated configuration/cache roots; missing CLIs and missing persistence fail the release. Review-driven REDs replaced a tautological fallback comparison with independent installed-role reads, a real generic capability path, and a generic direct-file denial. Author, fresh task reviewer, and fresh whole-branch reviewer all approved with no remaining findings. Exact final matrix exit 0: validator 13/52/0, generator current, installed-copy smoke PASS, 373/373 Python tests, 11/11 Node tests, both Claude validators and the official Codex validator PASS (Claude retains its non-blocking root `CLAUDE.md` warning), isolated Claude native+fallback role I/O PASS, isolated Codex generic-fallback role I/O PASS with native roles truthfully reported as not exposed, local links PASS, and `git diff --check` clean. No global marketplace/config file, release tag, remote, or published artifact changed; the unrelated staged deletion, `_Context.md`, and untracked audit plan remained untouched.
+- 2026-07-27: Full-host parity plan complete. All eleven tasks, task-level reviews, the exact release matrix, and a fresh whole-branch review are closed on evidence. Release state is ready for the founder's integration decision; no tag, push, publish, or protected user-owned change was performed.
