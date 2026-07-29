@@ -3,6 +3,7 @@
 import ast
 import json
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -34,8 +35,6 @@ DOCTOR_PATH = (
     REPO_ROOT / "founder-os" / "skills" / "founder-os-doctor" / "SKILL.md"
 )
 FEATURE_LIST_PATH = REPO_ROOT / "feature_list.json"
-GITIGNORE_PATH = REPO_ROOT / ".gitignore"
-
 RELEASE_VERSION = "2.5.0"
 ACTIVATION_DESCRIPTION = (
     "Know what matters today with one source-linked daily decision from your "
@@ -228,20 +227,19 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             with self.subTest(stale=stale):
                 self.assertNotIn(stale.lower(), active_docs.lower())
 
-    def test_planning_system_is_trackable_without_unignoring_scratch_state(self):
-        ignored = {
-            line.strip()
-            for line in GITIGNORE_PATH.read_text(encoding="utf-8").splitlines()
-            if line.strip() and not line.lstrip().startswith("#")
-        }
-        self.assertIn(".superpowers/", ignored)
-        self.assertNotIn("docs/superpowers", ignored)
-        self.assertTrue(
-            (REPO_ROOT / "docs" / "superpowers" / "plans").is_dir()
+    def test_internal_planning_artifacts_are_ignored_and_not_shipped(self):
+        ignored = subprocess.run(
+            [
+                "git",
+                "check-ignore",
+                "--quiet",
+                "docs/superpowers/plans/example.md",
+            ],
+            cwd=REPO_ROOT,
+            check=False,
         )
-        self.assertTrue(
-            (REPO_ROOT / "docs" / "superpowers" / "specs").is_dir()
-        )
+        self.assertEqual(ignored.returncode, 0)
+        self.assertFalse((REPO_ROOT / "docs" / "superpowers").exists())
 
     def test_codex_manifest_names_the_real_gateway_and_trust_boundary(self):
         self.assertEqual(
@@ -270,26 +268,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             product_hunt.exists(),
             "internal launch material is shipped: docs/product-hunt",
         )
-
-        superpowers = REPO_ROOT / "docs" / "superpowers"
-        allowed = {"plans", "specs"}
-        unexpected = (
-            [
-                path.relative_to(superpowers)
-                for path in superpowers.iterdir()
-                if path.name not in allowed
-            ]
-            if superpowers.exists()
-            else []
-        )
-        self.assertEqual(unexpected, [])
-        for folder in allowed:
-            for path in (superpowers / folder).glob("*.md"):
-                with self.subTest(path=path.relative_to(REPO_ROOT)):
-                    self.assertRegex(
-                        path.name,
-                        r"^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$",
-                    )
 
     def test_ci_keeps_internal_smoke_without_unapproved_cli_download(self):
         workflow = yaml.safe_load(self.ci)
