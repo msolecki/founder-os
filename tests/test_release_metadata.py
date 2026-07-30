@@ -27,6 +27,7 @@ ENFORCEMENT_PATH = REPO_ROOT / "docs" / "enforcement.md"
 GETTING_STARTED_PATH = REPO_ROOT / "docs" / "getting-started.md"
 TROUBLESHOOTING_PATH = REPO_ROOT / "docs" / "troubleshooting.md"
 COMMANDS_PATH = REPO_ROOT / "docs" / "commands.md"
+LANDING_PATH = REPO_ROOT / "docs" / "index.html"
 VALIDATOR_PATH = REPO_ROOT / "scripts" / "validate_package.py"
 CADENCES_PATH = (
     REPO_ROOT / "founder-os" / "skills" / "setup-cadences" / "SKILL.md"
@@ -226,6 +227,36 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         ):
             with self.subTest(stale=stale):
                 self.assertNotIn(stale.lower(), active_docs.lower())
+
+    def test_active_public_docs_have_no_superseded_release_contract(self):
+        active_paths = (
+            ROOT_README_PATH,
+            PLUGIN_README_PATH,
+            DOCS_README_PATH,
+            ARCHITECTURE_PATH,
+            ENFORCEMENT_PATH,
+            GETTING_STARTED_PATH,
+            TROUBLESHOOTING_PATH,
+            COMMANDS_PATH,
+            LANDING_PATH,
+        )
+        active = "\n".join(
+            path.read_text(encoding="utf-8") for path in active_paths
+        ).lower()
+        for stale in (
+            "49 workflows",
+            "50 workflows",
+            "all 50 commands",
+            "current: **2.4.0**",
+            "current: **2.3.0**",
+            "codex remains beta/manual",
+            "managers can summon",
+            "it can summon the rest",
+            "pyyaml recommended",
+            "python runs the ownership hook",
+        ):
+            with self.subTest(stale=stale):
+                self.assertNotIn(stale, active)
 
     def test_internal_planning_artifacts_are_ignored_and_not_shipped(self):
         ignored = subprocess.run(
