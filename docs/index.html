@@ -2666,6 +2666,11 @@
       font-weight: 500;
     }
 
+    .install-options {
+      display: grid;
+      gap: 1rem;
+    }
+
     .install-box {
       padding: 1.5rem;
       color: #dce7e4;
@@ -3259,6 +3264,7 @@
         <a href="#sample-workspace">Live sample</a>
         <a href="#workflows">52 workflows</a>
         <a href="#multi-business">Multi-business</a>
+        <a href="trust.html">Trust Center</a>
         <a class="button button-dark" href="#how-it-works">Install Founder OS <span class="arrow" aria-hidden="true">→</span></a>
       </div>
     </nav>
@@ -3278,7 +3284,7 @@
               <a class="button button-dark" href="#how-it-works">Install Founder OS <span class="arrow" aria-hidden="true">↓</span></a>
               <a class="button button-light" href="#sample-workspace">See the first brief</a>
             </div>
-            <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Local Markdown · No automatic sending · Explicit ownership · No hidden actions</p>
+            <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Founder OS 2.5.0 · 52 workflows · Local Markdown · No automatic sending · Explicit ownership · No hidden actions</p>
             <div class="proof-links" aria-label="Product resources">
               <a href="#requirements">Free and MIT-licensed · requirements</a>
               <a href="https://github.com/msolecki/founder-os">View source on GitHub</a>
@@ -4237,7 +4243,7 @@
         <div class="reveal">
           <p class="eyebrow">One source of truth</p>
           <h2 class="section-title">Your business does not live in <span class="serif">prompts.</span></h2>
-          <p class="section-copy">It lives in simple files you can open, edit, archive, and version. Every material claim carries a source and date; agents read the same state, but write only inside their own area.</p>
+          <p class="section-copy">It lives in simple files you can open, edit, archive, and version. Claude Code and Codex run the same workflows; sibling roles read bounded state and persist only their owned files through the local <code>founder-os-state</code> gateway.</p>
           <p class="boundary-note">Founder OS only knows what is recorded here. It does not automatically sync your calendar, CRM, inbox, or bank account.</p>
           <p class="boundary-note">Workspace files stay on your machine. Prompts and context sent through Claude Code or Codex remain governed by that environment's data-handling terms.</p>
           <ul class="check-list">
@@ -4282,7 +4288,7 @@
             <h3>Founder OS fits if…</h3>
             <ul>
               <li>you run a company of one or a small service business where every decision lands with you,</li>
-              <li>you use Claude Code and want every conversation to build shared business state,</li>
+              <li>you use Claude Code or Codex and want every conversation to build shared business state,</li>
               <li>you need a rhythm across pipeline, delivery, money, and focus,</li>
               <li>you run multiple businesses and need to divide resources honestly.</li>
             </ul>
@@ -4320,8 +4326,8 @@
           </article>
           <article class="requirement">
             <span>Runtime</span>
-            <h3>Python 3; PyYAML recommended</h3>
-            <p>Python runs the ownership hook. PyYAML enables its full ownership-map check.</p>
+            <h3>Python 3.9+</h3>
+            <p>Python runs the local state gateway and host hooks. PyYAML is needed only for development and package validation.</p>
           </article>
           <article class="requirement">
             <span>Optional</span>
@@ -4331,7 +4337,7 @@
           <article class="requirement">
             <span>Price</span>
             <h3>$0 · MIT license</h3>
-            <p>Founder OS is free. Your existing Claude Code plan and usage remain separate.</p>
+            <p>Founder OS is free. Your existing Claude Code or Codex plan and usage remain separate.</p>
           </article>
         </div>
       </div>
@@ -4357,8 +4363,8 @@
             <p>The plugin installs with two commands after adding its marketplace. Onboarding targets a ten-minute median and stops at fifteen minutes. It is complete only when the first valid daily brief is persisted and passes the same validity check.</p>
           </details>
           <details>
-            <summary>Do I need to learn all 50 commands?</summary>
-            <p>No. When you do not know what to use, ask the Chief of Staff. Routing is its job — it sends the question to the right agent.</p>
+            <summary>Do I need to learn all 52 workflows?</summary>
+            <p>No. Describe the situation to the Chief of Staff. <code>/situation-review</code> returns exactly one owner and next workflow.</p>
           </details>
           <details>
             <summary>Can it work in my language?</summary>
@@ -4390,14 +4396,23 @@
           <p class="eyebrow">Start with one decision, not another dashboard</p>
           <h2>Know what matters <em>tomorrow.</em></h2>
         </div>
-        <div class="install-box reveal">
-          <div class="install-box-top"><span>Claude Code</span><span>3 steps</span></div>
-          <ol>
-            <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy the first installation command">⧉</button></li>
-            <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy the second installation command">⧉</button></li>
-            <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command">⧉</button></li>
-          </ol>
-          <p class="install-note"><strong>Then:</strong> onboarding runs one continuous, resumable path and ends only after your first valid daily brief is persisted and validated. Read the <a href="https://github.com/msolecki/founder-os/blob/main/docs/getting-started.md">complete getting-started guide</a> for the data boundary, first five actions, update, repair, and uninstall steps.</p>
+        <div class="install-options reveal">
+          <section class="install-box" aria-labelledby="install-claude-title">
+            <div class="install-box-top"><span id="install-claude-title">Claude Code</span><span>3 steps</span></div>
+            <ol>
+              <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy the Claude marketplace command">⧉</button></li>
+              <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy the Claude plugin command">⧉</button></li>
+              <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command for Claude Code">⧉</button></li>
+            </ol>
+          </section>
+          <section class="install-box" aria-labelledby="install-codex-title">
+            <div class="install-box-top"><span id="install-codex-title">Codex</span><span>3 steps</span></div>
+            <ol>
+              <li class="install-row"><code>codex plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="codex plugin marketplace add msolecki/founder-os" aria-label="Copy the Codex marketplace command">⧉</button></li>
+              <li class="install-row"><code>codex plugin add founder-os@founder-os</code><button class="copy-button" type="button" data-copy="codex plugin add founder-os@founder-os" aria-label="Copy the Codex plugin command">⧉</button></li>
+              <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command for Codex">⧉</button></li>
+            </ol>
+          </section>
         </div>
       </div>
     </section>

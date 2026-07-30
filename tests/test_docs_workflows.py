@@ -1,4 +1,5 @@
 """Contract tests for the dependency-free workflow catalogue landing section."""
+import json
 import re
 import shutil
 import subprocess
@@ -9,6 +10,21 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HTML = (REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+MARKETPLACE = json.loads(
+    (REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(
+        encoding="utf-8"
+    )
+)
+RELEASE_VERSION = MARKETPLACE["plugins"][0]["version"]
+AGENT_COUNT = len(list((REPO_ROOT / "founder-os" / "agents").glob("*.md")))
+CLAUDE_INSTALL = (
+    "/plugin marketplace add msolecki/founder-os",
+    "/plugin install founder-os@founder-os",
+)
+CODEX_INSTALL = (
+    "codex plugin marketplace add msolecki/founder-os",
+    "codex plugin add founder-os@founder-os",
+)
 BEHAVIOR_TEST = (
     REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
 ).read_text(encoding="utf-8")
@@ -76,6 +92,35 @@ class DocumentContractParser(HTMLParser):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
+    def test_one_page_publishes_the_current_dual_host_contract(self):
+        nav = HTML[HTML.index('<div class="nav-links"'):HTML.index("</nav>")]
+        self.assertIn('<a href="trust.html">Trust Center</a>', nav)
+        self.assertIn(f"Founder OS {RELEASE_VERSION}", HTML)
+        self.assertIn(f"{SKILL_COUNT} workflows", HTML)
+        self.assertIn(f"{AGENT_COUNT} roles", HTML)
+        for command in CLAUDE_INSTALL + CODEX_INSTALL:
+            with self.subTest(command=command):
+                self.assertIn(command, HTML)
+        self.assertIn("Python 3.9+", HTML)
+        self.assertIn("local state gateway and host hooks", HTML)
+        self.assertIn(
+            "PyYAML is needed only for development and package validation",
+            HTML,
+        )
+        for stale in (
+            "all 50 commands",
+            "you use Claude Code and want",
+            "existing Claude Code plan",
+            "PyYAML recommended",
+            "Python runs the ownership hook",
+        ):
+            with self.subTest(stale=stale):
+                self.assertNotIn(stale, HTML)
+        self.assertEqual(
+            {path.name for path in (REPO_ROOT / "docs").glob("*.html")},
+            {"index.html", "trust.html"},
+        )
+
     def test_static_trust_center_matches_the_canonical_claims(self):
         trust_path = REPO_ROOT / "docs" / "trust.html"
         self.assertTrue(trust_path.is_file())
