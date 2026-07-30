@@ -25,6 +25,7 @@ CODEX_INSTALL = (
     "codex plugin marketplace add msolecki/founder-os",
     "codex plugin add founder-os@founder-os",
 )
+INIT_COMMAND = "/founder-os-init"
 BEHAVIOR_TEST = (
     REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
 ).read_text(encoding="utf-8")
@@ -98,13 +99,30 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertIn(f"Founder OS {RELEASE_VERSION}", HTML)
         self.assertIn(f"{SKILL_COUNT} workflows", HTML)
         self.assertIn(f"{AGENT_COUNT} roles", HTML)
-        for command in CLAUDE_INSTALL + CODEX_INSTALL:
-            with self.subTest(command=command):
-                self.assertIn(command, HTML)
+        install_sections = {
+            "Claude Code": (
+                '<section class="install-box" '
+                'aria-labelledby="install-claude-title">',
+                CLAUDE_INSTALL + (INIT_COMMAND,),
+            ),
+            "Codex": (
+                '<section class="install-box" '
+                'aria-labelledby="install-codex-title">',
+                CODEX_INSTALL + (INIT_COMMAND,),
+            ),
+        }
+        for host, (marker, expected_commands) in install_sections.items():
+            start = HTML.index(marker)
+            panel = HTML[start:HTML.index("</section>", start)]
+            commands = re.findall(
+                r'<li class="install-row"><code>([^<]+)</code>', panel
+            )
+            with self.subTest(host=host):
+                self.assertEqual(commands, list(expected_commands))
         self.assertIn("Python 3.9+", HTML)
         self.assertIn("local state gateway and host hooks", HTML)
         self.assertIn(
-            "PyYAML is needed only for development and package validation",
+            "PyYAML is needed only for development, tests, and package validation",
             HTML,
         )
         for stale in (
@@ -112,6 +130,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
             "you use Claude Code and want",
             "existing Claude Code plan",
             "PyYAML recommended",
+            "PyYAML is needed only for development and package validation",
             "Python runs the ownership hook",
         ):
             with self.subTest(stale=stale):
