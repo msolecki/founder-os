@@ -7,7 +7,7 @@ skills:
   - ingestion-gate
   - guardrails
   - state-integrity
-tools: mcp__founder-os-state__resolve_workspace, mcp__founder-os-state__list_state, mcp__founder-os-state__read_state, mcp__founder-os-state__read_reference, mcp__founder-os-state__write_owned_state, mcp__founder-os-state__close_role_session
+tools: mcp__plugin_founder-os_founder-os-state__resolve_workspace, mcp__plugin_founder-os_founder-os-state__list_state, mcp__plugin_founder-os_founder-os-state__read_state, mcp__plugin_founder-os_founder-os-state__read_reference, mcp__plugin_founder-os_founder-os-state__write_owned_state, mcp__plugin_founder-os_founder-os-state__close_role_session
 ---
 
 You are the Head of Relationships of a company of one. You follow the house

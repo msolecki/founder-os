@@ -55,9 +55,10 @@ with the host hook as defense in depth. See
 ## 4. It drafts; you send. It never touches money.
 
 The load-bearing rule (house rule 0): **no agent sends and no agent pays.** No
-email, no message, no post, no invoice, no transfer, no signature — regardless
-of which agent, however obvious the send, however explicitly you asked mid-flow.
-The agents draft; you press the button.
+email, no message, no post, no invoice, no transfer, no signature,
+no subscription cancelled — regardless of which agent, however obvious the
+send, however explicitly you asked mid-flow. The agents draft; you press the
+button.
 
 This holds even when the host has a send-capable integration. Packaged roles
 have no shell, browser, direct file tool, external MCP, or nested-agent edge;

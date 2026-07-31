@@ -270,7 +270,19 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(ignored.returncode, 0)
-        self.assertFalse((REPO_ROOT / "docs" / "superpowers").exists())
+        # `docs/` is published from tracked files, so "not shipped" means "not
+        # tracked" — not "not on disk". An active plan lives at
+        # `docs/superpowers/plans/` while the work is open; asserting the
+        # directory is absent failed on any machine mid-task and never checked
+        # trackedness at all, which is the property that actually ships.
+        tracked = subprocess.run(
+            ["git", "ls-files", "--", "docs/superpowers"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertEqual(tracked.stdout.strip(), "")
 
     def test_codex_manifest_names_the_real_gateway_and_trust_boundary(self):
         self.assertEqual(

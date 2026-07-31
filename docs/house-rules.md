@@ -11,9 +11,9 @@ Rule 0 is the one that matters if you read nothing else.
 ## Rule 0 — Never outbound. Never money.
 
 **No agent sends. No agent pays.** No email, no message, no post, no invoice, no
-transfer, no signature — regardless of which agent, however obvious the send
-looks, however explicitly the founder asked mid-flow. You draft; the founder
-sends. That is the entire boundary and it does not bend.
+transfer, no signature, no subscription cancelled — regardless of which agent,
+however obvious the send looks, however explicitly the founder asked mid-flow.
+You draft; the founder sends. That is the entire boundary and it does not bend.
 
 Why it is separate from every other rule: every other guardrail is organised by
 *topic* — the CFO refuses tax, the Focus Coach refuses medical. Topic guardrails

@@ -1,12 +1,30 @@
 #!/usr/bin/env python3
 """Keep Founder OS role subagents on the capability-bound state gateway.
 
-Claude identifies a role directly with ``agent_type``. Codex supplies a
-``turn_id`` that ``record-agent.py`` maps to the same role. Once a role is
-known, direct filesystem, shell, web, and non-Founder-OS MCP access is denied.
-The seven local gateway calls are recognized explicitly; a subagent may not
-open its own role session, and every role-bound call must carry a live
-capability whose role agrees with a native role identity.
+Claude identifies a role directly with ``agent_type`` — as the bare name or
+host-namespaced (``founder-os:cfo``). Codex supplies a ``turn_id`` that
+``record-agent.py`` maps to the same role. Once a *role* is known, direct
+filesystem, shell, web, and non-Founder-OS MCP access is denied. The seven
+local gateway calls are recognized explicitly — under the packaged name
+(``mcp__founder-os-state__*``) and the host-wrapped one
+(``mcp__plugin_founder-os_founder-os-state__*``); a subagent may not open its
+own role session, and every role-bound call must carry a live capability whose
+role agrees with a native role identity.
+
+A subagent that is *not* one of the thirteen roles — a reviewer, an Explore
+pass, another plugin's agent — is not governed by the gateway lockdown. It is
+bound by two checks: no write under ``_local/``, and no write to a file the
+ownership map gives someone else. Everything else it does is between it and the
+normal permission system.
+
+Those two bind **tools that name a path** — ``Write``, ``Edit``,
+``NotebookEdit``, ``apply_patch``. They do not inspect a shell command, so a
+non-role subagent holding ``Bash`` can write anything its own permissions allow,
+and this hook will not be what stops it. That is the deliberate trade: the
+alternative, denying every unrecognized subagent every tool, locked reviewers
+and Explore passes out of unrelated repositories machine-wide. Read the two
+checks as protection against an honest agent editing the wrong file, not as a
+boundary around a hostile one. A *role* is different — it holds no shell at all.
 
 The hook remains defense in depth, not a security sandbox. Malformed hook input
 and calls without a subagent identity stay out of the founder's way. A known
@@ -38,11 +56,33 @@ GATEWAY_TOOLS = frozenset({
     "read_reference", "write_owned_state", "close_role_session",
 })
 OUTBOUND_TOOLS = frozenset({"Bash", "WebFetch", "WebSearch"})
+# A role does not spawn subagents. One-level orchestration is the packaged
+# contract (`check_one_level_orchestration`) and no role's frontmatter lists
+# these, but the guard denies them anyway: a role that can spawn a subagent
+# escapes its own lockdown through the child, which is bound by far less.
+NESTED_AGENT_TOOLS = frozenset({"Task", "Agent"})
 DIRECT_FILE_TOOLS = frozenset({
     "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep", "apply_patch",
 })
 MCP_TOOL = re.compile(r"^mcp__")
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+# Agent identities may carry a host namespace — `founder-os:cfo` on Claude
+# Code. turn_id keeps SAFE_ID: it becomes a filename and never holds a colon.
+SAFE_AGENT = re.compile(r"^[A-Za-z0-9._:-]+$")
+# This plugin's name, which is also the namespace the host prefixes onto its
+# subagent identities. Pinned to `founder-os` by `check_plugin`.
+PLUGIN_NAMESPACE = "founder-os"
+GATEWAY_SERVER = "founder_os_state"
+# The gateway server as each host registers it, normalized: the packaged name,
+# and Claude Code's `mcp__plugin_<plugin>_<server>__<action>` wrapping. Both
+# halves of the wrapped form are validator-pinned (`check_plugin`,
+# `check_host_adapters`). This is an exact allowlist on purpose — see
+# `_gateway_tool_name`.
+GATEWAY_SERVERS = frozenset({
+    GATEWAY_SERVER,
+    "plugin_%s_%s" % (PLUGIN_NAMESPACE.replace("-", "_"), GATEWAY_SERVER),
+})
+ROLE_BY_FOLDED = {name.casefold(): name for name in ROLE_NAMES}
 SESSION_FIELDS = frozenset({
     "capability_hash", "workspace_id", "role", "correlation_id", "workflow",
     "expires_at", "status",
@@ -448,17 +488,55 @@ def _deny_tool(agent_type, tool_name, reason):
     )
 
 
+def _role_of(agent_type):
+    """Bare role name for one of *this plugin's* role identities, or None.
+
+    Claude Code identifies plugin subagents as ``<plugin>:<agent>``; Codex and
+    the packaged fixtures use the bare name.
+
+    Only this plugin's namespace counts. `cfo`, `strategist` and `board-member`
+    are ordinary agent names, so a second installed plugin shipping one arrives
+    as ``<their-plugin>:cfo`` — that is their agent, and it must not inherit the
+    founder's CFO authority at the gateway. It is a stranger, handled as one.
+
+    The bare segment is matched casefolded because `owner_of` is casefolded and
+    the filesystem may be too: without this, ``founder-os:CFO`` would be "not a
+    role" to the lockdown and the CFO to the ownership map at the same time.
+    Role-ness decides whether the lockdown applies at all, so a near miss has
+    to resolve toward the restricted reading, not away from it.
+    """
+    if not isinstance(agent_type, str):
+        return None
+    namespace, separator, bare = agent_type.rpartition(":")
+    if separator and namespace.casefold() != PLUGIN_NAMESPACE:
+        return None
+    return ROLE_BY_FOLDED.get(bare.casefold())
+
+
 def _gateway_tool_name(tool_name):
-    """Return a known local action, ``""`` for an unknown local action, else None."""
+    """Return a known local action, ``""`` for an unknown local action, else None.
+
+    Hosts register the same server under different outer names: the packaged
+    shape is ``mcp__founder-os-state__<action>``, and Claude Code wraps plugin
+    servers as ``mcp__plugin_founder-os_founder-os-state__<action>``. Both
+    normalized names are in `GATEWAY_SERVERS` and nothing else is.
+
+    The allowlist is exact rather than a suffix test. Matching
+    ``*_founder_os_state`` reads as conservative — "treat a lookalike as ours
+    and capability-check it" — but it inverts the decision it is guarding:
+    an unrecognized server's baseline is *denied*, so adopting it turns a deny
+    into an allow, and for the six capability-bound actions it hands the
+    founder's live capability token to whatever named itself that way.
+    ``mcp__evil-founder-os-state__write_owned_state`` matched, and so did
+    ``mcp__x__founder-os-state__read_state``, because ``_`` is also the tail of
+    ``__``. An unknown wrapper must deny.
+    """
     if not isinstance(tool_name, str) or not MCP_TOOL.match(tool_name):
         return None
-    parts = tool_name.split("__")
-    if len(parts) != 3:
+    head, _, action = tool_name.rpartition("__")
+    server = head[len("mcp__"):].replace("-", "_")
+    if server not in GATEWAY_SERVERS:
         return None
-    server = parts[1].replace("-", "_")
-    if server != "founder_os_state":
-        return None
-    action = parts[2]
     return action if action in GATEWAY_TOOLS else ""
 
 
@@ -540,8 +618,12 @@ def _session_role(tool_input):
     return role
 
 
-def check_gateway(agent_type, tool_name, tool_input):
-    """Authorize only the capability-consistent local gateway surface."""
+def check_gateway(agent_type, role, tool_name, tool_input):
+    """Authorize only the capability-consistent local gateway surface.
+
+    ``role`` is the normalized bare role name (`_role_of`), or None when the
+    caller is not one of the thirteen roles.
+    """
     action = _gateway_tool_name(tool_name)
     if action is None:
         _deny_tool(agent_type, tool_name, "Other MCP servers are not allowed.")
@@ -552,12 +634,12 @@ def check_gateway(agent_type, tool_name, tool_input):
     if action == "resolve_workspace":
         return
 
-    role = _session_role(tool_input)
-    if role is None:
+    session_role = _session_role(tool_input)
+    if session_role is None:
         _deny_tool(agent_type, tool_name, "A live role capability is required.")
-    if agent_type in ROLE_NAMES and role != agent_type:
+    if role is not None and session_role != role:
         _deny_tool(agent_type, tool_name, "The capability belongs to a different role.")
-    if agent_type not in ROLE_NAMES and agent_type not in GENERIC_AGENT_TYPES:
+    if role is None and agent_type not in GENERIC_AGENT_TYPES:
         _deny_tool(agent_type, tool_name, "The subagent identity is not an approved role fallback.")
 
 
@@ -572,12 +654,18 @@ def check_outbound(agent_type, tool_name):
 
 
 def _patch_paths(command):
-    """Return paths touched by a Codex apply_patch payload."""
+    """Return paths touched by a Codex apply_patch payload.
+
+    Case-insensitive: a header the regex does not recognize yields no paths,
+    and no paths means `check_ownership` returns without an opinion. Matching
+    the verb's exact case made `*** update File: _local/ownership.yaml` an
+    allow and `*** Update File: …` a deny.
+    """
     if not isinstance(command, str):
         return []
     paths = []
-    marker = re.compile(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$")
-    move = re.compile(r"^\*\*\* Move to: (.+)$")
+    marker = re.compile(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", re.I)
+    move = re.compile(r"^\*\*\* Move to: (.+)$", re.I)
     for line in command.splitlines():
         match = marker.match(line) or move.match(line)
         if match:
@@ -661,7 +749,7 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
 def agent_type_for(data):
     """Resolve the subagent type from Claude input or Codex turn state."""
     direct = data.get("agent_type")
-    if isinstance(direct, str) and SAFE_ID.fullmatch(direct):
+    if isinstance(direct, str) and SAFE_AGENT.fullmatch(direct):
         return direct
     turn_id = data.get("turn_id")
     if not isinstance(turn_id, str) or not SAFE_ID.fullmatch(turn_id):
@@ -674,7 +762,7 @@ def agent_type_for(data):
     if not isinstance(payload, dict) or set(payload) != {"agent_type"}:
         return None
     resolved = payload.get("agent_type")
-    return resolved if isinstance(resolved, str) and SAFE_ID.fullmatch(resolved) else None
+    return resolved if isinstance(resolved, str) and SAFE_AGENT.fullmatch(resolved) else None
 
 
 def main():
@@ -690,10 +778,11 @@ def main():
         allow("hook input is not an object")
 
     tool_name = data.get("tool_name") or ""
-    for identity_field in ("agent_type", "turn_id"):
+    for identity_field, pattern in (("agent_type", SAFE_AGENT),
+                                    ("turn_id", SAFE_ID)):
         if identity_field in data:
             identity_value = data.get(identity_field)
-            if not isinstance(identity_value, str) or not SAFE_ID.fullmatch(
+            if not isinstance(identity_value, str) or not pattern.fullmatch(
                 identity_value
             ):
                 _deny_tool(
@@ -726,9 +815,28 @@ def main():
     if not isinstance(tool_input, dict):
         tool_input = {}
 
-    if MCP_TOOL.match(tool_name):
-        check_gateway(agent_type, tool_name, tool_input)
+    role = _role_of(agent_type)
+    if role is None:
+        # Not one of the thirteen decision roles: a reviewer, an Explore pass,
+        # another plugin's agent. The gateway lockdown is not for them — only
+        # the overlay and the ownership map are.
+        if MCP_TOOL.match(tool_name):
+            if _gateway_tool_name(tool_name) is not None:
+                check_gateway(agent_type, None, tool_name, tool_input)
+            allow("foreign MCP is not this guard's business")
+        check_ownership(agent_type, tool_name, tool_input, data.get("cwd"))
         allow()
+
+    if MCP_TOOL.match(tool_name):
+        check_gateway(agent_type, role, tool_name, tool_input)
+        allow()
+    if tool_name in NESTED_AGENT_TOOLS:
+        _deny_tool(
+            agent_type,
+            tool_name,
+            "A role does not spawn subagents; the child would be bound by "
+            "less than the role is.",
+        )
     if tool_name in OUTBOUND_TOOLS:
         check_outbound(agent_type, tool_name)
     if tool_name in DIRECT_FILE_TOOLS:

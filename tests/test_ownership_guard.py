@@ -1103,6 +1103,264 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
                     )
                     self._deny_payload(result)
 
+    def test_another_plugins_agent_named_like_a_role_cannot_use_the_gateway(self):
+        # `cfo` and `strategist` are ordinary agent names, so a second
+        # installed plugin shipping one arrives as `<their-plugin>:cfo`. Taking
+        # the segment after the last colon made it *the* founder's CFO, live
+        # capability and all. A live capability is the point of this test: with
+        # a fake one the deny lands on the missing capability instead and the
+        # identity confusion goes unnoticed.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir)
+            for agent_type in ("acme-analytics:cfo", "a:b:c:d:cfo",
+                               "notfounder-os:cfo"):
+                with self.subTest(agent_type=agent_type):
+                    result = run_codex_hook(
+                        {
+                            "agent_type": agent_type,
+                            "tool_name":
+                            "mcp__founder-os-state__write_owned_state",
+                            "cwd": str(REPO_ROOT),
+                            "tool_input": {
+                                "capability": capability,
+                                "path": "metrics.md",
+                            },
+                        },
+                        temp_dir,
+                    )
+                    self._deny_payload(result)
+                    self.assertIn(
+                        "not an approved role fallback", result.stdout
+                    )
+            # The same capability from the role it was issued to still works,
+            # so the deny above is about identity and not about the token.
+            self.assertEqual(
+                self._gateway_call(capability, temp_dir, "founder-os:cfo")
+                .stdout.strip(),
+                "",
+            )
+
+
+class TestHostRuntimeShapes(unittest.TestCase):
+    """The guard must speak the shapes the host actually sends.
+
+    Claude Code registers plugin MCP tools as
+    ``mcp__plugin_founder-os_founder-os-state__<action>`` and identifies plugin
+    subagents as ``<plugin>:<agent>`` (``founder-os:cfo``). The 2026-07-30 audit
+    (CFG-001/CFG-002) found the guard only understood the bare fixtures below,
+    which never occur on Claude Code at runtime: every non-role subagent was
+    locked out of every tool, and the roles were locked out of their own
+    gateway.
+    """
+
+    PREFIXED_RESOLVE = "mcp__plugin_founder-os_founder-os-state__resolve_workspace"
+
+    # CFG-001 — subagents that are not Founder OS roles are outside the
+    # gateway lockdown. Only the overlay and the ownership map bind them.
+    def test_general_purpose_read_is_allowed(self):
+        p = run_hook({"agent_type": "general-purpose", "tool_name": "Read",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path": "/etc/hosts"}})
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertEqual(p.returncode, 0)
+
+    def test_explore_bash_is_allowed(self):
+        p = run_hook({"agent_type": "Explore", "tool_name": "Bash",
+                      "cwd": str(REPO_ROOT), "tool_input": {"command": "ls"}})
+        self.assertEqual(p.stdout.strip(), "")
+
+    def test_namespaced_reviewer_read_is_allowed(self):
+        p = run_hook({"agent_type": "solkova-core:code-reviewer",
+                      "tool_name": "Read", "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path": "/etc/hosts"}})
+        self.assertEqual(p.stdout.strip(), "")
+
+    def test_foreign_mcp_by_non_role_is_allowed(self):
+        p = run_hook({"agent_type": "general-purpose",
+                      "tool_name": "mcp__plugin_posthog_posthog__exec",
+                      "cwd": str(REPO_ROOT), "tool_input": {}})
+        self.assertEqual(p.stdout.strip(), "")
+
+    def test_non_role_write_to_owned_file_names_the_owner(self):
+        p = run_hook({"agent_type": "general-purpose", "tool_name": "Write",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path": str(PLUGIN_ROOT / "goals.md")}})
+        self.assertIn("deny", p.stdout)
+        self.assertIn("strategist", p.stdout)
+
+    def test_non_role_write_under_local_is_denied(self):
+        p = run_hook({"agent_type": "general-purpose", "tool_name": "Write",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path":
+                                     str(PLUGIN_ROOT / "_local" / "ownership.yaml")}})
+        self.assertIn("deny", p.stdout)
+
+    # CFG-002 — a namespaced role identity is that role, locked down as before.
+    def test_namespaced_role_read_is_denied(self):
+        p = run_hook({"agent_type": "founder-os:cfo", "tool_name": "Read",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {"file_path": "/etc/hosts"}})
+        self.assertIn("deny", p.stdout)
+
+    def test_namespaced_role_bash_is_denied(self):
+        p = run_hook({"agent_type": "founder-os:cfo", "tool_name": "Bash",
+                      "cwd": str(REPO_ROOT), "tool_input": {"command": "ls"}})
+        self.assertIn("deny", p.stdout)
+        self.assertIn("house rule 0", p.stdout.lower())
+
+    # CFG-002 — the gateway is recognized under the host-registered name.
+    def test_prefixed_resolve_workspace_by_role_is_allowed(self):
+        p = run_hook({"agent_type": "cfo", "tool_name": self.PREFIXED_RESOLVE,
+                      "cwd": str(REPO_ROOT), "tool_input": {}})
+        self.assertEqual(p.stdout.strip(), "")
+
+    def test_prefixed_resolve_workspace_by_namespaced_role_is_allowed(self):
+        p = run_hook({"agent_type": "founder-os:cfo",
+                      "tool_name": self.PREFIXED_RESOLVE,
+                      "cwd": str(REPO_ROOT), "tool_input": {}})
+        self.assertEqual(p.stdout.strip(), "")
+
+    def test_prefixed_foreign_server_by_role_is_denied(self):
+        p = run_hook({"agent_type": "cfo",
+                      "tool_name": "mcp__plugin_posthog_posthog__exec",
+                      "cwd": str(REPO_ROOT), "tool_input": {}})
+        self.assertIn("deny", p.stdout)
+
+    def test_prefixed_unknown_gateway_action_is_denied(self):
+        p = run_hook({"agent_type": "cfo",
+                      "tool_name":
+                      "mcp__plugin_founder-os_founder-os-state__delete_state",
+                      "cwd": str(REPO_ROOT), "tool_input": {}})
+        self.assertIn("deny", p.stdout)
+
+    def test_prefixed_read_state_without_capability_is_denied(self):
+        p = run_hook({"agent_type": "founder-os:cfo",
+                      "tool_name":
+                      "mcp__plugin_founder-os_founder-os-state__read_state",
+                      "cwd": str(REPO_ROOT), "tool_input": {}})
+        self.assertIn("deny", p.stdout)
+        self.assertIn("capability", p.stdout.lower())
+
+    # Self-elevation is the deny with the highest consequence: a subagent that
+    # can open its own role session chooses its own capability, and every
+    # other gateway check becomes advisory. It must hold in the shape the host
+    # actually sends, not only under the packaged name.
+    def test_prefixed_open_role_session_by_role_is_denied(self):
+        for agent_type in ("cfo", "founder-os:cfo", "general-purpose"):
+            with self.subTest(agent_type=agent_type):
+                p = run_hook({
+                    "agent_type": agent_type,
+                    "tool_name":
+                    "mcp__plugin_founder-os_founder-os-state__open_role_session",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {"role": "cfo"},
+                })
+                self.assertIn("deny", p.stdout)
+
+
+class TestRuntimeShapeFailOpen(unittest.TestCase):
+    """Each accommodation for a host shape must not widen who is trusted.
+
+    Teaching the guard to speak two tool-name shapes and two identity shapes
+    is a matching problem, and every loose match here trades a false deny for
+    a false allow. A fresh-agent audit of the 2026-07-30 batch found four such
+    trades. These pin them shut.
+    """
+
+    def test_server_merely_ending_in_the_gateway_name_is_not_the_gateway(self):
+        # Matching `*_founder_os_state` reads as conservative — treat a
+        # lookalike as ours and capability-check it — but an unrecognized
+        # server's baseline is *denied*, so adopting it turns a deny into an
+        # allow and sends the founder's capability to whoever named themselves
+        # that way. `_` is also the tail of `__`, so a nested name matched too.
+        # `resolve_workspace` on purpose: it is the one action that needs no
+        # capability, so the server check is the only thing that can deny. A
+        # capability-bound action would deny on the missing capability instead
+        # and pass this test with the suffix match still in place.
+        for server in ("evil-founder-os-state", "x__founder-os-state",
+                       "notfounder_os_state", "plugin_acme_founder-os-state"):
+            with self.subTest(server=server):
+                p = run_hook({"agent_type": "cfo",
+                              "tool_name": "mcp__%s__resolve_workspace" % server,
+                              "cwd": str(REPO_ROOT), "tool_input": {}})
+                self.assertIn("deny", p.stdout)
+                self.assertIn("Other MCP servers are not allowed", p.stdout)
+
+    def test_both_registered_gateway_names_are_still_recognized(self):
+        for tool_name in (
+            "mcp__founder-os-state__resolve_workspace",
+            "mcp__plugin_founder-os_founder-os-state__resolve_workspace",
+        ):
+            with self.subTest(tool_name=tool_name):
+                p = run_hook({"agent_type": "cfo", "tool_name": tool_name,
+                              "cwd": str(REPO_ROOT), "tool_input": {}})
+                self.assertEqual(p.stdout.strip(), "")
+
+    def test_role_name_in_the_wrong_case_is_still_the_role(self):
+        # Role-ness decides whether the lockdown applies at all, so a near
+        # miss has to resolve toward the restricted reading. `owner_of` is
+        # casefolded and APFS is too, so the alternative is an identity that
+        # is "not a role" to the lockdown and the CFO to the ownership map.
+        for agent_type in ("founder-os:CFO", "FOUNDER-OS:cfo", "Cfo"):
+            with self.subTest(agent_type=agent_type):
+                p = run_hook({"agent_type": agent_type, "tool_name": "Bash",
+                              "cwd": str(REPO_ROOT),
+                              "tool_input": {"command": "id"}})
+                self.assertIn("deny", p.stdout)
+
+    def test_role_may_not_spawn_a_subagent(self):
+        # A role holds no shell. A child of that role does, so spawning one
+        # walks the whole lockdown out through the child.
+        for tool_name in ("Task", "Agent"):
+            for agent_type in ("cfo", "founder-os:cfo"):
+                with self.subTest(tool_name=tool_name, agent_type=agent_type):
+                    p = run_hook({
+                        "agent_type": agent_type, "tool_name": tool_name,
+                        "cwd": str(REPO_ROOT),
+                        "tool_input": {"subagent_type": "general-purpose",
+                                       "prompt": "write metrics.md"},
+                    })
+                    self.assertIn("deny", p.stdout)
+
+    def test_nested_agent_tools_reach_the_guard_at_all(self):
+        # The deny above is dead code unless the PreToolUse matcher admits
+        # these tool names.
+        matcher = json.loads(
+            (PLUGIN_ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8")
+        )["hooks"]["PreToolUse"][0]["matcher"]
+        for tool_name in ("Task", "Agent"):
+            with self.subTest(tool_name=tool_name):
+                self.assertRegex(tool_name, matcher)
+
+    def test_subagent_spawning_is_left_to_everyone_else(self):
+        for payload in (
+            {"agent_type": "general-purpose", "tool_name": "Task"},
+            {"tool_name": "Task"},  # main thread — the founder is the CEO
+        ):
+            with self.subTest(payload=payload):
+                p = run_hook({**payload, "cwd": str(REPO_ROOT),
+                              "tool_input": {}})
+                self.assertEqual(p.stdout.strip(), "")
+
+    def test_apply_patch_header_case_does_not_decide_the_overlay(self):
+        # An unrecognized header yields no paths, and no paths means
+        # check_ownership returns without an opinion — so the verb's case
+        # decided whether `_local/` was protected.
+        for verb in ("Update", "update", "UPDATE", "uPdAtE"):
+            with self.subTest(verb=verb):
+                p = run_hook({
+                    "agent_type": "general-purpose",
+                    "tool_name": "apply_patch",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "command": "*** Begin Patch\n"
+                                   "*** %s File: founder-os/_local/ownership.yaml\n"
+                                   "*** End Patch" % verb,
+                    },
+                })
+                self.assertIn("deny", p.stdout)
+                self.assertIn("overlay", p.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

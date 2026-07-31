@@ -5,6 +5,94 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+**The 2.5.0 role contract now executes on Claude Code.** It could not before.
+The package pinned internal shapes the host never sends, so the whole gateway
+contract was correct on paper and inert in practice.
+
+- **Roles spawned with zero tools.** Claude Code registers a plugin's MCP tools
+  under a namespaced name — `mcp__plugin_founder-os_founder-os-state__<action>`
+  — and the agent allowlists named the packaged form. Every one of the six
+  entries resolved to nothing, and the host refused the spawn outright rather
+  than starting a role that could do nothing. The allowlists, the validator and
+  the contract tests now name the registered form.
+- **The guard locked every other subagent out of every tool.** It treated any
+  subagent it could not identify as a role under the role lockdown, so a code
+  reviewer, an `Explore` pass, or an unrelated plugin's agent was denied Bash,
+  Read and foreign MCP — machine-wide, in any repository the hook ran in. A
+  subagent that is not one of the thirteen roles is now bound by two checks and
+  nothing more: no write under `_local/`, no write to a file the ownership map
+  gives someone else. Both read the path out of the tool call, so they bind
+  `Write`, `Edit`, `NotebookEdit` and `apply_patch` and they do not inspect a
+  shell command — a non-role subagent holding `Bash` can still write anything
+  its own permissions allow, and this hook is not what stops it. That is the
+  trade for not locking reviewers out of unrelated repositories, and the module
+  docstring now says so instead of implying the two checks are absolute.
+- **The guard reads the identities and tool names the host actually sends.**
+  Claude Code names plugin subagents `<plugin>:<agent>`, so `founder-os:cfo` is
+  the CFO and is locked down as one. The gateway is recognized under both the
+  packaged and the host-wrapped server name; a foreign server that merely looks
+  like ours is treated as ours and capability-checked, which fails closed.
+
+**Four fail-open trades, found by auditing the accommodation itself.** Teaching
+the guard to accept two tool-name shapes and two identity shapes is a matching
+problem, and every loose match trades a false deny for a false allow. A
+fresh-agent audit of the change found four, each now pinned by a test that fails
+against the unfixed guard.
+
+- **Any MCP server whose name merely ended in `_founder_os_state` was adopted as
+  the founder's own gateway.** `mcp__evil-founder-os-state__write_owned_state`
+  was allowed, and the founder's live capability token travelled to it in the
+  tool payload; `resolve_workspace` reached it with no check at all. The
+  suffix test was written believing it failed closed — it inverts the decision
+  it guards, because an unrecognized server's baseline is *denied*, so adopting
+  one turns a deny into an allow. Now an exact allowlist of the two names the
+  guard actually needs.
+- **A second plugin's agent named `cfo` inherited the founder's CFO authority.**
+  Role identity was read as "the segment after the last colon", so
+  `acme-analytics:cfo` was the CFO — at the gateway, holding a live capability,
+  writing owned state. Only this plugin's namespace counts now; another
+  plugin's agent is a stranger and is handled as one.
+- **A role could walk its own lockdown out through a child.** `Task` and `Agent`
+  were absent from the hook's matcher entirely, so a role — which holds no
+  shell — could spawn a general-purpose subagent that does. One-level
+  orchestration was already the packaged contract; the guard enforces it now
+  rather than assuming the frontmatter will.
+- **`founder-os:CFO` was not a role to the lockdown and the CFO to the ownership
+  map at the same time**, because role matching was case-sensitive while
+  `owner_of` and the filesystem are not. Role matching is casefolded, so a near
+  miss resolves toward the restricted reading.
+- Also fixed, and older than this batch: an `apply_patch` header whose verb was
+  lowercased yielded no paths, and no paths means no opinion — so
+  `*** update File: _local/ownership.yaml` was allowed where
+  `*** Update File: …` was denied.
+
+**Guidance corrections.**
+
+- The always-loaded `CLAUDE.md` file map omitted `evaluations/`, a directory the
+  ownership map has always shipped — and so did `docs/workspace-state.md`, the
+  page that calls itself the full map of workspace state. Both now match
+  `workspace_files:` by contract test: the prose sentence is expanded and
+  compared as a set, and the public table's first column must equal the map
+  exactly.
+- Rule 0's enumeration gained "no subscription cancelled" wherever the rule is
+  recited — the canonical text, the public mirror, and `docs/concepts.md`, which
+  introduces it as "the load-bearing rule" and carried a version one item short.
+  A cancellation is money moving and was already covered by the rule's intent;
+  leaving it unnamed in the copy an agent reads every session was the risk. The
+  test now *discovers* every file reciting the enumeration rather than checking a
+  hand-kept list, and fails if that discovery ever returns nothing.
+- The planning-artifact test asserted that `docs/superpowers/` was absent from
+  the working tree, which failed on any machine with an open plan and never
+  checked the property that actually matters. It now pins that nothing under
+  that path is tracked, which is what "not shipped" means for a directory
+  published from tracked files.
+
+**Verification.** The guard's runtime shapes are pinned by unit tests and by the
+installed-copy smoke, including the self-elevation deny — a subagent opening its
+own role session picks its own capability, which makes every other gateway check
+advisory — under the host-registered tool name and the namespaced identity, not
+only under the packaged ones.
+
 ## 2.5.0 — 2026-07-27
 
 **Full host parity.** Claude Code and Codex now execute the same packaged role

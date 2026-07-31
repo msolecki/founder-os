@@ -24,12 +24,12 @@ from _package import (SYSTEM_SKILLS, STANDALONE_SKILLS, UNIVERSAL_SKILLS,
 # existing is the thing the rule is about.
 OUTBOUND_TOOLS = {"Bash", "WebFetch", "WebSearch", "NotebookEdit", "Task"}
 ROLE_GATEWAY_TOOLS = {
-    "mcp__founder-os-state__resolve_workspace",
-    "mcp__founder-os-state__list_state",
-    "mcp__founder-os-state__read_state",
-    "mcp__founder-os-state__read_reference",
-    "mcp__founder-os-state__write_owned_state",
-    "mcp__founder-os-state__close_role_session",
+    "mcp__plugin_founder-os_founder-os-state__resolve_workspace",
+    "mcp__plugin_founder-os_founder-os-state__list_state",
+    "mcp__plugin_founder-os_founder-os-state__read_state",
+    "mcp__plugin_founder-os_founder-os-state__read_reference",
+    "mcp__plugin_founder-os_founder-os-state__write_owned_state",
+    "mcp__plugin_founder-os_founder-os-state__close_role_session",
 }
 ALLOWED_AGENT_TOOLS = ROLE_GATEWAY_TOOLS
 

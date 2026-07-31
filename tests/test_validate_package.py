@@ -32,12 +32,12 @@ import validate_package as V
 
 UNIVERSALS = ["guardrails", "state-integrity", "ingestion-gate"]
 DEFAULT_TOOLS = (
-    "mcp__founder-os-state__resolve_workspace, "
-    "mcp__founder-os-state__list_state, "
-    "mcp__founder-os-state__read_state, "
-    "mcp__founder-os-state__read_reference, "
-    "mcp__founder-os-state__write_owned_state, "
-    "mcp__founder-os-state__close_role_session"
+    "mcp__plugin_founder-os_founder-os-state__resolve_workspace, "
+    "mcp__plugin_founder-os_founder-os-state__list_state, "
+    "mcp__plugin_founder-os_founder-os-state__read_state, "
+    "mcp__plugin_founder-os_founder-os-state__read_reference, "
+    "mcp__plugin_founder-os_founder-os-state__write_owned_state, "
+    "mcp__plugin_founder-os_founder-os-state__close_role_session"
 )
 
 # The four headings every agent body must carry, in this order.
@@ -492,8 +492,13 @@ class TestOneLevelOrchestration(ValidatorTestCase):
         for tool in (
             "Task",
             "Write",
-            "mcp__founder-os-state__delete_state",
-            "mcp__founder-os-state__resolve_workspace(evil)",
+            # Prefixed on purpose: under the legacy bare name these two are
+            # rejected because the whole server prefix is now foreign, which
+            # never reaches the branch the case is named for. Only the
+            # host-registered prefix tests "unknown action" and "decorated
+            # known action".
+            "mcp__plugin_founder-os_founder-os-state__delete_state",
+            "mcp__plugin_founder-os_founder-os-state__resolve_workspace(evil)",
         ):
             with self.subTest(tool=tool):
                 self.write_agent(

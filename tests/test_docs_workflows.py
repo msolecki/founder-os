@@ -8,6 +8,8 @@ from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
 
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HTML = (REPO_ROOT / "docs" / "index.html").read_text(encoding="utf-8")
 MARKETPLACE = json.loads(
@@ -578,6 +580,124 @@ class ActivationCopyContractTest(unittest.TestCase):
                 self.assertTrue(agent_markers)
                 agents = min(agent_markers)
                 self.assertLess(outcome, agents)
+
+
+def _flowed(text):
+    """Text with every run of whitespace collapsed to one space.
+
+    Every assertion below is about wording, not line wrapping. Matching the
+    raw bytes would pin the hard wrap too, so a reflow that changes no words
+    would fail and — worse — a phrase that happens to straddle a line break
+    would read as absent. Both were live: `docs/concepts.md` and
+    `founder-os/agents/cfo.md` carry "no subscription cancelled" across a
+    newline.
+    """
+    return " ".join(text.split())
+
+
+class CanonicalGuidanceContractTest(unittest.TestCase):
+    """The always-loaded CLAUDE.md must agree with the map it defers to."""
+
+    # A term in the file map: a lowercase word that may carry digits or
+    # hyphens, so the first workspace file named like `client-health.md` does
+    # not break a test that is correct on both sides.
+    TERM = r"[a-z][a-z0-9-]*"
+    CANONICAL = (REPO_ROOT / "founder-os" / "CLAUDE.md").read_text(
+        encoding="utf-8"
+    )
+    OWNERSHIP = (
+        REPO_ROOT / "founder-os" / "references" / "ownership.yaml"
+    ).read_text(encoding="utf-8")
+    WORKSPACE_STATE = (REPO_ROOT / "docs" / "workspace-state.md").read_text(
+        encoding="utf-8"
+    )
+    # Every file that recites rule 0's enumeration must recite all of it. The
+    # 2026-07-30 fix listed the three it knew about and a fourth
+    # (`docs/concepts.md`) kept the short version, so the list is discovered
+    # rather than maintained — but it may never silently discover nothing.
+    RULE_ZERO_MARKER = "no signature"
+    RULE_ZERO_REQUIRED = {
+        "founder-os/CLAUDE.md",
+        "founder-os/references/house-rules.md",
+        "docs/house-rules.md",
+        "docs/concepts.md",
+    }
+
+    def _workspace_files(self):
+        return set(yaml.safe_load(self.OWNERSHIP)["workspace_files"])
+
+    def test_claude_md_file_map_matches_ownership_workspace_files(self):
+        # CLAUDE.md carries the file map as one prose sentence ("one owner per
+        # file: inbox, charter, …"). Expand it and require set equality with
+        # `workspace_files:` — the 2026-07-30 audit found `evaluations/`
+        # shipped in the map but missing from the sentence (RULE-001).
+        match = re.search(
+            r"one owner per file:\s*(.*?)\.\s", _flowed(self.CANONICAL)
+        )
+        self.assertIsNotNone(
+            match, "CLAUDE.md no longer carries the file-map sentence"
+        )
+        expanded = []
+        for term in re.findall(
+            r"{t}/\{{[a-z0-9,-]+\}}/|{t}/|{t}".format(t=self.TERM),
+            match.group(1),
+        ):
+            brace = re.fullmatch(
+                r"({t})/\{{([a-z0-9,-]+)\}}/".format(t=self.TERM), term
+            )
+            if brace:
+                expanded.extend(
+                    "%s/%s/" % (brace.group(1), leaf)
+                    for leaf in brace.group(2).split(",")
+                )
+            elif term.endswith("/"):
+                expanded.append(term)
+            else:
+                expanded.append(term + ".md")
+        self.assertEqual(sorted(set(expanded)), sorted(self._workspace_files()))
+
+    def test_public_state_page_lists_every_owned_workspace_file(self):
+        # docs/workspace-state.md calls itself "the full map of that state".
+        # It is the reader-facing twin of `workspace_files:` and drifted the
+        # same way CLAUDE.md did: `evaluations/` shipped owned but unlisted.
+        listed = {
+            row[0]
+            for row in re.findall(
+                r"^\|\s*`([^`]+)`\s*\|\s*([a-z-]+)\s*\|",
+                self.WORKSPACE_STATE,
+                re.M,
+            )
+        }
+        self.assertEqual(sorted(listed), sorted(self._workspace_files()))
+
+    def test_rule_zero_enumerations_agree_everywhere(self):
+        # The CLAUDE.md summary may not be stricter than the full text it
+        # defers to, and no public mirror may lag either (RULE-002).
+        tracked = subprocess.run(
+            ["git", "ls-files", "--", "*.md"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+        reciting = {
+            name
+            for name in tracked
+            if self.RULE_ZERO_MARKER
+            in _flowed((REPO_ROOT / name).read_text(encoding="utf-8"))
+        }
+        self.assertTrue(
+            self.RULE_ZERO_REQUIRED <= reciting,
+            "rule 0's enumeration vanished from %s — if it moved, move this "
+            "list with it" % sorted(self.RULE_ZERO_REQUIRED - reciting),
+        )
+        for name in sorted(reciting):
+            with self.subTest(source=name):
+                self.assertIn(
+                    "no subscription cancelled",
+                    _flowed((REPO_ROOT / name).read_text(encoding="utf-8")),
+                    "%s dropped an item from rule 0's enumeration" % name,
+                )
 
 
 if __name__ == "__main__":

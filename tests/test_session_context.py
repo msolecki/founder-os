@@ -87,6 +87,13 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
         self.assertIsNone(outcomes["native_allowed"])
         self.assertIsNone(outcomes["fallback_allowed"])
         self.assertIsNone(outcomes["main_thread"])
+        # claude_namespaced_gateway / claude_reviewer_read /
+        # claude_namespaced_direct_denied pin the shapes Claude Code actually
+        # sends at runtime (`founder-os:<role>` identities and
+        # `mcp__plugin_founder-os_founder-os-state__*` tool names) — added by
+        # the 2026-07-30 audit fix (CFG-002).
+        self.assertIsNone(outcomes["claude_namespaced_gateway"])
+        self.assertIsNone(outcomes["claude_reviewer_read"])
         self.assertEqual(
             set(outcomes),
             {
@@ -94,6 +101,10 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
                 "native_allowed",
                 "fallback_allowed",
                 "fallback_direct_denied",
+                "claude_namespaced_gateway",
+                "claude_reviewer_read",
+                "claude_namespaced_direct_denied",
+                "claude_namespaced_elevation",
                 "direct_file",
                 "wrong_role",
                 "elevation",
@@ -105,6 +116,8 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
         for key in (
             "direct_file",
             "fallback_direct_denied",
+            "claude_namespaced_direct_denied",
+            "claude_namespaced_elevation",
             "wrong_role",
             "elevation",
         ):

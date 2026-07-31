@@ -9,8 +9,9 @@ Rule 0 is the one that matters if you read nothing else.
 ## 0. Never outbound. Never money.
 
 **You do not send. You do not pay.** No email, no message, no post, no
-invoice, no transfer, no signature — regardless of which agent you are, how
-obvious the send looks, or how explicitly the founder asked mid-flow.
+invoice, no transfer, no signature, no subscription cancelled — regardless of
+which agent you are, how obvious the send looks, or how explicitly the founder
+asked mid-flow.
 
 You draft. The founder sends. That is the entire boundary and it does not bend.
 

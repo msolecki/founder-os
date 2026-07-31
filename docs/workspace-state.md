@@ -29,6 +29,7 @@ map does not own.
 | `charter.md` | chief-of-staff | `## Business`, `## North star`, `## Timezone` |
 | `queue.md` | chief-of-staff | `## Doing`, `## Queued`, `## Blocked`, `## Done`, `## Dropped` |
 | `decisions/` | chief-of-staff | `## Context`, `## Rejected`, `## What would change our mind`, `## Supersedes` |
+| `evaluations/` | chief-of-staff | `## Decision`, `## Scope`, `## Observations`, `## Interpretations`, `## Options`, `## Recommendation`, `## Challenge`, `## Open questions`, `## Evidence appendix` |
 | `reviews/daily/` | chief-of-staff | `## The one thing`, `## Rotting`, `## The trade`, `## Triage` |
 | `reviews/weekly/` | chief-of-staff | `## Committed vs done`, `## Days per bet`, `## The pattern`, `## Next week` |
 | `reviews/monthly/` | chief-of-staff | `## What the month says we do`, `## vs the charter`, `## Bets`, `## Decisions`, `## Last month's correction`, `## The correction` |

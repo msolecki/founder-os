@@ -353,11 +353,68 @@ def check_ownership_guard(installed_plugin, workspace_root):
         workspace_root,
         "gateway/main-thread",
     )
+    # Claude Code runtime shapes: the host namespaces the subagent identity
+    # (`founder-os:cfo`) and wraps the plugin server's tool names
+    # (`mcp__plugin_founder-os_founder-os-state__*`). The installed guard must
+    # speak both, and must not lock a non-role subagent out of reading.
+    claude_namespaced_gateway = _run_hook(
+        guard_path,
+        {
+            "agent_type": "founder-os:cfo",
+            "tool_name": "mcp__plugin_founder-os_founder-os-state__read_state",
+            "cwd": str(workspace_root),
+            "tool_input": {
+                "capability": capability,
+                "paths": ["metrics.md"],
+            },
+        },
+        env,
+        workspace_root,
+        "gateway/claude-namespaced-role",
+    )
+    claude_namespaced_direct_denied = _run_hook(
+        guard_path,
+        {**direct_payload, "agent_type": "founder-os:cfo"},
+        env,
+        workspace_root,
+        "gateway/claude-namespaced-direct-file-denied",
+    )
+    claude_reviewer_read_allowed = _run_hook(
+        guard_path,
+        {
+            "agent_type": "general-purpose",
+            "tool_name": "Read",
+            "cwd": str(workspace_root),
+            "tool_input": {"file_path": str(target)},
+        },
+        env,
+        workspace_root,
+        "gateway/claude-reviewer-read",
+    )
+    # Self-elevation under the host-registered name. A subagent that opens its
+    # own role session picks its own capability and every other gateway check
+    # becomes advisory, so this deny has to hold in the shape Claude Code
+    # actually sends — not only under the packaged one tested above.
+    claude_namespaced_elevation = _run_hook(
+        guard_path,
+        {
+            "agent_type": "founder-os:cfo",
+            "tool_name":
+            "mcp__plugin_founder-os_founder-os-state__open_role_session",
+            "cwd": str(workspace_root),
+            "tool_input": {"role": "cfo"},
+        },
+        env,
+        workspace_root,
+        "gateway/claude-namespaced-elevation",
+    )
 
     denied = {}
     for label, result in (
         ("direct_file", direct_denied),
         ("fallback_direct_denied", fallback_direct_denied),
+        ("claude_namespaced_direct_denied", claude_namespaced_direct_denied),
+        ("claude_namespaced_elevation", claude_namespaced_elevation),
         ("wrong_role", wrong_role),
         ("elevation", elevation),
     ):
@@ -377,6 +434,12 @@ def check_ownership_guard(installed_plugin, workspace_root):
         ),
         "fallback_allowed": _empty_allow_output(
             fallback_allowed, "gateway/generic-fallback"
+        ),
+        "claude_namespaced_gateway": _empty_allow_output(
+            claude_namespaced_gateway, "gateway/claude-namespaced-role"
+        ),
+        "claude_reviewer_read": _empty_allow_output(
+            claude_reviewer_read_allowed, "gateway/claude-reviewer-read"
         ),
         **denied,
         "main_thread": _empty_allow_output(
