@@ -237,10 +237,36 @@ class StdioGatewayContractTests(unittest.TestCase):
         completed = _run_gateway(
             _initialize(1),
             {"jsonrpc": "2.0", "method": "notifications/initialized"},
-            _request(2, "ping"),
+            _request(2, "ping", {"_meta": {"progressToken": "probe"}}),
         )
         responses = [json.loads(line) for line in completed.stdout.splitlines()]
         self.assertEqual(responses[-1], {"jsonrpc": "2.0", "id": 2, "result": {}})
+
+    def test_list_and_ping_validate_mcp_request_params(self) -> None:
+        completed = _run_gateway(
+            _initialize(1),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            _request(2, "tools/list", []),
+            _request(3, "tools/list", {"cursor": "never-issued"}),
+            _request(4, "tools/list", {"_meta": {"trace": "local"}}),
+            _request(5, "ping", {"unexpected": True}),
+        )
+        responses = [json.loads(line) for line in completed.stdout.splitlines()]
+        self.assertEqual(-32602, responses[1]["error"]["code"])
+        self.assertEqual(-32602, responses[2]["error"]["code"])
+        self.assertEqual(8, len(responses[3]["result"]["tools"]))
+        self.assertEqual(-32602, responses[4]["error"]["code"])
+
+    def test_notification_method_sent_as_request_receives_an_error(self) -> None:
+        completed = _run_gateway(
+            _initialize(1),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            _request(9, "notifications/cancelled", {"requestId": 1}),
+        )
+        responses = [json.loads(line) for line in completed.stdout.splitlines()]
+        self.assertEqual(2, len(responses))
+        self.assertEqual(9, responses[-1]["id"])
+        self.assertEqual(-32601, responses[-1]["error"]["code"])
 
     def test_invalid_json_rpc_envelope_and_initialize_params_are_rejected(self) -> None:
         completed = _run_gateway(

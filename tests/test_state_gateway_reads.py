@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -464,6 +465,29 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                         ).resolve(project, "alpha")
                     )
 
+    def test_registry_rejects_portfolio_as_a_business_slug(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            business = root / "business"
+            project.mkdir()
+            business.mkdir()
+            home = root / "home"
+            write_registry(
+                home,
+                "\n".join(
+                    (
+                        "businesses:",
+                        "  portfolio:",
+                        "    home: " + business.as_posix(),
+                        "    status: active",
+                    )
+                ),
+            )
+            self.assert_unresolved(
+                lambda: WorkspaceResolver(env={}, home=home).resolve(project)
+            )
+
     def test_registry_change_invalidates_an_existing_binding(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -672,6 +696,23 @@ class RoleSessionStoreReadTests(unittest.TestCase):
             workspace_kind="portfolio",
         )
         self.assertEqual("portfolio", self.store.resolve(portfolio).workspace_kind)
+
+    def test_duplicate_workflow_entries_in_agent_frontmatter_fail_closed(self) -> None:
+        agent = self.packaged_root / "agents" / "cfo.md"
+        agent.write_text(
+            "---\nname: cfo\nskills:\n  - revenue-review\n"
+            "  - revenue-review\n---\n# role\n",
+            encoding="utf-8",
+        )
+        self.assert_invalid(
+            lambda: self.store.open(
+                "workspace-1",
+                "cfo",
+                "corr-duplicate-workflow",
+                "revenue-review",
+                "business",
+            )
+        )
 
     def test_forged_cross_store_workspace_or_role_capability_is_rejected(self) -> None:
         capability = self.store.open(
@@ -1037,6 +1078,26 @@ class SafeStateIOTests(unittest.TestCase):
             "STATE_IO_ERROR",
             lambda: reader.list_markdown_page(
                 "**/*.md", cursor=cursor[:-1] + "!"
+            ),
+        )
+
+        boolean_version = base64.urlsafe_b64encode(
+            json.dumps(
+                {
+                    "v": True,
+                    "pattern_sha256": hashlib.sha256(
+                        b"**/*.md"
+                    ).hexdigest(),
+                    "after": "empty.md",
+                },
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+        ).rstrip(b"=").decode("ascii")
+        self.assert_safe_error(
+            "STATE_IO_ERROR",
+            lambda: reader.list_markdown_page(
+                "**/*.md", cursor=boolean_version
             ),
         )
 
@@ -1465,6 +1526,65 @@ class GatewayReadSurfaceTests(unittest.TestCase):
             "Stop and return control to the main thread",
         )
 
+    def test_gateway_closes_every_read_handle(self) -> None:
+        workspace = self.payload(
+            self.gateway.call(
+                "resolve_workspace", {"project_dir": str(self.project)}
+            )
+        )
+        capability = self.payload(
+            self.gateway.call(
+                "open_role_session",
+                {
+                    "workspace_id": workspace["workspace_id"],
+                    "role": "chief-of-staff",
+                    "correlation_id": "corr-close-reads",
+                    "workflow": "daily-brief",
+                },
+            )
+        )["capability"]
+        handles = []
+
+        class TrackingIO:
+            def __init__(self):
+                self.closed = False
+                handles.append(self)
+
+            def close(self):
+                self.closed = True
+
+            def list_markdown_page(self, *args, **kwargs):
+                return {"paths": [], "next_cursor": None}
+
+            def read_many(self, *args, **kwargs):
+                return []
+
+            def read_reference(self, *args, **kwargs):
+                return {"path": "CLAUDE.md"}
+
+        self.gateway._io_factory = lambda *unused: TrackingIO()
+        self.payload(
+            self.gateway.call(
+                "list_state",
+                {"capability": capability, "pattern": "*.md"},
+            )
+        )
+        self.payload(
+            self.gateway.call(
+                "read_state",
+                {"capability": capability, "paths": ["state.md"]},
+            )
+        )
+        self.payload(
+            self.gateway.call(
+                "read_reference",
+                {"capability": capability, "path": "CLAUDE.md"},
+            )
+        )
+
+        self.assertEqual(3, len(handles))
+        self.assertTrue(all(handle.closed for handle in handles))
+
     def test_gateway_list_state_pages_past_one_hundred_records(self) -> None:
         for index in range(101):
             (self.workspace / ("record-%03d.md" % index)).write_text(
@@ -1695,6 +1815,20 @@ class GatewayPortfolioReadTests(unittest.TestCase):
         serialized = json.dumps(payload)
         self.assertNotIn("SECRET GOAL", serialized)
         self.assertNotIn("SECRET METRIC", serialized)
+
+        extra_paths = self.gateway.call(
+            "read_portfolio_inputs",
+            {
+                "capability": capability,
+                "business_slug": "alpha",
+                "paths": ["pipeline.md"],
+            },
+        )
+        self.assertTrue(extra_paths["isError"], extra_paths)
+        self.assertEqual(
+            "ROLE_SESSION_INVALID",
+            extra_paths["structuredContent"]["error"]["code"],
+        )
 
     def test_portfolio_read_rejects_paused_business_and_non_portfolio_session(self) -> None:
         portfolio_capability = self.open(

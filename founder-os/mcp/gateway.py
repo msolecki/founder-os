@@ -161,6 +161,10 @@ class Gateway:
         },
     )
     _TOOL_NAMES = frozenset(schema["name"] for schema in _TOOL_SCHEMAS)
+    _TOOL_ARGUMENTS = {
+        schema["name"]: frozenset(schema["inputSchema"]["properties"])
+        for schema in _TOOL_SCHEMAS
+    }
     DEFAULT_SESSION_TTL_SECONDS = 300
 
     def __init__(
@@ -197,6 +201,19 @@ class Gateway:
         if name not in self._TOOL_NAMES:
             raise UnknownToolError(name)
         if not isinstance(arguments, Mapping):
+            error = (
+                WorkspaceResolutionError()
+                if name == "resolve_workspace"
+                else RoleSessionError()
+            )
+            return self._error(error)
+        try:
+            has_unknown_arguments = bool(
+                set(arguments) - self._TOOL_ARGUMENTS[name]
+            )
+        except (TypeError, ValueError):
+            has_unknown_arguments = True
+        if has_unknown_arguments:
             error = (
                 WorkspaceResolutionError()
                 if name == "resolve_workspace"
@@ -284,31 +301,43 @@ class Gateway:
             or limit > 100
         ):
             raise SafeStateError("STATE_IO_ERROR")
-        return self._io(binding.root).list_markdown_page(
-            pattern,
-            limit=limit,
-            cursor=cursor,
-        )
+        io_handle = self._io(binding.root)
+        try:
+            return io_handle.list_markdown_page(
+                pattern,
+                limit=limit,
+                cursor=cursor,
+            )
+        finally:
+            io_handle.close()
 
     def _read_state(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         _, binding = self._session_workspace(arguments.get("capability"))
         paths = arguments.get("paths")
         if not isinstance(paths, list):
             raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
-        return {"files": self._io(binding.root).read_many(paths)}
+        io_handle = self._io(binding.root)
+        try:
+            return {"files": io_handle.read_many(paths)}
+        finally:
+            io_handle.close()
 
     def _read_reference(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         metadata, binding = self._session_workspace(arguments.get("capability"))
         path = arguments.get("path")
         if not self._text(path):
             raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
-        return {
-            "file": self._io(binding.root).read_reference(
-                path,
-                role=metadata.role,
-                workflow=metadata.workflow,
-            )
-        }
+        io_handle = self._io(binding.root)
+        try:
+            return {
+                "file": io_handle.read_reference(
+                    path,
+                    role=metadata.role,
+                    workflow=metadata.workflow,
+                )
+            }
+        finally:
+            io_handle.close()
 
     def _read_portfolio_inputs(
         self,

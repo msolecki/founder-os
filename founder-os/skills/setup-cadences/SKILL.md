@@ -53,7 +53,8 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 ## Beliefs
 
 - A preview is a promise: apply installs those exact bytes or stops when host
-  state has changed. Re-rendering after confirmation breaks that promise.
+  state has changed. Apply recomputes the expected artifacts from the sealed
+  config and snapshot instead of trusting a forgeable checksum alone.
 - A schedule that misses sleeping hours is not automation. Catch-up behavior
   determines the scheduler; operating-system familiarity does not.
 - Unattended permission is a narrow capability, not trust in the whole host.
@@ -67,7 +68,7 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 1. **Resolve and validate the host.** Record the absolute binary path. For
    Claude, the generated argv is:
 
-       claude -p /founder-os:<workflow> --permission-mode dontAsk --allowedTools 'mcp__plugin_founder-os_founder-os-state__*' --max-turns 50
+       claude -p /founder-os:<workflow> --permission-mode dontAsk --allowedTools 'mcp__plugin_founder-os_founder-os-state__*' --max-turns 50 --no-session-persistence
 
    For Codex, it is:
 
@@ -93,15 +94,22 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 
    Add `--migrate-legacy` only when a registry now exists and this business is
    replacing the old unslugged fence. Show the emitted manifest and artifacts.
+   The output path must be new, absolute, and outside `FOUNDER_OS_HOME`.
    Cron paths are POSIX-quoted, including spaces, quotes, dollars,
    metacharacters, and cron percent signs. Launchd uses argument arrays.
    Systemd services use direct `ExecStart`, never `/bin/sh -c`, and timers set
-   `Persistent=true`.
+   `Persistent=true`. Every scheduler receives a minimal `PATH` that begins
+   with the selected binary's directory, so an `/usr/bin/env` shebang can find
+   a colocated runtime without loading an interactive shell profile. Both
+   hosts disable scheduled-session persistence; durable business state remains
+   in the workspace instead of accumulating host transcripts.
 
 4. **Snapshot current scheduler state.** Before confirmation, run the matching
    `snapshot` command with `--backup-root ~/.founder-os` and an output JSON
-   path. Name the returned `backup_path`. A missing crontab is a valid empty
-   snapshot; any other scheduler read error stops the flow.
+   path. Both the backup and output paths are create-only: an existing path
+   stops the flow instead of being overwritten. Name the returned
+   `backup_path`. A missing crontab is a valid empty snapshot; any other
+   scheduler read error stops the flow.
 
 5. **Ask once.** Show the host, scheduler, identity, exact artifact diff,
    preview checksum, and backup path. Ask one question covering the whole
@@ -114,8 +122,10 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
          --snapshot <absolute-snapshot.json>
 
    Apply re-reads scheduler state. If it differs from the preview/snapshot
-   digest, it stops before installation. It never silently overwrites a change
-   made while the founder was reviewing the preview.
+   digest, or if the artifacts do not exactly match a fresh derivation from
+   the confirmed config and backup, it stops before installation. It never
+   silently overwrites a change made while the founder was reviewing the
+   preview.
 
 7. **Smoke-test the exact host argv.** Run the manager's `smoke` command for
    `daily-brief` (or `portfolio-review` for the portfolio identity). It uses a
@@ -144,7 +154,8 @@ remove scheduler state.
 - One checksummed preview manifest containing exact artifacts.
 - One snapshot manifest and an exact backup under `~/.founder-os/`.
 - The selected user scheduler artifacts and per-cadence log directories, only
-  after confirmation.
+  after confirmation. Jobs use umask `077`; per-identity log directories are
+  mode `0700`.
 - One smoke result and the next scheduled run.
 
 ## Guardrails

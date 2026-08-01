@@ -25,7 +25,7 @@ import tempfile
 from typing import Callable, Dict, Mapping, Optional, Sequence, Tuple
 
 
-MANIFEST_VERSION = 1
+MANIFEST_VERSION = 2
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 BEGIN_MARKER = re.compile(
     br"^# BEGIN (founder-os(?::[A-Za-z0-9][A-Za-z0-9._-]*)?)"
@@ -130,6 +130,7 @@ def host_argv(config: CadenceConfig, workflow: str) -> Tuple[str, ...]:
             "mcp__plugin_founder-os_founder-os-state__*",
             "--max-turns",
             "50",
+            "--no-session-persistence",
         )
     return (
         str(config.binary),
@@ -152,6 +153,11 @@ def _log_path(config: CadenceConfig, workflow: str) -> Path:
     return root / (workflow + ".log")
 
 
+def _host_path(config: CadenceConfig, *, system: bool = False) -> str:
+    suffix = ":/usr/bin:/bin:/usr/sbin:/sbin" if system else ":/usr/bin:/bin"
+    return str(config.binary.parent) + suffix
+
+
 def _cron_command(config: CadenceConfig, workflow: str) -> str:
     def quote(value: str) -> str:
         # cron interprets percent before invoking the shell, even inside quotes.
@@ -159,9 +165,11 @@ def _cron_command(config: CadenceConfig, workflow: str) -> str:
 
     argv = " ".join(quote(value) for value in host_argv(config, workflow))
     return (
-        "cd {workdir} && FOUNDER_OS_HOME={workspace} {argv} >> {log} 2>&1"
+        "cd {workdir} && umask 077 && "
+        "PATH={path} FOUNDER_OS_HOME={workspace} {argv} >> {log} 2>&1"
     ).format(
         workdir=quote(str(config.workdir)),
+        path=quote(_host_path(config)),
         workspace=quote(str(config.workspace)),
         argv=argv,
         log=quote(str(_log_path(config, workflow))),
@@ -259,19 +267,19 @@ def remove_crontab(current: bytes, identity: str) -> bytes:
 
 def _launchd_calendar(workflow: str):
     values = {
-        "week-plan": {"Weekday": 2, "Hour": 8, "Minute": 30},
-        "weekly-review": {"Weekday": 6, "Hour": 16, "Minute": 0},
-        "pipeline-review": {"Weekday": 5, "Hour": 10, "Minute": 0},
-        "follow-up-sweep": {"Weekday": 6, "Hour": 14, "Minute": 0},
-        "content-plan": {"Weekday": 4, "Hour": 10, "Minute": 0},
-        "calendar-audit": {"Weekday": 6, "Hour": 15, "Minute": 0},
+        "week-plan": {"Weekday": 1, "Hour": 8, "Minute": 30},
+        "weekly-review": {"Weekday": 5, "Hour": 16, "Minute": 0},
+        "pipeline-review": {"Weekday": 4, "Hour": 10, "Minute": 0},
+        "follow-up-sweep": {"Weekday": 5, "Hour": 14, "Minute": 0},
+        "content-plan": {"Weekday": 3, "Hour": 10, "Minute": 0},
+        "calendar-audit": {"Weekday": 5, "Hour": 15, "Minute": 0},
         "revenue-review": {"Day": 1, "Hour": 9, "Minute": 0},
-        "portfolio-review": {"Weekday": 2, "Hour": 8, "Minute": 15},
+        "portfolio-review": {"Weekday": 1, "Hour": 8, "Minute": 15},
     }
     if workflow == "daily-brief":
         return [
             {"Weekday": weekday, "Hour": 8, "Minute": 0}
-            for weekday in range(2, 7)
+            for weekday in range(1, 6)
         ]
     if workflow == "quarterly-planning":
         return [
@@ -296,12 +304,14 @@ def render_launchd(config: CadenceConfig) -> Dict[str, bytes]:
             "Label": stem,
             "ProgramArguments": list(host_argv(config, cadence.workflow)),
             "EnvironmentVariables": {
-                "FOUNDER_OS_HOME": str(config.workspace)
+                "FOUNDER_OS_HOME": str(config.workspace),
+                "PATH": _host_path(config, system=True),
             },
             "WorkingDirectory": str(config.workdir),
             "StandardOutPath": log,
             "StandardErrorPath": log,
             "StartCalendarInterval": _launchd_calendar(cadence.workflow),
+            "Umask": 0o077,
         }
         artifacts[stem + ".plist"] = plistlib.dumps(
             document, fmt=plistlib.FMT_XML, sort_keys=True
@@ -309,10 +319,11 @@ def render_launchd(config: CadenceConfig) -> Dict[str, bytes]:
     return artifacts
 
 
-def _systemd_quote(value: str) -> str:
-    return '"' + value.replace("\\", "\\\\").replace(
-        '"', '\\"'
-    ).replace("$", "$$").replace("%", "%%") + '"'
+def _systemd_quote(value: str, *, command: bool = False) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    if command:
+        escaped = escaped.replace("$", "$$")
+    return '"' + escaped.replace("%", "%%") + '"'
 
 
 def _systemd_calendar(workflow: str) -> str:
@@ -335,13 +346,15 @@ def render_systemd(config: CadenceConfig) -> Dict[str, bytes]:
     for cadence in _cadences(config):
         stem = _unit_stem(config, cadence.workflow)
         command = " ".join(
-            _systemd_quote(value)
+            _systemd_quote(value, command=True)
             for value in host_argv(config, cadence.workflow)
         )
         service = (
             "[Unit]\nDescription=Founder OS {workflow}\n\n"
-            "[Service]\nType=oneshot\nWorkingDirectory={workdir}\n"
-            "Environment={environment}\nExecStart={command}\n"
+            "[Service]\nType=oneshot\nUMask=0077\n"
+            "WorkingDirectory={workdir}\n"
+            "Environment={environment}\nEnvironment={path}\n"
+            "ExecStart={command}\n"
             "StandardOutput={log}\nStandardError={log}\n"
         ).format(
             workflow=cadence.workflow,
@@ -349,6 +362,7 @@ def render_systemd(config: CadenceConfig) -> Dict[str, bytes]:
             environment=_systemd_quote(
                 "FOUNDER_OS_HOME=" + str(config.workspace)
             ),
+            path=_systemd_quote("PATH=" + _host_path(config)),
             command=command,
             log=_systemd_quote(
                 "append:" + str(_log_path(config, cadence.workflow))
@@ -426,10 +440,17 @@ def _seal(document: Dict[str, object]) -> Dict[str, object]:
 
 
 def _verify_seal(document: Mapping[str, object]) -> None:
-    checksum = document.get("manifest_sha256")
-    bare = dict(document)
-    bare.pop("manifest_sha256", None)
-    if not isinstance(checksum, str) or checksum != _digest(_canonical(bare)):
+    try:
+        checksum = document.get("manifest_sha256")
+        bare = dict(document)
+        bare.pop("manifest_sha256", None)
+        valid = (
+            isinstance(checksum, str)
+            and checksum == _digest(_canonical(bare))
+        )
+    except (TypeError, ValueError, UnicodeError, OverflowError):
+        valid = False
+    if not valid:
         raise CadenceError("manifest checksum mismatch")
 
 
@@ -446,6 +467,15 @@ def _config_document(config: CadenceConfig) -> Dict[str, object]:
 
 def _config_from_document(value: object) -> CadenceConfig:
     if not isinstance(value, dict):
+        raise CadenceError("manifest config is invalid")
+    if set(value) != {
+        "host",
+        "binary",
+        "workspace",
+        "workdir",
+        "log_root",
+        "slug",
+    }:
         raise CadenceError("manifest config is invalid")
     try:
         return CadenceConfig(
@@ -554,16 +584,29 @@ def preview(
         artifacts = render_systemd(config)
     else:
         raise CadenceError("unsupported scheduler")
-    return _seal(
-        {
-            "version": MANIFEST_VERSION,
-            "scheduler": scheduler,
-            "identity": _marker_identity(config.slug),
-            "config": _config_document(config),
-            "source_sha256": _digest(source),
-            "artifacts": _encode_artifacts(artifacts),
-        }
-    )
+    document = {
+        "version": MANIFEST_VERSION,
+        "scheduler": scheduler,
+        "identity": _marker_identity(config.slug),
+        "config": _config_document(config),
+        "source_sha256": _digest(source),
+        "artifacts": _encode_artifacts(artifacts),
+    }
+    if scheduler == "cron":
+        document["date"] = date
+        document["migrate_legacy"] = migrate_legacy
+    return _seal(document)
+
+
+def _fsync_directory(path: Path) -> None:
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY
+    if hasattr(os, "O_NOFOLLOW"):
+        directory_flags |= os.O_NOFOLLOW
+    directory_fd = os.open(str(path), directory_flags)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
 
 
 def _atomic_write(path: Path, content: bytes) -> None:
@@ -578,14 +621,31 @@ def _atomic_write(path: Path, content: bytes) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary_path, path)
-        directory_flags = os.O_RDONLY | os.O_DIRECTORY
-        if hasattr(os, "O_NOFOLLOW"):
-            directory_flags |= os.O_NOFOLLOW
-        directory_fd = os.open(str(path.parent), directory_flags)
+        _fsync_directory(path.parent)
+    finally:
         try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+            temporary_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def _atomic_create(path: Path, content: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(
+        prefix="." + path.name + ".", suffix=".tmp", dir=str(path.parent)
+    )
+    temporary_path = Path(temporary)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.link(temporary_path, path, follow_symlinks=False)
+        except FileExistsError:
+            raise CadenceError("refusing to overwrite an existing file")
+        temporary_path.unlink()
+        _fsync_directory(path.parent)
     finally:
         try:
             temporary_path.unlink()
@@ -628,7 +688,7 @@ def snapshot(
             suffix,
         )
     )
-    _atomic_write(backup, source)
+    _atomic_create(backup, source)
     return _seal(
         {
             "version": MANIFEST_VERSION,
@@ -674,10 +734,77 @@ def _install_crontab(
 
 
 def _ensure_log_directories(config: CadenceConfig) -> None:
-    for cadence in _cadences(config):
-        _log_path(config, cadence.workflow).parent.mkdir(
-            parents=True, exist_ok=True
-        )
+    directories = {
+        _log_path(config, cadence.workflow).parent
+        for cadence in _cadences(config)
+    }
+    for directory in directories:
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        info = directory.lstat()
+        if not stat.S_ISDIR(info.st_mode):
+            raise CadenceError("log path is not a directory")
+        os.chmod(directory, 0o700, follow_symlinks=False)
+
+
+def _inside(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _read_backup(path: Path, workspace: Path) -> bytes:
+    if not path.is_absolute() or _inside(path, workspace):
+        raise CadenceError("snapshot backup is unsafe")
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(str(path), flags)
+    except OSError:
+        raise CadenceError("snapshot backup is missing")
+    try:
+        info = os.fstat(descriptor)
+        if not stat.S_ISREG(info.st_mode):
+            raise CadenceError("snapshot backup is unsafe")
+        chunks = []
+        while True:
+            chunk = os.read(descriptor, 1024 * 1024)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        return b"".join(chunks)
+    finally:
+        os.close(descriptor)
+
+
+def _expected_artifacts(
+    manifest: Mapping[str, object],
+    config: CadenceConfig,
+    scheduler: str,
+    source: bytes,
+) -> Dict[str, bytes]:
+    if scheduler == "cron":
+        date = manifest.get("date")
+        migrate_legacy = manifest.get("migrate_legacy")
+        if not isinstance(date, str) or not isinstance(migrate_legacy, bool):
+            raise CadenceError("cron preview is invalid")
+        block = render_cron_blocks(config, date).encode("utf-8")
+        identity = config.slug if config.slug is not None else "founder-os"
+        return {
+            "crontab": merge_crontab(
+                source,
+                block,
+                identity,
+                migrate_legacy=migrate_legacy,
+            )
+        }
+    if scheduler == "launchd":
+        return render_launchd(config)
+    if scheduler == "systemd":
+        return render_systemd(config)
+    raise CadenceError("unsupported scheduler")
 
 
 def apply(
@@ -688,9 +815,34 @@ def apply(
 ) -> None:
     _verify_seal(manifest)
     _verify_seal(snapshot_document)
-    if manifest.get("version") != MANIFEST_VERSION:
-        raise CadenceError("unsupported manifest version")
     scheduler = manifest.get("scheduler")
+    manifest_keys = {
+        "version",
+        "scheduler",
+        "identity",
+        "config",
+        "source_sha256",
+        "artifacts",
+        "manifest_sha256",
+    }
+    if scheduler == "cron":
+        manifest_keys.update(("date", "migrate_legacy"))
+    if set(manifest) != manifest_keys or set(snapshot_document) != {
+        "version",
+        "scheduler",
+        "identity",
+        "source_sha256",
+        "backup_path",
+        "manifest_sha256",
+    }:
+        raise CadenceError("manifest shape is invalid")
+    if (
+        type(manifest.get("version")) is not int
+        or manifest.get("version") != MANIFEST_VERSION
+        or type(snapshot_document.get("version")) is not int
+        or snapshot_document.get("version") != MANIFEST_VERSION
+    ):
+        raise CadenceError("unsupported manifest version")
     if (
         scheduler != snapshot_document.get("scheduler")
         or manifest.get("identity") != snapshot_document.get("identity")
@@ -699,19 +851,22 @@ def apply(
     ):
         raise CadenceError("preview and snapshot do not match")
     config = _config_from_document(manifest.get("config"))
+    if manifest.get("identity") != _marker_identity(config.slug):
+        raise CadenceError("manifest identity does not match config")
     current = _current_source(config, str(scheduler), runner)
     if _digest(current) != manifest.get("source_sha256"):
         raise CadenceError("scheduler state changed after preview")
     backup_path = Path(str(snapshot_document.get("backup_path")))
-    if not backup_path.is_absolute() or not backup_path.is_file():
-        raise CadenceError("snapshot backup is missing")
-    if _digest(backup_path.read_bytes()) != snapshot_document.get("source_sha256"):
+    backup = _read_backup(backup_path, config.workspace)
+    if _digest(backup) != snapshot_document.get("source_sha256"):
         raise CadenceError("snapshot backup checksum mismatch")
     artifacts = _decode_artifacts(manifest)
+    if artifacts != _expected_artifacts(
+        manifest, config, str(scheduler), backup
+    ):
+        raise CadenceError("preview artifacts do not match the config")
     _ensure_log_directories(config)
     if scheduler == "cron":
-        if set(artifacts) != {"crontab"}:
-            raise CadenceError("cron preview is invalid")
         _install_crontab(artifacts["crontab"], runner, backup_path.parent)
         return
 
@@ -768,6 +923,14 @@ def remove(
             for path in directory.iterdir()
             if pattern.fullmatch(path.name)
         } if directory.is_dir() else set()
+    if scheduler == "systemd":
+        for name in sorted(name for name in names if name.endswith(".timer")):
+            result = _run(
+                runner,
+                ("systemctl", "--user", "disable", "--now", name),
+            )
+            if getattr(result, "returncode", None) != 0:
+                raise CadenceError("systemd timer disable failed")
     for name in sorted(names):
         path = directory / name
         if scheduler == "launchd" and path.exists():
@@ -775,14 +938,14 @@ def remove(
                 runner,
                 ("launchctl", "bootout", "gui/" + str(os.getuid()), str(path)),
             )
-        elif scheduler == "systemd" and name.endswith(".timer"):
-            _run(runner, ("systemctl", "--user", "disable", "--now", name))
         try:
             path.unlink()
         except FileNotFoundError:
             pass
     if scheduler == "systemd":
-        _run(runner, ("systemctl", "--user", "daemon-reload"))
+        result = _run(runner, ("systemctl", "--user", "daemon-reload"))
+        if getattr(result, "returncode", None) != 0:
+            raise CadenceError("systemd daemon-reload failed")
 
 
 def smoke(
@@ -793,7 +956,7 @@ def smoke(
 ) -> None:
     environment = {
         "HOME": str(Path.home()),
-        "PATH": "/usr/bin:/bin",
+        "PATH": _host_path(config),
         "FOUNDER_OS_HOME": str(config.workspace),
     }
     result = runner(
@@ -808,8 +971,17 @@ def smoke(
         raise CadenceError("cadence smoke failed")
 
 
-def _write_json(path: Path, document: Mapping[str, object]) -> None:
-    _atomic_write(path, _canonical(document) + b"\n")
+def _write_json(
+    path: Path,
+    document: Mapping[str, object],
+    *,
+    forbidden_root: Optional[Path] = None,
+) -> None:
+    if not path.is_absolute():
+        raise CadenceError("manifest output must be absolute")
+    if forbidden_root is not None and _inside(path, forbidden_root):
+        raise CadenceError("manifest output cannot be inside the workspace")
+    _atomic_create(path, _canonical(document) + b"\n")
 
 
 def _read_json(path: Path) -> Dict[str, object]:
@@ -876,22 +1048,32 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "preview":
+            config = _config_from_args(args)
             document = preview(
-                _config_from_args(args),
+                config,
                 args.scheduler,
                 date=args.date,
                 migrate_legacy=args.migrate_legacy,
             )
-            _write_json(args.output.resolve(), document)
+            _write_json(
+                args.output.resolve(),
+                document,
+                forbidden_root=config.workspace,
+            )
             print(serialize_manifest(document))
         elif args.command == "snapshot":
+            config = _config_from_args(args)
             document = snapshot(
-                _config_from_args(args),
+                config,
                 args.scheduler,
                 args.backup_root.resolve(),
                 timestamp=args.timestamp,
             )
-            _write_json(args.output.resolve(), document)
+            _write_json(
+                args.output.resolve(),
+                document,
+                forbidden_root=config.workspace,
+            )
             print(serialize_manifest(document))
         elif args.command == "apply":
             apply(_read_json(args.manifest), _read_json(args.snapshot))

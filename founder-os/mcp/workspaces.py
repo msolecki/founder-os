@@ -411,4 +411,8 @@ class WorkspaceResolver:
 
     @staticmethod
     def _valid_slug(value: object) -> bool:
-        return isinstance(value, str) and _SLUG_PATTERN.fullmatch(value) is not None
+        return (
+            isinstance(value, str)
+            and value != "portfolio"
+            and _SLUG_PATTERN.fullmatch(value) is not None
+        )

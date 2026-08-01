@@ -137,6 +137,7 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         self.assertIn(
             "mcp__plugin_founder-os_founder-os-state__*", claude
         )
+        self.assertIn("--no-session-persistence", claude)
         self.assertIn("workspace-write", codex)
         self.assertIn("$founder-os:daily-brief", codex)
 

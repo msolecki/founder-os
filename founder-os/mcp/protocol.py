@@ -111,17 +111,22 @@ class ProtocolServer:
         if method == "ping":
             if is_notification:
                 return None
-            params = message.get("params", {})
-            if not isinstance(params, dict) or params:
+            if not self._valid_meta_only_params(message.get("params", {})):
                 return _error(request_id, -32602, "Invalid params")
             return _response(request_id, {})
 
         if method == "notifications/cancelled":
-            return None
+            return (
+                None
+                if is_notification
+                else _error(request_id, -32601, "Method not found")
+            )
 
         if method == "tools/list":
             if is_notification:
                 return None
+            if not self._valid_meta_only_params(message.get("params", {})):
+                return _error(request_id, -32602, "Invalid params")
             return _response(request_id, {"tools": self._gateway.tool_schemas()})
 
         if method == "tools/call":
@@ -174,6 +179,17 @@ class ProtocolServer:
             and bool(client_info["name"])
             and isinstance(client_info.get("version"), str)
             and bool(client_info["version"])
+        )
+
+    @staticmethod
+    def _valid_meta_only_params(params: object) -> bool:
+        return (
+            isinstance(params, dict)
+            and set(params).issubset({"_meta"})
+            and (
+                "_meta" not in params
+                or isinstance(params["_meta"], dict)
+            )
         )
 
 

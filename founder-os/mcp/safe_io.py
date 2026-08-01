@@ -241,8 +241,11 @@ class SafeStateIO:
             raise SafeStateError("STATE_IO_ERROR")
         expected_digest = hashlib.sha256(pattern.encode("utf-8")).hexdigest()
         after = payload.get("after")
+        version = payload.get("v")
         if (
-            payload.get("v") != 1
+            isinstance(version, bool)
+            or not isinstance(version, int)
+            or version != 1
             or payload.get("pattern_sha256") != expected_digest
             or not isinstance(after, str)
             or not after

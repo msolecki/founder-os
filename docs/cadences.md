@@ -56,7 +56,8 @@ Claude jobs use a namespaced workflow and grant only the packaged MCP surface:
 
 ```text
 claude -p /founder-os:<workflow> --permission-mode dontAsk \
-  --allowedTools 'mcp__plugin_founder-os_founder-os-state__*' --max-turns 50
+  --allowedTools 'mcp__plugin_founder-os_founder-os-state__*' --max-turns 50 \
+  --no-session-persistence
 ```
 
 Codex jobs use the documented non-interactive command and dollar skill syntax:
@@ -68,7 +69,14 @@ codex -a never exec --sandbox workspace-write --ephemeral \
 
 The manager passes argument arrays, never `/bin/sh -c`. Cron fields use POSIX
 quoting and escape cron's special percent sign. Launchd uses
-`ProgramArguments`; systemd uses direct `ExecStart` tokens.
+`ProgramArguments`; systemd uses direct `ExecStart` tokens. Each scheduler gets
+a minimal `PATH` beginning with the selected host binary's directory, which
+keeps `/usr/bin/env`-based installations working without loading a shell
+profile.
+
+Both hosts run scheduled sessions without persisting their conversation
+rollouts. Durable decisions and receipts stay in the Founder OS workspace;
+recurring host transcripts do not accumulate separately.
 
 Official host contracts:
 
@@ -83,14 +91,17 @@ Setup resolves absolute binary, workspace, working-directory, and log paths.
 It then:
 
 1. renders the exact cron block, LaunchAgent plists, or systemd user units into
-   a checksummed preview manifest;
+   a checksummed, create-only preview manifest outside the workspace;
 2. snapshots the exact current scheduler state under `~/.founder-os/` and
-   reports the backup path;
+   reports the create-only backup path;
 3. shows the artifacts and asks once for confirmation; and
 4. re-reads scheduler state and applies only if its digest is unchanged.
 
 If another process edits the crontab or selected unit files while you inspect
-the preview, apply stops. It never re-renders different bytes after approval.
+the preview, apply stops. Before writing, it also recomputes the only valid
+artifacts from the manifest config and snapshot; a resealed but changed cron,
+plist, or unit is rejected. Existing manifest and backup paths are never
+overwritten.
 
 Cron fences use exact identities: legacy `founder-os`, a business such as
 `founder-os:a`, sibling `founder-os:acme`, and `founder-os:portfolio` never
@@ -101,8 +112,9 @@ when preview explicitly requests `--migrate-legacy`.
 
 Every cadence receives its own append-only log under
 `~/.founder-os/logs/`; multi-business logs add the business slug. Apply creates
-the directories before installing the schedule. Setup then runs one exact host
-argv in a cron-like minimal environment. Authentication, missing flags, and
+per-identity directories with mode `0700`, and cron, LaunchAgents, and systemd
+services all run with umask `077`. Setup then runs one exact host argv in a
+cron-like minimal environment. Authentication, missing flags, and
 workspace-access failures therefore surface immediately.
 
 `founder-os-doctor` detects a schedule that has gone quiet, but does not mutate

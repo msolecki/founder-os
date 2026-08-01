@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import base64
 import importlib.util
 import json
+import os
 import plistlib
 from pathlib import Path
 import shlex
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +50,10 @@ class CronRunner:
         raise AssertionError("unexpected argv: %r" % (argv,))
 
 
+def stat_mode(path):
+    return os.stat(path).st_mode & 0o777
+
+
 class CadenceManagerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -76,6 +83,7 @@ class CadenceManagerTests(unittest.TestCase):
                 "mcp__plugin_founder-os_founder-os-state__*",
                 "--max-turns",
                 "50",
+                "--no-session-persistence",
             ),
         )
         codex = self.config("codex")
@@ -102,9 +110,14 @@ class CadenceManagerTests(unittest.TestCase):
         command = line.split(None, 5)[5].split(" >> ", 1)[0]
         tokens = shlex.split(command)
         self.assertEqual(tokens[:3], ["cd", str(config.workdir), "&&"])
-        self.assertEqual(tokens[3], "FOUNDER_OS_HOME=" + str(config.workspace))
+        self.assertEqual(tokens[3:6], ["umask", "077", "&&"])
         self.assertEqual(
-            tuple(tokens[4:]), self.manager.host_argv(config, "daily-brief")
+            tokens[6],
+            "PATH=" + str(config.binary.parent) + ":/usr/bin:/bin",
+        )
+        self.assertEqual(tokens[7], "FOUNDER_OS_HOME=" + str(config.workspace))
+        self.assertEqual(
+            tuple(tokens[8:]), self.manager.host_argv(config, "daily-brief")
         )
         self.assertNotIn("/bin/sh -c", block)
 
@@ -166,6 +179,11 @@ class CadenceManagerTests(unittest.TestCase):
             str(config.workspace),
         )
         self.assertEqual(
+            quarterly["EnvironmentVariables"]["PATH"],
+            str(config.binary.parent) + ":/usr/bin:/bin:/usr/sbin:/sbin",
+        )
+        self.assertEqual(quarterly["Umask"], 0o077)
+        self.assertEqual(
             [item["Month"] for item in quarterly["StartCalendarInterval"]],
             [1, 4, 7, 10],
         )
@@ -182,6 +200,286 @@ class CadenceManagerTests(unittest.TestCase):
         self.assertIn("Persistent=true", timer)
         self.assertNotIn("/bin/sh", service)
         self.assertIn("ExecStart=", service)
+        self.assertIn("UMask=0077", service)
+        self.assertIn(
+            'Environment="PATH=/opt/Codex App/bin:/usr/bin:/bin"',
+            service,
+        )
+        self.assertIn(
+            'WorkingDirectory="/Users/Test Founder/work $;(tree)"',
+            service,
+        )
+        self.assertIn(
+            'Environment="FOUNDER_OS_HOME=/Users/Test Founder/'
+            'work $;(tree)/founder-os"',
+            service,
+        )
+
+    def test_launchd_weekdays_match_cron_weekdays(self):
+        self.assertEqual(
+            [1, 2, 3, 4, 5],
+            [
+                item["Weekday"]
+                for item in self.manager._launchd_calendar("daily-brief")
+            ],
+        )
+        expected = {
+            "week-plan": 1,
+            "weekly-review": 5,
+            "pipeline-review": 4,
+            "follow-up-sweep": 5,
+            "content-plan": 3,
+            "calendar-audit": 5,
+            "portfolio-review": 1,
+        }
+        for workflow, weekday in expected.items():
+            with self.subTest(workflow=workflow):
+                self.assertEqual(
+                    weekday,
+                    self.manager._launchd_calendar(workflow)["Weekday"],
+                )
+
+    def test_log_directories_are_private(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            log_root = root / "logs"
+            log_root.mkdir(mode=0o755)
+            config = self.manager.CadenceConfig(
+                host="claude",
+                binary=root / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=log_root,
+                slug="private",
+            )
+            self.manager._ensure_log_directories(config)
+            log_directory = log_root / "private"
+            self.assertEqual(stat_mode(log_directory), 0o700)
+
+    def test_snapshot_never_overwrites_an_existing_backup(self):
+        original = b"MAILTO=founder@example.com\n"
+        runner = CronRunner(original)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = self.manager.CadenceConfig(
+                host="claude",
+                binary=root / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug="a",
+            )
+            first = self.manager.snapshot(
+                config,
+                "cron",
+                root / "backups",
+                runner=runner,
+                timestamp="20260801-120000",
+            )
+            backup = Path(first["backup_path"])
+            with self.assertRaises(self.manager.CadenceError):
+                self.manager.snapshot(
+                    config,
+                    "cron",
+                    root / "backups",
+                    runner=runner,
+                    timestamp="20260801-120000",
+                )
+            self.assertEqual(original, backup.read_bytes())
+
+    def test_apply_rejects_unexpected_file_scheduler_artifacts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            scheduler_directory = root / "LaunchAgents"
+            config = self.manager.CadenceConfig(
+                host="claude",
+                binary=root / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug="a",
+            )
+            with mock.patch.object(
+                self.manager,
+                "_scheduler_directory",
+                return_value=scheduler_directory,
+            ):
+                manifest = self.manager.preview(config, "launchd")
+                snapshot = self.manager.snapshot(
+                    config,
+                    "launchd",
+                    root / "backups",
+                    timestamp="20260801-120000",
+                )
+                forged = json.loads(json.dumps(manifest))
+                forged["artifacts"]["unexpected.plist"] = base64.b64encode(
+                    b"not a Founder OS job"
+                ).decode("ascii")
+                forged.pop("manifest_sha256")
+                forged = self.manager._seal(forged)
+
+                with self.assertRaises(self.manager.CadenceError):
+                    self.manager.apply(
+                        forged,
+                        snapshot,
+                        runner=lambda *args, **kwargs: Result(),
+                    )
+            self.assertFalse((scheduler_directory / "unexpected.plist").exists())
+            self.assertFalse(config.log_root.exists())
+
+    def test_apply_rejects_symlinked_or_workspace_local_backups(self):
+        original = b"MAILTO=founder@example.com\n"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = self.manager.CadenceConfig(
+                host="claude",
+                binary=root / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug="a",
+            )
+            config.workspace.mkdir(parents=True)
+            runner = CronRunner(original)
+            manifest = self.manager.preview(
+                config, "cron", runner=runner, date="2026-08-01"
+            )
+            snapshot = self.manager.snapshot(
+                config,
+                "cron",
+                root / "backups",
+                runner=runner,
+                timestamp="20260801-120000",
+            )
+
+            backup = Path(snapshot["backup_path"])
+            target = root / "target.txt"
+            target.write_bytes(original)
+            backup.unlink()
+            backup.symlink_to(target)
+            with self.assertRaises(self.manager.CadenceError):
+                self.manager.apply(manifest, snapshot, runner=runner)
+
+            local_backup = config.workspace / "backup.txt"
+            local_backup.write_bytes(original)
+            forged_snapshot = dict(snapshot)
+            forged_snapshot["backup_path"] = str(local_backup)
+            forged_snapshot.pop("manifest_sha256")
+            forged_snapshot = self.manager._seal(forged_snapshot)
+            with self.assertRaises(self.manager.CadenceError):
+                self.manager.apply(manifest, forged_snapshot, runner=runner)
+
+    def test_apply_recomputes_expected_artifacts_instead_of_trusting_a_seal(self):
+        original = b"MAILTO=founder@example.com\n"
+        runner = CronRunner(original)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = self.manager.CadenceConfig(
+                host="claude",
+                binary=root / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug="a",
+            )
+            manifest = self.manager.preview(
+                config, "cron", runner=runner, date="2026-08-01"
+            )
+            snapshot = self.manager.snapshot(
+                config,
+                "cron",
+                root / "backups",
+                runner=runner,
+                timestamp="20260801-120000",
+            )
+            forged = dict(manifest)
+            forged["artifacts"] = {
+                "crontab": base64.b64encode(
+                    b"* * * * * /usr/bin/false\n"
+                ).decode("ascii")
+            }
+            forged.pop("manifest_sha256")
+            forged = self.manager._seal(forged)
+
+            with self.assertRaises(self.manager.CadenceError):
+                self.manager.apply(forged, snapshot, runner=runner)
+            self.assertIsNone(runner.installed)
+
+    def test_manifest_outputs_are_outside_workspace_and_create_only(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            with self.assertRaises(self.manager.CadenceError):
+                self.manager._write_json(
+                    workspace / "preview.json",
+                    {"value": 1},
+                    forbidden_root=workspace,
+                )
+
+            output = root / "manifests" / "preview.json"
+            self.manager._write_json(
+                output, {"value": 1}, forbidden_root=workspace
+            )
+            with self.assertRaises(self.manager.CadenceError):
+                self.manager._write_json(
+                    output, {"value": 2}, forbidden_root=workspace
+                )
+            self.assertEqual({"value": 1}, json.loads(output.read_text()))
+
+    def test_remove_installs_crontab_once(self):
+        current = (
+            "# BEGIN founder-os:a — old\nold\n# END founder-os:a\n"
+        ).encode()
+        runner = CronRunner(current)
+        self.manager.remove(self.config(slug="a"), "cron", "a", runner=runner)
+        installs = [
+            call
+            for call in runner.calls
+            if (
+                call[0][0] == "crontab"
+                and len(call[0]) == 2
+                and call[0][1] != "-l"
+            )
+        ]
+        self.assertEqual(1, len(installs))
+
+    def test_systemd_remove_stops_before_deleting_when_disable_fails(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / "systemd"
+            directory.mkdir()
+            config = self.manager.CadenceConfig(
+                host="claude",
+                binary=root / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug="a",
+            )
+            names = self.manager._selected_names(config, "systemd")
+            for name in names:
+                (directory / name).write_text("unit")
+
+            def runner(argv, **kwargs):
+                if "disable" in argv:
+                    return Result(returncode=1)
+                return Result()
+
+            with mock.patch.object(
+                self.manager, "_scheduler_directory", return_value=directory
+            ):
+                with self.assertRaises(self.manager.CadenceError):
+                    self.manager.remove(
+                        config, "systemd", "a", runner=runner
+                    )
+            self.assertTrue(all((directory / name).exists() for name in names))
+
+    def test_malformed_manifest_seals_fail_as_cadence_errors(self):
+        with self.assertRaises(self.manager.CadenceError):
+            self.manager._verify_seal(
+                {"manifest_sha256": "invalid", "not_json": {1, 2}}
+            )
 
     def test_preview_snapshot_and_apply_abort_on_stale_crontab(self):
         original = b"MAILTO=founder@example.com\n"

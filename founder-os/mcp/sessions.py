@@ -490,6 +490,7 @@ class RoleSessionStore:
         name: Optional[str] = None
         workflows: Set[str] = set()
         in_skills = False
+        skills_seen = False
         for line in lines[1:end]:
             if line.startswith("name:"):
                 if name is not None:
@@ -497,10 +498,16 @@ class RoleSessionStore:
                 name = line.partition(":")[2].strip()
                 in_skills = False
             elif line == "skills:":
+                if skills_seen:
+                    return None
+                skills_seen = True
                 in_skills = True
             elif in_skills and line.startswith("  - "):
                 workflow = line[4:].strip()
-                if not self._valid_workflow(workflow):
+                if (
+                    not self._valid_workflow(workflow)
+                    or workflow in workflows
+                ):
                     return None
                 workflows.add(workflow)
             elif line and not line[0].isspace():

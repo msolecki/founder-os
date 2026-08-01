@@ -227,6 +227,7 @@ def check_cadence_preview(plugin_root, host, binary, workspace_root):
         required = {
             "dontAsk",
             "--allowedTools",
+            "--no-session-persistence",
             "mcp__plugin_founder-os_founder-os-state__*",
         }
     else:

@@ -38,6 +38,9 @@ ROLE_TOOLS = {
     "mcp__plugin_founder-os_founder-os-state__write_owned_state",
     "mcp__plugin_founder-os_founder-os-state__close_role_session",
 }
+PORTFOLIO_READ_TOOL = (
+    "mcp__plugin_founder-os_founder-os-state__read_portfolio_inputs"
+)
 MANAGERS = {
     "chief-of-staff",
     "delivery-lead",
@@ -67,13 +70,16 @@ class TestPackagedSiblingContract(unittest.TestCase):
     def setUpClass(cls):
         cls.agents = package_validator.load_agents(PLUGIN_ROOT)
 
-    def test_all_thirteen_roles_have_the_same_gateway_only_tools(self):
+    def test_all_thirteen_roles_have_only_their_gateway_tools(self):
         self.assertEqual(set(self.agents), ROLE_NAMES)
         for slug, (frontmatter, _) in self.agents.items():
             with self.subTest(role=slug):
+                expected = set(ROLE_TOOLS)
+                if slug == "portfolio-manager":
+                    expected.add(PORTFOLIO_READ_TOOL)
                 self.assertEqual(
                     set(package_validator._tool_names(frontmatter["tools"])),
-                    ROLE_TOOLS,
+                    expected,
                 )
 
     def test_every_role_carries_the_shared_state_and_handoff_contract(self):
@@ -235,7 +241,7 @@ class TestPackagedSiblingContract(unittest.TestCase):
             "\n## ", 1
         )[0]
         ordered = (
-            "/founder-os-init",
+            "founder-os-init",
             "/capture",
             "/pipeline-review",
             "/weekly-review",
