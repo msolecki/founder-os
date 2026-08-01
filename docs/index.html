@@ -2009,6 +2009,60 @@
       text-underline-offset: 0.2em;
     }
 
+    .reference-panel {
+      position: relative;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    .reference-summary {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 0;
+      margin-bottom: 2rem;
+      border-block: 1px solid currentColor;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .reference-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .reference-summary::after {
+      content: "+";
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    .reference-panel[open] > .reference-summary::after {
+      content: "−";
+    }
+
+    .reference-summary:focus-visible {
+      outline: 3px solid var(--orange);
+      outline-offset: 0.35rem;
+    }
+
+    .multi-business .reference-summary:focus-visible {
+      outline-color: var(--ink);
+    }
+
+    .reference-summary span {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    .reference-summary strong {
+      margin-left: auto;
+      font-size: clamp(1rem, 2vw, 1.35rem);
+    }
+
     .team {
       overflow: hidden;
     }
@@ -4316,89 +4370,99 @@
     </section>
 
     <section class="section team" id="team">
-      <div class="container team-layout">
-        <div class="team-intro reveal">
-          <p class="eyebrow">Your executive team</p>
-          <h2 class="section-title">13 roles. Zero <span class="serif">overlap.</span></h2>
-          <p class="section-copy">Every agent owns exactly one decision nobody else can make. When you do not know where to start, the Chief of Staff routes the question to the right role.</p>
-          <p class="team-note"><strong>1</strong><span>role = one decision = one owner of state</span></p>
-        </div>
-        <ol class="agent-list">
-          <li class="agent reveal"><strong>Chief of Staff</strong><span>What deserves your attention now, and who should handle it.</span></li>
-          <li class="agent reveal"><strong>Board Member</strong><span>Whether a plan survives contact with reality.</span></li>
-          <li class="agent reveal"><strong>Strategist</strong><span>What bet to make this quarter — and what to kill.</span></li>
-          <li class="agent reveal"><strong>Positioning Advisor</strong><span>Exactly who you serve and what you sell them.</span></li>
-          <li class="agent reveal"><strong>Pipeline Coach</strong><span>What happens next with every prospect.</span></li>
-          <li class="agent reveal"><strong>Delivery Lead</strong><span>Whether you can take the work and whether it is good enough to ship.</span></li>
-          <li class="agent reveal"><strong>CFO</strong><span>Whether the company can afford it and whether the work makes money.</span></li>
-          <li class="agent reveal"><strong>Focus Coach</strong><span>What enters the calendar — and what comes out.</span></li>
-          <li class="agent reveal"><strong>Skills Mentor</strong><span>Which capability to build next and why.</span></li>
-          <li class="agent reveal"><strong>Brand Editor</strong><span>What to publish, where, and how to keep your voice.</span></li>
-          <li class="agent reveal"><strong>Network Manager</strong><span>Who to talk to and when to follow up.</span></li>
-          <li class="agent reveal"><strong>Ops Engineer</strong><span>What to automate and what to tolerate.</span></li>
-          <li class="agent reveal"><strong>Portfolio Manager</strong><span>How to split time and cash across multiple businesses.</span></li>
-        </ol>
+      <div class="container">
+        <details class="reference-panel">
+          <summary class="reference-summary"><span>Role reference</span><strong>Browse the 13 decision owners</strong></summary>
+          <div class="reference-panel-body team-layout">
+            <div class="team-intro reveal">
+              <p class="eyebrow">Your executive team</p>
+              <h2 class="section-title">13 roles. Zero <span class="serif">overlap.</span></h2>
+              <p class="section-copy">Every agent owns exactly one decision nobody else can make. When you do not know where to start, the Chief of Staff routes the question to the right role.</p>
+              <p class="team-note"><strong>1</strong><span>role = one decision = one owner of state</span></p>
+            </div>
+            <ol class="agent-list">
+              <li class="agent reveal"><strong>Chief of Staff</strong><span>What deserves your attention now, and who should handle it.</span></li>
+              <li class="agent reveal"><strong>Board Member</strong><span>Whether a plan survives contact with reality.</span></li>
+              <li class="agent reveal"><strong>Strategist</strong><span>What bet to make this quarter — and what to kill.</span></li>
+              <li class="agent reveal"><strong>Positioning Advisor</strong><span>Exactly who you serve and what you sell them.</span></li>
+              <li class="agent reveal"><strong>Pipeline Coach</strong><span>What happens next with every prospect.</span></li>
+              <li class="agent reveal"><strong>Delivery Lead</strong><span>Whether you can take the work and whether it is good enough to ship.</span></li>
+              <li class="agent reveal"><strong>CFO</strong><span>Whether the company can afford it and whether the work makes money.</span></li>
+              <li class="agent reveal"><strong>Focus Coach</strong><span>What enters the calendar — and what comes out.</span></li>
+              <li class="agent reveal"><strong>Skills Mentor</strong><span>Which capability to build next and why.</span></li>
+              <li class="agent reveal"><strong>Brand Editor</strong><span>What to publish, where, and how to keep your voice.</span></li>
+              <li class="agent reveal"><strong>Network Manager</strong><span>Who to talk to and when to follow up.</span></li>
+              <li class="agent reveal"><strong>Ops Engineer</strong><span>What to automate and what to tolerate.</span></li>
+              <li class="agent reveal"><strong>Portfolio Manager</strong><span>How to split time and cash across multiple businesses.</span></li>
+            </ol>
+          </div>
+        </details>
       </div>
     </section>
 
     <section class="section multi-business" id="multi-business">
-      <div class="container multi-layout">
-        <div class="multi-intro reveal">
-          <p class="eyebrow">Built for a portfolio of one</p>
-          <h2 class="section-title">One founder. Several businesses. <span class="serif">No shared mess.</span></h2>
-          <p class="section-copy">Founder OS repeats the operating system instead of blending your companies together. Every business keeps its own goals, clients, metrics, pipeline, decisions, and cadence.</p>
-          <p class="multi-note">Run one business? Nothing changes. The multi-business layer appears only when you register a second active business.</p>
-        </div>
-
-        <div class="reveal">
-          <div class="multi-diagram" role="img" aria-label="Multi-business architecture: a registry routes each session to an isolated business workspace, while the portfolio layer compares only time and cash allocation">
-            <div class="registry-card">
-              <span aria-hidden="true">01</span>
-              <div>
-                <strong>The registry routes first</strong>
-                <small>A named slug makes the active business explicit before any company file is opened.</small>
-              </div>
-              <code>businesses.yaml</code>
+      <div class="container">
+        <details class="reference-panel">
+          <summary class="reference-summary"><span>Portfolio reference</span><strong>See how multiple businesses stay separate</strong></summary>
+          <div class="reference-panel-body multi-layout">
+            <div class="multi-intro reveal">
+              <p class="eyebrow">Built for a portfolio of one</p>
+              <h2 class="section-title">One founder. Several businesses. <span class="serif">No shared mess.</span></h2>
+              <p class="section-copy">Founder OS repeats the operating system instead of blending your companies together. Every business keeps its own goals, clients, metrics, pipeline, decisions, and cadence.</p>
+              <p class="multi-note">Run one business? Nothing changes. The multi-business layer appears only when you register a second active business.</p>
             </div>
 
-            <p class="route-label">one full workspace per business</p>
-
-            <div class="business-row">
-              <article class="business-card">
-                <div class="business-card-head"><strong>Studio North</strong><span class="business-slug">studio</span></div>
-                <p>Its own operating state and its own scheduled rhythm.</p>
-                <div class="business-files" aria-label="Example Studio North files">
-                  <span>goals.md</span><span>metrics.md</span><span>pipeline.md</span><span>clients/</span>
+            <div class="reveal">
+              <div class="multi-diagram" role="img" aria-label="Multi-business architecture: a registry routes each session to an isolated business workspace, while the portfolio layer compares only time and cash allocation">
+                <div class="registry-card">
+                  <span aria-hidden="true">01</span>
+                  <div>
+                    <strong>The registry routes first</strong>
+                    <small>A named slug makes the active business explicit before any company file is opened.</small>
+                  </div>
+                  <code>businesses.yaml</code>
                 </div>
-              </article>
-              <article class="business-card">
-                <div class="business-card-head"><strong>Field Notes</strong><span class="business-slug">field-notes</span></div>
-                <p>A separate history. No shared prospects, numbers, or obligations.</p>
-                <div class="business-files" aria-label="Example Field Notes files">
-                  <span>goals.md</span><span>metrics.md</span><span>pipeline.md</span><span>clients/</span>
+
+                <p class="route-label">one full workspace per business</p>
+
+                <div class="business-row">
+                  <article class="business-card">
+                    <div class="business-card-head"><strong>Studio North</strong><span class="business-slug">studio</span></div>
+                    <p>Its own operating state and its own scheduled rhythm.</p>
+                    <div class="business-files" aria-label="Example Studio North files">
+                      <span>goals.md</span><span>metrics.md</span><span>pipeline.md</span><span>clients/</span>
+                    </div>
+                  </article>
+                  <article class="business-card">
+                    <div class="business-card-head"><strong>Field Notes</strong><span class="business-slug">field-notes</span></div>
+                    <p>A separate history. No shared prospects, numbers, or obligations.</p>
+                    <div class="business-files" aria-label="Example Field Notes files">
+                      <span>goals.md</span><span>metrics.md</span><span>pipeline.md</span><span>clients/</span>
+                    </div>
+                  </article>
                 </div>
-              </article>
-            </div>
 
-            <p class="route-label">one deliberately narrow cross-business view</p>
+                <p class="route-label">one deliberately narrow cross-business view</p>
 
-            <div class="portfolio-card">
-              <span class="portfolio-mark" aria-hidden="true">PM</span>
-              <div>
-                <strong>Portfolio Manager · portfolio.md</strong>
-                <span>Ranks active businesses and sets this week's split of the founder's hours and cash. It does not merge their operating state.</span>
+                <div class="portfolio-card">
+                  <span class="portfolio-mark" aria-hidden="true">PM</span>
+                  <div>
+                    <strong>Portfolio Manager · portfolio.md</strong>
+                    <span>Ranks active businesses and sets this week's split of the founder's hours and cash. It does not merge their operating state.</span>
+                  </div>
+                </div>
+
+                <p class="business-command"><strong>Target any workflow:</strong> <code>/founder-os:daily-brief studio</code></p>
+              </div>
+
+              <div class="multi-principles" role="group" aria-label="Multi-business rules">
+                <div class="multi-principle"><strong>Isolate the work</strong><span>Each company keeps a complete workspace, cadence, logs, and history.</span></div>
+                <div class="multi-principle"><strong>Name the company</strong><span>The slug, environment, or registry default resolves context before advice begins.</span></div>
+                <div class="multi-principle"><strong>Cross only at portfolio level</strong><span>Only the Portfolio Manager compares businesses, and only to allocate scarce time and cash.</span></div>
               </div>
             </div>
-
-            <p class="business-command"><strong>Target any workflow:</strong> <code>/founder-os:daily-brief studio</code></p>
           </div>
-
-          <div class="multi-principles" role="group" aria-label="Multi-business rules">
-            <div class="multi-principle"><strong>Isolate the work</strong><span>Each company keeps a complete workspace, cadence, logs, and history.</span></div>
-            <div class="multi-principle"><strong>Name the company</strong><span>The slug, environment, or registry default resolves context before advice begins.</span></div>
-            <div class="multi-principle"><strong>Cross only at portfolio level</strong><span>Only the Portfolio Manager compares businesses, and only to allocate scarce time and cash.</span></div>
-          </div>
-        </div>
+        </details>
       </div>
     </section>
 

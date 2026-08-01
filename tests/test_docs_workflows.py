@@ -470,6 +470,23 @@ class ActivationCopyContractTest(unittest.TestCase):
         self.assertNotIn("Multi-business", nav)
         self.assertNotRegex(nav, r"\b52 workflows\b")
 
+    def test_secondary_role_and_multi_business_reference_is_expandable(self):
+        team_start = HTML.index('<section class="section team" id="team">')
+        multi_start = HTML.index(
+            '<section class="section multi-business" id="multi-business">'
+        )
+        memory_start = HTML.index(
+            '<section class="section ownership" id="memory">'
+        )
+
+        for section in (
+            HTML[team_start:multi_start],
+            HTML[multi_start:memory_start],
+        ):
+            with self.subTest(section=section[:80]):
+                self.assertIn('<details class="reference-panel">', section)
+                self.assertIn('<summary class="reference-summary">', section)
+
     def test_hero_names_the_user_problem_result_time_and_decision_first_cta(self):
         compact = re.sub(r"\s+", " ", self.HERO)
         for marker in (
