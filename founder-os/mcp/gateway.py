@@ -63,6 +63,11 @@ class Gateway:
                 "properties": {
                     "capability": {"type": "string"},
                     "pattern": {"type": "string"},
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                    },
                     "cursor": {"type": "string"},
                 },
                 "required": ["capability", "pattern"],
@@ -266,13 +271,22 @@ class Gateway:
     def _list_state(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         _, binding = self._session_workspace(arguments.get("capability"))
         pattern = arguments.get("pattern")
+        limit = arguments.get("limit")
         cursor = arguments.get("cursor")
-        if not self._text(pattern) or (
-            cursor is not None and not self._text(cursor)
-        ):
+        if not self._text(pattern):
             raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
+        if "cursor" in arguments and not self._text(cursor):
+            raise SafeStateError("STATE_IO_ERROR")
+        if "limit" in arguments and (
+            isinstance(limit, bool)
+            or not isinstance(limit, int)
+            or limit < 1
+            or limit > 100
+        ):
+            raise SafeStateError("STATE_IO_ERROR")
         return self._io(binding.root).list_markdown_page(
             pattern,
+            limit=limit,
             cursor=cursor,
         )
 

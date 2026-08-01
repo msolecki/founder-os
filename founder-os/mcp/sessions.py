@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import fcntl
+import itertools
 import json
 import math
 import os
@@ -65,6 +66,7 @@ class RoleSessionMetadata:
 
 class RoleSessionStore:
     SESSION_RETENTION_SECONDS = 7 * 24 * 60 * 60
+    RETENTION_SCAN_LIMIT = 256
     JOURNAL_MAX_BYTES = 5 * 1024 * 1024
     JOURNAL_ARCHIVES = 3
 
@@ -540,7 +542,11 @@ class RoleSessionStore:
 
     def _prune_records(self, now: float) -> None:
         try:
-            paths = list(self._data_root.iterdir())
+            paths = list(
+                itertools.islice(
+                    self._data_root.iterdir(), self.RETENTION_SCAN_LIMIT
+                )
+            )
         except FileNotFoundError:
             return
         except OSError:

@@ -841,6 +841,59 @@ class RoleSessionStoreReadTests(unittest.TestCase):
             records[0].name,
         )
 
+    def test_session_retention_examines_at_most_256_directory_entries(self) -> None:
+        self.data_root.mkdir(parents=True)
+        self.now[0] = 700_000.0
+        for index in range(300):
+            capability_hash = hashlib.sha256(
+                ("old-%03d" % index).encode("utf-8")
+            ).hexdigest()
+            record = {
+                "capability_hash": capability_hash,
+                "workspace_id": "workspace-id",
+                "workspace_kind": "business",
+                "role": "cfo",
+                "correlation_id": "old-%03d" % index,
+                "workflow": "revenue-review",
+                "expires_at": 60.0,
+                "status": "closed",
+                "closed_at": 60.0,
+            }
+            (self.data_root / (capability_hash + ".json")).write_text(
+                json.dumps(record), encoding="utf-8"
+            )
+
+        self.store.open(
+            "workspace-id",
+            "cfo",
+            "fresh-after-bounded-prune",
+            "revenue-review",
+            "business",
+        )
+
+        self.assertEqual(45, len(list(self.data_root.glob("*.json"))))
+
+    def test_session_directory_sync_failure_is_a_domain_error(self) -> None:
+        real_fsync = os.fsync
+
+        def fail_directory_sync(descriptor):
+            if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                raise OSError("injected directory sync failure")
+            return real_fsync(descriptor)
+
+        with mock.patch(
+            "mcp.sessions.os.fsync", side_effect=fail_directory_sync
+        ):
+            self.assert_invalid(
+                lambda: self.store.open(
+                    "workspace-id",
+                    "cfo",
+                    "directory-sync-failure",
+                    "revenue-review",
+                    "business",
+                )
+            )
+
 
 class SafeStateIOTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -926,6 +979,51 @@ class SafeStateIOTests(unittest.TestCase):
         )
         self.assertEqual(len(paths), len(set(paths)))
 
+    def test_listing_honors_explicit_limit_and_survives_boundary_deletion(self) -> None:
+        reviews = self.workspace / "reviews" / "daily"
+        reviews.mkdir(parents=True)
+        expected = []
+        for index in range(205):
+            relative = "reviews/daily/%03d.md" % index
+            (self.workspace / relative).write_text(str(index), encoding="utf-8")
+            expected.append(relative)
+
+        reader = self.io(max_results=100)
+        first = reader.list_markdown_page(
+            "reviews/daily/*.md", limit=37
+        )
+        self.assertEqual(expected[:37], first["paths"])
+        boundary = self.workspace / expected[36]
+        boundary.unlink()
+
+        seen = list(first["paths"])
+        cursor = first["next_cursor"]
+        while cursor is not None:
+            page = reader.list_markdown_page(
+                "reviews/daily/*.md", limit=37, cursor=cursor
+            )
+            seen.extend(page["paths"])
+            cursor = page["next_cursor"]
+
+        self.assertEqual(expected, seen)
+        self.assertEqual(len(seen), len(set(seen)))
+
+    def test_listing_rejects_invalid_explicit_limits(self) -> None:
+        for limit in (0, 101, True, "10"):
+            with self.subTest(limit=limit):
+                self.assert_safe_error(
+                    "STATE_IO_ERROR",
+                    lambda limit=limit: self.io().list_markdown_page(
+                        "**/*.md", limit=limit
+                    ),
+                )
+
+    def test_compatibility_listing_rejects_a_truncated_result(self) -> None:
+        self.assert_safe_error(
+            "STATE_IO_ERROR",
+            lambda: self.io(max_results=2).list_markdown("**/*.md"),
+        )
+
     def test_listing_cursor_is_bound_to_pattern_and_rejects_tampering(self) -> None:
         reader = self.io(max_results=1)
         first = reader.list_markdown_page("**/*.md")
@@ -985,6 +1083,27 @@ class SafeStateIOTests(unittest.TestCase):
 
         self.assertEqual("create", result["operation"])
         self.assertIn(True, synced_directories)
+
+    def test_atomic_replace_directory_sync_failure_is_a_domain_error(self) -> None:
+        reader = self.io()
+        real_fsync = os.fsync
+
+        def fail_directory_sync(descriptor):
+            if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                raise OSError("injected directory sync failure")
+            return real_fsync(descriptor)
+
+        with mock.patch(
+            "mcp.safe_io.os.fsync", side_effect=fail_directory_sync
+        ):
+            self.assert_safe_error(
+                "STATE_IO_ERROR",
+                lambda: reader.atomic_replace(
+                    "durability-uncertain.md",
+                    b"landed but not durably acknowledged\n",
+                    create_only=True,
+                ),
+            )
 
     def test_read_path_mutations_cannot_be_normalized_into_workspace_access(self) -> None:
         for path in (
@@ -1371,7 +1490,11 @@ class GatewayReadSurfaceTests(unittest.TestCase):
         paths = []
         cursor = None
         while True:
-            arguments = {"capability": capability, "pattern": "*.md"}
+            arguments = {
+                "capability": capability,
+                "pattern": "*.md",
+                "limit": 37,
+            }
             if cursor is not None:
                 arguments["cursor"] = cursor
             page = self.payload(self.gateway.call("list_state", arguments))
@@ -1383,6 +1506,21 @@ class GatewayReadSurfaceTests(unittest.TestCase):
         self.assertEqual(102, len(paths))
         self.assertEqual(sorted(paths), paths)
         self.assertEqual(len(paths), len(set(paths)))
+
+        for invalid_limit in (0, 101, True, "10"):
+            with self.subTest(limit=invalid_limit):
+                self.assert_gateway_error(
+                    self.gateway.call(
+                        "list_state",
+                        {
+                            "capability": capability,
+                            "pattern": "*.md",
+                            "limit": invalid_limit,
+                        },
+                    ),
+                    "STATE_IO_ERROR",
+                    "Preserve the original file and surface the error",
+                )
 
 
     def test_gateway_forged_workspace_and_capability_return_stable_domain_actions(self) -> None:
@@ -1604,6 +1742,10 @@ class GatewaySchemaTests(unittest.TestCase):
                 self.assertFalse(schemas[name]["additionalProperties"])
 
         self.assertIn("cursor", schemas["list_state"]["properties"])
+        self.assertEqual(
+            {"type": "integer", "minimum": 1, "maximum": 100},
+            schemas["list_state"]["properties"]["limit"],
+        )
 
         write_schema = schemas["write_owned_state"]
         self.assertIn({"required": ["expected_sha256"]}, write_schema["oneOf"])

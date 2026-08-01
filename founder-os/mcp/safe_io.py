@@ -102,12 +102,16 @@ class SafeStateIO:
             pass
 
     def list_markdown(self, pattern: str) -> List[str]:
-        return list(self.list_markdown_page(pattern)["paths"])
+        page = self.list_markdown_page(pattern, limit=self.max_results)
+        if page["next_cursor"] is not None:
+            raise SafeStateError("STATE_IO_ERROR")
+        return list(page["paths"])
 
     def list_markdown_page(
         self,
         pattern: str,
         *,
+        limit: Optional[int] = None,
         cursor: Optional[str] = None,
     ) -> Dict[str, object]:
         self._validate_pattern(pattern)
@@ -115,6 +119,15 @@ class SafeStateIO:
             isinstance(self.max_results, bool)
             or not isinstance(self.max_results, int)
             or self.max_results <= 0
+        ):
+            raise SafeStateError("STATE_IO_ERROR")
+        page_limit = self.max_results if limit is None else limit
+        if (
+            isinstance(page_limit, bool)
+            or not isinstance(page_limit, int)
+            or page_limit < 1
+            or page_limit > 100
+            or page_limit > self.max_results
         ):
             raise SafeStateError("STATE_IO_ERROR")
         after = self._decode_list_cursor(cursor, pattern)
@@ -152,12 +165,12 @@ class SafeStateIO:
                 raise SafeStateError("STATE_IO_ERROR")
 
         try:
-            paths = heapq.nsmallest(self.max_results + 1, candidates())
+            paths = heapq.nsmallest(page_limit + 1, candidates())
         except (OSError, TypeError, ValueError):
             raise SafeStateError("STATE_IO_ERROR")
 
-        has_more = len(paths) > self.max_results
-        page = paths[: self.max_results]
+        has_more = len(paths) > page_limit
+        page = paths[:page_limit]
         if (
             len(
                 json.dumps(
@@ -179,7 +192,7 @@ class SafeStateIO:
     def _encode_list_cursor(pattern: str, after: str) -> str:
         payload = json.dumps(
             {
-                "version": 1,
+                "v": 1,
                 "pattern_sha256": hashlib.sha256(
                     pattern.encode("utf-8")
                 ).hexdigest(),
@@ -221,7 +234,7 @@ class SafeStateIO:
         ):
             raise SafeStateError("STATE_IO_ERROR")
         if not isinstance(payload, dict) or set(payload) != {
-            "version",
+            "v",
             "pattern_sha256",
             "after",
         }:
@@ -229,7 +242,7 @@ class SafeStateIO:
         expected_digest = hashlib.sha256(pattern.encode("utf-8")).hexdigest()
         after = payload.get("after")
         if (
-            payload.get("version") != 1
+            payload.get("v") != 1
             or payload.get("pattern_sha256") != expected_digest
             or not isinstance(after, str)
             or not after

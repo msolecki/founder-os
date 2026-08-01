@@ -309,6 +309,36 @@ class TestAgentTypeFor(unittest.TestCase):
             self.assertEqual("strategist", payload["agent_type"])
             self.assertIsInstance(payload["recorded_at"], float)
 
+    def test_record_agent_prunes_at_most_256_mapping_candidates(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            for index in range(300):
+                path = mapping / ("turn-old-%03d.json" % index)
+                path.write_text(
+                    json.dumps({"agent_type": "cfo", "recorded_at": 0}),
+                    encoding="utf-8",
+                )
+                os.utime(path, (0, 0))
+
+            result = subprocess.run(
+                [sys.executable, str(PLUGIN_ROOT / "hooks" / "record-agent.py")],
+                input=json.dumps(
+                    {"turn_id": "turn-new", "agent_type": "strategist"}
+                ),
+                capture_output=True,
+                text=True,
+                cwd=str(REPO_ROOT),
+                env={**os.environ, "PLUGIN_DATA": temp_dir},
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(
+                44,
+                len(list(mapping.glob("turn-old-*.json"))),
+            )
+            self.assertTrue((mapping / "turn-new.json").is_file())
+
     def test_unresolved_safe_turn_id_is_denied_instead_of_treated_as_main(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             result = run_codex_hook(

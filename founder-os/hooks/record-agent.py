@@ -6,6 +6,7 @@ SubagentStart and then identifies later tool calls by ``turn_id``. Keeping the
 small mapping in PLUGIN_DATA lets the same ownership guard enforce both hosts.
 Unknown input deliberately fails open.
 """
+import itertools
 import json
 import math
 import os
@@ -18,10 +19,11 @@ from pathlib import Path
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 MAPPING_TTL_SECONDS = 24 * 60 * 60
+MAPPING_SCAN_LIMIT = 256
 
 
 def _prune_mappings(target_dir, now):
-    for path in target_dir.iterdir():
+    for path in itertools.islice(target_dir.iterdir(), MAPPING_SCAN_LIMIT):
         if not path.name.endswith(".json"):
             continue
         turn_id = path.name[:-5]

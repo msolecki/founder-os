@@ -895,6 +895,54 @@ class StateGatewayWriteTests(unittest.TestCase):
             self.assertTrue(archive.read_text(encoding="utf-8").strip())
         self.assertFalse((self.data_root / "operations.jsonl.4").exists())
 
+    def test_journal_rotation_rejects_symlink_and_non_regular_archives(self):
+        self.data_root.mkdir(parents=True, exist_ok=True)
+        active = self.data_root / "operations.jsonl"
+        active.write_text("{}\n", encoding="utf-8")
+        self.sessions.JOURNAL_MAX_BYTES = 1
+        archive = self.data_root / "operations.jsonl.1"
+        outside = self.base / "outside-archive"
+        outside.write_text("must survive\n", encoding="utf-8")
+
+        archive.symlink_to(outside)
+        with self.assertRaises(JournalError):
+            self.sessions.preflight_journal()
+        self.assertEqual("must survive\n", outside.read_text(encoding="utf-8"))
+
+        archive.unlink()
+        archive.mkdir()
+        with self.assertRaises(JournalError):
+            self.sessions.preflight_journal()
+
+    def test_concurrent_journal_preflights_are_serialized(self):
+        first = self.sessions.preflight_journal()
+        started = threading.Event()
+        completed = threading.Event()
+        descriptors = []
+        errors = []
+
+        def second_preflight():
+            started.set()
+            try:
+                descriptors.append(self.sessions.preflight_journal())
+            except Exception as error:  # pragma: no cover - asserted below
+                errors.append(error)
+            finally:
+                completed.set()
+
+        contender = threading.Thread(target=second_preflight)
+        contender.start()
+        self.assertTrue(started.wait(1))
+        self.assertFalse(completed.wait(0.05))
+        os.close(first)
+        contender.join(1)
+
+        self.assertFalse(contender.is_alive())
+        self.assertTrue(completed.is_set())
+        self.assertEqual([], errors)
+        self.assertEqual(1, len(descriptors))
+        os.close(descriptors[0])
+
     def test_post_replace_clock_failure_reports_landed_write_as_success(self):
         capability = self._open("cfo")
         content = _metrics(close="Committed before clock failure")
