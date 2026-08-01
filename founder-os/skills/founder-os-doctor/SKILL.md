@@ -45,7 +45,7 @@ Monthly, and immediately after any of these:
   has nothing there to be sick.
 
 **You have no shell, and the cadence checks are the place that hurts.** The
-schedule lives in the founder's crontab, on their host, and you cannot read it.
+schedule lives in the founder's scheduler, on their host, and you cannot read it.
 So you diagnose the cadences the only way available to you — by what did or did
 not get written to `reviews/daily/` — and you hand the *why* to
 `/setup-cadences`, which can look. Do not guess at a cause you cannot see.
@@ -69,8 +69,8 @@ a health report that lists a screen of green checks trains the founder to skim i
 | **Goals without bets** | `goals.md` has no bet with a numeric kill condition, and the quarter is > 1/3 gone | A bet without a threshold cannot be killed, so it will not be. `kill-or-continue` has nothing to force. |
 | **Orphan clients** | A `clients/*.md` file names no client that `metrics.md` shows revenue for, and is unmodified > 90 days | Two possibilities and both matter: the engagement ended and nobody closed the file, or work is being delivered and not billed. |
 | **Empty decision log** | `decisions/` is empty after 30 days of use | House rule 3 is not being followed. Six months from now the founder asks why they raised rates and the answer will not exist. `annual-review` has nothing to read. |
-| **Cadence never fired** | `reviews/daily/` is empty, and `charter.md` is more than 3 days old | `/setup-cadences` was never run. The workspace looks installed and not one cadence exists: a scheduled brief is a cron line on the founder's machine, and nothing in this package writes one until they say yes to that skill. This is the most common finding on a workspace that "went quiet in week one", and it is the cheapest to fix. |
-| **Cadence gone quiet** | `reviews/daily/` has files, but none for the last 5 weekdays | It fired before and it stopped. **You cannot see why** — the crontab is on the host and you have no shell. Three things do it: the entry was dropped from the crontab, `claude` left the PATH cron runs with, or the machine was asleep every morning at 08:00. Report the last date you can see, name the three, and hand to `/setup-cadences` — the per-cadence logs it wrote are where the answer actually is. |
+| **Cadence never fired** | `reviews/daily/` is empty, and `charter.md` is more than 3 days old | `setup-cadences` was never run. The workspace looks installed and no cadence exists: scheduled state is installed on the founder's machine only after they approve that skill. This is the most common finding on a workspace that "went quiet in week one", and it is the cheapest to fix. |
+| **Cadence gone quiet** | `reviews/daily/` has files, but none for the last 5 weekdays | It fired before and it stopped. **You cannot see why** — the scheduler is on the host and you have no shell. The job may have been removed, the host binary or authentication may have changed, or cron may have missed sleeping-machine runs. Report the last date you can see and hand to `setup-cadences`; its per-cadence logs and smoke test are where the answer actually is. |
 | **Broken link** | A `[[slug]]` in any file resolves to neither a workspace file nor a `network.md` `## Map` row | House rule 6 says a name another file holds is a link. A link that resolves to nothing is worse than the retyped name it replaced: it looks joined. `follow-up-sweep` reads `## Map` and `pipeline-review` reads `pipeline.md`, and a dangling `[[acme-corp]]` means one of them is advising on a company the other cannot see. Report the file, the line and the slug, and hand to the owner of the file holding the link — the fix is theirs, and inventing the missing row would be inventing an entity. |
 | **Inbox not drained** | `inbox.md` `## Inbox` is non-empty and `reviews/daily/` has a file from today or later | The inbox has no clock because it has a drain — `triage` and `daily-brief` empty it every run. A brief that ran and left lines behind is a brief that skipped step 0, and those lines are now in the one file with no cap, no clock and no reaper. This is the graveyard forming in the door built to have none. Hand to the **Chief of Staff**; do not drain it yourself, because draining means deciding what each line is, and that is the triage you are not running. |
 | **Briefs nobody acted on** | 10+ files in `reviews/daily/`, and fewer than 1 in 5 of their `## The one thing` items appear in `queue.md` `## Done` or `## Dropped` | The company is writing and nobody is reading. Every other check here finds state that is wrong; this one finds state that is fine and ignored, which is the failure that ends the install — the cadences fire, the files fill, and the founder stopped opening them in week three. **Say what this does and does not measure**: it sees whether the one thing reached the queue, not whether the founder did the work. A founder who does the work and never closes the item trips this check and is right to be annoyed. Report the ratio and the window, ask which of the two it is, and hand to the **Chief of Staff**. Never repair — there is nothing structural here to fix. |
@@ -117,8 +117,8 @@ files → **Delivery Lead**. Empty decision log → **Chief of Staff**.
 
 **A silent cadence is a report, never a repair.** Both cadence checks hand to
 `/setup-cadences`, and neither is yours to fix: repairing one means writing a
-cron line on the founder's machine, and you have no shell, no confirmation, and
-no business doing it. **Never invent a cron line.** One invented here is worse
+scheduler artifact on the founder's machine, and you have no shell, no confirmation, and
+no business doing it. **Never invent scheduler state.** One invented here is worse
 than the silence it replaced — the founder believes the cadence is back and it
 fires on a schedule nobody chose, or it does not fire at all and they have
 stopped looking. Say what you saw: the date of the last brief, or that there has

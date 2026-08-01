@@ -33,7 +33,7 @@ workspace before installing.
 | Python 3.9+ | Runs the local state gateway and host hooks. |
 | PyYAML *(development/tests only)* | Runs the full package validator; the installed runtime remains dependency-light. |
 | Node.js 20+ *(development/tests only)* | Runs the landing-page behavior contract test. |
-| `cron` *(optional)* | Runs scheduled cadences. Every workflow also works manually without it. |
+| A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Every workflow also works manually. |
 
 Founder OS itself is free and MIT-licensed. Your existing host plan and
 usage remain separate; Founder OS does not add another account or subscription.
@@ -64,7 +64,7 @@ Run these commands in Claude Code, in order:
 ```text
 /plugin marketplace add msolecki/founder-os
 /plugin install founder-os@founder-os
-/founder-os-init
+/founder-os:founder-os-init
 ```
 
 In Codex, install the same package from the repository marketplace:
@@ -72,12 +72,13 @@ In Codex, install the same package from the repository marketplace:
 ```text
 codex plugin marketplace add msolecki/founder-os
 codex plugin add founder-os@founder-os
+$founder-os:founder-os-init
 ```
 
 Review and trust bundled hooks when prompted. After updating or reinstalling in
 Codex, start a new conversation so the cached copy is refreshed.
 
-`/founder-os-init` is one continuous, resumable flow from an empty folder to a
+`founder-os-init` is one continuous, resumable flow from an empty folder to a
 persisted first brief. It checks the install and target before writing, then
 asks four short groups about the business, customer, quarter and money. It
 delegates each answer through a short-lived role capability to the sibling that
@@ -100,9 +101,9 @@ file does not activate the workspace.
 The median target is ten minutes and the hard stop is fifteen minutes. Unknown
 cash, revenue or burn stays unknown and becomes an owned follow-up; it is never
 filled from inference. `Activation complete` appears only after that valid
-brief passes the same check in the same resolved workspace. If the flow stops, run
-`/founder-os-init` again: populated sections are preserved and the first missing
-stage resumes.
+brief passes the same check in the same resolved workspace. If the flow stops,
+repeat the host-specific init command: populated sections are preserved and the
+first missing stage resumes.
 
 The activation receipt leads with the value you can inspect:
 
@@ -140,16 +141,17 @@ the source date without inventing a freshness label.
 
 ## Optional: schedule the cadences
 
-After the first brief, run:
+After the first brief, run the command for your host:
 
 ```text
-/setup-cadences
+/founder-os:setup-cadences       # Claude Code
+$founder-os:setup-cadences       # Codex
 ```
 
-With your consent, this writes ten `cron` entries on your machine. Scheduled
-cadences run only while that machine and its cron service are running; there is
-no cloud scheduler and no catch-up run after a machine was off. Every cadence
-can still be invoked manually.
+With your consent, this writes local LaunchAgents, persistent user-systemd
+timers, or cron entries. Launchd and persistent systemd catch up after sleep;
+cron does not. There is no cloud scheduler, and every cadence can still be
+invoked manually.
 
 Multi-business installs keep one workspace and one schedule fence per business.
 The Portfolio Manager is the only role that reads across them.
@@ -200,8 +202,8 @@ codex plugin add founder-os@founder-os
 
 For a workspace that is missing files, stale, or structurally inconsistent,
 run `/founder-os-doctor`. It reports before proposing any repair. For an
-interrupted first run, rerun `/founder-os-init`; do not delete the workspace or
-manually replay the owner workflows.
+interrupted first run, repeat the host-specific init command; do not delete the
+workspace or manually replay the owner workflows.
 
 To remove the plugin:
 

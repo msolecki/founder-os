@@ -27,7 +27,14 @@ CODEX_INSTALL = (
     "codex plugin marketplace add msolecki/founder-os",
     "codex plugin add founder-os@founder-os",
 )
-INIT_COMMAND = "/founder-os-init"
+CLAUDE_WORKFLOWS = (
+    "/founder-os:founder-os-init",
+    "/founder-os:setup-cadences",
+)
+CODEX_WORKFLOWS = (
+    "$founder-os:founder-os-init",
+    "$founder-os:setup-cadences",
+)
 BEHAVIOR_TEST = (
     REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
 ).read_text(encoding="utf-8")
@@ -106,12 +113,12 @@ class WorkflowLibraryContractTest(unittest.TestCase):
             "Claude Code": (
                 '<section class="install-box" '
                 'aria-labelledby="install-claude-title">',
-                CLAUDE_INSTALL + (INIT_COMMAND,),
+                CLAUDE_INSTALL + CLAUDE_WORKFLOWS,
             ),
             "Codex": (
                 '<section class="install-box" '
                 'aria-labelledby="install-codex-title">',
-                CODEX_INSTALL + (INIT_COMMAND,),
+                CODEX_INSTALL + CODEX_WORKFLOWS,
             ),
         }
         for host, (marker, expected_commands) in install_sections.items():

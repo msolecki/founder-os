@@ -45,8 +45,9 @@ tool allowlists remain the stronger package contract.
 
 ## Scheduled work
 
-Cadences use local cron and run only while the machine and cron service are
-available. There is no Founder OS cloud scheduler or catch-up run.
+Cadences use local LaunchAgents, persistent user-systemd timers, or cron.
+Launchd and persistent systemd catch up after sleep; cron does not. There is no
+Founder OS cloud scheduler.
 
 ## Multiple businesses
 

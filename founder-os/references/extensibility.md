@@ -1,6 +1,6 @@
 # The Local Overlay
 
-Thirteen agents and forty-nine skills are the shape of a company of one in
+Thirteen agents and fifty-three skills are the shape of a company of one in
 general. No founder runs a company in general. One of them has a licensing
 partner and needs `partners.md`; one runs a podcast and needs a workflow no
 consultant would ever want; one has a rhythm nobody upstream has heard of.

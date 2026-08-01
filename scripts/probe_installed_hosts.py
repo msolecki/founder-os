@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import shutil
@@ -198,6 +199,47 @@ def execution_envelopes(plugin_root):
     return _execution_envelope(plugin_root), _execution_envelope(plugin_root)
 
 
+def check_cadence_preview(plugin_root, host, binary, workspace_root):
+    """Render an installed host command without invoking a model or scheduler."""
+    script = Path(plugin_root) / "scripts" / "cadence_manager.py"
+    spec = importlib.util.spec_from_file_location(
+        "founder_os_installed_cadence_manager_" + host, script
+    )
+    if spec is None or spec.loader is None:
+        raise ProbeFailure("installed cadence manager is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+        workspace_root = Path(workspace_root).resolve()
+        config = module.CadenceConfig(
+            host=host,
+            binary=Path(binary).resolve(),
+            workspace=workspace_root / "founder-os",
+            workdir=workspace_root,
+            log_root=workspace_root / "logs",
+            slug=None,
+        )
+        argv = module.host_argv(config, "daily-brief")
+    except Exception as exc:
+        raise ProbeFailure("%s cadence preview failed: %s" % (host, exc)) from exc
+    if host == "claude":
+        required = {
+            "dontAsk",
+            "--allowedTools",
+            "mcp__plugin_founder-os_founder-os-state__*",
+        }
+    else:
+        required = {
+            "never",
+            "workspace-write",
+            "$founder-os:daily-brief",
+        }
+    if not required.issubset(set(argv)):
+        raise ProbeFailure("%s cadence preview drifted" % host)
+    return tuple(argv)
+
+
 def _check_orchestration(host, plugin_root, details, guard_report, required):
     agents = package_validator.load_agents(plugin_root)
     native, fallback = execution_envelopes(plugin_root)
@@ -244,6 +286,12 @@ def probe_host(host, repo_root, isolated_root, require_native_and_fallback=False
         )
     ]
     plugin_root, details = _discover_install(host, results, isolated_root)
+    check_cadence_preview(
+        plugin_root,
+        host,
+        binary,
+        run_root / (host + "-cadence-workspace"),
+    )
     installed_smoke.check_session_context(plugin_root, run_root)
     installed_smoke.check_session_context_warning(plugin_root, run_root)
     guard_report = installed_smoke.check_ownership_guard(

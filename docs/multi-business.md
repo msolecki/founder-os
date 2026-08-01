@@ -31,12 +31,12 @@ default: acme             # which business a session means when it doesn't say
 portfolio: /Users/x/.founder-os/portfolio   # scaffolded with the 2nd business
 ```
 
-- The **slug** is the identity. It names the cron fence, the log directory, and
+- The **slug** is the identity. It names the scheduler artifact, the log directory, and
   the business everywhere the package needs a name. Slugs are `[a-z0-9-]`, and
   renaming one is a migration, not an edit.
 - **`status: paused`** keeps the workspace and its history but drops the business
   from cadence scheduling and portfolio ranking. Pause first, delete only once
-  the workspace is archived — deleting an entry orphans its crontab lines.
+  the workspace is archived — deleting an entry orphans its scheduler state.
 - **`default:`** is what an unqualified session works on. Redundant with one
   active business, mandatory with two — "whichever workspace the cwd resolves to"
   is how advice lands in the wrong company.
@@ -45,10 +45,11 @@ portfolio: /Users/x/.founder-os/portfolio   # scaffolded with the 2nd business
 
 Precedence, most explicit wins:
 
-1. **Named in the invocation** — `/founder-os:daily-brief acme`, or "for acme" in
-   the session. Every cadence accepts the slug as its first argument.
-2. **`FOUNDER_OS_HOME`** — set in the environment (this is what cron lines do;
-   each carries its business's absolute home).
+1. **Named in the invocation** — `/founder-os:daily-brief acme` in Claude Code,
+   `$founder-os:daily-brief acme` in Codex, or "for acme" in the session. Every
+   cadence accepts the slug as its first argument.
+2. **`FOUNDER_OS_HOME`** — set in the environment; each scheduled job carries
+   its business's absolute home.
 3. **Registry `default:`** — when nothing above says otherwise.
 4. **No registry** — the classic single-business resolution: `FOUNDER_OS_HOME`
    or `./founder-os/`. Every install before the registry existed keeps working

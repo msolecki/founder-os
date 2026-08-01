@@ -133,7 +133,7 @@ beliefs matter.
    destinations are written together or neither is written.
    Copy the same source directory, including `agents/openai.yaml`, to both
    destinations and report both paths. This is the `setup-cadences` rule applied
-   to a file instead of a cron line, for the same reason: a plugin cannot make
+   to a file instead of scheduler state, for the same reason: a plugin cannot make
    a host load a workflow, so the founder does, knowingly.
 
 9. **Verify against the doctor's overlay checks and show the result.** Overlay

@@ -1,6 +1,10 @@
 # Troubleshooting & FAQ
 
-The first tool for anything that looks wrong is `/founder-os-doctor`. It
+Claude Code invokes packaged workflows as `/founder-os:<name>`; Codex uses
+`$founder-os:<name>`. Short names below identify the workflow, not a
+cross-host command syntax.
+
+The first tool for anything that looks wrong is `founder-os-doctor`. It
 diagnoses workspace rot and **reports before it repairs anything** — it proposes
 each fix individually and waits for confirmation, and some findings it will never
 repair because the fix is a decision, not a structural edit.
@@ -77,8 +81,8 @@ right now*.
 | **Goals without bets** | `goals.md` has no bet with a numeric kill condition and the quarter is > ⅓ gone. | Strategist |
 | **Orphan clients** | A `clients/*.md` names no client `metrics.md` shows revenue for, unmodified > 90 days (ended-and-not-closed, or delivered-and-not-billed). | Delivery Lead |
 | **Empty decision log** | `decisions/` empty after 30 days of use — house rule 3 isn't being followed. | Chief of Staff |
-| **Cadence never fired** | `reviews/daily/` empty and `charter.md` > 3 days old — `/setup-cadences` was never run. The most common "went quiet in week one" finding, and the cheapest fix. | `/setup-cadences` |
-| **Cadence gone quiet** | `reviews/daily/` has files but none for the last 5 weekdays. The doctor has no shell and cannot see *why* — crontab dropped, `claude` off cron's PATH, or the machine asleep at 08:00. | `/setup-cadences` (its logs have the answer) |
+| **Cadence never fired** | `reviews/daily/` empty and `charter.md` > 3 days old — `setup-cadences` was never run. The most common "went quiet in week one" finding, and the cheapest fix. | `setup-cadences` |
+| **Cadence gone quiet** | `reviews/daily/` has files but none for the last 5 weekdays. The doctor has no shell and cannot see *why* — the selected scheduler dropped the job, the host binary moved, or cron missed a sleeping machine. | `setup-cadences` (its logs have the answer) |
 | **Broken link** | A `[[slug]]` resolves to neither a file nor a `network.md` `## Map` row — worse than a retyped name because it looks joined. | owner of the file holding the link |
 | **Inbox not drained** | `inbox.md` non-empty *and* today's brief already ran — a brief that skipped step 0. | Chief of Staff |
 | **Briefs nobody acted on** | 10+ daily reviews and fewer than 1 in 5 `## The one thing` items reached `queue.md` `## Done`/`## Dropped` — the company is writing and nobody's reading. Never repaired. | Chief of Staff |
@@ -107,10 +111,11 @@ valid dated brief, activation never completed: rerun `/founder-os-init`. If the
 valid first brief exists but no later weekday brief does, `/setup-cadences` was
 probably never run. No schedule is written until you say yes to that skill.
 
-**"The morning brief stopped appearing."** **Cadence gone quiet.** The machine
-was likely asleep at 08:00, or `claude` isn't on the PATH that cron uses. Check
-the per-cadence logs (`~/.founder-os/logs/<slug>/…` on multi-business installs);
-re-run `/setup-cadences` to rewrite the fence.
+**"The morning brief stopped appearing."** **Cadence gone quiet.** Inspect the
+per-cadence logs (`~/.founder-os/logs/<slug>/…` on multi-business installs),
+then rerun `setup-cadences`. Its smoke test detects an unavailable host binary
+or authentication failure. Cron misses times while the machine sleeps;
+LaunchAgents and persistent user-systemd timers catch up.
 
 **"An agent refused to write a file."** Read the stable gateway code. A
 `ROLE_NOT_OWNER` denial names the canonical owner; hand off to that role.
@@ -170,7 +175,7 @@ Three things to know before you use it:
 - **A local skill needs installing to be runnable.** `_local/` is the source of
   truth; Claude Code and Codex load cached copies from `~/.claude/skills/` and
   `~/.codex/skills/`. `/skill-forge` names both exact paths and asks before
-  writing them — same as `/setup-cadences` with a cron line — and the doctor
+  writing them — same as `setup-cadences` with scheduler state — and the doctor
   reports when either copy drifts apart.
 
 The full contract, including the merge rules and what the overlay deliberately
@@ -209,8 +214,10 @@ and context you send through Claude Code or Codex remain governed by that
 environment's data-handling terms — that is separate from Founder OS. Founder OS
 does not claim offline operation or zero transmission by the host environment.
 
-**Do I need cron?** No. Cron only powers the optional scheduled cadences. Every
-cadence also works typed by hand.
+**Do I need a scheduler?** No. Scheduling is optional and every cadence works
+typed by hand. On macOS setup uses LaunchAgents; on Linux it prefers persistent
+user-systemd timers; cron is the always-on fallback and does not catch up after
+sleep.
 
 **Do I need PyYAML?** The installed gateway and hooks keep dependency-light
 ownership readers, including the packaged fallback parser. Repository

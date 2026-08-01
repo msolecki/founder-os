@@ -123,6 +123,23 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         )
         self.assertTrue(any("byte-identical" in error for error in errors), errors)
 
+    def test_installed_cadence_preview_uses_host_specific_unattended_contract(self):
+        probe = load_probe_module()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            claude = probe.check_cadence_preview(
+                PLUGIN_ROOT, "claude", root / "claude", root / "workspace"
+            )
+            codex = probe.check_cadence_preview(
+                PLUGIN_ROOT, "codex", root / "codex", root / "workspace"
+            )
+        self.assertIn("--allowedTools", claude)
+        self.assertIn(
+            "mcp__plugin_founder-os_founder-os-state__*", claude
+        )
+        self.assertIn("workspace-write", codex)
+        self.assertIn("$founder-os:daily-brief", codex)
+
     def test_ci_runs_probe_contracts_without_downloading_host_clis(self):
         workflow = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(
             encoding="utf-8"

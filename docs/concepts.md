@@ -62,7 +62,9 @@ button.
 
 This holds even when the host has a send-capable integration. Packaged roles
 have no shell, browser, direct file tool, external MCP, or nested-agent edge;
-their only MCP surface is the seven-tool local state gateway. The capability
+the public MCP surface is the eight-tool local state gateway. Role subagents
+receive six common calls; portfolio-manager alone receives the bounded
+`read_portfolio_inputs` call, and only the main thread may open sessions. The capability
 existing is not the permission. A wrong opinion costs an argument; a sent email
 costs a client.
 
@@ -72,7 +74,8 @@ A personal-development tool that only runs when you remember to run it is the
 failure mode of every productivity system ever shipped. Founder OS can run on a
 schedule: a brief every weekday morning, and a cadence for every file that rots
 — the week, the pipeline, the content plan, the follow-ups, the review, the
-close, the quarter. `setup-cadences` writes those as cron jobs on *your* machine.
+close, the quarter. `setup-cadences` installs them through cron, launchd, or a
+persistent user systemd timer on *your* machine.
 Every cadence also works typed by hand; the rhythm is the point, not the
 mechanism.
 
@@ -84,12 +87,14 @@ mechanism.
 [`founder-os/agents/`](../founder-os/agents/). Each owns one decision, a set of
 skills, a tool allowlist, and (for most) a set of workspace files.
 
-**Skill** — a workflow in `founder-os/skills/<name>/SKILL.md`, invoked as a slash
-command `/<name>`. There are 53. A *role skill* belongs to one agent; a *system
+**Skill** — a workflow in `founder-os/skills/<name>/SKILL.md`, invoked as
+`/founder-os:<name>` in Claude Code or `$founder-os:<name>` in Codex. There are
+53. A *role skill* belongs to one agent; a *system
 skill* is cross-cutting; a *standalone skill* is run directly by the founder.
 
-**Cadence** — one of the 10 skills that `setup-cadences` can schedule to run on
-cron. Every cadence is also just a normal skill you can type by hand.
+**Cadence** — one of the nine per-business skills, plus the conditional
+portfolio skill, that `setup-cadences` can schedule locally. Every cadence is
+also a normal skill you can invoke by hand.
 
 **Workspace** — the directory of Markdown state, `FOUNDER_OS_HOME` (default
 `./founder-os/`). One per business.

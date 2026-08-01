@@ -7,6 +7,7 @@ one owner per file, one decision per agent, beliefs, guardrails. The ones that
 died with the old runtime (COMPANY.md, TEAM.md, .paperclip.yaml routines) are
 gone rather than kept "just in case" — a second map goes stale silently.
 """
+import ast
 import json
 import re
 import sys
@@ -35,6 +36,16 @@ PORTFOLIO_READ_TOOL = (
     "mcp__plugin_founder-os_founder-os-state__read_portfolio_inputs"
 )
 ALLOWED_AGENT_TOOLS = ROLE_GATEWAY_TOOLS | {PORTFOLIO_READ_TOOL}
+PUBLIC_GATEWAY_TOOLS = {
+    "resolve_workspace",
+    "open_role_session",
+    "list_state",
+    "read_state",
+    "read_reference",
+    "read_portfolio_inputs",
+    "write_owned_state",
+    "close_role_session",
+}
 
 AGENT_HEADINGS = ["## What triggers you", "## What you do",
                   "## What you produce", "## Who you hand off to"]
@@ -157,6 +168,46 @@ def check_host_adapters(root, agents):
             compile(entry.read_text(encoding="utf-8"), str(entry), "exec")
         except (OSError, SyntaxError) as exc:
             errs.append("mcp/founder_os_state.py: does not compile (%s)" % exc)
+
+    gateway_path = root / "mcp" / "gateway.py"
+    if gateway_path.is_file():
+        try:
+            tree = ast.parse(
+                gateway_path.read_text(encoding="utf-8"),
+                filename=str(gateway_path),
+            )
+            schemas = None
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                    continue
+                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                if any(
+                    isinstance(target, ast.Name)
+                    and target.id == "_TOOL_SCHEMAS"
+                    for target in targets
+                ):
+                    schemas = ast.literal_eval(node.value)
+                    break
+            if not isinstance(schemas, (tuple, list)):
+                raise ValueError("_TOOL_SCHEMAS is not a literal sequence")
+            names = [
+                schema.get("name") if isinstance(schema, dict) else None
+                for schema in schemas
+            ]
+        except (OSError, SyntaxError, TypeError, ValueError) as exc:
+            errs.append(
+                "mcp/gateway.py: public gateway catalogue is unreadable (%s)"
+                % exc
+            )
+        else:
+            if len(names) != len(PUBLIC_GATEWAY_TOOLS) or set(names) != PUBLIC_GATEWAY_TOOLS:
+                missing = sorted(PUBLIC_GATEWAY_TOOLS - set(names))
+                unexpected = sorted(set(names) - PUBLIC_GATEWAY_TOOLS, key=str)
+                errs.append(
+                    "mcp/gateway.py: public gateway tools must be exactly eight; "
+                    "missing=%s unexpected=%s"
+                    % (missing, unexpected)
+                )
     return errs
 
 

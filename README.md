@@ -50,7 +50,7 @@ Before installing:
 | Recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) | Founder OS is a plugin, not a standalone app. |
 | Python 3.9+ | Runs the local state gateway and host hooks. |
 | PyYAML *(development only)* | Runs the full package validator; installed runtime parsers remain dependency-light. |
-| `cron` *(optional)* | Runs scheduled cadences. Manual workflows do not need it. |
+| A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Manual workflows need none. |
 
 The 13 agents are specialized roles invoked when needed, not 13 autonomous
 processes running all day. Founder OS knows only what is recorded in its local
@@ -73,20 +73,27 @@ codex plugin marketplace add msolecki/founder-os
 codex plugin add founder-os@founder-os
 ```
 
-Then, once:
+Then run the two workflows once. Claude Code uses namespaced slash commands:
 
 ```
-/founder-os-init      # one resumable flow to a persisted first brief
-/setup-cadences       # optional: cron entries so it runs without being asked
+/founder-os:founder-os-init      # one resumable flow to a persisted first brief
+/founder-os:setup-cadences       # optional local scheduling
+```
+
+Codex invokes the same skills with dollar syntax:
+
+```
+$founder-os:founder-os-init
+$founder-os:setup-cadences
 ```
 
 The flow targets a ten-minute median and stops at fifteen minutes. Activation
 means a valid `reviews/daily/YYYY-MM-DD.md`, not an installed plugin or an empty
 folder. A valid brief has all four required headings from `ownership.yaml` —
 `## The one thing`, `## Rotting`, `## The trade`, and `## Triage` — with
-non-empty `## The one thing` and `## The trade`. If onboarding stops, run
-`/founder-os-init` again; it preserves populated sections and resumes from the
-first missing owner output.
+non-empty `## The one thing` and `## The trade`. If onboarding stops, repeat
+the host-specific init command above; it preserves populated sections and
+resumes from the first missing owner output.
 
 After preflight, onboarding asks the optional **“What made you install Founder
 OS today?”** and records a supplied answer as founder-stated context, not
@@ -98,7 +105,8 @@ reason. You choose **Continue** or **Stop**; the specialist workflow runs only
 after **Continue**. At the fifteen-minute hard stop, the flow prints a copyable
 command instead of opening another role session.
 
-Scheduled jobs run only while that machine and its cron service are running.
+Cron jobs run only while that machine and cron are running; launchd and
+persistent user systemd timers catch up after sleep.
 See the complete
 [`docs/getting-started.md`](docs/getting-started.md) guide before installing if
 you want the requirements, data boundary, and first-week workflow in one place.
@@ -157,9 +165,9 @@ The full recovery branches are in
 | Skills | `founder-os/skills/*/SKILL.md` | 53 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (what init scaffolds), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
-| Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Maps Claude `agent_type` or Codex `turn_id`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the seven gateway tools. |
+| Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Maps Claude `agent_type` or Codex `turn_id`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the local gateway. |
 | Validator | `scripts/validate_package.py` | 17 build-time checks (below). CI runs it on every push. |
-| Cadences | `founder-os/skills/setup-cadences/SKILL.md` | 10 cron lines on *your* machine calling skills headless — a plugin cannot ship a schedule, so this writes one, with your consent, once per business. Fences are slugged per business (`# BEGIN founder-os:<slug>`) so two businesses never clobber each other's schedule. |
+| Cadences | `founder-os/scripts/cadence_manager.py` | Previews, snapshots, and safely applies nine jobs per business plus one conditional portfolio job through cron, launchd, or persistent user systemd. Exact identities prevent sibling schedules from being overwritten. |
 | Local overlay | `founder-os/references/extensibility.md` | Per-business extension without a fork: `$FOUNDER_OS_HOME/_local/` may **add** a file, skill or agent and can never reassign or remove one the package ships. Merged into the guard's map per workspace; validated by `founder-os-doctor`, because a build-time validator cannot see a stranger's workspace. Forged by `/skill-forge`, whose commonest correct answer is "a packaged agent already owns this decision". |
 | Multi-business | `founder-os/references/multi-business.md` | One workspace per business + a registry (`~/.founder-os/businesses.yaml`) + a portfolio workspace. The hook resolves all registered roots; `context-load` step 0 picks the business before any file opens. |
 | Commands doc | `founder-os/COMMANDS.md` | Generated by `scripts/generate_commands.py` from the skills' own frontmatter — the user-facing catalogue, machine-derived so it cannot drift. CI fails if it is stale. |
@@ -213,7 +221,8 @@ founder-os/                       # the plugin (what gets installed)
   COMMANDS.md                     # generated catalogue: every command, owner, schedule
   agents/           (13)
   skills/           (53)
-  mcp/                            # one seven-tool local state gateway
+  mcp/                            # one eight-tool local state gateway
+  scripts/cadence_manager.py      # safe scheduler preview/snapshot/apply
   hooks/                          # hooks.json + ownership-guard.py
   references/                     # ownership.yaml, house-rules, skill-template,
                                   # ingestion-gate, linking, multi-business
@@ -260,7 +269,7 @@ CI (`.github/workflows/ci.yml`) runs all six on every push and PR.
 ### Adding an agent
 
 One agent = one decision no other agent can make — that's the test every
-existing agent had to pass. The exact seven-tool `founder-os-state` allowlist,
+existing agent had to pass. The exact role-callable `founder-os-state` allowlist,
 the shared sibling/delegation contract, the four mandated headings, the three
 universal skills (`guardrails`, `state-integrity`, `ingestion-gate`), and an
 entry in `ownership.yaml` if it owns anything. Owning nothing must be a

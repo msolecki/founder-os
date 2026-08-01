@@ -3851,15 +3851,17 @@
             <div>
               <h3>Answer four short groups</h3>
               <p>Business, customer, quarter, and money are routed to their file owners. Unknowns stay unknown. A valid <code>reviews/daily/YYYY-MM-DD.md</code> has all four required headings: <code>## The one thing</code>, <code>## Rotting</code>, <code>## The trade</code>, and <code>## Triage</code>, with non-empty <code>## The one thing</code> and <code>## The trade</code>.</p>
-              <div class="code-line"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy onboarding command">⧉</button></div>
+              <div class="code-line"><code>/founder-os:founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os:founder-os-init" aria-label="Copy Claude Code onboarding command">⧉</button></div>
+              <div class="code-line"><code>$founder-os:founder-os-init</code><button class="copy-button" type="button" data-copy="$founder-os:founder-os-init" aria-label="Copy Codex onboarding command">⧉</button></div>
             </div>
           </article>
           <article class="step-card reveal">
             <span class="step-number">3</span>
             <div>
               <h3>Turn on the rhythm</h3>
-              <p>Optional cron cadences run on your machine while it is on. Every workflow also works manually without cron.</p>
-              <div class="code-line"><code>/setup-cadences</code><button class="copy-button" type="button" data-copy="/setup-cadences" aria-label="Copy cadence setup command">⧉</button></div>
+              <p>Optional LaunchAgents, persistent user-systemd timers, or cron jobs run locally. Every workflow also works manually.</p>
+              <div class="code-line"><code>/founder-os:setup-cadences</code><button class="copy-button" type="button" data-copy="/founder-os:setup-cadences" aria-label="Copy Claude Code cadence setup command">⧉</button></div>
+              <div class="code-line"><code>$founder-os:setup-cadences</code><button class="copy-button" type="button" data-copy="$founder-os:setup-cadences" aria-label="Copy Codex cadence setup command">⧉</button></div>
             </div>
           </article>
         </div>
@@ -3955,19 +3957,21 @@
         </div>
         <div class="install-options reveal">
           <section class="install-box" aria-labelledby="install-claude-title">
-            <div class="install-box-top"><span id="install-claude-title">Claude Code</span><span>3 steps</span></div>
+            <div class="install-box-top"><span id="install-claude-title">Claude Code</span><span>4 steps</span></div>
             <ol>
               <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy the Claude marketplace command">⧉</button></li>
               <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy the Claude plugin command">⧉</button></li>
-              <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command for Claude Code">⧉</button></li>
+              <li class="install-row"><code>/founder-os:founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os:founder-os-init" aria-label="Copy the onboarding command for Claude Code">⧉</button></li>
+              <li class="install-row"><code>/founder-os:setup-cadences</code><button class="copy-button" type="button" data-copy="/founder-os:setup-cadences" aria-label="Copy the cadence setup command for Claude Code">⧉</button></li>
             </ol>
           </section>
           <section class="install-box" aria-labelledby="install-codex-title">
-            <div class="install-box-top"><span id="install-codex-title">Codex</span><span>3 steps</span></div>
+            <div class="install-box-top"><span id="install-codex-title">Codex</span><span>4 steps</span></div>
             <ol>
               <li class="install-row"><code>codex plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="codex plugin marketplace add msolecki/founder-os" aria-label="Copy the Codex marketplace command">⧉</button></li>
               <li class="install-row"><code>codex plugin add founder-os@founder-os</code><button class="copy-button" type="button" data-copy="codex plugin add founder-os@founder-os" aria-label="Copy the Codex plugin command">⧉</button></li>
-              <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command for Codex">⧉</button></li>
+              <li class="install-row"><code>$founder-os:founder-os-init</code><button class="copy-button" type="button" data-copy="$founder-os:founder-os-init" aria-label="Copy the onboarding command for Codex">⧉</button></li>
+              <li class="install-row"><code>$founder-os:setup-cadences</code><button class="copy-button" type="button" data-copy="$founder-os:setup-cadences" aria-label="Copy the cadence setup command for Codex">⧉</button></li>
             </ol>
           </section>
         </div>
@@ -4367,7 +4371,7 @@
             </div>
 
             <p class="workflow-empty" id="workflow-empty" hidden>No workflows match that search and filter.</p>
-            <p class="workflow-footnote">Commands are shown in their short form. The namespaced form is <code>/founder-os:&lt;workflow&gt;</code>. <a href="https://github.com/msolecki/founder-os/blob/main/founder-os/COMMANDS.md">Open the generated command reference →</a></p>
+            <p class="workflow-footnote">Catalogue labels are shortened. Invoke <code>/founder-os:&lt;workflow&gt;</code> in Claude Code or <code>$founder-os:&lt;workflow&gt;</code> in Codex. <a href="https://github.com/msolecki/founder-os/blob/main/founder-os/COMMANDS.md">Open the generated command reference →</a></p>
           </div>
         </details>
       </div>
@@ -4625,7 +4629,7 @@
           </details>
           <details>
             <summary>Does the system really run automatically?</summary>
-            <p>After the optional <code>/setup-cadences</code>, local cron runs nine cadences per business while your machine and cron service are on. Multi-business installs add Portfolio Review as the tenth. There is no cloud scheduler, and every cadence also works by hand.</p>
+            <p>After the optional <code>setup-cadences</code>, local LaunchAgents, persistent user-systemd timers, or cron run nine cadences per business. Launchd and persistent systemd catch up after sleep; cron does not. Multi-business installs add Portfolio Review as the tenth. There is no cloud scheduler, and every cadence also works by hand.</p>
           </details>
         </div>
       </div>

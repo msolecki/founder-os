@@ -298,6 +298,23 @@ class TestPlugin(ValidatorTestCase):
             ["plugin.json: 'name' is the one required field and it is missing"])
 
 
+class TestHostAdapters(ValidatorTestCase):
+    def test_public_gateway_catalogue_must_be_exactly_eight_tools(self):
+        self.write_host_adapters()
+        write(
+            self.root / "mcp" / "gateway.py",
+            "class Gateway:\n"
+            "    _TOOL_SCHEMAS = ({'name': 'resolve_workspace'},)\n",
+        )
+
+        errors = self.check(V.check_host_adapters)
+
+        self.assertTrue(
+            any("public gateway tools must be exactly" in error for error in errors),
+            errors,
+        )
+
+
 class TestCodexInterfaces(ValidatorTestCase):
     def test_missing_codex_skill_interface_is_caught(self):
         (self.root / "skills" / "daily-brief" / "agents" / "openai.yaml").unlink()

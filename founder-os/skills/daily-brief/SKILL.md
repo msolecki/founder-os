@@ -15,7 +15,7 @@ This is the fifteen minutes that decides whether today moved the quarter.
 ## When to use
 
 Weekday mornings, before opening email. Triggered automatically by
-cron, if the founder ran `/setup-cadences`. Otherwise `/daily-brief`, by hand.
+the local scheduler after `setup-cadences`. Otherwise run `daily-brief` by hand.
 
 ## First-run branch
 
@@ -217,7 +217,7 @@ Read for one named section only:
    and they will read it accordingly for as long as they keep it.
 
    This is not only onboarding's problem. The activation receipt explains the
-   first day's thinness; **day two's 08:00 cron brief has the same three empty
+   first day's thinness; **day two's 08:00 scheduled brief has the same three empty
    inputs and nothing to explain them.** The rule lives here for that morning.
 
 ## Output

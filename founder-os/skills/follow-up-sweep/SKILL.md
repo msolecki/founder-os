@@ -20,7 +20,8 @@ answer for that person is: not this week.
 
 ## When to use
 
-Weekly. Fired by cron if the founder ran `/setup-cadences`; otherwise `/follow-up-sweep`, by hand. Also when the
+Weekly. Fired by the local scheduler after `setup-cadences`; otherwise run
+`follow-up-sweep` by hand. Also when the
 quarter's pipeline is thin and cold outreach is being proposed before the warm
 list has been touched.
 

@@ -19,7 +19,7 @@ first step is the one that matters.
 ## When to use
 
 **The first days of the quarter**, once the CFO's close for the final month is in
-`metrics.md`. If the founder ran `/setup-cadences`, a cron job fires this on day
+`metrics.md`. After `setup-cadences`, the local scheduler fires this on day
 1 — 1 January, 1 April, 1 July, 1 October.
 
 At the start and not the end, because **step 1 is not optional and it is not

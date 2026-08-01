@@ -90,7 +90,8 @@ First-week guidance appears only in the workflow receipt's **Your move:** field
 and creates no progress file. Select exactly one action from the first matching
 rule, in this order:
 
-1. When no valid first brief exists, resume `/founder-os-init`.
+1. When no valid first brief exists, resume the host-specific
+   `founder-os-init` skill.
 2. When the current flow has just completed activation, show one `/capture`
    example.
 3. On a later run with no current pipeline review, recommend

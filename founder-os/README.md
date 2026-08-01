@@ -39,7 +39,7 @@ Code or Codex environment and adds no account or subscription of its own.
 | Recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) | Founder OS is a plugin, not a standalone app. |
 | Python 3.9+ | Runs the local state gateway and host hooks. |
 | PyYAML *(development only)* | Runs the full package validator; installed runtime readers remain dependency-light. |
-| `cron` *(optional)* | Runs scheduled cadences. Every workflow also works manually. |
+| A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Manual workflows need none. |
 
 The agents are specialized roles invoked when needed, not thirteen autonomous
 processes running all day. Ten cadences can optionally run on a local
@@ -68,10 +68,16 @@ codex plugin marketplace add msolecki/founder-os
 codex plugin add founder-os@founder-os
 ```
 
-Then, once:
+Then run onboarding once. Claude Code:
 
+```text
+/founder-os:founder-os-init
 ```
-/founder-os-init
+
+Codex:
+
+```text
+$founder-os:founder-os-init
 ```
 
 An org of agents and an empty directory is not activation. Onboarding is one
@@ -93,15 +99,18 @@ reason. You choose **Continue** or **Stop**; the specialist workflow runs only
 after **Continue**. At the fifteen-minute hard stop, the flow prints a copyable
 command instead of opening another role session.
 
-Then, if you want the company to come to you rather than wait to be opened:
+Then, if you want the company to come to you rather than wait to be opened,
+run the matching host command:
 
-```
-/setup-cadences
+```text
+/founder-os:setup-cadences       # Claude Code
+$founder-os:setup-cadences       # Codex
 ```
 
-This writes local cron entries with your consent. They run only while your
-machine and cron service are running. There is no Founder OS cloud scheduler;
-every cadence also works by hand.
+This previews and snapshots local LaunchAgents, persistent user-systemd timers,
+or cron entries before applying them with your consent. Launchd and persistent
+systemd catch up after sleep; cron does not. There is no Founder OS cloud
+scheduler, and every cadence also works by hand.
 
 Want to see the result before installing? Start with the fictional but
 contract-shaped
@@ -208,8 +217,8 @@ schedules is [`COMMANDS.md`](COMMANDS.md).
 
 One workspace per business — each a complete, ordinary Founder OS — and a
 registry (`~/.founder-os/businesses.yaml`) that names them. Every cadence takes
-the business slug as an argument; cron lines carry it per fence, so two
-businesses hold two schedules in one crontab without touching each other. What
+the business slug as an argument; scheduler artifacts carry an exact identity,
+so two businesses keep independent schedules without touching each other. What
 multi-business adds is exactly one decision: **how your hours and cash split
 across businesses** — the Portfolio Manager owns it, `/portfolio-review` makes
 it weekly, and `portfolio.md` records it. Everything else deliberately stays
@@ -225,11 +234,12 @@ pipeline, the content plan, the follow-ups, the review, the close, the quarter.
 
 **Being honest about how:** Claude Code cannot ship a schedule inside a plugin.
 Session loops expire after seven days; cloud routines can't see your local
-files, and your workspace is local markdown by design. So `/setup-cadences`
-writes cron entries on **your** machine that call the skills headless. One
-setup, then it runs while that machine and cron service are on. Missed cron
-times do not become cloud catch-up runs. Every cadence also works invoked by
-hand — the rhythm is the point, not the mechanism.
+files, and your workspace is local markdown by design. So the host-specific
+`setup-cadences` workflow writes LaunchAgents, persistent user-systemd timers,
+or cron entries on **your** machine that call the skills headless. Launchd and
+persistent systemd catch up after sleep; cron runs only while its service and
+the machine are on. Every cadence also works invoked by hand — the rhythm is
+the point, not the mechanism.
 
 A personal-development tool that only runs when you remember to run it is the
 failure mode of every productivity system ever shipped. That's the part this

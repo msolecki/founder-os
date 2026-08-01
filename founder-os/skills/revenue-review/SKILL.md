@@ -1,6 +1,6 @@
 ---
 name: revenue-review
-description: Close the month on booked, collected and effective rate — run on the first of the month, fired by cron if the founder ran /setup-cadences
+description: Close the month on booked, collected and effective rate — run on the first of the month, scheduled locally after setup-cadences
 metadata:
   writes:
     - metrics.md
@@ -14,10 +14,11 @@ month — they have had a record month of paperwork.
 
 ## When to use
 
-The first of the month, covering the month just ended — the cron line fires on
-the calendar 1st, weekend or not, and a close does not mind running on a Saturday. Triggered
-by cron on the 1st if the founder ran `/setup-cadences`; otherwise `/revenue-review`, by hand. Also before any decision that spends the
-month's revenue: a contractor, a tool, a holiday.
+The first of the month, covering the month just ended — the local scheduler
+fires on calendar day 1, weekend or not, and a close does not mind running on a
+Saturday. Scheduled after `setup-cadences`; otherwise run `revenue-review` by
+hand. Also run it before any decision that spends the month's revenue: a
+contractor, a tool, a holiday.
 
 A block labeled `Close type: activation-baseline` is not a prior monthly close
 and never settles a recurring review. On the first real reporting run after

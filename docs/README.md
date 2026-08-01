@@ -3,7 +3,7 @@
 Founder OS is for a solo service founder using
 [Claude Code](https://code.claude.com/docs) or
 [Codex](https://developers.openai.com/codex/plugins/build). Describe one
-situation or run `/situation-review`; it routes a source-linked decision into a
+situation or run the `situation-review` workflow; it routes a source-linked decision into a
 local Markdown workspace. Behind that first path are **13 agents, 53 skills, 10
 optional cadences**, one owner per file, an authoritative local state gateway,
 and multi-business support when the core loop is already understood.
@@ -38,8 +38,8 @@ built to prevent.
   guided tour of the `studio-north` example.
 - **[`commands.md`](commands.md)** — all 53 skills grouped by the agent that
   runs them, the system commands, and the cadence schedule.
-- **[`cadences.md`](cadences.md)** — how `setup-cadences` turns workflows into
-  real cron jobs, and why there is no cloud scheduler.
+- **[`cadences.md`](cadences.md)** — how `setup-cadences` safely previews and
+  installs local cron, launchd, or persistent user-systemd jobs.
 - **[`multi-business.md`](multi-business.md)** — running more than one company of
   one from one machine.
 - **[`house-rules.md`](house-rules.md)** — the seven rules every agent obeys,
@@ -53,7 +53,7 @@ built to prevent.
 ## Building on it
 
 - **[`architecture.md`](architecture.md)** — plugin layout, the shared
-  seven-tool state gateway, sibling orchestration, generated files, and
+  eight-tool state gateway, sibling orchestration, generated files, and
   dual-host adapters.
 - **[`enforcement.md`](enforcement.md)** — the ownership map, authoritative
   gateway, host-hook defense, build validator, and security-boundary limits.

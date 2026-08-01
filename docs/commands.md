@@ -1,8 +1,10 @@
 # Commands
 
-Every skill is a slash command: `/founder-os:<name>` (the bare `/<name>` works
-until another package claims it). On a multi-business install, pass the business
-slug first — `/founder-os:daily-brief acme`.
+Claude Code invokes a skill as `/founder-os:<name>`; Codex invokes it as
+`$founder-os:<name>`. On a multi-business install, pass the business slug in
+the request: `/founder-os:daily-brief acme` in Claude or
+`$founder-os:daily-brief acme` in Codex. Tables below use the short workflow
+name as a host-neutral label.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 
@@ -15,7 +17,7 @@ This reference covers all 53 workflows shipped by the package.
 
 ## Start here: the first five actions
 
-After `/founder-os-init` persists and validates the first brief:
+After `founder-os-init` persists and validates the first brief:
 
 1. Run `/daily-brief` before opening email.
 2. Run `/capture Call Anna about the Acme scope`; the next brief or `/triage`
@@ -24,13 +26,13 @@ After `/founder-os-init` persists and validates the first brief:
 4. Run `/weekly-review` on Friday before memory rewrites the week.
 5. Ask the **Chief of Staff** to route any uncategorized decision.
 
-The examples use bare commands. If another plugin claims the same name, use the
-qualified form: `/founder-os:daily-brief`,
-`/founder-os:pipeline-review`, or `/founder-os:weekly-review`.
+In Claude use `/founder-os:daily-brief`, `/founder-os:pipeline-review`, and
+`/founder-os:weekly-review`. In Codex use `$founder-os:daily-brief`,
+`$founder-os:pipeline-review`, and `$founder-os:weekly-review`.
 
 ## The 10 cadences
 
-Scheduled by `/setup-cadences`; every one also works typed by hand. See
+Scheduled by the host-specific `setup-cadences` skill; every one also works typed by hand. See
 [`cadences.md`](cadences.md) for the scheduling mechanics.
 
 | Command | When | Run by |

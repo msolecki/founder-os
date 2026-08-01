@@ -333,11 +333,15 @@ function buildWorkspaceDom() {
   };
 }
 
-function buildClipboardDom({ execResult = true, execError = null } = {}) {
+function buildClipboardDom({
+  execResult = true,
+  execError = null,
+  copy = '/founder-os:founder-os-init',
+} = {}) {
   const body = new FakeWorkspaceElement();
   const status = new FakeWorkspaceElement();
   const button = new FakeWorkspaceElement({
-    dataset: { copy: '/founder-os-init' },
+    dataset: { copy },
     textContent: '⧉',
   });
   const priorFocus = new FakeWorkspaceElement();
@@ -583,10 +587,29 @@ test('native clipboard success is confirmed before success UI appears', async ()
   });
 
   assert.equal(didCopy, true);
-  assert.equal(copied, '/founder-os-init');
+  assert.equal(copied, '/founder-os:founder-os-init');
   assert.equal(dom.button.textContent, '✓');
   assert.equal(dom.status.textContent, 'Command copied to clipboard.');
   assert.equal(dom.body.children.length, 0);
+});
+
+test('host-specific onboarding and cadence buttons copy matching syntax', async () => {
+  for (const command of [
+    '/founder-os:founder-os-init',
+    '/founder-os:setup-cadences',
+    '$founder-os:founder-os-init',
+    '$founder-os:setup-cadences',
+  ]) {
+    const dom = buildClipboardDom({ copy: command });
+    let copied = null;
+    const didCopy = await copyInstallCommand(dom.button, {
+      documentRoot: dom.documentRoot,
+      navigatorRoot: { clipboard: { async writeText(value) { copied = value; } } },
+      windowRoot: { ...dom.windowRoot, isSecureContext: true },
+    });
+    assert.equal(didCopy, true);
+    assert.equal(copied, command);
+  }
 });
 
 test('clipboard fallback confirms success, cleans up, and restores focus', async () => {

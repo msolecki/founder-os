@@ -15,7 +15,7 @@ finding** — not the plan, not the excuse for the gap.
 
 ## When to use
 
-Friday 15:00. Fired by cron if the founder ran `/setup-cadences`; otherwise by
+Friday 15:00. Fired by the local scheduler after `setup-cadences`; otherwise by
 hand, before the week is forgotten. Also whenever the founder says they have no
 time, which is a claim you can check, and usually the claim is "no time for the
 bet" while the hours went somewhere specific and nameable.

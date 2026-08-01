@@ -215,7 +215,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
                 "`founder-os-state`", "role capability", "generic-agent fallback",
             ),
             "docs/architecture.md": (
-                "seven-tool", "fail closed", "generic-agent fallback",
+                "eight-tool", "fail closed", "generic-agent fallback",
             ),
             "docs/enforcement.md": (
                 "authoritative write boundary", "fail closed", "defense in depth",
@@ -272,6 +272,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "current: **2.4.0**",
             "current: **2.3.0**",
             "codex remains beta/manual",
+            "seven-tool state gateway",
             "managers can summon",
             "it can summon the rest",
             "pyyaml recommended",

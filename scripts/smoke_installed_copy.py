@@ -690,6 +690,9 @@ def check_mcp_lifecycle(installed_plugin, workspace_root, host):
         if server.get("name") != "founder-os-state":
             raise SmokeFailure("%s initialized the wrong server" % host)
         client.notify("notifications/initialized")
+        ping = client.request("ping")
+        if ping.get("result") != {}:
+            raise SmokeFailure("%s MCP ping failed" % host)
         listed_tools = client.request("tools/list").get("result", {}).get("tools")
         if not isinstance(listed_tools, list) or len(listed_tools) != 8:
             raise SmokeFailure("%s did not discover all eight tools" % host)

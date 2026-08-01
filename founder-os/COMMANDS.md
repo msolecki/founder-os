@@ -5,28 +5,29 @@
      when this file and the package disagree. A hand edit here is a second
      map, and second maps go stale silently. -->
 
-Every skill is a slash command: `/founder-os:<name>` (the bare `/<name>` works
-until another package claims it). On a multi-business install, pass the
-business slug first — `/founder-os:daily-brief acme`.
+Claude Code invokes a skill as `/founder-os:<name>`; Codex invokes it as
+`$founder-os:<name>`. On a multi-business install, pass the business slug first
+— `/founder-os:daily-brief acme` in Claude Code or
+`$founder-os:daily-brief acme` in Codex.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 
 ## The cadences
 
-Scheduled by `/setup-cadences`; every one also works typed by hand.
+Scheduled by the host-specific `setup-cadences` skill; every one also works typed by hand.
 
 | Command | When | Run by |
 |---|---|---|
 | `/daily-brief` | weekdays 08:00 | chief-of-staff |
-| `/portfolio-review` | Monday 08:15, multi-business installs only | portfolio-manager |
+| `/portfolio-review` | Monday 08:15, portfolio only | portfolio-manager |
 | `/week-plan` | Monday 08:30 | focus-coach |
 | `/weekly-review` | Friday 16:00 | chief-of-staff |
 | `/pipeline-review` | Thursday 10:00 | pipeline-coach |
 | `/follow-up-sweep` | Friday 14:00 | network-manager |
 | `/content-plan` | Wednesday 10:00 | brand-editor |
 | `/calendar-audit` | Friday 15:00 | focus-coach |
-| `/revenue-review` | 1st of month 09:00 | cfo |
-| `/quarterly-planning` | Jan/Apr/Jul/Oct 1st 11:00 | strategist |
+| `/revenue-review` | first of month 09:00 | cfo |
+| `/quarterly-planning` | Jan/Apr/Jul/Oct first 11:00 | strategist |
 
 ## By agent
 
@@ -57,7 +58,7 @@ Decides whether the company can afford something and whether it actually makes m
 
 | Command | What it does |
 |---|---|
-| `/revenue-review` | Close the month on booked, collected and effective rate — run on the first of the month, fired by cron if the founder ran /setup-cadences |
+| `/revenue-review` | Close the month on booked, collected and effective rate — run on the first of the month, scheduled locally after setup-cadences |
 | `/runway-forecast` | Compute months of survival at real burn with the pipeline discounted by stage — run monthly after the close, and before any spending commitment |
 | `/profitability-analysis` | Rank every client by effective hourly rate to find where the margin dies — run quarterly, before any renewal, and before agreeing to more of the same work |
 | `/rate-raise` | Decide whether the rate rises, by how much, and hand over the script — run when profitability-analysis says the rate is below target, not when the founder feels brave |

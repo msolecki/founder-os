@@ -15,7 +15,7 @@ week at a time. This skill exists to look at four.
 ## When to use
 
 End of the working week, before the weekend rewrites it. Triggered
-by cron if the founder ran `/setup-cadences`; otherwise `/weekly-review`, by hand.
+by the local scheduler after `setup-cadences`; otherwise run `weekly-review` by hand.
 
 Also whenever the founder says "this week was unusual" for the third time.
 

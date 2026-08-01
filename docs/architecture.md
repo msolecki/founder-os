@@ -12,8 +12,11 @@ repository, which is **both the plugin marketplace and the source repo**:
 ```
 /plugin marketplace add msolecki/founder-os
 /plugin install founder-os@founder-os
-/founder-os-init
+/founder-os:founder-os-init
 ```
+
+Codex uses `codex plugin marketplace add`, `codex plugin add`, and
+`$founder-os:founder-os-init`; see [`getting-started.md`](getting-started.md).
 
 There is no server, no account, and no subscription of its own. It runs inside
 your existing Claude Code or Codex environment; host plans and usage stay
@@ -21,8 +24,9 @@ separate.
 
 ## Activation path
 
-The first-run architecture is outcome-first. One `/founder-os-init` invocation
-orchestrates the complete path and the same command resumes it after a failure:
+The first-run architecture is outcome-first. One host-specific
+`founder-os-init` invocation orchestrates the complete path and the same skill
+resumes it after a failure:
 
 ```text
 empty folder
@@ -104,7 +108,8 @@ founder os/                     ← repo root (marketplace + source)
 │   │   └── <name>/agents/openai.yaml  ← Codex presentation adapter
 │   ├── hooks/                  ← session-context.py, record-agent.py,
 │   │                             ownership-guard.py, hooks.json
-│   ├── mcp/                    ← seven-tool local state gateway
+│   ├── mcp/                    ← eight-tool local state gateway
+│   ├── scripts/cadence_manager.py ← safe local scheduler manager
 │   ├── references/             ← house-rules, ownership.yaml, linking,
 │   │                             orchestration, multi-business, skill-template
 │   └── images/                 ← org chart, etc.
@@ -128,9 +133,10 @@ Each `agents/<slug>.md` is a Markdown file with YAML frontmatter and a body.
 - **Frontmatter**: `name` (must equal the filename), `description` (the routing
   blurb), `skills:` (the skills this agent may run), and `tools:` (an explicit
   allowlist).
-- **`tools:`** contains the same seven-tool local gateway surface for every
-  role: workspace resolution, role-session lifecycle, bounded state/reference
-  reads, and owner-checked writes. No direct file, shell, web, external MCP, or
+- **`tools:`** contains six common role-callable gateway actions: workspace
+  resolution, bounded state/reference reads, owner-checked writes, and session
+  close. `portfolio-manager` alone adds `read_portfolio_inputs`; no role can
+  mint its own session. No direct file, shell, web, external MCP, or
   nested-agent tool appears in a role allowlist.
 - **Body**: four mandated headings in order — `## What triggers you`,
   `## What you do`, `## What you produce`, `## Who you hand off to`. The
@@ -144,7 +150,8 @@ never spawn subagents. See [`agents.md`](agents.md) for the full org chart.
 
 ### Skills — workflows
 
-Each `skills/<name>/SKILL.md` is one workflow, invoked as `/<name>`. Its shape is
+Each `skills/<name>/SKILL.md` is one workflow, invoked as
+`/founder-os:<name>` in Claude Code or `$founder-os:<name>` in Codex. Its shape is
 fixed by [`references/skill-template.md`](../founder-os/references/skill-template.md):
 
 - **Frontmatter**: `name`, `description` (starts with a verb, says when to use
@@ -204,7 +211,7 @@ use.
    writes only its owned paths; the controller re-reads persisted state before
    closing the session or invoking the next sibling.
 
-## The seven-tool state gateway
+## The eight-tool state gateway
 
 `founder-os-state` is a local Python stdio MCP process shared by both hosts. It
 makes no network request and exposes no shell or arbitrary filesystem browser.
@@ -215,6 +222,8 @@ makes no network request and exposes no shell or arbitrary filesystem browser.
   role, workflow, and orchestration correlation id.
 - `list_state`, `read_state`, and `read_reference` provide bounded UTF-8 reads
   below the resolved workspace or from an explicit package-reference allowlist.
+- `read_portfolio_inputs` is portfolio-only and returns exactly `goals.md`
+  `## Bets` plus `metrics.md` `## Close` and `## Runway` for one active business.
 - `write_owned_state` checks the capability, canonical owner, required heading
   order, and expected SHA-256 before atomic replacement and metadata-only
   journaling.

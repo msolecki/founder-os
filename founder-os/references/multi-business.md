@@ -17,7 +17,7 @@ and it is config, not company state: no agent owns it, the founder edits it (or
 `founder-os-init` does, with the founder watching).
 
 ```yaml
-# One entry per business. The slug is the identity — it names the cron fence,
+# One entry per business. The slug is the identity — it names scheduler state,
 # the log directory, and the business everywhere the package needs a name.
 # Slugs are [a-z0-9-], and renaming one is a migration, not an edit.
 businesses:
@@ -33,7 +33,7 @@ portfolio: /Users/x/.founder-os/portfolio   # scaffolded with the 2nd business
 
 - **`status: paused`** keeps the workspace and its history but drops the
   business from cadence scheduling and from portfolio ranking. Pausing is an
-  edit; deleting an entry orphans a workspace and its crontab lines — pause
+  edit; deleting an entry orphans a workspace and its scheduler state — pause
   first, delete when the workspace is archived.
 - **`default:`** is what an unqualified session works on. With one active
   business it is redundant; with two it is mandatory, because "whichever
@@ -44,12 +44,13 @@ portfolio: /Users/x/.founder-os/portfolio   # scaffolded with the 2nd business
 
 Precedence, most explicit wins:
 
-1. **Named in the invocation** — `/founder-os:daily-brief acme`, or the founder
-   says "for acme" in the session. Every cadence accepts the slug as its first
-   argument and passes it to `context-load`.
-2. **`FOUNDER_OS_HOME`** — set in the environment (this is what cron lines do;
-   each line carries its business's absolute home). The registry maps the path
-   back to a slug for display.
+1. **Named in the invocation** — `/founder-os:daily-brief acme` in Claude Code,
+   `$founder-os:daily-brief acme` in Codex, or the founder says "for acme" in
+   the session. Every cadence accepts the slug as its first argument and passes
+   it to `context-load`.
+2. **`FOUNDER_OS_HOME`** — set in the environment; each scheduled job carries
+   its business's absolute home. The registry maps the path back to a slug for
+   display.
 3. **Registry `default:`** — when nothing above says otherwise.
 4. **No registry** — the classic single-business resolution: `FOUNDER_OS_HOME`
    or `./founder-os/`. This is every install before the registry existed, and

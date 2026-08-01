@@ -137,7 +137,7 @@ unknown.`
 
 Ask for the founder's timezone in IANA form, the business in one sentence
 without “and”, and the five-year north star. Explain that timezone records the
-founder's stated zone; it does not schedule cron.
+founder's stated zone; it does not install scheduler state.
 
 Write only missing answers to `charter.md` under `## Timezone`, `## Business`
 and `## North star`. On resume, treat a populated section as completed and do
