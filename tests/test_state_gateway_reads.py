@@ -861,11 +861,39 @@ class SafeStateIOTests(unittest.TestCase):
                     lambda pattern=pattern: self.io().list_markdown(pattern),
                 )
 
-    def test_listing_over_result_or_response_byte_limit_fails_without_partial_list(self) -> None:
+    def test_listing_paginates_over_result_limit_without_duplicates(self) -> None:
+        reader = self.io(max_results=2)
+        paths = []
+        cursor = None
+        while True:
+            page = reader.list_markdown_page("**/*.md", cursor=cursor)
+            paths.extend(page["paths"])
+            cursor = page["next_cursor"]
+            if cursor is None:
+                break
+        self.assertEqual(
+            ["empty.md", "nested/note.md", "state.md"],
+            paths,
+        )
+        self.assertEqual(len(paths), len(set(paths)))
+
+    def test_listing_cursor_is_bound_to_pattern_and_rejects_tampering(self) -> None:
+        reader = self.io(max_results=1)
+        first = reader.list_markdown_page("**/*.md")
+        cursor = first["next_cursor"]
+        self.assertIsInstance(cursor, str)
         self.assert_safe_error(
             "STATE_IO_ERROR",
-            lambda: self.io(max_results=1).list_markdown("**/*.md"),
+            lambda: reader.list_markdown_page("*.md", cursor=cursor),
         )
+        self.assert_safe_error(
+            "STATE_IO_ERROR",
+            lambda: reader.list_markdown_page(
+                "**/*.md", cursor=cursor[:-1] + "!"
+            ),
+        )
+
+    def test_listing_response_byte_limit_fails_without_partial_list(self) -> None:
         self.assert_safe_error(
             "STATE_IO_ERROR",
             lambda: self.io(max_total_bytes=1).list_markdown("*.md"),
@@ -1203,7 +1231,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
                 {"capability": capability, "pattern": "*.md"},
             )
         )
-        self.assertEqual({"paths": ["state.md"]}, listed)
+        self.assertEqual({"paths": ["state.md"], "next_cursor": None}, listed)
 
         state_entry = {
             "path": "state.md",
@@ -1250,6 +1278,44 @@ class GatewayReadSurfaceTests(unittest.TestCase):
             "ROLE_SESSION_INVALID",
             "Stop and return control to the main thread",
         )
+
+    def test_gateway_list_state_pages_past_one_hundred_records(self) -> None:
+        for index in range(101):
+            (self.workspace / ("record-%03d.md" % index)).write_text(
+                str(index), encoding="utf-8"
+            )
+        workspace = self.payload(
+            self.gateway.call(
+                "resolve_workspace", {"project_dir": str(self.project)}
+            )
+        )
+        capability = self.payload(
+            self.gateway.call(
+                "open_role_session",
+                {
+                    "workspace_id": workspace["workspace_id"],
+                    "role": "chief-of-staff",
+                    "correlation_id": "corr-pagination",
+                    "workflow": "daily-brief",
+                },
+            )
+        )["capability"]
+
+        paths = []
+        cursor = None
+        while True:
+            arguments = {"capability": capability, "pattern": "*.md"}
+            if cursor is not None:
+                arguments["cursor"] = cursor
+            page = self.payload(self.gateway.call("list_state", arguments))
+            paths.extend(page["paths"])
+            cursor = page["next_cursor"]
+            if cursor is None:
+                break
+
+        self.assertEqual(102, len(paths))
+        self.assertEqual(sorted(paths), paths)
+        self.assertEqual(len(paths), len(set(paths)))
 
 
     def test_gateway_forged_workspace_and_capability_return_stable_domain_actions(self) -> None:
@@ -1469,6 +1535,8 @@ class GatewaySchemaTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(required, schemas[name]["required"])
                 self.assertFalse(schemas[name]["additionalProperties"])
+
+        self.assertIn("cursor", schemas["list_state"]["properties"])
 
         write_schema = schemas["write_owned_state"]
         self.assertIn({"required": ["expected_sha256"]}, write_schema["oneOf"])

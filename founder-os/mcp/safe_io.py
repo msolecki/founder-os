@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import errno
 import fcntl
 import hashlib
+import heapq
 import json
 import os
 import re
@@ -99,49 +102,143 @@ class SafeStateIO:
             pass
 
     def list_markdown(self, pattern: str) -> List[str]:
+        return list(self.list_markdown_page(pattern)["paths"])
+
+    def list_markdown_page(
+        self,
+        pattern: str,
+        *,
+        cursor: Optional[str] = None,
+    ) -> Dict[str, object]:
         self._validate_pattern(pattern)
-        paths: List[str] = []
-        try:
-            candidates = self.workspace_root.glob(pattern)
-            for candidate in candidates:
-                try:
-                    resolved = candidate.resolve()
-                    if not self._inside(resolved, self.workspace_root):
-                        continue
-                    if resolved.suffix != ".md":
-                        continue
-                    relative = resolved.relative_to(self.workspace_root)
-                    descriptor = self._open_relative(
-                        self._workspace_fd,
-                        relative,
-                        relative.as_posix(),
-                    )
+        if (
+            isinstance(self.max_results, bool)
+            or not isinstance(self.max_results, int)
+            or self.max_results <= 0
+        ):
+            raise SafeStateError("STATE_IO_ERROR")
+        after = self._decode_list_cursor(cursor, pattern)
+
+        def candidates():
+            try:
+                matches = self.workspace_root.glob(pattern)
+                for candidate in matches:
                     try:
-                        info = os.fstat(descriptor)
-                    finally:
-                        os.close(descriptor)
-                    if not stat.S_ISREG(info.st_mode):
+                        resolved = candidate.resolve()
+                        if not self._inside(resolved, self.workspace_root):
+                            continue
+                        if resolved.suffix != ".md":
+                            continue
+                        relative = resolved.relative_to(self.workspace_root)
+                        relative_path = relative.as_posix()
+                        if after is not None and relative_path <= after:
+                            continue
+                        descriptor = self._open_relative(
+                            self._workspace_fd,
+                            relative,
+                            relative_path,
+                        )
+                        if descriptor is None:
+                            continue
+                        try:
+                            info = os.fstat(descriptor)
+                        finally:
+                            os.close(descriptor)
+                        if stat.S_ISREG(info.st_mode):
+                            yield relative_path
+                    except (OSError, ValueError, SafeStateError):
                         continue
-                    paths.append(relative.as_posix())
-                except (OSError, ValueError, SafeStateError):
-                    continue
-        except (OSError, ValueError):
+            except (OSError, ValueError):
+                raise SafeStateError("STATE_IO_ERROR")
+
+        try:
+            paths = heapq.nsmallest(self.max_results + 1, candidates())
+        except (OSError, TypeError, ValueError):
             raise SafeStateError("STATE_IO_ERROR")
 
-        paths.sort()
-        if len(paths) > self.max_results:
-            raise SafeStateError("STATE_IO_ERROR")
+        has_more = len(paths) > self.max_results
+        page = paths[: self.max_results]
         if (
             len(
                 json.dumps(
-                    paths,
+                    page,
                     separators=(",", ":"),
                 ).encode("utf-8")
             )
             > self.max_total_bytes
         ):
             raise SafeStateError("STATE_IO_ERROR")
-        return paths
+        next_cursor = (
+            self._encode_list_cursor(pattern, page[-1])
+            if has_more and page
+            else None
+        )
+        return {"paths": page, "next_cursor": next_cursor}
+
+    @staticmethod
+    def _encode_list_cursor(pattern: str, after: str) -> str:
+        payload = json.dumps(
+            {
+                "version": 1,
+                "pattern_sha256": hashlib.sha256(
+                    pattern.encode("utf-8")
+                ).hexdigest(),
+                "after": after,
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        return base64.urlsafe_b64encode(payload).rstrip(b"=").decode("ascii")
+
+    def _decode_list_cursor(
+        self,
+        cursor: Optional[str],
+        pattern: str,
+    ) -> Optional[str]:
+        if cursor is None:
+            return None
+        if (
+            not isinstance(cursor, str)
+            or not cursor
+            or len(cursor) > 4096
+            or "\x00" in cursor
+        ):
+            raise SafeStateError("STATE_IO_ERROR")
+        try:
+            encoded = cursor.encode("ascii")
+            padding = b"=" * (-len(encoded) % 4)
+            decoded = base64.b64decode(
+                encoded + padding,
+                altchars=b"-_",
+                validate=True,
+            )
+            payload = json.loads(decoded.decode("utf-8"))
+        except (
+            binascii.Error,
+            json.JSONDecodeError,
+            UnicodeError,
+            ValueError,
+        ):
+            raise SafeStateError("STATE_IO_ERROR")
+        if not isinstance(payload, dict) or set(payload) != {
+            "version",
+            "pattern_sha256",
+            "after",
+        }:
+            raise SafeStateError("STATE_IO_ERROR")
+        expected_digest = hashlib.sha256(pattern.encode("utf-8")).hexdigest()
+        after = payload.get("after")
+        if (
+            payload.get("version") != 1
+            or payload.get("pattern_sha256") != expected_digest
+            or not isinstance(after, str)
+            or not after
+        ):
+            raise SafeStateError("STATE_IO_ERROR")
+        relative = self._validate_file_path(after)
+        if relative.as_posix() != after or relative.suffix != ".md":
+            raise SafeStateError("STATE_IO_ERROR")
+        return after
 
     def read_many(
         self,

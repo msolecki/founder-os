@@ -63,6 +63,7 @@ class Gateway:
                 "properties": {
                     "capability": {"type": "string"},
                     "pattern": {"type": "string"},
+                    "cursor": {"type": "string"},
                 },
                 "required": ["capability", "pattern"],
                 "additionalProperties": False,
@@ -265,9 +266,15 @@ class Gateway:
     def _list_state(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         _, binding = self._session_workspace(arguments.get("capability"))
         pattern = arguments.get("pattern")
-        if not self._text(pattern):
+        cursor = arguments.get("cursor")
+        if not self._text(pattern) or (
+            cursor is not None and not self._text(cursor)
+        ):
             raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
-        return {"paths": self._io(binding.root).list_markdown(pattern)}
+        return self._io(binding.root).list_markdown_page(
+            pattern,
+            cursor=cursor,
+        )
 
     def _read_state(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         _, binding = self._session_workspace(arguments.get("capability"))
