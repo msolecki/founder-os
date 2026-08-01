@@ -81,16 +81,17 @@ through the registry's `portfolio:` path.
 
 ## Cadences: one fence per business
 
-`setup-cadences` on a multi-business install runs **per business** and fences
-each business's lines with its slug:
+`setup-cadences` on a multi-business install runs **per business**. The
+packaged `scripts/cadence_manager.py` renders and updates each exact identity;
+do not edit fences with `sed` or a prefix regular expression:
 
 ```
-# BEGIN founder-os:acme — /setup-cadences, YYYY-MM-DD. Do not remove these markers.
+# BEGIN founder-os:acme — cadence-manager YYYY-MM-DD
 …nine lines, each carrying FOUNDER_OS_HOME=<acme's absolute home>…
 # END founder-os:acme
 ```
 
-- Re-running for `acme` strips and rewrites **only** the `founder-os:acme`
+- Re-running for `acme` replaces **only** the `founder-os:acme`
   fence. Another business's fence, and everything outside all fences, survives
   byte for byte. This is why the slug is in the marker: the legacy unslugged
   fence made the second business's setup silently delete the first's schedule.
@@ -102,8 +103,12 @@ each business's lines with its slug:
   more active businesses — Monday before the earliest `week-plan`, because the
   split is that plan's input.
 - A legacy unslugged fence (`# BEGIN founder-os` … `# END founder-os`) is
-  migrated, not accumulated: setup-cadences removes it and rewrites those
-  lines under the business's slug, saying so in the confirmation.
+  migrated only when preview uses `--migrate-legacy`: the manager removes that
+  exact identity and rewrites the selected business under its slug. The
+  preview and backup make the migration visible before confirmation.
+- Preview and snapshot digests bind apply to the scheduler state the founder
+  inspected. A sibling schedule added during confirmation makes apply stop;
+  it is never silently overwritten.
 
 ## What deliberately does not change
 
