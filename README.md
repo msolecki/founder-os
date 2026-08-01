@@ -11,15 +11,17 @@ Markdown, and produces a valid first brief in less than fifteen minutes.
 
 Start with the situation, not the command list: say **“I do not know what
 matters today”** or run `/situation-review`. The Chief of Staff selects one
-owner, one workflow, and the state destination. Founder OS never sends, pays,
-signs, cancels, or publishes; the founder remains the CEO.
+owner, one workflow, and the state destination. It previews that route and its
+missing state first; the specialist starts only after you choose **Continue**,
+while **Stop** ends without running it. Founder OS never sends, pays, signs,
+cancels, or publishes; the founder remains the CEO.
 
 **Local Markdown · No automatic sending · Explicit ownership · No hidden
 actions**
 
 It is a plugin for [Claude Code](https://code.claude.com/docs) and
 [Codex](https://developers.openai.com/codex/plugins/build) for a company of one
-— or a founder running several. Behind the daily decision are **13 agents, 52
+— or a founder running several. Behind the daily decision are **13 agents, 53
 skills, 10 scheduled cadences** and one Markdown workspace per business. The
 roles own separate decisions; a local state gateway keeps their state from
 silently crossing those boundaries on either host.
@@ -29,7 +31,7 @@ Codex environment and adds no account or subscription of its own.
 
 [Getting started](docs/getting-started.md) ·
 [Example workspace](examples/studio-north/README.md) ·
-[All 52 workflows](founder-os/COMMANDS.md) ·
+[All 53 workflows](founder-os/COMMANDS.md) ·
 [Product philosophy](founder-os/README.md)
 
 This repository is both the **plugin marketplace** (install straight from it)
@@ -107,10 +109,27 @@ To see the output first, open the fictional but contract-shaped
 [`examples/studio-north/`](examples/studio-north/README.md) workspace into the
 queue, quarterly bet, week, and review.
 
+## What every completed workflow shows
+
+Founder OS ends each successful workflow with one receipt:
+
+- **Decision:** the verdict or result.
+- **Evidence:** workspace paths and source dates used.
+- **Changed:** only paths re-read and verified after the role returned.
+- **Gaps:** missing or stale state that constrained the answer, or `none`.
+- **Returns:** the cadence or date that revisits the decision, or `none`.
+- **Your move:** exactly one human action, or `none`.
+
+A read-only workflow reports **Changed:** `none`. A failed or uncertain write
+produces an error receipt, never a success claim. Freshness is explicit:
+`current` and `stale` require a named workflow or doctor threshold; `unknown`
+means a required value is absent. When no threshold exists, the receipt shows
+the source date without inventing a freshness label.
+
 ## Your first five actions
 
 1. Run `/daily-brief` before opening email.
-2. Capture an unstructured thought in `inbox.md`.
+2. Run `/capture Call Anna about the Acme scope` to save one unclassified line.
 3. Run `/pipeline-review` so each deal has a dated next move.
 4. Run `/weekly-review` before Friday's memory becomes the record.
 5. Ask the **Chief of Staff** to route an uncategorized decision.
@@ -135,11 +154,11 @@ The full recovery branches are in
 | Piece | Where | What it does |
 |---|---|---|
 | Agents | `founder-os/agents/*.md` | 13 role definitions. Every role exposes the same bounded state-gateway tool surface and four mandated headings. |
-| Skills | `founder-os/skills/*/SKILL.md` | 52 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
+| Skills | `founder-os/skills/*/SKILL.md` | 53 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (what init scaffolds), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
 | Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Maps Claude `agent_type` or Codex `turn_id`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the seven gateway tools. |
-| Validator | `scripts/validate_package.py` | 16 build-time checks (below). CI runs it on every push. |
+| Validator | `scripts/validate_package.py` | 17 build-time checks (below). CI runs it on every push. |
 | Cadences | `founder-os/skills/setup-cadences/SKILL.md` | 10 cron lines on *your* machine calling skills headless — a plugin cannot ship a schedule, so this writes one, with your consent, once per business. Fences are slugged per business (`# BEGIN founder-os:<slug>`) so two businesses never clobber each other's schedule. |
 | Local overlay | `founder-os/references/extensibility.md` | Per-business extension without a fork: `$FOUNDER_OS_HOME/_local/` may **add** a file, skill or agent and can never reassign or remove one the package ships. Merged into the guard's map per workspace; validated by `founder-os-doctor`, because a build-time validator cannot see a stranger's workspace. Forged by `/skill-forge`, whose commonest correct answer is "a packaged agent already owns this decision". |
 | Multi-business | `founder-os/references/multi-business.md` | One workspace per business + a registry (`~/.founder-os/businesses.yaml`) + a portfolio workspace. The hook resolves all registered roots; `context-load` step 0 picks the business before any file opens. |
@@ -164,7 +183,7 @@ button.
 
 ### Enforcement is layered, deliberately
 
-1. **Build time** — `scripts/validate_package.py`: 16 build-time checks cover
+1. **Build time** — `scripts/validate_package.py`: 17 build-time checks cover
    both manifests/adapters, strict frontmatter and tools, one-level sibling
    orchestration, ownership/section joins, beliefs, hooks, and public counts.
 2. **State access** — the local `founder-os-state` gateway is the authoritative
@@ -193,13 +212,13 @@ founder-os/                       # the plugin (what gets installed)
   README.md                       # the product: org, philosophy, refusals
   COMMANDS.md                     # generated catalogue: every command, owner, schedule
   agents/           (13)
-  skills/           (52)
+  skills/           (53)
   mcp/                            # one seven-tool local state gateway
   hooks/                          # hooks.json + ownership-guard.py
   references/                     # ownership.yaml, house-rules, skill-template,
                                   # ingestion-gate, linking, multi-business
   images/                         # org chart (mermaid + png)
-scripts/validate_package.py       # build-time validator (16 checks)
+scripts/validate_package.py       # build-time validator (17 checks)
 scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it
 tests/                            # validator mutations + hook subprocess + registry roots
 CHANGELOG.md                      # what shipped in each version
@@ -213,7 +232,7 @@ second landing-page index.
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os   # expect: 13 agent(s), 52 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os   # expect: 13 agent(s), 53 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md (CI checks it)
 python3 scripts/smoke_installed_copy.py          # clean installed-copy lifecycle
 python3 -m unittest discover -s tests            # expect: OK

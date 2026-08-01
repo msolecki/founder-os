@@ -68,6 +68,7 @@ Decides what deserves the founder's attention right now and which specialist han
 
 | Command | What it does |
 |---|---|
+| `/capture` | Capture one unstructured thought in the inbox without classifying it — use when the founder needs to remember one thing now and decide what it means later |
 | `/daily-brief` | Open the day with the one thing that matters — run every weekday morning before the founder picks their own work |
 | `/weekly-review` | Score the week's commitments against what actually happened and name the pattern across weeks — run Friday afternoon, before the week is remembered kindly |
 | `/monthly-review` | Read the month back against the charter and name the drift — run after the CFO closes the books, never before |

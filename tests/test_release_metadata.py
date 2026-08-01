@@ -143,9 +143,9 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         }
         self.assertEqual(counts, {
             "agents": 13,
-            "skills": 52,
+            "skills": 53,
             "cadences": 10,
-            "validator": 16,
+            "validator": 17,
             "doctor": 20,
         })
 
@@ -303,7 +303,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             feature for feature in ledger["features"]
             if "[A11Y-004]" in feature["description"]
         )
-        self.assertIn("Browse all 52 workflows", focus_ring["description"])
+        self.assertIn("Browse all 53 workflows", focus_ring["description"])
 
     def test_internal_launch_working_material_is_not_shipped(self):
         product_hunt = REPO_ROOT / "docs" / "product-hunt"

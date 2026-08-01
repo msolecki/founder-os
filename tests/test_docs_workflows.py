@@ -72,7 +72,7 @@ EXPECTED_ENTRIES = {
     "sell": (4, "Move a deal"),
     "deliver": (4, "Deliver well"),
     "money": (5, "Know the numbers"),
-    "focus": (11, "Protect focus"),
+    "focus": (12, "Protect focus"),
     "grow": (8, "Grow deliberately"),
     "run": (10, "Run operations"),
 }
@@ -291,7 +291,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
             category: label for category, (_, label) in EXPECTED_ENTRIES.items()
         })
 
-    def test_category_counts_still_partition_all_52_workflows(self):
+    def test_category_counts_still_partition_all_53_workflows(self):
         counts = Counter()
         groups = re.findall(
                 r'<details class="workflow-group"[^>]*data-category="([^"]+)"'
@@ -468,7 +468,7 @@ class ActivationCopyContractTest(unittest.TestCase):
             ],
         )
         self.assertNotIn("Multi-business", nav)
-        self.assertNotRegex(nav, r"\b52 workflows\b")
+        self.assertNotRegex(nav, rf"\b{SKILL_COUNT} workflows\b")
 
     def test_secondary_role_and_multi_business_reference_is_expandable(self):
         team_start = HTML.index('<section class="section team" id="team">')
@@ -646,6 +646,50 @@ class ActivationCopyContractTest(unittest.TestCase):
                     r"(?i)specialist workflow.*only after.*Continue",
                 )
 
+    def test_operator_docs_publish_receipts_freshness_and_error_recovery(self):
+        receipt_labels = (
+            "Decision:",
+            "Evidence:",
+            "Changed:",
+            "Gaps:",
+            "Returns:",
+            "Your move:",
+        )
+        for document in (
+            GETTING_STARTED,
+            ROOT_README,
+            PLUGIN_README,
+            ARCHITECTURE,
+        ):
+            compact = re.sub(r"\s+", " ", document)
+            with self.subTest(document=document[:24]):
+                for marker in receipt_labels:
+                    self.assertIn(marker, compact)
+                self.assertRegex(compact, r"(?i)read-only.*Changed:.*none")
+                self.assertRegex(
+                    compact, r"(?i)current.*stale.*unknown|unknown.*stale.*current"
+                )
+                self.assertIn("source date", compact.lower())
+
+        for document in (ARCHITECTURE, TROUBLESHOOTING):
+            with self.subTest(error_document=document[:24]):
+                for code in (
+                    "WORKSPACE_UNRESOLVED",
+                    "ROLE_SESSION_INVALID",
+                    "PATH_OUTSIDE_WORKSPACE",
+                    "ROLE_NOT_OWNER",
+                    "INVALID_DOCUMENT_STRUCTURE",
+                    "STALE_WRITE",
+                    "STATE_IO_ERROR",
+                ):
+                    self.assertIn(code, document)
+                compact = re.sub(r"\s+", " ", document)
+                self.assertRegex(
+                    compact,
+                    r"(?i)write occurred.*original file.*canonical owner.*"
+                    r"system will do next.*founder must act",
+                )
+
     def test_activation_requires_a_valid_brief_not_an_existing_file(self):
         activation_documents = {
             "landing": HTML,
@@ -682,7 +726,7 @@ class ActivationCopyContractTest(unittest.TestCase):
         first_five = GETTING_STARTED[start:GETTING_STARTED.index("\n## ", start + 4)]
         for marker in (
             "/daily-brief",
-            "inbox.md",
+            "/capture",
             "/pipeline-review",
             "/weekly-review",
             "Chief of Staff",

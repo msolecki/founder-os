@@ -52,6 +52,14 @@ DELEGATION_FIELDS = {
     "handoff",
     "expected_persistence",
 }
+WORKFLOW_RESULT_FIELDS = {
+    "decision",
+    "evidence",
+    "gaps",
+    "return_point",
+    "human_action",
+    "expected_persistence",
+}
 
 
 class TestPackagedSiblingContract(unittest.TestCase):
@@ -81,6 +89,9 @@ class TestPackagedSiblingContract(unittest.TestCase):
             with self.subTest(role=slug):
                 for phrase in required:
                     self.assertIn(phrase, body)
+                self.assertIn("workflow result", body.lower())
+                for field in WORKFLOW_RESULT_FIELDS:
+                    self.assertIn("`%s`" % field, body)
                 self.assertNotIn("Agent(", body)
 
     def test_managers_return_the_exact_delegation_request_shape(self):
@@ -115,6 +126,125 @@ class TestPackagedSiblingContract(unittest.TestCase):
         self.assertIn("re-read", reference)
         self.assertIn("before", reference)
         self.assertIn("close", reference)
+
+    def test_reference_separates_results_from_delegation_and_gates_receipts(self):
+        reference = (
+            PLUGIN_ROOT / "references" / "orchestration.md"
+        ).read_text(encoding="utf-8")
+        for heading in (
+            "## Workflow result",
+            "## User-facing receipt",
+            "## Freshness vocabulary",
+            "## First-week guidance",
+            "## Error experience",
+        ):
+            self.assertIn(heading, reference)
+        result_section = reference.split("## Workflow result", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        for field in WORKFLOW_RESULT_FIELDS:
+            self.assertIn("`%s`" % field, result_section)
+        self.assertRegex(
+            result_section,
+            r"(?is)separate from.*delegation request",
+        )
+
+        receipt = reference.split("## User-facing receipt", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        labels = (
+            "Decision:",
+            "Evidence:",
+            "Changed:",
+            "Gaps:",
+            "Returns:",
+            "Your move:",
+        )
+        positions = [receipt.index(label) for label in labels]
+        self.assertEqual(positions, sorted(positions))
+        self.assertRegex(receipt, r"(?is)read-only.*Changed.*none")
+        self.assertRegex(
+            receipt, r"(?is)Changed.*re-read.*verified|re-read.*Changed"
+        )
+        self.assertRegex(
+            receipt,
+            r"(?is)(?:failed|uncertain) persistence.*error receipt.*never.*success",
+        )
+        self.assertRegex(receipt, r"(?is)creates no workspace file")
+
+    def test_reference_uses_only_threshold_backed_freshness_states(self):
+        reference = (
+            PLUGIN_ROOT / "references" / "orchestration.md"
+        ).read_text(encoding="utf-8")
+        section = reference.split("## Freshness vocabulary", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        for state in ("`current`", "`stale`", "`unknown`"):
+            self.assertIn(state, section)
+        self.assertRegex(section, r"(?is)current.*threshold.*inside")
+        self.assertRegex(section, r"(?is)stale.*threshold.*crossed")
+        self.assertRegex(section, r"(?is)unknown.*absent")
+        self.assertRegex(
+            section, r"(?is)no threshold.*source date.*without.*state"
+        )
+        self.assertRegex(section, r"(?is)do not invent.*global freshness")
+        self.assertRegex(section, r"(?is)no.*confidence\s+percentage")
+
+    def test_reference_maps_all_gateway_errors_to_five_fact_recovery(self):
+        reference = (
+            PLUGIN_ROOT / "references" / "orchestration.md"
+        ).read_text(encoding="utf-8")
+        section = reference.split("## Error experience", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        for fact in (
+            "whether any write occurred",
+            "whether the original file is preserved",
+            "canonical owner or unresolved context",
+            "what the system will do next",
+            "whether the founder must act",
+        ):
+            self.assertRegex(section, re.escape(fact).replace(r"\ ", r"\s+"))
+        expected = {
+            "WORKSPACE_UNRESOLVED": "which business is active",
+            "ROLE_SESSION_INVALID": "return control to the main thread",
+            "PATH_OUTSIDE_WORKSPACE": "workspace boundary",
+            "ROLE_NOT_OWNER": "canonical owner",
+            "INVALID_DOCUMENT_STRUCTURE": "structural mismatch",
+            "STALE_WRITE": "retry once",
+            "STATE_IO_ERROR": "concrete recovery step",
+        }
+        for code, action in expected.items():
+            row = next(
+                line for line in section.splitlines() if "`%s`" % code in line
+            )
+            with self.subTest(code=code):
+                self.assertRegex(
+                    row, re.escape(action).replace(r"\ ", r"\s+")
+                )
+        self.assertRegex(
+            section,
+            r"(?is)first line.*user impact.*no.*failed write.*persisted",
+        )
+
+    def test_first_week_guidance_selects_one_action_in_priority_order(self):
+        reference = (
+            PLUGIN_ROOT / "references" / "orchestration.md"
+        ).read_text(encoding="utf-8")
+        section = reference.split("## First-week guidance", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        ordered = (
+            "/founder-os-init",
+            "/capture",
+            "/pipeline-review",
+            "/weekly-review",
+            "none",
+        )
+        positions = [section.index(value) for value in ordered]
+        self.assertEqual(positions, sorted(positions))
+        self.assertRegex(section, r"(?is)Your move.*exactly one")
+        self.assertRegex(section, r"(?is)creates no progress file")
 
     def test_house_rules_forbid_every_nested_role_edge(self):
         house_rules = (
@@ -331,6 +461,35 @@ class TestMigratedWorkflowHandoffs(unittest.TestCase):
                 self.assertNotIn("Agent(", body)
                 self.assertNotRegex(body, r"(?i)owner allowlist")
                 self.assertNotRegex(body, r"(?i)\bsummon\b")
+
+    def test_situation_review_keeps_internal_shape_but_previews_one_route(self):
+        body = self.bodies["situation-review"]
+        request = body.split("## Output", 1)[1].split("\n## ", 1)[0]
+        self.assertEqual(
+            set(re.findall(r"(?m)^- `([^`]+)`:", request)),
+            DELEGATION_FIELDS,
+        )
+        preview = body.split("## User-facing preview", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        for token in (
+            "decision sentence",
+            "selected owner",
+            "reason",
+            "missing state",
+            "expected state destination",
+            "Continue",
+            "Stop",
+        ):
+            self.assertRegex(
+                preview, re.escape(token).replace(r"\ ", r"\s+")
+            )
+        self.assertRegex(
+            preview,
+            r"(?is)only after.*Continue.*main thread.*"
+            r"(?:open|opens|execute|executes).*target",
+        )
+        self.assertRegex(preview, r"(?is)routing role.*does not answer")
 
 
 if __name__ == "__main__":

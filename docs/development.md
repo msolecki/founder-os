@@ -8,7 +8,7 @@ tests, CI, and releasing.
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os     # 13 agent(s), 52 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os     # 13 agent(s), 53 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os    # regenerate COMMANDS.md if frontmatter changed
 python3 scripts/smoke_installed_copy.py            # installed-copy smoke: PASS
 python3 -m unittest discover -s tests              # OK
@@ -21,7 +21,7 @@ is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
 
-`scripts/validate_package.py` runs 16 build-time checks (each named function).
+`scripts/validate_package.py` runs 17 build-time checks (each named function).
 They enforce *structure*; they cannot decide whether business advice is good.
 
 | Check | Fails when… |

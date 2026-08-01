@@ -43,6 +43,24 @@ init will not reset it.
 Uninstall instructions and the distinction between plugin files and your
 Markdown workspace are in [`getting-started.md`](getting-started.md#update-repair-or-uninstall).
 
+## Workflow error receipts
+
+Every gateway failure keeps its stable code, but the first line explains the
+impact rather than leading with machinery. The receipt then names five facts in
+order: whether a write occurred; whether the original file is preserved; the
+canonical owner or unresolved context; what the system will do next; and
+whether the founder must act. A failed write is never described as persisted.
+
+| Code | What happens next |
+|---|---|
+| `WORKSPACE_UNRESOLVED` | Choose the active business; no read or write occurs. |
+| `ROLE_SESSION_INVALID` | The role stops and control returns to the main thread. |
+| `PATH_OUTSIDE_WORKSPACE` | The path is refused and the resolved workspace boundary is shown. |
+| `ROLE_NOT_OWNER` | The canonical owner is named and receives one bounded handoff. |
+| `INVALID_DOCUMENT_STRUCTURE` | The original file is preserved; fix the mismatch with its owner or `/founder-os-doctor`. |
+| `STALE_WRITE` | Re-read, reconcile the concurrent change, and retry once. |
+| `STATE_IO_ERROR` | Preserve the original, stop, and follow the concrete recovery step shown. |
+
 ## `/founder-os-doctor` — what it checks
 
 The doctor runs 20 health checks. Each has a threshold; it reports only the ones
@@ -128,7 +146,7 @@ that drifts is a second map.
 
 ## Extending Founder OS for one business
 
-Thirteen agents and fifty-two workflows are the shape of a company of one *in
+Thirteen agents and fifty-three workflows are the shape of a company of one *in
 general*. If your business has a decision none of them covers — a licensing
 partner, a production rhythm, a regulator — you do not have to fork. Run
 `/skill-forge`.

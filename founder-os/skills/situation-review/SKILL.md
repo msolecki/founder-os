@@ -43,8 +43,8 @@ Native and generic execution use the byte-identical packaged role under
 5. If it is material, hard to reverse, and crosses two or more decision domains, route to `/strategic-evaluation`.
 6. Return the exact shared sibling request and stop. Do not execute it. The main
    thread validates the resolved workspace, correlation, target owner,
-   workflow, bounded handoff and expected persistence before it closes this
-   session and opens the target sibling.
+   workflow, bounded handoff and expected persistence, then presents the
+   user-facing preview below before deciding whether to open the target.
 
 ## Output
 
@@ -56,7 +56,24 @@ Native and generic execution use the byte-identical packaged role under
 - `expected_persistence`: <safe paths declared by the selected workflow, or [] when read-only>
 
 Return no extra field and no specialist answer. The main thread executes the
-request only after validation; this routing workflow ends here.
+request only after validation and founder consent; this routing workflow ends
+here.
+
+## User-facing preview
+
+The main thread reduces the validated internal request to one preview with:
+
+- the decision sentence;
+- the selected owner;
+- the reason for this route;
+- any missing state;
+- the expected state destination derived from `expected_persistence`;
+- exactly `Continue` and `Stop`.
+
+Only after the founder chooses `Continue` does the main thread open the target
+sibling and execute the selected workflow. `Stop` ends with no specialist run.
+The routing role does not answer the specialist's question, and the preview
+does not claim any persistence occurred.
 
 ## Guardrails
 

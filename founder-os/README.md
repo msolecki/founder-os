@@ -9,8 +9,10 @@ Markdown, and produces a valid first brief in less than fifteen minutes.
 
 Start with the situation, not the catalogue: say **“I do not know what matters
 today”** or run `/situation-review`. The Chief of Staff selects one owner, one
-workflow, and the state destination. Founder OS never sends, pays, signs,
-cancels, or publishes; the founder remains the CEO.
+workflow, and the state destination. It previews that route and its missing
+state first; the specialist starts only after you choose **Continue**, while
+**Stop** ends without running it. Founder OS never sends, pays, signs, cancels,
+or publishes; the founder remains the CEO.
 
 **Local Markdown · No automatic sending · Explicit ownership · No hidden
 actions**
@@ -27,7 +29,7 @@ Code or Codex environment and adds no account or subscription of its own.
 
 [Getting started](../docs/getting-started.md) ·
 [Example workspace](../examples/studio-north/README.md) ·
-[All 52 workflows](COMMANDS.md) ·
+[All 53 workflows](COMMANDS.md) ·
 [Report an issue](https://github.com/msolecki/founder-os/issues)
 
 ## Before you install
@@ -107,10 +109,27 @@ contract-shaped
 then follow `q-0720a` and `B1` across its queue, goals, week, pipeline, and
 reviews.
 
+## What every completed workflow shows
+
+Founder OS ends each successful workflow with one receipt:
+
+- **Decision:** the verdict or result.
+- **Evidence:** workspace paths and source dates used.
+- **Changed:** only paths re-read and verified after the role returned.
+- **Gaps:** missing or stale state that constrained the answer, or `none`.
+- **Returns:** the cadence or date that revisits the decision, or `none`.
+- **Your move:** exactly one human action, or `none`.
+
+A read-only workflow reports **Changed:** `none`. A failed or uncertain write
+produces an error receipt, never a success claim. Freshness is explicit:
+`current` and `stale` require a named workflow or doctor threshold; `unknown`
+means a required value is absent. When no threshold exists, the receipt shows
+the source date without inventing a freshness label.
+
 ## Your first five actions
 
 1. Run `/daily-brief` before opening email.
-2. Put an unstructured thought in `inbox.md`.
+2. Run `/capture Call Anna about the Acme scope` to save one unclassified line.
 3. Run `/pipeline-review` so every live deal earns a dated next move.
 4. Run `/weekly-review` on Friday.
 5. Ask the **Chief of Staff** to route an uncategorized decision.
@@ -134,7 +153,7 @@ remain governed by that environment's data-handling terms.
 | Content | Count |
 |---------|-------|
 | Agents  | 13    |
-| Skills  | 52    |
+| Skills  | 53    |
 | Cadences | 10   |
 
 The full catalogue — every skill, its agent, and its schedule — is
@@ -176,9 +195,9 @@ the next sibling if the workflow requires one. No subagent summons another.
 
 Morning: if you enabled local cadences and the machine was running, the brief is
 already there — `/daily-brief` ran at 08:00 and named the one thing that matters
-today. Otherwise, you type it yourself. A thought at 15:00 with
-no session open: append one line to `inbox.md`, no fields, no ceremony — the
-next brief or `/triage` drains it. A prospect to move: `/pipeline-review`. A
+today. Otherwise, you type it yourself. A thought at 15:00: run
+`/capture Call Anna about the Acme scope`; one unchanged line lands in
+`inbox.md`, and the next brief or `/triage` drains it. A prospect to move: `/pipeline-review`. A
 draft to send: `/outreach-draft` writes it to `drafts/`, you press send.
 Friday: `/weekly-review` compares committed to done and sweeps the queue.
 Month-end: `/revenue-review` closes the books. Don't know who to ask? Ask the
@@ -248,11 +267,11 @@ nobody started in 15 working days was passed over by 15 daily briefs; the queue
 just writes down a decision you already made fifteen times. A queue that only
 grows is a to-do list, and you already have one of those.
 
-**There is a door.** `inbox.md` takes a line from you at 15:00 with no session,
-no agent, no fields and no ceremony. The next brief or triage empties it to
-zero — every line becomes a queue item, or gets named and refused with the
-owner whose file already holds it. It has no clock because it has a drain.
-Nothing lives in a door.
+**There is a door.** `/capture` takes one line from you at 15:00 with no fields
+and no classification, then appends it unchanged to `inbox.md`. The next brief
+or triage empties the inbox to zero — every line becomes a queue item, or gets
+named and refused with the owner whose file already holds it. It has no clock
+because it has a drain. Nothing lives in a door.
 
 **Nothing is written just because someone said it.** Every skill that
 records what someone outside told you tiers the claim before it reaches a file:

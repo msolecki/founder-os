@@ -40,4 +40,4 @@ calendar, CRM, inbox, or bank account by itself.
 
 See [`docs/getting-started.md`](../../docs/getting-started.md) to install the
 plugin and the generated [`COMMANDS.md`](../../founder-os/COMMANDS.md) for all
-52 workflows.
+53 workflows.

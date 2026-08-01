@@ -287,6 +287,24 @@ def check_one_level_orchestration(root, agents):
                 % (slug, ", ".join(absent))
             )
 
+        result_required = (
+            "workflow result",
+            "`decision`",
+            "`evidence`",
+            "`gaps`",
+            "`return_point`",
+            "`human_action`",
+            "`expected_persistence`",
+        )
+        missing_result = [
+            phrase for phrase in result_required if phrase not in lower
+        ]
+        if missing_result:
+            errs.append(
+                "agents/%s.md: shared workflow result contract is missing %s"
+                % (slug, ", ".join(missing_result))
+            )
+
         active_orchestration = lower.replace(
             "never spawn or invoke another role", ""
         ).replace(
@@ -552,6 +570,71 @@ def check_sections(root, agents):
     return errs
 
 
+def check_capture_contract(root, agents):
+    """Keep the one-line inbox door narrow when capture is part of the package."""
+    capture_path = root / "skills" / "capture" / "SKILL.md"
+    capture_expected = (
+        (root / "skills" / "founder-os-init" / "SKILL.md").exists()
+        or capture_path.exists()
+        or any(
+            "capture" in ((frontmatter.get("skills") or []))
+            for frontmatter, _ in agents.values()
+        )
+    )
+    if not capture_expected:
+        return []
+    if not capture_path.exists():
+        return ["skills/capture: missing required quick-capture workflow"]
+
+    errs = []
+    frontmatter, body = parse_frontmatter(capture_path)
+    if frontmatter.get("name") != "capture":
+        errs.append("skills/capture: name must be 'capture'")
+    if frontmatter.get("metadata") != {"writes": ["inbox.md"]}:
+        errs.append(
+            "skills/capture: metadata.writes must contain only inbox.md"
+        )
+
+    holders = sorted(
+        slug for slug, (agent_frontmatter, _) in agents.items()
+        if "capture" in (agent_frontmatter.get("skills") or [])
+    )
+    if holders != ["chief-of-staff"]:
+        errs.append(
+            "skills/capture: must be held only by chief-of-staff, found %s"
+            % (", ".join(holders) if holders else "none")
+        )
+
+    required = (
+        "one nonblank logical line",
+        "2048 utf-8 bytes",
+        "reject nul, newline, and carriage return",
+        "do not trim or normalize",
+        "do not split",
+        "founder's accepted bytes unchanged",
+        "prefix `- `",
+        "write_owned_state",
+        "observed sha-256",
+        "expected hash",
+        "after a successful write, re-read the full file",
+        "exact appended list item",
+        "original inbox unchanged",
+        "post-write re-read fails, persistence is uncertain",
+        "omit the success receipt",
+        "only `/daily-brief` and `/triage` drain",
+        "captured in `inbox.md`. the next `/daily-brief` or `/triage` will "
+        "decide what it becomes.",
+    )
+    normalized = " ".join(body.lower().split())
+    missing = [phrase for phrase in required if phrase not in normalized]
+    if missing:
+        errs.append(
+            "skills/capture: quick-capture contract is missing %s"
+            % ", ".join(missing)
+        )
+    return errs
+
+
 def check_beliefs(root, agents):
     """Every role skill states >=3 principles, before the steps that use them.
 
@@ -716,7 +799,8 @@ CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check
           check_agent_tools, check_one_level_orchestration,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,
-          check_sections, check_beliefs, check_hooks, check_readme_counts]
+          check_sections, check_capture_contract, check_beliefs, check_hooks,
+          check_readme_counts]
 
 
 def run_checks(root):

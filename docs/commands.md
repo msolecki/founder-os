@@ -6,7 +6,7 @@ slug first — `/founder-os:daily-brief acme`.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 
-This reference covers all 52 workflows shipped by the package.
+This reference covers all 53 workflows shipped by the package.
 
 > This page is the annotated, grouped reference. The **generated, always-current
 > catalogue** is [`founder-os/COMMANDS.md`](../founder-os/COMMANDS.md), derived
@@ -18,8 +18,8 @@ This reference covers all 52 workflows shipped by the package.
 After `/founder-os-init` persists and validates the first brief:
 
 1. Run `/daily-brief` before opening email.
-2. Put an unstructured thought in `inbox.md`; the next brief or `/triage`
-   drains it.
+2. Run `/capture Call Anna about the Acme scope`; the next brief or `/triage`
+   drains the saved line.
 3. Run `/pipeline-review` so every live deal has a dated next action.
 4. Run `/weekly-review` on Friday before memory rewrites the week.
 5. Ask the **Chief of Staff** to route any uncategorized decision.
@@ -51,6 +51,7 @@ Scheduled by `/setup-cadences`; every one also works typed by hand. See
 ### chief-of-staff — attention & routing
 | Command | What it does |
 |---|---|
+| `/capture` | Append one unchanged, unclassified line to `inbox.md`; confirms only after re-read. |
 | `/daily-brief` | Open the day with the one thing that matters; name what's rotting and what today costs. Never a to-do list. |
 | `/weekly-review` | Score the week's commitments against what actually happened; name the cross-week pattern. |
 | `/monthly-review` | Read the month back against the charter and name the drift — after the CFO closes the books. |

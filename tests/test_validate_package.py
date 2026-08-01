@@ -44,7 +44,9 @@ DEFAULT_TOOLS = (
 STATE_CONTRACT = ("\n## State and handoff contract\n\n"
                   "The main thread provides one capability. Read what is "
                   "needed, write only state you own, never spawn or invoke "
-                  "another role, and return expected_persistence.\n")
+                  "another role. Return one workflow result with `decision`, "
+                  "`evidence`, `gaps`, `return_point`, `human_action`, and "
+                  "`expected_persistence`.\n")
 AGENT_BODY = ("\nBody.\n" + STATE_CONTRACT + "\n"
               "## What triggers you\nx\n\n"
               "## What you do\nx\n\n"
@@ -546,6 +548,22 @@ class TestOneLevelOrchestration(ValidatorTestCase):
         errors = self.check(V.check_one_level_orchestration)
         self.assertTrue(any("shared state contract" in error for error in errors), errors)
 
+    def test_missing_shared_workflow_result_field_is_rejected(self):
+        self.write_agent(
+            "cfo",
+            skills=list(UNIVERSALS),
+            body=AGENT_BODY.replace("`return_point`, ", ""),
+        )
+        errors = self.check(V.check_one_level_orchestration)
+        self.assertTrue(
+            any(
+                "workflow result contract" in error
+                and "return_point" in error
+                for error in errors
+            ),
+            errors,
+        )
+
     def test_manager_without_delegation_shape_is_rejected(self):
         self.write_agent(
             "chief-of-staff",
@@ -917,7 +935,7 @@ class TestReadmeCounts(ValidatorTestCase):
 
 class TestRealPackage(unittest.TestCase):
     def test_shipped_package_passes_every_check(self):
-        """The '13 agents, 52 skills, 0 errors' acceptance line, executable.
+        """The '13 agents, 53 skills, 0 errors' acceptance line, executable.
 
         Every other test here validates a synthetic fixture; this is the only
         one that would catch a regression in the package actually shipped.
@@ -926,7 +944,7 @@ class TestRealPackage(unittest.TestCase):
         agents, errs = V.run_checks(real)
         self.assertEqual(errs, [])
         self.assertEqual(len(agents), 13)
-        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 52)
+        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 53)
 
 
 class TestRunChecksContainment(unittest.TestCase):

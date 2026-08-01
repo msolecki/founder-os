@@ -7,8 +7,11 @@ brief in less than fifteen minutes.
 
 Start with a situation such as **“I do not know what matters today”** or run
 `/situation-review`. The Chief of Staff selects one owner, one workflow, and the
-state destination; you do not need the command catalogue first. Founder OS
-never sends, pays, signs, cancels, or publishes. The founder remains the CEO.
+state destination; you do not need the command catalogue first. It previews the
+decision, route, missing state, and expected destination; the specialist starts
+only after you choose **Continue**, while **Stop** ends without running it.
+Founder OS never sends, pays, signs, cancels, or publishes. The founder remains
+the CEO.
 
 It does not run the company for you. It persists the decision, its owner, its
 source and the trade you are making in a Markdown workspace you control.
@@ -118,6 +121,23 @@ The specialist workflow runs only after you choose **Continue**. At the
 fifteen-minute hard stop, onboarding shows a copyable `/situation-review`
 command carrying the reason instead of opening another role session.
 
+## What every completed workflow shows
+
+Founder OS ends each successful workflow with one receipt:
+
+- **Decision:** the verdict or result.
+- **Evidence:** workspace paths and source dates used.
+- **Changed:** only paths re-read and verified after the role returned.
+- **Gaps:** missing or stale state that constrained the answer, or `none`.
+- **Returns:** the cadence or date that revisits the decision, or `none`.
+- **Your move:** exactly one human action, or `none`.
+
+A read-only workflow reports **Changed:** `none`. A failed or uncertain write
+produces an error receipt, never a success claim. Freshness is explicit:
+`current` and `stale` require a named workflow or doctor threshold; `unknown`
+means a required value is absent. When no threshold exists, the receipt shows
+the source date without inventing a freshness label.
+
 ## Optional: schedule the cadences
 
 After the first brief, run:
@@ -137,12 +157,12 @@ The Portfolio Manager is the only role that reads across them.
 ## Your first five actions
 
 1. Run `/daily-brief` before opening email.
-2. Put unstructured thoughts in `inbox.md`; the next brief or `/triage` drains
-   them.
+2. Run `/capture Call Anna about the Acme scope`; the next brief or `/triage`
+   drains the saved line.
 3. Run `/pipeline-review` before calling a list of conversations a pipeline.
 4. Run `/weekly-review` on Friday before memory rewrites the week.
 5. Ask the **Chief of Staff** to route any uncategorized decision. You do not
-   need to memorize all 52 workflows.
+   need to memorize all 53 workflows.
 
 ## What the 13 agents are
 

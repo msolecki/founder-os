@@ -50,6 +50,44 @@ Workspace files stay on your machine. Prompts and context sent through Claude
 Code or Codex remain subject to that environment's data-handling terms; local
 Markdown state is not a claim that the host operates offline.
 
+## Workflow results and receipts
+
+Every role returns structured `decision`, `evidence`, `gaps`, `return_point`,
+`human_action`, and `expected_persistence` inputs. That result is separate from
+the unchanged six-field delegation request. The main thread re-reads every
+expected path before it renders:
+
+- **Decision:** the verdict or result.
+- **Evidence:** workspace paths and source dates used.
+- **Changed:** only paths re-read and verified after the role returned.
+- **Gaps:** missing or stale state that constrained the answer, or `none`.
+- **Returns:** the cadence or date that revisits the decision, or `none`.
+- **Your move:** exactly one human action, or `none`.
+
+A read-only workflow reports **Changed:** `none`. Failed or uncertain
+persistence produces an error receipt and never a success receipt. Receipts are
+conversation output and create no second workspace history.
+
+Freshness uses only `current`, `stale`, and `unknown`. `current` and `stale`
+require a named workflow or doctor threshold; `unknown` means a required value
+is absent. With no threshold, the receipt shows the source date without a
+freshness state. There is no global freshness period or AI confidence score.
+
+Gateway failures retain their seven stable codes and add five user-facing
+facts, in order: whether a write occurred; whether the original file is
+preserved; the canonical owner or unresolved context; what the system will do
+next; and whether the founder must act.
+
+| Code | Recovery |
+|---|---|
+| `WORKSPACE_UNRESOLVED` | Ask which business is active; make no read or write. |
+| `ROLE_SESSION_INVALID` | Stop the role and return control to the main thread. |
+| `PATH_OUTSIDE_WORKSPACE` | Refuse the path and name the workspace boundary. |
+| `ROLE_NOT_OWNER` | Name the canonical owner and request one bounded handoff. |
+| `INVALID_DOCUMENT_STRUCTURE` | Preserve the file, name the mismatch, and route to the owner or doctor. |
+| `STALE_WRITE` | Re-read, reconcile deliberately, and retry once. |
+| `STATE_IO_ERROR` | Preserve the original, stop, and show the concrete recovery step. |
+
 ## Repository layout
 
 ```
@@ -62,7 +100,7 @@ founder os/                     ← repo root (marketplace + source)
 │   ├── COMMANDS.md             ← GENERATED catalogue (do not hand-edit)
 │   ├── README.md               ← product philosophy
 │   ├── agents/*.md             ← 13 agents (role definitions)
-│   ├── skills/<name>/SKILL.md  ← 52 shared skills (workflows)
+│   ├── skills/<name>/SKILL.md  ← 53 shared skills (workflows)
 │   │   └── <name>/agents/openai.yaml  ← Codex presentation adapter
 │   ├── hooks/                  ← session-context.py, record-agent.py,
 │   │                             ownership-guard.py, hooks.json
