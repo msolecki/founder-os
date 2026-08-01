@@ -365,6 +365,171 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 resolver.resolve(root, business_slug="portfolio").root,
             )
 
+    def test_bindings_report_single_business_business_and_portfolio_kinds(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            project.mkdir()
+
+            single = WorkspaceResolver(
+                env={},
+                home=root / "single-home",
+            ).resolve(project)
+            self.assertEqual("single-business", single.workspace_kind)
+
+            alpha = root / "alpha"
+            portfolio = root / "portfolio"
+            alpha.mkdir()
+            portfolio.mkdir()
+            home = root / "home"
+            write_registry(
+                home,
+                "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        "    home: " + alpha.as_posix(),
+                        "    status: active",
+                        "portfolio: " + portfolio.as_posix(),
+                    )
+                ),
+            )
+            resolver = WorkspaceResolver(env={}, home=home)
+
+            self.assertEqual(
+                "business",
+                resolver.resolve(project, "alpha").workspace_kind,
+            )
+            self.assertEqual(
+                "portfolio",
+                resolver.resolve(project, "portfolio").workspace_kind,
+            )
+
+    def test_registry_rejects_equal_parent_and_child_workspace_roots(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            project.mkdir()
+            for name, alpha, beta in (
+                ("equal", root / "shared", root / "shared"),
+                ("nested", root / "shared", root / "shared" / "child"),
+            ):
+                with self.subTest(name=name):
+                    home = root / ("home-" + name)
+                    write_registry(
+                        home,
+                        "\n".join(
+                            (
+                                "businesses:",
+                                "  alpha:",
+                                "    home: " + alpha.as_posix(),
+                                "    status: active",
+                                "  beta:",
+                                "    home: " + beta.as_posix(),
+                                "    status: paused",
+                            )
+                        ),
+                    )
+                    self.assert_unresolved(
+                        lambda home=home: WorkspaceResolver(
+                            env={},
+                            home=home,
+                        ).resolve(project, "alpha")
+                    )
+
+    def test_registry_change_invalidates_an_existing_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            alpha = root / "alpha"
+            moved = root / "moved-alpha"
+            project.mkdir()
+            alpha.mkdir()
+            moved.mkdir()
+            home = root / "home"
+            write_registry(
+                home,
+                "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        "    home: " + alpha.as_posix(),
+                        "    status: active",
+                    )
+                ),
+            )
+            resolver = WorkspaceResolver(env={}, home=home)
+            binding = resolver.resolve(project, "alpha")
+
+            (home / ".founder-os" / "businesses.yaml").write_text(
+                "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        "    home: " + moved.as_posix(),
+                        "    status: active",
+                    )
+                ),
+                encoding="utf-8",
+            )
+
+            self.assert_unresolved(lambda: resolver.validate_binding(binding))
+
+    def test_portfolio_binding_resolves_only_active_registered_businesses(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "project"
+            alpha = root / "alpha"
+            paused = root / "paused"
+            portfolio = root / "portfolio"
+            for directory in (project, alpha, paused, portfolio):
+                directory.mkdir()
+            home = root / "home"
+            write_registry(
+                home,
+                "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        "    home: " + alpha.as_posix(),
+                        "    status: active",
+                        "  paused:",
+                        "    home: " + paused.as_posix(),
+                        "    status: paused",
+                        "portfolio: " + portfolio.as_posix(),
+                    )
+                ),
+            )
+            resolver = WorkspaceResolver(env={}, home=home)
+            portfolio_binding = resolver.resolve(project, "portfolio")
+
+            self.assertEqual(
+                alpha.resolve(),
+                resolver.portfolio_business_root(
+                    portfolio_binding,
+                    "alpha",
+                ),
+            )
+            self.assert_unresolved(
+                lambda: resolver.portfolio_business_root(
+                    portfolio_binding,
+                    "paused",
+                )
+            )
+            business_binding = resolver.resolve(project, "alpha")
+            self.assert_unresolved(
+                lambda: resolver.portfolio_business_root(
+                    business_binding,
+                    "alpha",
+                )
+            )
+
 
 class RoleSessionStoreReadTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -914,6 +1079,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
                 {"project_dir": str(self.project)},
             )
         )
+        self.assertEqual("single-business", workspace["workspace_kind"])
         session = self.payload(
             self.gateway.call(
                 "open_role_session",

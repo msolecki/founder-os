@@ -221,6 +221,7 @@ class Gateway:
             "workspace_id": binding.workspace_id,
             "business_slug": binding.business_slug,
             "display_path": binding.display_path,
+            "workspace_kind": binding.workspace_kind,
         }
 
     def _open_role_session(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
@@ -394,6 +395,7 @@ class Gateway:
             binding = self._resolver.get(metadata.workspace_id)
         except WorkspaceResolutionError:
             raise RoleSessionError()
+        self._resolver.validate_binding(binding)
         return metadata, binding
 
     def _io(self, workspace_root: Path) -> SafeStateIO:

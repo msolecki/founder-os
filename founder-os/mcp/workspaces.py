@@ -30,6 +30,7 @@ class WorkspaceBinding:
     business_slug: Optional[str]
     display_path: str
     root: Path
+    workspace_kind: str
 
 
 class WorkspaceResolver:
@@ -50,7 +51,7 @@ class WorkspaceResolver:
         try:
             project_root = Path(project_dir).resolve()
             registry = self._load_registry()
-            root, slug = self._select_workspace(
+            root, slug, workspace_kind = self._select_workspace(
                 registry,
                 project_root,
                 business_slug,
@@ -66,6 +67,7 @@ class WorkspaceResolver:
             business_slug=slug,
             display_path=str(root),
             root=root,
+            workspace_kind=workspace_kind,
         )
         self._bindings[workspace_id] = binding
         return binding
@@ -76,12 +78,73 @@ class WorkspaceResolver:
         except (KeyError, TypeError):
             raise WorkspaceResolutionError()
 
+    def validate_binding(
+        self,
+        binding: WorkspaceBinding,
+    ) -> WorkspaceBinding:
+        """Revalidate an issued binding against the current registry."""
+        try:
+            if not isinstance(binding, WorkspaceBinding):
+                raise WorkspaceResolutionError()
+            if self.get(binding.workspace_id) != binding:
+                raise WorkspaceResolutionError()
+
+            registry = self._load_registry()
+            if binding.workspace_kind == "single-business":
+                if registry is not None or binding.business_slug is not None:
+                    raise WorkspaceResolutionError()
+                return binding
+
+            if registry is None or binding.business_slug is None:
+                raise WorkspaceResolutionError()
+            root, slug, workspace_kind = self._select_workspace(
+                registry,
+                binding.root,
+                binding.business_slug,
+            )
+            if (
+                root != binding.root
+                or slug != binding.business_slug
+                or workspace_kind != binding.workspace_kind
+            ):
+                raise WorkspaceResolutionError()
+            return binding
+        except WorkspaceResolutionError:
+            raise
+        except (OSError, TypeError, ValueError, KeyError):
+            raise WorkspaceResolutionError()
+
+    def portfolio_business_root(
+        self,
+        binding: WorkspaceBinding,
+        business_slug: str,
+    ) -> Path:
+        """Resolve one active business through a current portfolio binding."""
+        try:
+            current = self.validate_binding(binding)
+            if current.workspace_kind != "portfolio":
+                raise WorkspaceResolutionError()
+            if not self._valid_slug(business_slug):
+                raise WorkspaceResolutionError()
+
+            registry = self._load_registry()
+            if registry is None:
+                raise WorkspaceResolutionError()
+            entry = registry["businesses"].get(business_slug)
+            if entry is None or entry["status"] != "active":
+                raise WorkspaceResolutionError()
+            return Path(entry["home"]).resolve()
+        except WorkspaceResolutionError:
+            raise
+        except (OSError, TypeError, ValueError, KeyError):
+            raise WorkspaceResolutionError()
+
     def _select_workspace(
         self,
         registry: Optional[dict[str, Any]],
         project_root: Path,
         requested_slug: Optional[str],
-    ) -> tuple[Path, Optional[str]]:
+    ) -> tuple[Path, Optional[str], str]:
         if registry is None:
             if requested_slug is not None:
                 raise WorkspaceResolutionError()
@@ -91,7 +154,7 @@ class WorkspaceResolver:
                 if configured
                 else (project_root / "founder-os").resolve()
             )
-            return root, None
+            return root, None, "single-business"
 
         businesses = registry["businesses"]
         portfolio = registry.get("portfolio")
@@ -100,13 +163,13 @@ class WorkspaceResolver:
             if requested_slug == "portfolio":
                 if portfolio is None:
                     raise WorkspaceResolutionError()
-                return Path(portfolio).resolve(), "portfolio"
+                return Path(portfolio).resolve(), "portfolio", "portfolio"
             if not self._valid_slug(requested_slug):
                 raise WorkspaceResolutionError()
             entry = businesses.get(requested_slug)
             if entry is None:
                 raise WorkspaceResolutionError()
-            return Path(entry["home"]).resolve(), requested_slug
+            return Path(entry["home"]).resolve(), requested_slug, "business"
 
         configured = self._env.get("FOUNDER_OS_HOME")
         if configured:
@@ -123,13 +186,22 @@ class WorkspaceResolver:
                 matches.append("portfolio")
             if len(matches) != 1:
                 raise WorkspaceResolutionError()
-            return configured_root, matches[0]
+            matched_slug = matches[0]
+            return (
+                configured_root,
+                matched_slug,
+                "portfolio" if matched_slug == "portfolio" else "business",
+            )
 
         default = registry.get("default")
         if default is not None:
             if default == "portfolio":
-                return Path(portfolio).resolve(), "portfolio"
-            return Path(businesses[default]["home"]).resolve(), default
+                return Path(portfolio).resolve(), "portfolio", "portfolio"
+            return (
+                Path(businesses[default]["home"]).resolve(),
+                default,
+                "business",
+            )
 
         active = [
             slug
@@ -139,7 +211,7 @@ class WorkspaceResolver:
         if len(active) != 1:
             raise WorkspaceResolutionError()
         slug = active[0]
-        return Path(businesses[slug]["home"]).resolve(), slug
+        return Path(businesses[slug]["home"]).resolve(), slug, "business"
 
     @staticmethod
     def _resolve_from_project(project_root: Path, value: str) -> Path:
@@ -306,6 +378,21 @@ class WorkspaceResolver:
                 or not Path(portfolio).is_absolute()
             ):
                 raise WorkspaceResolutionError()
+
+        resolved_roots = [
+            (slug, Path(entry["home"]).resolve())
+            for slug, entry in businesses.items()
+        ]
+        if portfolio is not None:
+            resolved_roots.append(("portfolio", Path(portfolio).resolve()))
+        for index, (_, left_root) in enumerate(resolved_roots):
+            for _, right_root in resolved_roots[index + 1:]:
+                if (
+                    left_root == right_root
+                    or left_root in right_root.parents
+                    or right_root in left_root.parents
+                ):
+                    raise WorkspaceResolutionError()
 
         default = registry.get("default")
         if default is None:
