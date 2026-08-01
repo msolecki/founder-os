@@ -1,9 +1,14 @@
 # Getting started with Founder OS
 
-**Know what matters today.** Founder OS turns your goals, cash, pipeline and
-commitments into one daily decision — stored locally and traceable to its
-source. It is a free, MIT-licensed plugin for Claude Code and Codex with one
-shared workflow contract for a company of one.
+**Know what matters today.** Founder OS is for a solo service founder already
+using Claude Code or Codex. It turns current business state into one
+source-linked decision, saves it to local Markdown, and produces a valid first
+brief in less than fifteen minutes.
+
+Start with a situation such as **“I do not know what matters today”** or run
+`/situation-review`. The Chief of Staff selects one owner, one workflow, and the
+state destination; you do not need the command catalogue first. Founder OS
+never sends, pays, signs, cancels, or publishes. The founder remains the CEO.
 
 It does not run the company for you. It persists the decision, its owner, its
 source and the trade you are making in a Markdown workspace you control.

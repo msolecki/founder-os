@@ -1,10 +1,12 @@
 # Founder OS — Documentation
 
-Founder OS is one plugin for [Claude Code](https://code.claude.com/docs) and
-[Codex](https://developers.openai.com/codex/plugins/build) that gives a company of one — or a founder running several —
-an executive team: **13 agents, 52 skills, 10 optional cadences**, backed by a
-local Markdown workspace with one owner per file, an authoritative local state
-gateway, and host hooks that keep the org from corrupting its own state.
+Founder OS is for a solo service founder using
+[Claude Code](https://code.claude.com/docs) or
+[Codex](https://developers.openai.com/codex/plugins/build). Describe one
+situation or run `/situation-review`; it routes a source-linked decision into a
+local Markdown workspace. Behind that first path are **13 agents, 52 skills, 10
+optional cadences**, one owner per file, an authoritative local state gateway,
+and multi-business support when the core loop is already understood.
 
 It does not run the company for you. It gives your decisions persistent state,
 an owner, and a review rhythm.

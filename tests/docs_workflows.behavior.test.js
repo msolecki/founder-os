@@ -156,6 +156,12 @@ function buildWorkflowDom() {
   )].map((match) => new FakeElement({
     dataset: { workflowFilter: match[1] },
   }));
+  const queryLinks = [...HTML.matchAll(
+    /<a class="situation-entry"[^>]*data-workflow-query="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g,
+  )].map(([, query, body]) => new FakeElement({
+    dataset: { workflowQuery: query },
+    textContent: body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+  }));
 
   const catalogue = new FakeElement();
   catalogue.open = true;
@@ -186,6 +192,7 @@ function buildWorkflowDom() {
     showAll,
     groups,
     links,
+    queryLinks,
     workflows,
     document: {
       querySelector(selector) {
@@ -193,6 +200,7 @@ function buildWorkflowDom() {
       },
       querySelectorAll(selector) {
         if (selector === '.workflow-entry[data-workflow-filter]') return links;
+        if (selector === '.situation-entry[data-workflow-query]') return queryLinks;
         if (selector === '[data-workflow-group]') return groups;
         if (selector === '[data-workflow]') return workflows;
         return [];
@@ -453,6 +461,32 @@ test('workflow controller executes every approved state transition', () => {
       workflowGroups.every((group) => !group.hidden && !group.open),
       true,
     );
+  });
+});
+
+test('situational entries filter one workflow and keep a human-readable name', () => {
+  runWorkflowController(({
+    catalogue: workflowCatalogue,
+    search: workflowSearch,
+    count: workflowCount,
+    queryLinks,
+  }) => {
+    assert.equal(queryLinks.length, 5);
+    const daily = queryLinks.find(
+      (item) => item.dataset.workflowQuery === '/daily-brief',
+    );
+    assert.ok(daily);
+    assert.match(daily.textContent, /I do not know what matters today/);
+    assert.doesNotMatch(daily.textContent, /^\/daily-brief$/);
+
+    let prevented = false;
+    daily.listeners.click({ preventDefault() { prevented = true; } });
+
+    assert.equal(prevented, true);
+    assert.equal(workflowSearch.value, '/daily-brief');
+    assert.equal(workflowCount.textContent, '1 of 52 workflows');
+    assert.equal(workflowCatalogue.open, true);
+    assert.equal(workflowSearch.focused, true);
   });
 });
 

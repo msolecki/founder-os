@@ -2,8 +2,15 @@
 
 > **Know what matters today.**
 
-Founder OS turns your goals, cash, pipeline and commitments into one daily
-decision — stored locally and traceable to its source.
+Founder OS is for a solo service founder already using Claude Code or Codex.
+When company decisions disappear into chats and disconnected notes, it turns
+current business state into one source-linked decision, saves it to local
+Markdown, and produces a valid first brief in less than fifteen minutes.
+
+Start with the situation, not the catalogue: say **“I do not know what matters
+today”** or run `/situation-review`. The Chief of Staff selects one owner, one
+workflow, and the state destination. Founder OS never sends, pays, signs,
+cancels, or publishes; the founder remains the CEO.
 
 **Local Markdown · No automatic sending · Explicit ownership · No hidden
 actions**

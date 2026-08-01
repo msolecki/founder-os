@@ -843,6 +843,151 @@
       font-size: 1rem;
     }
 
+    .decision-loop {
+      color: var(--white);
+      background: var(--night);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .decision-loop .section-copy,
+    .decision-loop .section-title .serif {
+      color: var(--lime);
+    }
+
+    .decision-question {
+      max-width: 58rem;
+      margin: 1.5rem 0 0;
+      padding: 1.25rem 1.4rem;
+      color: var(--ink);
+      background: var(--lime);
+      border-radius: var(--radius-md);
+      font-size: clamp(1.1rem, 2vw, 1.45rem);
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+    .decision-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+      gap: 1rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .decision-steps li {
+      min-height: 13rem;
+      padding: 1.3rem;
+      background: var(--night-soft);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: var(--radius-md);
+    }
+
+    .decision-steps span,
+    .decision-steps strong,
+    .decision-steps p {
+      display: block;
+    }
+
+    .decision-steps span {
+      color: var(--orange);
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .decision-steps strong {
+      margin-top: 0.75rem;
+      color: var(--white);
+      font-size: 1.08rem;
+      line-height: 1.35;
+    }
+
+    .decision-steps p {
+      margin: 0.75rem 0 0;
+      color: #afbfbb;
+      font-size: 0.88rem;
+    }
+
+    .decision-steps code {
+      color: var(--lime);
+    }
+
+    .situations {
+      background: var(--paper-strong);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .situation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+      gap: 0.85rem;
+    }
+
+    .situation-entry {
+      min-height: 12rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.9rem;
+      padding: 1.2rem;
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      transition: border-color 160ms ease, transform 160ms ease;
+    }
+
+    .situation-entry:hover {
+      border-color: var(--orange);
+      transform: translateY(-0.18rem);
+    }
+
+    .situation-entry:focus-visible {
+      outline: 3px solid var(--orange);
+      outline-offset: 3px;
+    }
+
+    .situation-entry strong,
+    .situation-entry span,
+    .situation-entry small {
+      display: block;
+    }
+
+    .situation-entry strong {
+      font-size: 1.08rem;
+      line-height: 1.3;
+    }
+
+    .situation-entry span {
+      color: var(--orange-dark);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .situation-entry small {
+      color: var(--ink-soft);
+      font-size: 0.75rem;
+    }
+
+    .trust-summary {
+      background: var(--lime);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+      gap: clamp(2rem, 7vw, 7rem);
+      align-items: start;
+    }
+
+    .trust-summary .section-copy,
+    .trust-summary .check-list {
+      color: var(--ink);
+    }
+
     .sample-workspace {
       background: var(--paper-strong);
       border-top: 1px solid var(--line);
@@ -3018,7 +3163,8 @@
 
       .features-grid,
       .fit-grid,
-      .requirements-grid {
+      .requirements-grid,
+      .summary-grid {
         grid-template-columns: 1fr;
       }
 
@@ -3260,12 +3406,11 @@
         </svg>
       </button>
       <div class="nav-links" id="nav-links">
-        <a href="#how-it-works">How it works</a>
+        <a href="#decision-loop">Decision loop</a>
         <a href="#sample-workspace">Live sample</a>
-        <a href="#workflows">52 workflows</a>
-        <a href="#multi-business">Multi-business</a>
-        <a href="trust.html">Trust Center</a>
-        <a class="button button-dark" href="#how-it-works">Install Founder OS <span class="arrow" aria-hidden="true">→</span></a>
+        <a href="#first-run">First run</a>
+        <a href="#trust">Trust</a>
+        <a class="button button-dark" href="#install">Install Founder OS <span class="arrow" aria-hidden="true">→</span></a>
       </div>
     </nav>
   </header>
@@ -3278,15 +3423,15 @@
             <p class="eyebrow">The founder operating system</p>
             <h1>Know what matters today.</h1>
             <p class="hero-lead">
-              Founder OS turns your goals, cash, pipeline and commitments into one daily decision — stored locally and traceable to its source.
+              For solo service founders using Claude Code or Codex: when company decisions disappear into chats and disconnected notes, Founder OS turns current business state into one source-linked decision, saves it to local Markdown, and produces a valid first brief in less than fifteen minutes.
             </p>
             <div class="hero-actions">
-              <a class="button button-dark" href="#how-it-works">Install Founder OS <span class="arrow" aria-hidden="true">↓</span></a>
-              <a class="button button-light" href="#sample-workspace">See the first brief</a>
+              <a class="button button-dark" href="#decision-loop">See one decision move through the system <span class="arrow" aria-hidden="true">↓</span></a>
+              <a class="button button-light" href="#install">Install Founder OS</a>
             </div>
             <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Founder OS 2.5.0 · 52 workflows · Local Markdown · No automatic sending · Explicit ownership · No hidden actions</p>
             <div class="proof-links" aria-label="Product resources">
-              <a href="#requirements">Free and MIT-licensed · requirements</a>
+              <a href="#requirements-summary">Free and MIT-licensed · requirements</a>
               <a href="https://github.com/msolecki/founder-os">View source on GitHub</a>
             </div>
           </div>
@@ -3351,75 +3496,37 @@
       </div>
     </section>
 
-    <section class="section problem" id="problem">
-      <div class="container problem-grid">
-        <div class="sticky-copy reveal">
-          <p class="eyebrow">The real problem</p>
-          <h2 class="section-title">You do not need more <span class="serif">advice.</span></h2>
-          <p class="section-copy">You need a system that remembers what you decided, spots contradictions, and brings the decision back when it is actually due.</p>
+    <section class="section decision-loop" id="decision-loop">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">One decision, end to end</p>
+          <h2 class="section-title">See the mechanism before the <span class="serif">catalogue.</span></h2>
+          <p class="decision-question">“I need to finish the Acme proposal, follow up with Northwind, and redesign the website. What actually matters today?”</p>
         </div>
-        <div class="pain-list">
-          <article class="pain-card reveal">
-            <span class="pain-number">01</span>
-            <h3>Every conversation starts from zero</h3>
-            <p>Strategy, pipeline, and clients live in different notes. AI answers your latest prompt, not the state of your business.</p>
-          </article>
-          <article class="pain-card reveal">
-            <span class="pain-number">02</span>
-            <h3>Important work ends as a paragraph</h3>
-            <p>The brief sounds smart, but has no owner, date, or next move. A week later, nobody comes back to it.</p>
-          </article>
-          <article class="pain-card reveal">
-            <span class="pain-number">03</span>
-            <h3>You are the CEO and the bottleneck</h3>
-            <p>You set the priority, chase the sale, calculate the margin, and judge your own plan. That is not a lack of ambition. It is a lack of structure.</p>
-          </article>
-        </div>
+        <ol class="decision-steps reveal">
+          <li><span>Input</span><strong>One unclear priority question</strong><p>The founder describes the situation in ordinary language.</p></li>
+          <li><span>State</span><strong><code>goals.md</code>, <code>queue.md</code>, <code>week.md</code>, <code>pipeline.md</code></strong><p>The dated next actions and current bet settle what is real.</p></li>
+          <li><span>Owner</span><strong>Chief of Staff · <code>/daily-brief</code></strong><p>One role and one workflow own the decision.</p></li>
+          <li><span>Decision</span><strong>Finish <code>q-0720a</code>, serving <code>B1</code></strong><p>Do not start the website redesign; surface the overdue Northwind follow-up as rotting.</p></li>
+          <li><span>Persistence</span><strong><code>reviews/daily/</code> and <code>queue.md</code></strong><p>The Chief of Staff-owned result is re-read after the write.</p></li>
+          <li><span>Return</span><strong>Friday weekly review</strong><p>The queue survives this session and the weekly review scores what happened.</p></li>
+        </ol>
       </div>
     </section>
 
-    <aside class="manifesto" aria-label="The core Founder OS principle">
-      <div class="container reveal">
-        <p>You do not need AI that always agrees. You need a system that <em>remembers, counts, and says no.</em></p>
-      </div>
-    </aside>
-
-    <section class="section" id="difference">
+    <section class="section situations" id="situations">
       <div class="container">
         <div class="section-kicker reveal">
-          <p class="eyebrow">What makes it different</p>
-          <h2 class="section-title">Conversations become <span class="serif">company memory.</span></h2>
-          <p class="section-copy">Founder OS does not pretend to be a magic autopilot. It builds continuity: shared state, clear ownership, operating cadence, and hard boundaries.</p>
+          <p class="eyebrow">Start with what is happening</p>
+          <h2 class="section-title">Five situations you can <span class="serif">say plainly.</span></h2>
+          <p class="section-copy">Choose the sentence that matches. Founder OS will open the complete reference at the one workflow that owns it.</p>
         </div>
-        <div class="features-grid">
-          <article class="feature-card reveal">
-            <span class="feature-icon" aria-hidden="true">MEM</span>
-            <div>
-              <h3>Memory that outlives the session</h3>
-              <p>Goals, metrics, pipeline, clients, decisions, and drafts live in a local Markdown workspace. Tomorrow starts with business state, not another retelling.</p>
-            </div>
-          </article>
-          <article class="feature-card reveal">
-            <span class="feature-icon" aria-hidden="true">OWN</span>
-            <div>
-              <h3>One owner for every decision</h3>
-              <p>The CFO does not rewrite the pipeline, and the Brand Editor does not change strategy. A write-time guard keeps every role in its lane.</p>
-            </div>
-          </article>
-          <article class="feature-card reveal">
-            <span class="feature-icon" aria-hidden="true">RUN</span>
-            <div>
-              <h3>A cadence that comes to you</h3>
-              <p>A brief in the morning, pipeline review on Thursday, weekly review on Friday, and financials after month-end. Run it by hand or on a local schedule.</p>
-            </div>
-          </article>
-          <article class="feature-card reveal">
-            <span class="feature-icon" aria-hidden="true">NO</span>
-            <div>
-              <h3>Opinions, not business horoscopes</h3>
-              <p>Every role has principles you may disagree with. A plan gets a verdict, a bet gets a kill condition, and “no time” gets a calendar audit.</p>
-            </div>
-          </article>
+        <div class="situation-grid reveal">
+          <a class="situation-entry" href="#workflow-catalogue" data-workflow-query="/daily-brief" aria-controls="workflow-groups"><strong>I do not know what matters today</strong><span>Chief of Staff · <code>/daily-brief</code></span><small>Saved to <code>reviews/daily/</code> and <code>queue.md</code></small></a>
+          <a class="situation-entry" href="#workflow-catalogue" data-workflow-query="/capacity-check" aria-controls="workflow-groups"><strong>I do not know whether I can take a new client</strong><span>Delivery Lead · <code>/capacity-check</code></span><small>Saved to <code>clients/_capacity.md</code></small></a>
+          <a class="situation-entry" href="#workflow-catalogue" data-workflow-query="/pipeline-review" aria-controls="workflow-groups"><strong>A deal has stopped moving</strong><span>Pipeline Coach · <code>/pipeline-review</code></span><small>Saved to <code>pipeline.md</code></small></a>
+          <a class="situation-entry" href="#workflow-catalogue" data-workflow-query="/scope-guard" aria-controls="workflow-groups"><strong>A client request may be outside scope</strong><span>Delivery Lead · <code>/scope-guard</code></span><small>Saved to <code>clients/</code></small></a>
+          <a class="situation-entry" href="#workflow-catalogue" data-workflow-query="/profitability-analysis" aria-controls="workflow-groups"><strong>I do not know which work makes money</strong><span>CFO · <code>/profitability-analysis</code></span><small>Saved to <code>metrics.md</code></small></a>
         </div>
       </div>
     </section>
@@ -3428,9 +3535,9 @@
       <div class="container">
         <div class="sample-head reveal">
           <div>
-            <p class="eyebrow">A real workspace, with fictional data</p>
+            <p class="eyebrow">Proof of the decision loop · fictional data</p>
             <h2 class="section-title">Follow one decision through the <span class="serif">whole system.</span></h2>
-            <p class="section-copy">Studio North is a one-person strategy studio. Its example workspace is small enough to inspect, but complete enough to show how a bet becomes a commitment, a calendar block, and the next morning's brief.</p>
+            <p class="section-copy">Studio North is proof of that decision loop in local state. Its example workspace is small enough to inspect, but complete enough to show how a bet becomes a commitment, a calendar block, and the next morning's brief.</p>
             <p class="section-copy"><a href="https://github.com/msolecki/founder-os/blob/main/examples/studio-north/reviews/daily/2026-07-20.md">Open the daily brief source →</a></p>
           </div>
           <aside class="sample-brief" aria-label="About the Studio North example">
@@ -3668,7 +3775,7 @@
       </div>
     </section>
 
-    <section class="section how" id="how-it-works">
+    <section class="section how" id="first-run">
       <div class="container">
         <div class="section-kicker reveal">
           <p class="eyebrow">How to start</p>
@@ -3743,6 +3850,72 @@
             <p>Commitments against outcomes. No copying everything into next week by default.</p>
             <span class="timeline-command">/weekly-review</span>
           </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section trust-summary" id="trust">
+      <div class="container summary-grid">
+        <div class="reveal">
+          <p class="eyebrow">Ownership and trust</p>
+          <h2 class="section-title">You can see what was read, changed, refused, and left <span class="serif">unknown.</span></h2>
+          <p class="section-copy">Business state is local Markdown with one canonical owner per file. Roles receive no browser or outbound tool, drafts are not sent records, and every expected write is re-read through the local state gateway before success is claimed.</p>
+          <p class="section-copy"><a href="trust.html">Read the full Trust Center →</a></p>
+        </div>
+        <ul class="check-list reveal">
+          <li>Local files, explicit sources, no hidden actions.</li>
+          <li>No automatic email, posting, payment, signing, or cancellation.</li>
+          <li>Unknown business state stays unknown.</li>
+          <li>Prompts and context remain governed by your Claude Code or Codex data-handling terms.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="fit-summary">
+      <div class="container">
+        <div class="section-kicker reveal">
+          <p class="eyebrow">Fit</p>
+          <h2 class="section-title">Built for an operating founder, not an <span class="serif">empty company.</span></h2>
+        </div>
+        <div class="fit-grid">
+          <article class="fit-card reveal"><h3>Founder OS fits if…</h3><ul><li>you run a solo service business with live clients, prospects, revenue, or commitments,</li><li>you use Claude Code or Codex and own sales and delivery yourself,</li><li>your decisions are scattered across chats, notes, and memory.</li></ul></article>
+          <article class="fit-card reveal"><h3>Do not install it if…</h3><ul><li>you expect it to invent a pre-idea business,</li><li>you need a shared CRM, team dashboard, or autonomous operator,</li><li>you want tax, legal, medical, or investment advice.</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section requirements" id="requirements-summary">
+      <div class="container">
+        <div class="requirements-head reveal">
+          <div><p class="eyebrow">Before you install</p><h2 class="section-title">What you need. What it <span class="serif">costs.</span></h2></div>
+          <p class="section-copy">Founder OS is free and MIT-licensed. It needs Claude Code or Codex plus Python 3.9+ for the local state gateway and host hooks. PyYAML is needed only for development, tests, and package validation.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="closing" id="install">
+      <div class="container closing-grid">
+        <div class="reveal">
+          <p class="eyebrow">Start with one decision, not another dashboard</p>
+          <h2>Know what matters <em>tomorrow.</em></h2>
+        </div>
+        <div class="install-options reveal">
+          <section class="install-box" aria-labelledby="install-claude-title">
+            <div class="install-box-top"><span id="install-claude-title">Claude Code</span><span>3 steps</span></div>
+            <ol>
+              <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy the Claude marketplace command">⧉</button></li>
+              <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy the Claude plugin command">⧉</button></li>
+              <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command for Claude Code">⧉</button></li>
+            </ol>
+          </section>
+          <section class="install-box" aria-labelledby="install-codex-title">
+            <div class="install-box-top"><span id="install-codex-title">Codex</span><span>3 steps</span></div>
+            <ol>
+              <li class="install-row"><code>codex plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="codex plugin marketplace add msolecki/founder-os" aria-label="Copy the Codex marketplace command">⧉</button></li>
+              <li class="install-row"><code>codex plugin add founder-os@founder-os</code><button class="copy-button" type="button" data-copy="codex plugin add founder-os@founder-os" aria-label="Copy the Codex plugin command">⧉</button></li>
+              <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command for Codex">⧉</button></li>
+            </ol>
+          </section>
         </div>
       </div>
     </section>
@@ -4390,32 +4563,6 @@
       </div>
     </section>
 
-    <section class="closing" id="install">
-      <div class="container closing-grid">
-        <div class="reveal">
-          <p class="eyebrow">Start with one decision, not another dashboard</p>
-          <h2>Know what matters <em>tomorrow.</em></h2>
-        </div>
-        <div class="install-options reveal">
-          <section class="install-box" aria-labelledby="install-claude-title">
-            <div class="install-box-top"><span id="install-claude-title">Claude Code</span><span>3 steps</span></div>
-            <ol>
-              <li class="install-row"><code>/plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="/plugin marketplace add msolecki/founder-os" aria-label="Copy the Claude marketplace command">⧉</button></li>
-              <li class="install-row"><code>/plugin install founder-os@founder-os</code><button class="copy-button" type="button" data-copy="/plugin install founder-os@founder-os" aria-label="Copy the Claude plugin command">⧉</button></li>
-              <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command for Claude Code">⧉</button></li>
-            </ol>
-          </section>
-          <section class="install-box" aria-labelledby="install-codex-title">
-            <div class="install-box-top"><span id="install-codex-title">Codex</span><span>3 steps</span></div>
-            <ol>
-              <li class="install-row"><code>codex plugin marketplace add msolecki/founder-os</code><button class="copy-button" type="button" data-copy="codex plugin marketplace add msolecki/founder-os" aria-label="Copy the Codex marketplace command">⧉</button></li>
-              <li class="install-row"><code>codex plugin add founder-os@founder-os</code><button class="copy-button" type="button" data-copy="codex plugin add founder-os@founder-os" aria-label="Copy the Codex plugin command">⧉</button></li>
-              <li class="install-row"><code>/founder-os-init</code><button class="copy-button" type="button" data-copy="/founder-os-init" aria-label="Copy the onboarding command for Codex">⧉</button></li>
-            </ol>
-          </section>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="site-footer">

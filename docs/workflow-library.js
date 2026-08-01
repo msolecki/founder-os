@@ -22,6 +22,11 @@
         '.workflow-entry[data-workflow-filter]',
       ),
     ];
+    const queryLinks = [
+      ...documentRoot.querySelectorAll(
+        '.situation-entry[data-workflow-query]',
+      ),
+    ];
     const clearFilter = documentRoot.querySelector(
       '[data-clear-workflow-filter]',
     );
@@ -78,6 +83,19 @@
         activeCategory = link.dataset.workflowFilter || 'all';
         if (catalogue) catalogue.open = true;
         update();
+      });
+    });
+
+    queryLinks.forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        activeCategory = 'all';
+        if (search) {
+          search.value = link.dataset.workflowQuery || '';
+        }
+        if (catalogue) catalogue.open = true;
+        update();
+        search?.focus();
       });
     });
 

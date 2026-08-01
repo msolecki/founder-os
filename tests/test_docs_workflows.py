@@ -97,7 +97,8 @@ class DocumentContractParser(HTMLParser):
 class WorkflowLibraryContractTest(unittest.TestCase):
     def test_one_page_publishes_the_current_dual_host_contract(self):
         nav = HTML[HTML.index('<div class="nav-links"'):HTML.index("</nav>")]
-        self.assertIn('<a href="trust.html">Trust Center</a>', nav)
+        self.assertIn('<a href="#trust">Trust</a>', nav)
+        self.assertIn('<a href="trust.html">Read the full Trust Center', HTML)
         self.assertIn(f"Founder OS {RELEASE_VERSION}", HTML)
         self.assertIn(f"{SKILL_COUNT} workflows", HTML)
         self.assertIn(f"{AGENT_COUNT} roles", HTML)
@@ -434,16 +435,148 @@ class ActivationCopyContractTest(unittest.TestCase):
         "</section>", HTML.index('<section class="hero"')
     )]
 
+    def test_primary_path_follows_the_decision_first_information_architecture(self):
+        positions = [
+            HTML.index(marker)
+            for marker in (
+                '<section class="hero" id="top">',
+                'id="decision-loop"',
+                'id="situations"',
+                'id="sample-workspace"',
+                'id="first-run"',
+                'id="rhythm"',
+                'id="trust"',
+                'id="fit-summary"',
+                'id="requirements-summary"',
+                'id="install"',
+                'id="workflows"',
+                'id="team"',
+                'id="multi-business"',
+            )
+        ]
+        self.assertEqual(positions, sorted(positions))
+
+        nav = HTML[HTML.index('<div class="nav-links"'):HTML.index("</nav>")]
+        self.assertEqual(
+            re.findall(r'href="(#[^"]+)"', nav),
+            [
+                "#decision-loop",
+                "#sample-workspace",
+                "#first-run",
+                "#trust",
+                "#install",
+            ],
+        )
+        self.assertNotIn("Multi-business", nav)
+        self.assertNotRegex(nav, r"\b52 workflows\b")
+
+    def test_hero_names_the_user_problem_result_time_and_decision_first_cta(self):
+        compact = re.sub(r"\s+", " ", self.HERO)
+        for marker in (
+            "solo service founders",
+            "Claude Code or Codex",
+            "decisions disappear into chats and disconnected notes",
+            "source-linked decision",
+            "local",
+            "less than fifteen minutes",
+            "Local Markdown · No automatic sending · Explicit ownership · "
+            "No hidden actions",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, compact)
+        decision_cta = compact.index(">See one decision move through the system")
+        install_cta = compact.index(">Install Founder OS")
+        self.assertLess(decision_cta, install_cta)
+
+    def test_canonical_decision_loop_and_five_situations_are_complete(self):
+        decision_start = HTML.index('id="decision-loop"')
+        decision_loop = HTML[decision_start:HTML.index("</section>", decision_start)]
+        scenario = (
+            "I need to finish the Acme proposal, follow up with Northwind, and "
+            "redesign the website. What actually matters today?"
+        )
+        for marker in (
+            scenario,
+            "goals.md",
+            "queue.md",
+            "week.md",
+            "pipeline.md",
+            "Chief of Staff",
+            "/daily-brief",
+            "q-0720a",
+            "B1",
+            "website redesign",
+            "Northwind",
+            "reviews/daily/",
+            "Friday",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, decision_loop)
+
+        situations_start = HTML.index('id="situations"')
+        situations = HTML[
+            situations_start:HTML.index("</section>", situations_start)
+        ]
+        cards = re.findall(
+            r'<a class="situation-entry"[^>]*data-workflow-query="([^"]+)"'
+            r'[^>]*>(.*?)</a>',
+            situations,
+            re.S,
+        )
+        self.assertEqual(len(cards), 5)
+        expected = {
+            "/daily-brief": (
+                "I do not know what matters today",
+                "Chief of Staff",
+                "reviews/daily/",
+                "queue.md",
+            ),
+            "/capacity-check": (
+                "I do not know whether I can take a new client",
+                "Delivery Lead",
+                "clients/_capacity.md",
+            ),
+            "/pipeline-review": (
+                "A deal has stopped moving",
+                "Pipeline Coach",
+                "pipeline.md",
+            ),
+            "/scope-guard": (
+                "A client request may be outside scope",
+                "Delivery Lead",
+                "clients/",
+            ),
+            "/profitability-analysis": (
+                "I do not know which work makes money",
+                "CFO",
+                "metrics.md",
+            ),
+        }
+        self.assertEqual({query for query, _ in cards}, set(expected))
+        for query, body in cards:
+            compact = re.sub(r"\s+", " ", body)
+            for marker in expected[query] + (query,):
+                with self.subTest(query=query, marker=marker):
+                    self.assertIn(marker, compact)
+
+        self.assertLess(situations_start, HTML.index('id="sample-workspace"'))
+        sample = HTML[
+            HTML.index('id="sample-workspace"'):HTML.index(
+                '<section class="section how"',
+            )
+        ]
+        self.assertRegex(sample, r"(?i)proof of (?:that|the) decision loop")
+
     def test_hero_leads_with_approved_outcome_and_trust_copy(self):
         compact = re.sub(r"\s+", " ", self.HERO)
         self.assertIn("<h1>Know what matters today.</h1>", compact)
         self.assertIn(
-            "Founder OS turns your goals, cash, pipeline and commitments into "
-            "one daily decision — stored locally and traceable to its source.",
+            "Founder OS turns current business state into one source-linked "
+            "decision, saves it to local Markdown",
             compact,
         )
-        self.assertIn(">Install Founder OS <", compact)
-        self.assertIn(">See the first brief</a>", compact)
+        self.assertIn(">Install Founder OS</a>", compact)
+        self.assertIn(">See one decision move through the system", compact)
         self.assertIn(
             "Local Markdown · No automatic sending · Explicit ownership · "
             "No hidden actions",
@@ -580,6 +713,27 @@ class ActivationCopyContractTest(unittest.TestCase):
                 self.assertTrue(agent_markers)
                 agents = min(agent_markers)
                 self.assertLess(outcome, agents)
+
+    def test_entry_documents_share_the_primary_user_promise_and_front_door(self):
+        documents = {
+            "root readme": ROOT_README,
+            "plugin readme": PLUGIN_README,
+            "getting started": GETTING_STARTED,
+        }
+        for name, document in documents.items():
+            compact = re.sub(r"\s+", " ", document)
+            with self.subTest(document=name):
+                for marker in (
+                    "solo service founder",
+                    "Claude Code or Codex",
+                    "source-linked decision",
+                    "local Markdown",
+                    "fifteen minutes",
+                    "/situation-review",
+                    "I do not know what matters today",
+                    "never sends",
+                ):
+                    self.assertRegex(compact, rf"(?i){re.escape(marker)}")
 
 
 def _flowed(text):
