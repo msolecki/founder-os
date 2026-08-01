@@ -36,7 +36,7 @@ DOCTOR_PATH = (
     REPO_ROOT / "founder-os" / "skills" / "founder-os-doctor" / "SKILL.md"
 )
 FEATURE_LIST_PATH = REPO_ROOT / "feature_list.json"
-RELEASE_VERSION = "2.5.0"
+RELEASE_VERSION = "2.6.0"
 ACTIVATION_DESCRIPTION = (
     "Know what matters today with one source-linked daily decision from your "
     "goals, cash, pipeline, and commitments."
@@ -65,7 +65,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         cls.troubleshooting = TROUBLESHOOTING_PATH.read_text(encoding="utf-8")
         cls.commands = COMMANDS_PATH.read_text(encoding="utf-8")
 
-    def test_all_release_versions_match_2_5_0(self):
+    def test_all_release_versions_match_2_6_0(self):
         versions = {
             "marketplace": self.marketplace["plugins"][0]["version"],
             "claude": self.claude_manifest["version"],
@@ -106,6 +106,28 @@ class ReleaseMetadataContractTest(unittest.TestCase):
 
         historical = self.changelog.split("## 2.4.0 — 2026-07-22", 1)[1]
         self.assertIn("Codex remains beta/manual", historical)
+
+    def test_changelog_records_the_decision_first_2_6_candidate(self):
+        release_heading = "## 2.6.0 — 2026-08-01"
+        self.assertIn(release_heading, self.changelog)
+        unreleased = self.changelog.split("## Unreleased", 1)[1].split(
+            release_heading, 1
+        )[0]
+        self.assertEqual(unreleased.strip(), "")
+        release = self.changelog.split(release_heading, 1)[1].split(
+            "\n## 2.5.0", 1
+        )[0]
+        for marker in (
+            "decision-first",
+            "activation intent",
+            "workflow receipt",
+            "/capture",
+            "53 workflows",
+            "Continue",
+            "17 build-time checks",
+        ):
+            with self.subTest(marker=marker):
+                self.assertRegex(release, rf"(?i){re.escape(marker)}")
 
     def test_source_derived_counts_are_published_without_drift(self):
         agent_count = len(list((REPO_ROOT / "founder-os" / "agents").glob("*.md")))

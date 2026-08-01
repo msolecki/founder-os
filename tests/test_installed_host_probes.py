@@ -97,7 +97,7 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         record = probe.format_pass_record(
             "claude",
             {
-                "version": "2.5.0",
+                "version": "2.6.0",
                 "initial_sha256": "a" * 64,
                 "persisted_sha256": "b" * 64,
                 "native": "PASS",

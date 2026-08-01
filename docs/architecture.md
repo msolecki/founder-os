@@ -307,5 +307,6 @@ The same package runs under Claude Code and Codex:
 
 The version lives in `founder-os/.claude-plugin/plugin.json` (and mirrored in
 `.codex-plugin/plugin.json`); the [`CHANGELOG.md`](../CHANGELOG.md) tracks it.
-Current: **2.5.0** (full Claude Code and Codex parity). Releases follow SemVer against the plugin
+Current candidate: **2.6.0** (decision-first activation and workflow receipts,
+with full Claude Code and Codex parity). Releases follow SemVer against the plugin
 manifest. See [`development.md`](development.md) for the release checklist.

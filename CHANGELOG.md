@@ -5,6 +5,30 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+## 2.6.0 — 2026-08-01
+
+**Decision-first activation.** The public path now starts with one Studio North
+decision moving from current state through one owner into a local daily review,
+then presents fit, trust, requirements, and installation before the complete
+catalogue. `/founder-os-init` asks an optional activation intent, shows purpose
+and time across all four state groups, reports each verified owner checkpoint,
+and emits a six-line value-first activation receipt only after the first brief
+is re-read.
+
+**Workflow receipts and quick capture.** Every role now returns the same
+structured workflow result. The main thread renders the workflow receipt as
+Decision, Evidence, Changed, Gaps, Returns, and Your move; `Changed` comes only
+from verified persistence. Freshness uses threshold-backed `current`, `stale`,
+or `unknown`, and all seven gateway errors add a five-fact recovery wrapper.
+`/situation-review` previews one route and waits for **Continue** or **Stop**.
+The new `/capture` safely appends one unchanged line to `inbox.md`, bringing the
+package to **53 workflows**.
+
+**Verification.** The package now runs **17 build-time checks**, including the
+mutation-tested capture contract. The release gate covers package validation,
+generated commands, Python and Node behavior tests, local links, and the clean
+installed-copy lifecycle.
+
 **The 2.5.0 role contract now executes on Claude Code.** It could not before.
 The package pinned internal shapes the host never sends, so the whole gateway
 contract was correct on paper and inert in practice.
