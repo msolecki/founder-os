@@ -19,6 +19,7 @@ TOOL_NAMES = (
     "list_state",
     "read_state",
     "read_reference",
+    "read_portfolio_inputs",
     "write_owned_state",
     "close_role_session",
 )
@@ -33,6 +34,18 @@ def _request(request_id: int, method: str, params: object | None = None) -> dict
 
 def _line(message: dict) -> str:
     return json.dumps(message, separators=(",", ":"))
+
+
+def _initialize(request_id: int, version: str = "2025-11-25") -> dict:
+    return _request(
+        request_id,
+        "initialize",
+        {
+            "protocolVersion": version,
+            "capabilities": {},
+            "clientInfo": {"name": "contract-test", "version": "1.0"},
+        },
+    )
 
 
 def _run_gateway(*messages: object) -> subprocess.CompletedProcess[str]:
@@ -91,6 +104,10 @@ class ProtocolServerContractTests(unittest.TestCase):
 
         gateway = RecordingGateway()
         server = ProtocolServer(gateway)
+        server.handle_message(_initialize(1))
+        server.handle_message(
+            {"jsonrpc": "2.0", "method": "notifications/initialized"}
+        )
 
         response = server.handle_message(
             _request(7, "tools/call", {"name": "resolve_workspace", "arguments": {}})
@@ -112,32 +129,36 @@ class ProtocolServerContractTests(unittest.TestCase):
 
 
 class StdioGatewayContractTests(unittest.TestCase):
-    def test_initialize_advertises_required_protocol_and_server(self) -> None:
-        completed = _run_gateway(
-            _request(
-                1,
-                "initialize",
-                {
-                    "protocolVersion": "2025-06-18",
-                    "capabilities": {},
-                    "clientInfo": {"name": "contract-test", "version": "1.0"},
-                },
-            )
-        )
-
-        self.assertEqual(completed.returncode, 0, completed.stderr)
-        responses = [json.loads(line) for line in completed.stdout.splitlines()]
-        self.assertEqual(len(responses), 1)
-        response = responses[0]
-        self.assertEqual(response["jsonrpc"], "2.0")
-        self.assertEqual(response["id"], 1)
-        self.assertEqual(response["result"]["protocolVersion"], "2025-06-18")
-        self.assertEqual(response["result"]["serverInfo"]["name"], "founder-os-state")
-        self.assertEqual(response["result"]["capabilities"], {"tools": {}})
+    def test_initialize_negotiates_both_supported_versions_and_falls_back_latest(self) -> None:
+        for requested, negotiated in (
+            ("2025-06-18", "2025-06-18"),
+            ("2025-11-25", "2025-11-25"),
+            ("2099-01-01", "2025-11-25"),
+        ):
+            with self.subTest(requested=requested):
+                completed = _run_gateway(_initialize(1, requested))
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                responses = [
+                    json.loads(line) for line in completed.stdout.splitlines()
+                ]
+                self.assertEqual(len(responses), 1)
+                response = responses[0]
+                self.assertEqual(response["jsonrpc"], "2.0")
+                self.assertEqual(response["id"], 1)
+                self.assertEqual(
+                    response["result"]["protocolVersion"], negotiated
+                )
+                self.assertEqual(
+                    response["result"]["serverInfo"]["name"],
+                    "founder-os-state",
+                )
+                self.assertEqual(
+                    response["result"]["capabilities"], {"tools": {}}
+                )
 
     def test_initialized_notification_is_silent_and_tools_list_has_exact_tools(self) -> None:
         completed = _run_gateway(
-            _request(1, "initialize", {"protocolVersion": "2025-06-18"}),
+            _initialize(1),
             {"jsonrpc": "2.0", "method": "notifications/initialized"},
             _request(2, "tools/list"),
         )
@@ -156,7 +177,8 @@ class StdioGatewayContractTests(unittest.TestCase):
 
     def test_tools_call_is_dispatched_by_the_running_gateway(self) -> None:
         completed = _run_gateway(
-            _request(1, "initialize", {"protocolVersion": "2025-06-18"}),
+            _initialize(1),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
             _request(
                 2,
                 "tools/call",
@@ -173,7 +195,8 @@ class StdioGatewayContractTests(unittest.TestCase):
 
     def test_unknown_tool_returns_a_json_rpc_error(self) -> None:
         completed = _run_gateway(
-            _request(1, "initialize", {"protocolVersion": "2025-06-18"}),
+            _initialize(1),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
             _request(2, "tools/call", {"name": "missing_tool", "arguments": {}}),
         )
 
@@ -193,9 +216,45 @@ class StdioGatewayContractTests(unittest.TestCase):
         self.assertEqual(responses[0]["error"]["code"], -32700)
         self.assertTrue(completed.stderr.strip())
 
+    def test_lifecycle_blocks_tools_until_initialized_and_rejects_reinitialize(self) -> None:
+        completed = _run_gateway(
+            _request(1, "tools/list"),
+            _initialize(2),
+            _request(3, "tools/list"),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            _request(4, "tools/list"),
+            _initialize(5),
+        )
+        responses = [json.loads(line) for line in completed.stdout.splitlines()]
+        self.assertEqual([item["id"] for item in responses], [1, 2, 3, 4, 5])
+        self.assertEqual(responses[0]["error"]["code"], -32002)
+        self.assertIn("result", responses[1])
+        self.assertEqual(responses[2]["error"]["code"], -32002)
+        self.assertEqual(len(responses[3]["result"]["tools"]), 8)
+        self.assertEqual(responses[4]["error"]["code"], -32600)
+
+    def test_ping_requires_ready_lifecycle_and_returns_empty_result(self) -> None:
+        completed = _run_gateway(
+            _initialize(1),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            _request(2, "ping"),
+        )
+        responses = [json.loads(line) for line in completed.stdout.splitlines()]
+        self.assertEqual(responses[-1], {"jsonrpc": "2.0", "id": 2, "result": {}})
+
+    def test_invalid_json_rpc_envelope_and_initialize_params_are_rejected(self) -> None:
+        completed = _run_gateway(
+            {"jsonrpc": "1.0", "id": 1, "method": "initialize", "params": {}},
+            _request(2, "initialize", {"protocolVersion": "2025-11-25"}),
+            {"jsonrpc": "2.0", "id": True, "method": "initialize", "params": {}},
+        )
+        responses = [json.loads(line) for line in completed.stdout.splitlines()]
+        self.assertEqual([item["error"]["code"] for item in responses], [-32600, -32602, -32600])
+
     def test_stdout_is_strictly_one_json_rpc_object_per_line(self) -> None:
         completed = _run_gateway(
-            _request(1, "initialize", {"protocolVersion": "2025-06-18"}),
+            _initialize(1),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
             _request(2, "tools/list"),
             _request(3, "tools/call", {"name": "resolve_workspace", "arguments": {}}),
         )
