@@ -3,10 +3,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import stat
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "founder-os"
 sys.path.insert(0, str(PACKAGE_ROOT))
@@ -792,6 +794,53 @@ class RoleSessionStoreReadTests(unittest.TestCase):
                     lambda: self.store.close(capability, final_status=final_status)
                 )
 
+    def test_session_records_are_directory_synced_and_pruned_after_seven_days(self) -> None:
+        real_fsync = os.fsync
+        synced_directories = []
+
+        def tracked_fsync(descriptor):
+            synced_directories.append(
+                stat.S_ISDIR(os.fstat(descriptor).st_mode)
+            )
+            return real_fsync(descriptor)
+
+        with mock.patch("mcp.sessions.os.fsync", side_effect=tracked_fsync):
+            closed = self.store.open(
+                "workspace-id",
+                "cfo",
+                "closed-old",
+                "revenue-review",
+                "business",
+            )
+            self.store.close(closed, final_status="completed")
+            self.store.open(
+                "workspace-id",
+                "cfo",
+                "expired-old",
+                "revenue-review",
+                "business",
+            )
+        self.assertIn(True, synced_directories)
+        self.assertEqual(2, len(list(self.data_root.glob("*.json"))))
+        legacy = self.data_root / (("a" * 64) + ".json")
+        legacy.write_text("{}", encoding="utf-8")
+        os.utime(legacy, (0, 0))
+
+        self.now[0] += 7 * 24 * 60 * 60 + 61
+        fresh = self.store.open(
+            "workspace-id",
+            "cfo",
+            "fresh",
+            "revenue-review",
+            "business",
+        )
+        records = list(self.data_root.glob("*.json"))
+        self.assertEqual(1, len(records))
+        self.assertIn(
+            hashlib.sha256(fresh.encode("utf-8")).hexdigest(),
+            records[0].name,
+        )
+
 
 class SafeStateIOTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -918,6 +967,24 @@ class SafeStateIOTests(unittest.TestCase):
         self.assertEqual("", empty["content"])
         self.assertEqual(hashlib.sha256(b"").hexdigest(), empty["sha256"])
         self.assertEqual(0, empty["size"])
+
+    def test_atomic_replace_syncs_the_parent_directory_after_rename(self) -> None:
+        real_fsync = os.fsync
+        synced_directories = []
+
+        def tracked_fsync(descriptor):
+            synced_directories.append(
+                stat.S_ISDIR(os.fstat(descriptor).st_mode)
+            )
+            return real_fsync(descriptor)
+
+        with mock.patch("mcp.safe_io.os.fsync", side_effect=tracked_fsync):
+            result = self.io().atomic_replace(
+                "durable.md", b"durable\n", create_only=True
+            )
+
+        self.assertEqual("create", result["operation"])
+        self.assertIn(True, synced_directories)
 
     def test_read_path_mutations_cannot_be_normalized_into_workspace_access(self) -> None:
         for path in (

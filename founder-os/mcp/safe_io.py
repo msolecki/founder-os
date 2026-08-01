@@ -654,6 +654,7 @@ class SafeStateIO:
                 dst_dir_fd=parent_descriptor,
             )
             temporary_name = None
+            os.fsync(parent_descriptor)
             return {
                 "path": relative_path,
                 "operation": operation,

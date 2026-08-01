@@ -873,6 +873,28 @@ class StateGatewayWriteTests(unittest.TestCase):
             (self.workspace / "metrics.md").read_text(encoding="utf-8"),
         )
 
+    def test_journal_rotates_at_size_limit_and_keeps_three_archives(self):
+        self.sessions.JOURNAL_MAX_BYTES = 1
+        capability = self._open("cfo", correlation_id="corr-rotation")
+        metadata = self.sessions.resolve(capability)
+
+        for index in range(5):
+            self.sessions.append_journal(
+                metadata,
+                path="metrics.md",
+                operation="replace",
+                result="rotation-%d" % index,
+                before_sha256="0" * 64,
+                after_sha256="1" * 64,
+            )
+
+        self.assertTrue((self.data_root / "operations.jsonl").is_file())
+        for index in range(1, 4):
+            archive = self.data_root / ("operations.jsonl.%d" % index)
+            self.assertTrue(archive.is_file(), archive)
+            self.assertTrue(archive.read_text(encoding="utf-8").strip())
+        self.assertFalse((self.data_root / "operations.jsonl.4").exists())
+
     def test_post_replace_clock_failure_reports_landed_write_as_success(self):
         capability = self._open("cfo")
         content = _metrics(close="Committed before clock failure")

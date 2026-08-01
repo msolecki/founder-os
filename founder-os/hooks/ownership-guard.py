@@ -88,6 +88,7 @@ SESSION_FIELDS = frozenset({
     "capability_hash", "workspace_id", "workspace_kind", "role",
     "correlation_id", "workflow", "expires_at", "status",
 })
+AGENT_MAPPING_TTL_SECONDS = 24 * 60 * 60
 
 # The founder's local overlay (references/extensibility.md). `_local/` is the
 # directory; the file below it is the additive half of the ownership map.
@@ -764,7 +765,23 @@ def agent_type_for(data):
         return None
     path = os.path.join(data_root, "agent-types", turn_id + ".json")
     payload = _read_small_regular_json(path)
-    if not isinstance(payload, dict) or set(payload) != {"agent_type"}:
+    if not isinstance(payload, dict) or set(payload) != {
+        "agent_type", "recorded_at"
+    }:
+        return None
+    recorded_at = payload.get("recorded_at")
+    try:
+        now = time.time()
+    except Exception:
+        return None
+    if (
+        isinstance(recorded_at, bool)
+        or not isinstance(recorded_at, (int, float))
+        or not math.isfinite(float(recorded_at))
+        or not math.isfinite(float(now))
+        or float(recorded_at) > float(now) + 300
+        or float(now) - float(recorded_at) >= AGENT_MAPPING_TTL_SECONDS
+    ):
         return None
     resolved = payload.get("agent_type")
     return resolved if isinstance(resolved, str) and SAFE_AGENT.fullmatch(resolved) else None

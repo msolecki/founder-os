@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import fcntl
 import json
 import math
 import os
@@ -63,6 +64,10 @@ class RoleSessionMetadata:
 
 
 class RoleSessionStore:
+    SESSION_RETENTION_SECONDS = 7 * 24 * 60 * 60
+    JOURNAL_MAX_BYTES = 5 * 1024 * 1024
+    JOURNAL_ARCHIVES = 3
+
     def __init__(
         self,
         data_root: Path,
@@ -94,6 +99,7 @@ class RoleSessionStore:
             raise RoleSessionError()
 
         now = self._now()
+        self._prune_records(now)
         if (
             isinstance(self._ttl_seconds, bool)
             or not isinstance(self._ttl_seconds, (int, float))
@@ -143,6 +149,7 @@ class RoleSessionStore:
 
         record = self._load_open_record(capability)
         record["status"] = "closed"
+        record["closed_at"] = self._now()
         if final_status is not None:
             record["final_status"] = final_status
         self._write_record(record)
@@ -168,6 +175,7 @@ class RoleSessionStore:
         expires_at = float(record["expires_at"])
         if now >= expires_at:
             record["status"] = "expired"
+            record["expired_at"] = now
             self._write_record(record)
             raise RoleSessionError()
         return record
@@ -186,14 +194,18 @@ class RoleSessionStore:
             return False
 
         fields = set(record)
-        if status in ("open", "expired"):
+        if status == "open":
             if fields != _BASE_RECORD_FIELDS:
                 return False
-        elif fields not in (
-            _BASE_RECORD_FIELDS,
-            _BASE_RECORD_FIELDS | {"final_status"},
-        ):
-            return False
+        elif status == "expired":
+            if fields != _BASE_RECORD_FIELDS | {"expired_at"}:
+                return False
+        elif status == "closed":
+            if fields not in (
+                _BASE_RECORD_FIELDS | {"closed_at"},
+                _BASE_RECORD_FIELDS | {"closed_at", "final_status"},
+            ):
+                return False
 
         capability_hash = record.get("capability_hash")
         if (
@@ -235,6 +247,16 @@ class RoleSessionStore:
         ):
             return False
 
+        for terminal_field in ("closed_at", "expired_at"):
+            if terminal_field in record:
+                terminal_at = record[terminal_field]
+                if (
+                    isinstance(terminal_at, bool)
+                    or not isinstance(terminal_at, (int, float))
+                    or not math.isfinite(float(terminal_at))
+                ):
+                    return False
+
         if "final_status" in record and not self._valid_text(
             record["final_status"]
         ):
@@ -243,10 +265,27 @@ class RoleSessionStore:
 
     def preflight_journal(self) -> int:
         descriptor: Optional[int] = None
+        lock_descriptor: Optional[int] = None
         try:
             if not hasattr(os, "O_NOFOLLOW"):
                 raise OSError("O_NOFOLLOW is required")
             self._data_root.mkdir(parents=True, exist_ok=True)
+            lock_flags = os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW
+            if hasattr(os, "O_CLOEXEC"):
+                lock_flags |= os.O_CLOEXEC
+            lock_descriptor = os.open(
+                str(self._data_root / "operations.lock"),
+                lock_flags,
+                0o600,
+            )
+            lock_info = os.fstat(lock_descriptor)
+            if (
+                not stat.S_ISREG(lock_info.st_mode)
+                or lock_info.st_nlink != 1
+            ):
+                raise OSError("journal lock is not a private regular file")
+            fcntl.flock(lock_descriptor, fcntl.LOCK_EX)
+
             flags = (
                 os.O_WRONLY
                 | os.O_CREAT
@@ -264,6 +303,19 @@ class RoleSessionStore:
             )
             if not stat.S_ISREG(os.fstat(descriptor).st_mode):
                 raise OSError("journal is not a regular file")
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            if self._journal_needs_rotation(descriptor):
+                os.close(descriptor)
+                descriptor = None
+                self._rotate_journal()
+                descriptor = os.open(
+                    str(self._data_root / "operations.jsonl"),
+                    flags,
+                    0o600,
+                )
+                if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+                    raise OSError("journal is not a regular file")
+                fcntl.flock(descriptor, fcntl.LOCK_EX)
             return descriptor
         except (OSError, TypeError, ValueError):
             if descriptor is not None:
@@ -272,6 +324,59 @@ class RoleSessionStore:
                 except OSError:
                     pass
             raise JournalError()
+        finally:
+            if lock_descriptor is not None:
+                try:
+                    os.close(lock_descriptor)
+                except OSError:
+                    pass
+
+    def _journal_needs_rotation(self, descriptor: int) -> bool:
+        limit = self.JOURNAL_MAX_BYTES
+        if (
+            isinstance(limit, bool)
+            or not isinstance(limit, int)
+            or limit <= 0
+        ):
+            raise OSError("invalid journal limit")
+        return os.fstat(descriptor).st_size >= limit
+
+    def _rotate_journal(self) -> None:
+        archive_count = self.JOURNAL_ARCHIVES
+        if (
+            isinstance(archive_count, bool)
+            or not isinstance(archive_count, int)
+            or archive_count <= 0
+        ):
+            raise OSError("invalid journal archive count")
+
+        active = self._data_root / "operations.jsonl"
+        archives = [
+            self._data_root / ("operations.jsonl." + str(index))
+            for index in range(1, archive_count + 1)
+        ]
+        for path in archives:
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                continue
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                raise OSError("unsafe journal archive")
+
+        oldest = archives[-1]
+        try:
+            oldest.unlink()
+        except FileNotFoundError:
+            pass
+        for index in range(archive_count - 1, 0, -1):
+            source = archives[index - 1]
+            destination = archives[index]
+            try:
+                os.replace(source, destination)
+            except FileNotFoundError:
+                continue
+        os.replace(active, archives[0])
+        self._fsync_data_root()
 
     def append_journal(
         self,
@@ -433,6 +538,61 @@ class RoleSessionStore:
             return False
         return candidate.is_dir() and (candidate / "SKILL.md").is_file()
 
+    def _prune_records(self, now: float) -> None:
+        try:
+            paths = list(self._data_root.iterdir())
+        except FileNotFoundError:
+            return
+        except OSError:
+            return
+
+        removed = False
+        for path in paths:
+            if (
+                path.suffix != ".json"
+                or _CAPABILITY_HASH_PATTERN.fullmatch(path.stem) is None
+            ):
+                continue
+            descriptor: Optional[int] = None
+            try:
+                flags = os.O_RDONLY | os.O_NOFOLLOW
+                if hasattr(os, "O_CLOEXEC"):
+                    flags |= os.O_CLOEXEC
+                descriptor = os.open(str(path), flags)
+                info = os.fstat(descriptor)
+                if not stat.S_ISREG(info.st_mode) or info.st_size > 16 * 1024:
+                    continue
+                with os.fdopen(descriptor, encoding="utf-8") as handle:
+                    descriptor = None
+                    record = json.load(handle)
+                if self._valid_record(record, expected_hash=path.stem):
+                    status = record["status"]
+                    if status == "open":
+                        terminal_at = float(record["expires_at"])
+                    elif status == "closed":
+                        terminal_at = float(record["closed_at"])
+                    else:
+                        terminal_at = float(record["expired_at"])
+                else:
+                    terminal_at = float(info.st_mtime)
+                if now < terminal_at + self.SESSION_RETENTION_SECONDS:
+                    continue
+                path.unlink()
+                removed = True
+            except (OSError, TypeError, ValueError):
+                continue
+            finally:
+                if descriptor is not None:
+                    try:
+                        os.close(descriptor)
+                    except OSError:
+                        pass
+        if removed:
+            try:
+                self._fsync_data_root()
+            except OSError:
+                pass
+
     def _now(self) -> float:
         try:
             value = self._clock()
@@ -485,6 +645,7 @@ class RoleSessionStore:
                 os.fsync(handle.fileno())
             os.replace(temporary_name, destination)
             temporary_name = None
+            self._fsync_data_root()
         except (OSError, TypeError, ValueError):
             raise RoleSessionError()
         finally:
@@ -493,6 +654,18 @@ class RoleSessionStore:
                     os.unlink(temporary_name)
                 except OSError:
                     pass
+
+    def _fsync_data_root(self) -> None:
+        flags = os.O_RDONLY | os.O_DIRECTORY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
+        descriptor = os.open(str(self._data_root), flags)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
 
     @staticmethod
     def _metadata(record: dict[str, object]) -> RoleSessionMetadata:

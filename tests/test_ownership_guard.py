@@ -166,7 +166,10 @@ class TestHookIntegration(unittest.TestCase):
             mapping = Path(td) / "agent-types"
             mapping.mkdir()
             (mapping / "turn-1.json").write_text(
-                json.dumps({"agent_type": "pipeline-coach"}), encoding="utf-8")
+                json.dumps({
+                    "agent_type": "pipeline-coach",
+                    "recorded_at": time.time(),
+                }), encoding="utf-8")
             payload = {
                 "turn_id": "turn-1",
                 "tool_name": "apply_patch",
@@ -186,7 +189,10 @@ class TestHookIntegration(unittest.TestCase):
             mapping = Path(td) / "agent-types"
             mapping.mkdir()
             (mapping / "turn-2.json").write_text(
-                json.dumps({"agent_type": "strategist"}), encoding="utf-8")
+                json.dumps({
+                    "agent_type": "strategist",
+                    "recorded_at": time.time(),
+                }), encoding="utf-8")
             payload = {
                 "turn_id": "turn-2",
                 "tool_name": "apply_patch",
@@ -260,6 +266,48 @@ class TestAgentTypeFor(unittest.TestCase):
                 resolved = self.guard.agent_type_for({"turn_id": "turn-1"})
 
         self.assertIsNone(resolved)
+
+    def test_mapping_older_than_twenty_four_hours_is_not_trusted(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            (mapping / "turn-old.json").write_text(
+                json.dumps(
+                    {"agent_type": "cfo", "recorded_at": time.time() - 86401}
+                ),
+                encoding="utf-8",
+            )
+            with mock.patch.dict(
+                os.environ, {"PLUGIN_DATA": temp_dir}, clear=False
+            ):
+                resolved = self.guard.agent_type_for({"turn_id": "turn-old"})
+        self.assertIsNone(resolved)
+
+    def test_record_agent_prunes_expired_mappings_and_stamps_new_one(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            (mapping / "turn-old.json").write_text(
+                json.dumps({"agent_type": "cfo", "recorded_at": 0}),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(PLUGIN_ROOT / "hooks" / "record-agent.py")],
+                input=json.dumps(
+                    {"turn_id": "turn-new", "agent_type": "strategist"}
+                ),
+                capture_output=True,
+                text=True,
+                cwd=str(REPO_ROOT),
+                env={**os.environ, "PLUGIN_DATA": temp_dir},
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertFalse((mapping / "turn-old.json").exists())
+            payload = json.loads(
+                (mapping / "turn-new.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual("strategist", payload["agent_type"])
+            self.assertIsInstance(payload["recorded_at"], float)
 
     def test_unresolved_safe_turn_id_is_denied_instead_of_treated_as_main(self):
         with tempfile.TemporaryDirectory() as temp_dir:

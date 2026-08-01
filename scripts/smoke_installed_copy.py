@@ -229,7 +229,12 @@ def _record_installed_turn(installed_plugin, data_root, workspace_root, turn_id,
         recorded = json.loads(mapping.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise SmokeFailure("SubagentStart/%s did not persist turn mapping" % role) from exc
-    if recorded != {"agent_type": role}:
+    if (
+        not isinstance(recorded, dict)
+        or set(recorded) != {"agent_type", "recorded_at"}
+        or recorded.get("agent_type") != role
+        or not isinstance(recorded.get("recorded_at"), (int, float))
+    ):
         raise SmokeFailure("SubagentStart/%s persisted the wrong role" % role)
 
 
