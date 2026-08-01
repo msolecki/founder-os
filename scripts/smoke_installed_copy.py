@@ -180,7 +180,8 @@ def _issue_installed_capability(installed_plugin, data_root, role):
         "from pathlib import Path\n"
         "from mcp.sessions import RoleSessionStore\n"
         "store=RoleSessionStore(Path(sys.argv[2]),Path(sys.argv[1]),time.time,300)\n"
-        "print(store.open('installed-workspace',sys.argv[3],'installed-smoke'))\n"
+        "print(store.open('installed-workspace',sys.argv[3],'installed-smoke',"
+        "'revenue-review','business'))\n"
     )
     env = os.environ.copy()
     env["PYTHONPATH"] = str(installed_plugin)
@@ -685,8 +686,8 @@ def check_mcp_lifecycle(installed_plugin, workspace_root, host):
             raise SmokeFailure("%s initialized the wrong server" % host)
         client.notify("notifications/initialized")
         listed_tools = client.request("tools/list").get("result", {}).get("tools")
-        if not isinstance(listed_tools, list) or len(listed_tools) != 7:
-            raise SmokeFailure("%s did not discover all seven tools" % host)
+        if not isinstance(listed_tools, list) or len(listed_tools) != 8:
+            raise SmokeFailure("%s did not discover all eight tools" % host)
 
         resolved = _success_payload(
             _tool_call(

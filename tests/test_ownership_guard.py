@@ -796,6 +796,8 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             workspace_id="workspace-1",
             role=role,
             correlation_id="corr-1",
+            workflow="revenue-review",
+            workspace_kind="business",
         )
 
     def _deny_payload(self, result):
@@ -935,6 +937,7 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             ),
             ("extra field", lambda record: record.update(extra=True)),
             ("blank workspace", lambda record: record.update(workspace_id="")),
+            ("unknown workspace kind", lambda record: record.update(workspace_kind="team")),
             (
                 "blank correlation",
                 lambda record: record.update(correlation_id=""),

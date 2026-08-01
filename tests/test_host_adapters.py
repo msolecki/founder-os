@@ -21,6 +21,7 @@ TOOL_NAMES = {
     "list_state",
     "read_state",
     "read_reference",
+    "read_portfolio_inputs",
     "write_owned_state",
     "close_role_session",
 }

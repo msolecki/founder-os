@@ -7,10 +7,11 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import secrets
 import stat
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Mapping, Optional, Tuple
 
 
 class SafeStateError(Exception):
@@ -196,6 +197,111 @@ class SafeStateIO:
             self._packaged_fd,
             relative.as_posix(),
         )
+
+    def read_fixed_sections(
+        self,
+        specification: Mapping[str, Tuple[str, ...]],
+    ) -> Dict[str, object]:
+        """Read only named H2 bodies from a closed, caller-owned specification."""
+        if not isinstance(specification, Mapping) or not specification:
+            raise SafeStateError("STATE_IO_ERROR")
+
+        sections: List[Dict[str, object]] = []
+        missing: List[str] = []
+        total = 0
+        for path, headings in specification.items():
+            if (
+                not isinstance(headings, tuple)
+                or not headings
+                or any(
+                    not isinstance(heading, str)
+                    or not heading
+                    or "\n" in heading
+                    or "\r" in heading
+                    for heading in headings
+                )
+            ):
+                raise SafeStateError("STATE_IO_ERROR")
+            relative = self._validate_file_path(path)
+            entry = self._read_file(
+                relative,
+                self._workspace_fd,
+                relative.as_posix(),
+                missing_ok=True,
+            )
+            if entry is None:
+                missing.extend(path + "#" + heading for heading in headings)
+                continue
+
+            extracted = self._extract_h2_sections(
+                str(entry["content"]), headings
+            )
+            for heading in headings:
+                if heading not in extracted:
+                    missing.append(path + "#" + heading)
+                    continue
+                content = extracted[heading]
+                total += len(content.encode("utf-8"))
+                if total > self.max_total_bytes:
+                    raise SafeStateError("STATE_IO_ERROR")
+                sections.append(
+                    {
+                        "path": path,
+                        "heading": heading,
+                        "content": content,
+                        "sha256": entry["sha256"],
+                        "mtime_ns": entry["mtime_ns"],
+                    }
+                )
+        return {"sections": sections, "missing": missing}
+
+    @staticmethod
+    def _extract_h2_sections(
+        content: str,
+        headings: Tuple[str, ...],
+    ) -> Dict[str, str]:
+        wanted = set(headings)
+        found: Dict[str, str] = {}
+        current: Optional[str] = None
+        body: List[str] = []
+        fence_character: Optional[str] = None
+        fence_length = 0
+
+        def finish() -> None:
+            nonlocal current, body
+            if current is not None:
+                if current in found:
+                    raise SafeStateError("STATE_IO_ERROR")
+                found[current] = "".join(body)
+            current = None
+            body = []
+
+        for line in content.splitlines(keepends=True):
+            stripped = line.rstrip("\r\n")
+            fence = re.match(r"^ {0,3}(`{3,}|~{3,})(?:[^`~].*)?$", stripped)
+            if fence_character is None and fence is not None:
+                marker = fence.group(1)
+                fence_character = marker[0]
+                fence_length = len(marker)
+            elif fence_character is not None and re.fullmatch(
+                r" {0,3}" + re.escape(fence_character)
+                + "{" + str(fence_length) + r",}\s*",
+                stripped,
+            ):
+                fence_character = None
+                fence_length = 0
+            elif fence_character is None:
+                match = re.fullmatch(r"## ([^\r\n]+)", stripped)
+                if match is not None:
+                    finish()
+                    heading = match.group(1)
+                    current = heading if heading in wanted else None
+                    continue
+
+            if current is not None:
+                body.append(line)
+        finish()
+        return found
 
     @staticmethod
     def _atomic_error(
@@ -492,12 +598,17 @@ class SafeStateIO:
         relative: Path,
         root_fd: int,
         relative_path: str,
-    ) -> Dict[str, object]:
+        *,
+        missing_ok: bool = False,
+    ) -> Optional[Dict[str, object]]:
         descriptor = self._open_relative(
             root_fd,
             relative,
             relative_path,
+            missing_ok=missing_ok,
         )
+        if descriptor is None:
+            return None
         try:
             info = os.fstat(descriptor)
             if (
@@ -545,7 +656,9 @@ class SafeStateIO:
         root_fd: int,
         relative: Path,
         relative_path: str,
-    ) -> int:
+        *,
+        missing_ok: bool = False,
+    ) -> Optional[int]:
         self._require_secure_primitives()
         components = relative.parts
         if root_fd < 0 or not components:
@@ -584,6 +697,8 @@ class SafeStateIO:
                         dir_fd=parent_fd,
                     )
                 except OSError as error:
+                    if missing_ok and error.errno == errno.ENOENT:
+                        return None
                     raise self._open_error(error)
 
                 os.close(parent_fd)

@@ -33,17 +33,38 @@ ROLE_FILENAMES = (
     "strategist.md",
 )
 
+ROLE_WORKFLOWS = {
+    "board-member": "red-team",
+    "brand-editor": "content-plan",
+    "cfo": "revenue-review",
+    "chief-of-staff": "daily-brief",
+    "delivery-lead": "capacity-check",
+    "focus-coach": "week-plan",
+    "network-manager": "follow-up-sweep",
+    "ops-engineer": "automation-audit",
+    "pipeline-coach": "pipeline-review",
+    "portfolio-manager": "portfolio-review",
+    "positioning-advisor": "offer-design",
+    "skills-mentor": "skill-gap",
+    "strategist": "quarterly-planning",
+}
+
 
 def write_packaged_root(root: Path) -> Path:
     """Create a small package fixture without depending on installed assets."""
     agents = root / "agents"
     agents.mkdir(parents=True)
     for filename in ROLE_FILENAMES:
-        (agents / filename).write_text("# role\n", encoding="utf-8")
-
-    workflow = root / "skills" / "week-plan"
-    workflow.mkdir(parents=True)
-    (workflow / "SKILL.md").write_text("# workflow\n", encoding="utf-8")
+        role = filename.removesuffix(".md")
+        workflow = ROLE_WORKFLOWS[role]
+        (agents / filename).write_text(
+            "---\nname: " + role + "\nskills:\n  - " + workflow
+            + "\n---\n# role\n",
+            encoding="utf-8",
+        )
+        skill = root / "skills" / workflow
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("# workflow\n", encoding="utf-8")
     return root
 
 
@@ -571,36 +592,47 @@ class RoleSessionStoreReadTests(unittest.TestCase):
                 "workspace-1",
                 filename.removesuffix(".md"),
                 "corr-listed-role",
+                ROLE_WORKFLOWS[filename.removesuffix(".md")],
+                "portfolio" if filename == "portfolio-manager.md" else "business",
             )
             self.assertTrue(capability)
 
         self.assert_invalid(
-            lambda: self.store.open("workspace-1", "invented-role", "corr-invalid")
+            lambda: self.store.open(
+                "workspace-1", "invented-role", "corr-invalid", "week-plan", "business"
+            )
         )
 
     def test_blank_workspace_or_correlation_id_cannot_create_persisted_session_metadata(self) -> None:
         self.assert_invalid(
-            lambda: self.store.open("", "chief-of-staff", "corr-present")
+            lambda: self.store.open(
+                "", "chief-of-staff", "corr-present", "daily-brief", "business"
+            )
         )
         self.assert_invalid(
-            lambda: self.store.open("workspace-present", "chief-of-staff", "")
+            lambda: self.store.open(
+                "workspace-present", "chief-of-staff", "", "daily-brief", "business"
+            )
         )
 
-    def test_missing_or_traversed_workflow_cannot_be_attached_to_a_role_session(self) -> None:
+    def test_workflow_must_be_declared_by_the_role_and_match_workspace_kind(self) -> None:
         capability = self.store.open(
             "workspace-1",
-            "chief-of-staff",
+            "focus-coach",
             "corr-valid-workflow",
             workflow="week-plan",
+            workspace_kind="business",
         )
         self.assertEqual("week-plan", self.store.resolve(capability).workflow)
+        self.assertEqual("business", self.store.resolve(capability).workspace_kind)
 
         self.assert_invalid(
             lambda: self.store.open(
                 "workspace-1",
                 "chief-of-staff",
-                "corr-missing-workflow",
-                workflow="missing",
+                "corr-wrong-owner",
+                workflow="week-plan",
+                workspace_kind="business",
             )
         )
         self.assert_invalid(
@@ -609,14 +641,43 @@ class RoleSessionStoreReadTests(unittest.TestCase):
                 "chief-of-staff",
                 "corr-traversal-workflow",
                 workflow="../agents",
+                workspace_kind="business",
             )
         )
+        self.assert_invalid(
+            lambda: self.store.open(
+                "workspace-1",
+                "portfolio-manager",
+                "corr-portfolio-in-business",
+                workflow="portfolio-review",
+                workspace_kind="business",
+            )
+        )
+        self.assert_invalid(
+            lambda: self.store.open(
+                "workspace-1",
+                "chief-of-staff",
+                "corr-business-in-portfolio",
+                workflow="daily-brief",
+                workspace_kind="portfolio",
+            )
+        )
+        portfolio = self.store.open(
+            "workspace-2",
+            "portfolio-manager",
+            "corr-portfolio",
+            workflow="portfolio-review",
+            workspace_kind="portfolio",
+        )
+        self.assertEqual("portfolio", self.store.resolve(portfolio).workspace_kind)
 
     def test_forged_cross_store_workspace_or_role_capability_is_rejected(self) -> None:
         capability = self.store.open(
             "workspace-1",
             "chief-of-staff",
             "corr-capability-boundary",
+            "daily-brief",
+            "business",
         )
         other_store = RoleSessionStore(
             data_root=self.root / "other-data",
@@ -633,11 +694,15 @@ class RoleSessionStoreReadTests(unittest.TestCase):
         self.assert_invalid(lambda: self.store.resolve(capability, role="cfo"))
 
     def test_expired_closed_and_reused_capability_cannot_read_role_metadata(self) -> None:
-        expiring = self.store.open("workspace-1", "cfo", "corr-expiring")
+        expiring = self.store.open(
+            "workspace-1", "cfo", "corr-expiring", "revenue-review", "business"
+        )
         self.now[0] = 1_060.0
         self.assert_invalid(lambda: self.store.resolve(expiring))
 
-        closable = self.store.open("workspace-1", "cfo", "corr-closing")
+        closable = self.store.open(
+            "workspace-1", "cfo", "corr-closing", "revenue-review", "business"
+        )
         self.store.close(closable, final_status="completed")
         self.assert_invalid(lambda: self.store.resolve(closable))
         self.assert_invalid(lambda: self.store.close(closable))
@@ -647,7 +712,8 @@ class RoleSessionStoreReadTests(unittest.TestCase):
             "workspace-1",
             "chief-of-staff",
             "corr-private-token",
-            workflow="week-plan",
+            workflow="daily-brief",
+            workspace_kind="single-business",
         )
         metadata = self.store.resolve(capability)
         capability_hash = hashlib.sha256(capability.encode("utf-8")).hexdigest()
@@ -656,14 +722,16 @@ class RoleSessionStoreReadTests(unittest.TestCase):
         self.assertEqual("workspace-1", metadata.workspace_id)
         self.assertEqual("chief-of-staff", metadata.role)
         self.assertEqual("corr-private-token", metadata.correlation_id)
-        self.assertEqual("week-plan", metadata.workflow)
+        self.assertEqual("daily-brief", metadata.workflow)
+        self.assertEqual("single-business", metadata.workspace_kind)
         self.assertEqual(1_060.0, metadata.expires_at)
         self.assertIn(capability_hash, persisted)
         self.assertNotIn(capability, persisted)
         self.assertIn("workspace-1", persisted)
         self.assertIn("chief-of-staff", persisted)
         self.assertIn("corr-private-token", persisted)
-        self.assertIn("week-plan", persisted)
+        self.assertIn("daily-brief", persisted)
+        self.assertIn("single-business", persisted)
         self.assertIn("1060", persisted)
 
         self.store.close(capability, final_status="completed")
@@ -679,6 +747,9 @@ class RoleSessionStoreReadTests(unittest.TestCase):
             ("missing-field", lambda record: record.pop("correlation_id")),
             ("workspace-type", lambda record: record.__setitem__("workspace_id", [])),
             ("workspace-blank", lambda record: record.__setitem__("workspace_id", " ")),
+            ("workspace-kind-type", lambda record: record.__setitem__("workspace_kind", [])),
+            ("workspace-kind-unknown", lambda record: record.__setitem__("workspace_kind", "team")),
+            ("workspace-kind-role-mismatch", lambda record: record.__setitem__("workspace_kind", "portfolio")),
             ("unknown-role", lambda record: record.__setitem__("role", "unknown-role")),
             ("workflow-type", lambda record: record.__setitem__("workflow", 7)),
             ("unknown-workflow", lambda record: record.__setitem__("workflow", "missing")),
@@ -696,7 +767,8 @@ class RoleSessionStoreReadTests(unittest.TestCase):
                     "workspace-id",
                     "cfo",
                     "correlation-id",
-                    "week-plan",
+                    "revenue-review",
+                    "business",
                 )
                 record_path = self.data_root / (
                     hashlib.sha256(capability.encode("utf-8")).hexdigest() + ".json"
@@ -713,6 +785,8 @@ class RoleSessionStoreReadTests(unittest.TestCase):
                     "workspace-id",
                     "cfo",
                     "correlation-id",
+                    "revenue-review",
+                    "business",
                 )
                 self.assert_invalid(
                     lambda: self.store.close(capability, final_status=final_status)
@@ -979,6 +1053,37 @@ class SafeStateIOTests(unittest.TestCase):
             ),
         )
 
+    def test_fixed_sections_return_only_exact_h2_bodies_and_report_missing(self) -> None:
+        (self.workspace / "goals.md").write_text(
+            "# Goals\n```md\n## Bets\nFAKE\n```\n## Bets\nAlpha bet\n"
+            "### Evidence\nDated\n## Private\nSECRET\n",
+            encoding="utf-8",
+        )
+        (self.workspace / "metrics.md").write_text(
+            "# Metrics\n## Close\nBooked: 10\n## Private\nHIDDEN\n",
+            encoding="utf-8",
+        )
+
+        payload = self.io().read_fixed_sections(
+            {"goals.md": ("Bets",), "metrics.md": ("Close", "Runway")}
+        )
+
+        self.assertEqual(["metrics.md#Runway"], payload["missing"])
+        self.assertEqual(
+            [
+                ("goals.md", "Bets", "Alpha bet\n### Evidence\nDated\n"),
+                ("metrics.md", "Close", "Booked: 10\n"),
+            ],
+            [
+                (item["path"], item["heading"], item["content"])
+                for item in payload["sections"]
+            ],
+        )
+        serialized = json.dumps(payload)
+        self.assertNotIn("FAKE", serialized)
+        self.assertNotIn("SECRET", serialized)
+        self.assertNotIn("HIDDEN", serialized)
+
 
     def test_ancestor_swap_cannot_escape_trusted_workspace_descriptor(self) -> None:
         raced = self.workspace / "raced"
@@ -1087,7 +1192,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
                     "workspace_id": workspace["workspace_id"],
                     "role": "chief-of-staff",
                     "correlation_id": "corr-gateway",
-                    "workflow": "week-plan",
+                    "workflow": "daily-brief",
                 },
             )
         )
@@ -1115,9 +1220,9 @@ class GatewayReadSurfaceTests(unittest.TestCase):
         )
         self.assertEqual({"files": [state_entry]}, read)
 
-        workflow_file = self.package / "skills" / "week-plan" / "SKILL.md"
+        workflow_file = self.package / "skills" / "daily-brief" / "SKILL.md"
         reference_entry = {
-            "path": "skills/week-plan/SKILL.md",
+            "path": "skills/daily-brief/SKILL.md",
             "content": "# workflow\n",
             "sha256": hashlib.sha256(b"# workflow\n").hexdigest(),
             "size": len(b"# workflow\n"),
@@ -1126,7 +1231,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
         reference = self.payload(
             self.gateway.call(
                 "read_reference",
-                {"capability": capability, "path": "skills/week-plan/SKILL.md"},
+                {"capability": capability, "path": "skills/daily-brief/SKILL.md"},
             )
         )
         self.assertEqual({"file": reference_entry}, reference)
@@ -1146,6 +1251,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
             "Stop and return control to the main thread",
         )
 
+
     def test_gateway_forged_workspace_and_capability_return_stable_domain_actions(self) -> None:
         self.assert_gateway_error(
             self.gateway.call(
@@ -1154,6 +1260,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
                     "workspace_id": "forged-workspace",
                     "role": "chief-of-staff",
                     "correlation_id": "corr-forged",
+                    "workflow": "daily-brief",
                 },
             ),
             "WORKSPACE_UNRESOLVED",
@@ -1182,6 +1289,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
                     "workspace_id": workspace["workspace_id"],
                     "role": "cfo",
                     "correlation_id": "corr-reference-boundary",
+                    "workflow": "revenue-review",
                 },
             )
         )
@@ -1197,14 +1305,14 @@ class GatewayReadSurfaceTests(unittest.TestCase):
             "Refuse without retrying a modified path guess",
         )
 
-    def test_gateway_session_without_workflow_cannot_read_a_workflow_reference(self) -> None:
+    def test_gateway_rejects_session_without_workflow(self) -> None:
         workspace = self.payload(
             self.gateway.call(
                 "resolve_workspace",
                 {"project_dir": str(self.project)},
             )
         )
-        session = self.payload(
+        self.assert_gateway_error(
             self.gateway.call(
                 "open_role_session",
                 {
@@ -1212,30 +1320,147 @@ class GatewayReadSurfaceTests(unittest.TestCase):
                     "role": "chief-of-staff",
                     "correlation_id": "corr-no-workflow",
                 },
+            ),
+            "ROLE_SESSION_INVALID",
+            "Stop and return control to the main thread",
+        )
+
+
+class GatewayPortfolioReadTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.project = self.root / "project"
+        self.alpha = self.root / "alpha"
+        self.paused = self.root / "paused"
+        self.portfolio = self.root / "portfolio"
+        for path in (self.project, self.alpha, self.paused, self.portfolio):
+            path.mkdir()
+        (self.alpha / "goals.md").write_text(
+            "# Goals\n## Bets\nAlpha bet\n## Private\nSECRET GOAL\n",
+            encoding="utf-8",
+        )
+        (self.alpha / "metrics.md").write_text(
+            "# Metrics\n## Close\nCollected: 100\n## Runway\n6 months\n"
+            "## Private\nSECRET METRIC\n",
+            encoding="utf-8",
+        )
+        self.home = self.root / "home"
+        write_registry(
+            self.home,
+            "\n".join(
+                (
+                    "businesses:",
+                    "  alpha:",
+                    "    home: " + self.alpha.as_posix(),
+                    "    status: active",
+                    "  paused:",
+                    "    home: " + self.paused.as_posix(),
+                    "    status: paused",
+                    "default: alpha",
+                    "portfolio: " + self.portfolio.as_posix(),
+                )
+            ),
+        )
+        self.package = write_packaged_root(self.root / "package")
+        self.resolver = WorkspaceResolver(env={}, home=self.home)
+        self.store = RoleSessionStore(
+            data_root=self.root / "sessions",
+            packaged_root=self.package,
+            clock=lambda: 1000.0,
+            ttl_seconds=60,
+        )
+        self.gateway = Gateway(
+            resolver=self.resolver,
+            sessions=self.store,
+            packaged_root=self.package,
+        )
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def payload(self, response, is_error=False):
+        self.assertEqual(is_error, response["isError"], response)
+        return response["structuredContent"]
+
+    def open(self, slug, role, workflow):
+        binding = self.resolver.resolve(self.project, slug)
+        return self.payload(
+            self.gateway.call(
+                "open_role_session",
+                {
+                    "workspace_id": binding.workspace_id,
+                    "role": role,
+                    "correlation_id": "corr-" + role,
+                    "workflow": workflow,
+                },
+            )
+        )["capability"]
+
+    def test_portfolio_manager_reads_only_fixed_sections_of_active_business(self) -> None:
+        capability = self.open(
+            "portfolio", "portfolio-manager", "portfolio-review"
+        )
+        payload = self.payload(
+            self.gateway.call(
+                "read_portfolio_inputs",
+                {"capability": capability, "business_slug": "alpha"},
             )
         )
-        self.assert_gateway_error(
-            self.gateway.call(
-                "read_reference",
-                {
-                    "capability": session["capability"],
-                    "path": "skills/week-plan/SKILL.md",
-                },
-            ),
-            "PATH_OUTSIDE_WORKSPACE",
-            "Refuse without retrying a modified path guess",
+
+        self.assertEqual("alpha", payload["business_slug"])
+        self.assertEqual([], payload["missing"])
+        self.assertEqual(
+            [
+                ("goals.md", "Bets", "Alpha bet\n"),
+                ("metrics.md", "Close", "Collected: 100\n"),
+                ("metrics.md", "Runway", "6 months\n"),
+            ],
+            [
+                (item["path"], item["heading"], item["content"])
+                for item in payload["sections"]
+            ],
+        )
+        serialized = json.dumps(payload)
+        self.assertNotIn("SECRET GOAL", serialized)
+        self.assertNotIn("SECRET METRIC", serialized)
+
+    def test_portfolio_read_rejects_paused_business_and_non_portfolio_session(self) -> None:
+        portfolio_capability = self.open(
+            "portfolio", "portfolio-manager", "portfolio-review"
+        )
+        paused = self.gateway.call(
+            "read_portfolio_inputs",
+            {"capability": portfolio_capability, "business_slug": "paused"},
+        )
+        self.assertTrue(paused["isError"], paused)
+        self.assertEqual(
+            "WORKSPACE_UNRESOLVED",
+            paused["structuredContent"]["error"]["code"],
+        )
+
+        business_capability = self.open("alpha", "cfo", "revenue-review")
+        denied = self.gateway.call(
+            "read_portfolio_inputs",
+            {"capability": business_capability, "business_slug": "alpha"},
+        )
+        self.assertTrue(denied["isError"], denied)
+        self.assertEqual(
+            "ROLE_SESSION_INVALID",
+            denied["structuredContent"]["error"]["code"],
         )
 
 
 class GatewaySchemaTests(unittest.TestCase):
-    def test_all_seven_tool_schemas_require_closed_objects_and_write_precondition_oneof(self) -> None:
+    def test_all_eight_tool_schemas_require_closed_objects_and_write_precondition_oneof(self) -> None:
         schemas = {schema["name"]: schema["inputSchema"] for schema in TOOL_SCHEMAS}
         expected_required = {
             "resolve_workspace": ["project_dir"],
-            "open_role_session": ["workspace_id", "role", "correlation_id"],
+            "open_role_session": ["workspace_id", "role", "correlation_id", "workflow"],
             "list_state": ["capability", "pattern"],
             "read_state": ["capability", "paths"],
             "read_reference": ["capability", "path"],
+            "read_portfolio_inputs": ["capability", "business_slug"],
             "close_role_session": ["capability"],
             "write_owned_state": ["capability", "path", "content"],
         }

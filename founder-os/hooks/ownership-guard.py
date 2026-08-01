@@ -53,7 +53,8 @@ ROLE_NAMES = frozenset({
 GENERIC_AGENT_TYPES = frozenset({"default", "general-purpose"})
 GATEWAY_TOOLS = frozenset({
     "resolve_workspace", "open_role_session", "list_state", "read_state",
-    "read_reference", "write_owned_state", "close_role_session",
+    "read_reference", "read_portfolio_inputs", "write_owned_state",
+    "close_role_session",
 })
 OUTBOUND_TOOLS = frozenset({"Bash", "WebFetch", "WebSearch"})
 # A role does not spawn subagents. One-level orchestration is the packaged
@@ -84,8 +85,8 @@ GATEWAY_SERVERS = frozenset({
 })
 ROLE_BY_FOLDED = {name.casefold(): name for name in ROLE_NAMES}
 SESSION_FIELDS = frozenset({
-    "capability_hash", "workspace_id", "role", "correlation_id", "workflow",
-    "expires_at", "status",
+    "capability_hash", "workspace_id", "workspace_kind", "role",
+    "correlation_id", "workflow", "expires_at", "status",
 })
 
 # The founder's local overlay (references/extensibility.md). `_local/` is the
@@ -595,13 +596,17 @@ def _session_role(tool_input):
         return None
     if not _valid_text(record.get("workspace_id")):
         return None
+    if record.get("workspace_kind") not in {
+        "single-business", "business", "portfolio"
+    }:
+        return None
     if not _valid_text(record.get("correlation_id")):
         return None
     role = record.get("role")
     if role not in ROLE_NAMES:
         return None
     workflow = record.get("workflow")
-    if workflow is not None and not _valid_text(workflow):
+    if not _valid_text(workflow):
         return None
     expires_at = record.get("expires_at")
     try:

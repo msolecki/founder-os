@@ -31,7 +31,10 @@ ROLE_GATEWAY_TOOLS = {
     "mcp__plugin_founder-os_founder-os-state__write_owned_state",
     "mcp__plugin_founder-os_founder-os-state__close_role_session",
 }
-ALLOWED_AGENT_TOOLS = ROLE_GATEWAY_TOOLS
+PORTFOLIO_READ_TOOL = (
+    "mcp__plugin_founder-os_founder-os-state__read_portfolio_inputs"
+)
+ALLOWED_AGENT_TOOLS = ROLE_GATEWAY_TOOLS | {PORTFOLIO_READ_TOOL}
 
 AGENT_HEADINGS = ["## What triggers you", "## What you do",
                   "## What you produce", "## Who you hand off to"]
@@ -260,12 +263,15 @@ def check_one_level_orchestration(root, agents):
             errs.append(
                 "agents/%s.md: one-level execution forbids Agent(...)" % slug
             )
-        for tool in sorted(ROLE_GATEWAY_TOOLS - names):
+        expected_tools = set(ROLE_GATEWAY_TOOLS)
+        if slug == "portfolio-manager":
+            expected_tools.add(PORTFOLIO_READ_TOOL)
+        for tool in sorted(expected_tools - names):
             errs.append(
                 "agents/%s.md: one-level gateway contract is missing %s"
                 % (slug, tool)
             )
-        for tool in sorted(names - ROLE_GATEWAY_TOOLS):
+        for tool in sorted(names - expected_tools):
             errs.append(
                 "agents/%s.md: one-level execution forbids tool %s"
                 % (slug, tool)

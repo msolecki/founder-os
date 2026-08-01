@@ -39,6 +39,22 @@ ROLES = (
     "strategist",
 )
 
+ROLE_WORKFLOWS = {
+    "board-member": "red-team",
+    "brand-editor": "content-plan",
+    "cfo": "revenue-review",
+    "chief-of-staff": "daily-brief",
+    "delivery-lead": "capacity-check",
+    "focus-coach": "week-plan",
+    "network-manager": "follow-up-sweep",
+    "ops-engineer": "automation-audit",
+    "pipeline-coach": "pipeline-review",
+    "portfolio-manager": "portfolio-review",
+    "positioning-advisor": "offer-design",
+    "skills-mentor": "skill-gap",
+    "strategist": "quarterly-planning",
+}
+
 
 def _ownership_yaml():
     return textwrap.dedent(
@@ -419,10 +435,15 @@ class StateGatewayWriteTests(unittest.TestCase):
         for role in ROLES:
             agent = self.package / "agents" / (role + ".md")
             agent.parent.mkdir(parents=True, exist_ok=True)
-            agent.write_text("# " + role + "\n", encoding="utf-8")
-        workflow = self.package / "skills" / "week-plan" / "SKILL.md"
-        workflow.parent.mkdir(parents=True, exist_ok=True)
-        workflow.write_text("# Week plan\n", encoding="utf-8")
+            workflow = ROLE_WORKFLOWS[role]
+            agent.write_text(
+                "---\nname: " + role + "\nskills:\n  - " + workflow
+                + "\n---\n# " + role + "\n",
+                encoding="utf-8",
+            )
+            skill = self.package / "skills" / workflow / "SKILL.md"
+            skill.parent.mkdir(parents=True, exist_ok=True)
+            skill.write_text("# " + workflow + "\n", encoding="utf-8")
         ownership = self.package / "references" / "ownership.yaml"
         ownership.parent.mkdir(parents=True, exist_ok=True)
         ownership.write_text(_ownership_yaml(), encoding="utf-8")
@@ -470,6 +491,7 @@ class StateGatewayWriteTests(unittest.TestCase):
                 "workspace_id": binding.workspace_id,
                 "role": role,
                 "correlation_id": correlation_id or "corr-" + role,
+                "workflow": ROLE_WORKFLOWS[role],
             },
         )
         self.assertFalse(response["isError"], response)
@@ -582,6 +604,8 @@ class StateGatewayWriteTests(unittest.TestCase):
             workspace_id="workspace-not-known-to-resolver",
             role="cfo",
             correlation_id="corr-wrong-workspace",
+            workflow="revenue-review",
+            workspace_kind="business",
         )
         attempts = {
             "invalid blank capability": "",

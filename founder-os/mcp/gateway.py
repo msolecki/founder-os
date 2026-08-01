@@ -51,7 +51,7 @@ class Gateway:
                     "correlation_id": {"type": "string"},
                     "workflow": {"type": "string"},
                 },
-                "required": ["workspace_id", "role", "correlation_id"],
+                "required": ["workspace_id", "role", "correlation_id", "workflow"],
                 "additionalProperties": False,
             },
         },
@@ -95,6 +95,22 @@ class Gateway:
                     "path": {"type": "string"},
                 },
                 "required": ["capability", "path"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "read_portfolio_inputs",
+            "description": (
+                "Read fixed goals and metrics summary sections for one active "
+                "business from a portfolio session."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "capability": {"type": "string"},
+                    "business_slug": {"type": "string"},
+                },
+                "required": ["capability", "business_slug"],
                 "additionalProperties": False,
             },
         },
@@ -193,6 +209,8 @@ class Gateway:
                 payload = self._read_state(arguments)
             elif name == "read_reference":
                 payload = self._read_reference(arguments)
+            elif name == "read_portfolio_inputs":
+                payload = self._read_portfolio_inputs(arguments)
             elif name == "write_owned_state":
                 payload = self._write_owned_state(arguments)
             else:
@@ -231,17 +249,16 @@ class Gateway:
         workflow = arguments.get("workflow")
         if not all(
             self._text(value)
-            for value in (workspace_id, role, correlation_id)
+            for value in (workspace_id, role, correlation_id, workflow)
         ):
             raise RoleSessionError()
-        if workflow is not None and not self._text(workflow):
-            raise RoleSessionError()
-        self._resolver.get(workspace_id)
+        binding = self._resolver.get(workspace_id)
         capability = self._sessions.open(
             workspace_id,
             role,
             correlation_id,
             workflow=workflow,
+            workspace_kind=binding.workspace_kind,
         )
         return {"capability": capability}
 
@@ -271,6 +288,35 @@ class Gateway:
                 workflow=metadata.workflow,
             )
         }
+
+    def _read_portfolio_inputs(
+        self,
+        arguments: Mapping[str, Any],
+    ) -> Dict[str, Any]:
+        metadata, binding = self._session_workspace(arguments.get("capability"))
+        business_slug = arguments.get("business_slug")
+        if (
+            metadata.role != "portfolio-manager"
+            or metadata.workflow != "portfolio-review"
+            or metadata.workspace_kind != "portfolio"
+            or not self._text(business_slug)
+        ):
+            raise RoleSessionError()
+
+        business_root = self._resolver.portfolio_business_root(
+            binding, business_slug
+        )
+        io_handle = self._io(business_root)
+        try:
+            payload = io_handle.read_fixed_sections(
+                {
+                    "goals.md": ("Bets",),
+                    "metrics.md": ("Close", "Runway"),
+                }
+            )
+        finally:
+            io_handle.close()
+        return {"business_slug": business_slug, **payload}
 
     def _write_owned_state(
         self,
@@ -396,6 +442,8 @@ class Gateway:
         except WorkspaceResolutionError:
             raise RoleSessionError()
         self._resolver.validate_binding(binding)
+        if metadata.workspace_kind != binding.workspace_kind:
+            raise RoleSessionError()
         return metadata, binding
 
     def _io(self, workspace_root: Path) -> SafeStateIO:

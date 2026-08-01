@@ -12,7 +12,7 @@ import stat
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional, Set
 
 
 _INVALID_CODE = "ROLE_SESSION_INVALID"
@@ -22,6 +22,7 @@ _BASE_RECORD_FIELDS = frozenset(
     {
         "capability_hash",
         "workspace_id",
+        "workspace_kind",
         "role",
         "correlation_id",
         "workflow",
@@ -30,6 +31,9 @@ _BASE_RECORD_FIELDS = frozenset(
     }
 )
 _ALLOWED_STATUSES = frozenset({"open", "closed", "expired"})
+_BUSINESS_WORKSPACE_KINDS = frozenset({"single-business", "business"})
+_WORKSPACE_KINDS = _BUSINESS_WORKSPACE_KINDS | {"portfolio"}
+_AUTHORITY_SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 class RoleSessionError(Exception):
@@ -49,9 +53,10 @@ class JournalError(Exception):
 @dataclass(frozen=True)
 class RoleSessionMetadata:
     workspace_id: str
+    workspace_kind: str
     role: str
     correlation_id: str
-    workflow: Optional[str]
+    workflow: str
     expires_at: float
     status: str
     final_status: Optional[str] = None
@@ -69,21 +74,23 @@ class RoleSessionStore:
         self._packaged_root = Path(packaged_root).resolve()
         self._clock = clock
         self._ttl_seconds = ttl_seconds
+        self._role_workflow_cache: Optional[Dict[str, Set[str]]] = None
 
     def open(
         self,
         workspace_id: str,
         role: str,
         correlation_id: str,
-        workflow: Optional[str] = None,
+        workflow: str,
+        workspace_kind: str,
     ) -> str:
         if not self._valid_text(workspace_id):
             raise RoleSessionError()
         if not self._valid_text(correlation_id):
             raise RoleSessionError()
-        if role not in self._roles():
+        if not self._valid_role_workflow(role, workflow):
             raise RoleSessionError()
-        if workflow is not None and not self._valid_workflow(workflow):
+        if not self._valid_role_workspace(role, workspace_kind):
             raise RoleSessionError()
 
         now = self._now()
@@ -103,6 +110,7 @@ class RoleSessionStore:
         record = {
             "capability_hash": self._capability_hash(capability),
             "workspace_id": workspace_id,
+            "workspace_kind": workspace_kind,
             "role": role,
             "correlation_id": correlation_id,
             "workflow": workflow,
@@ -204,13 +212,18 @@ class RoleSessionStore:
             return False
 
         role = record.get("role")
-        if not isinstance(role, str) or role not in self._roles():
+        workflow = record.get("workflow")
+        if (
+            not isinstance(role, str)
+            or not isinstance(workflow, str)
+            or not self._valid_role_workflow(role, workflow)
+        ):
             return False
 
-        workflow = record.get("workflow")
-        if workflow is not None and (
-            not isinstance(workflow, str)
-            or not self._valid_workflow(workflow)
+        workspace_kind = record.get("workspace_kind")
+        if (
+            not isinstance(workspace_kind, str)
+            or not self._valid_role_workspace(role, workspace_kind)
         ):
             return False
 
@@ -325,16 +338,89 @@ class RoleSessionStore:
                     pass
 
     def _roles(self) -> set[str]:
+        return set(self._role_workflows())
+
+    def _role_workflows(self) -> Dict[str, Set[str]]:
+        if self._role_workflow_cache is not None:
+            return self._role_workflow_cache
+
         agents = self._packaged_root / "agents"
+        parsed: Dict[str, Set[str]] = {}
         try:
-            roles = {
-                path.stem
+            paths = sorted(
+                path
                 for path in agents.iterdir()
                 if path.is_file() and path.suffix == ".md"
-            }
-        except OSError:
-            return set()
-        return roles if len(roles) == 13 else set()
+            )
+            for path in paths:
+                text = path.read_text(encoding="utf-8")
+                parsed_role = self._parse_agent_frontmatter(text)
+                if parsed_role is None:
+                    return {}
+                name, workflows = parsed_role
+                if name != path.stem or name in parsed:
+                    return {}
+                parsed[name] = workflows
+        except (OSError, UnicodeError):
+            return {}
+        if len(parsed) != 13:
+            return {}
+        self._role_workflow_cache = parsed
+        return parsed
+
+    def _parse_agent_frontmatter(
+        self,
+        text: str,
+    ) -> Optional[tuple[str, Set[str]]]:
+        lines = text.splitlines()
+        if not lines or lines[0] != "---":
+            return None
+        try:
+            end = lines.index("---", 1)
+        except ValueError:
+            return None
+
+        name: Optional[str] = None
+        workflows: Set[str] = set()
+        in_skills = False
+        for line in lines[1:end]:
+            if line.startswith("name:"):
+                if name is not None:
+                    return None
+                name = line.partition(":")[2].strip()
+                in_skills = False
+            elif line == "skills:":
+                in_skills = True
+            elif in_skills and line.startswith("  - "):
+                workflow = line[4:].strip()
+                if not self._valid_workflow(workflow):
+                    return None
+                workflows.add(workflow)
+            elif line and not line[0].isspace():
+                in_skills = False
+
+        if (
+            name is None
+            or _AUTHORITY_SEGMENT.fullmatch(name) is None
+            or not workflows
+        ):
+            return None
+        return name, workflows
+
+    def _valid_role_workflow(self, role: object, workflow: object) -> bool:
+        return (
+            isinstance(role, str)
+            and isinstance(workflow, str)
+            and workflow in self._role_workflows().get(role, set())
+        )
+
+    @staticmethod
+    def _valid_role_workspace(role: str, workspace_kind: object) -> bool:
+        if not isinstance(workspace_kind, str) or workspace_kind not in _WORKSPACE_KINDS:
+            return False
+        if role == "portfolio-manager":
+            return workspace_kind == "portfolio"
+        return workspace_kind in _BUSINESS_WORKSPACE_KINDS
 
     def _valid_workflow(self, workflow: str) -> bool:
         if not self._valid_text(workflow):
@@ -413,13 +499,10 @@ class RoleSessionStore:
         final_status = record.get("final_status")
         return RoleSessionMetadata(
             workspace_id=str(record["workspace_id"]),
+            workspace_kind=str(record["workspace_kind"]),
             role=str(record["role"]),
             correlation_id=str(record["correlation_id"]),
-            workflow=(
-                str(record["workflow"])
-                if record["workflow"] is not None
-                else None
-            ),
+            workflow=str(record["workflow"]),
             expires_at=float(record["expires_at"]),
             status=str(record["status"]),
             final_status=(
