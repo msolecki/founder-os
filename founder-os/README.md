@@ -81,6 +81,16 @@ minutes, and ends only after it persists and validates
 values stay unknown and become owned follow-ups; existing populated state
 survives a resumed run.
 
+After preflight, onboarding asks the optional **“What made you install Founder
+OS today?”** and records a supplied answer as founder-stated context, not
+business evidence. Its validated receipt reads **You came with:**, **Your first
+decision:**, **Based on:**, **Saved to:**, **Founder OS will remember:**, and
+**Recommended next move:**. Only after activation, `/situation-review` may
+preview the owner, workflow, required state, and expected persistence for that
+reason. You choose **Continue** or **Stop**; the specialist workflow runs only
+after **Continue**. At the fifteen-minute hard stop, the flow prints a copyable
+command instead of opening another role session.
+
 Then, if you want the company to come to you rather than wait to be opened:
 
 ```

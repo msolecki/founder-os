@@ -81,6 +81,14 @@ delegates each answer through a short-lived role capability to the sibling that
 owns the destination file, validates each persisted checkpoint, and ends with a
 dated brief at `reviews/daily/YYYY-MM-DD.md`.
 
+After the read-only preflight, it asks one optional intent question: **“What
+made you install Founder OS today?”** A supplied answer is saved as the
+founder's stated context, not treated as business evidence and not allowed to
+choose the first bet or commitment by itself. Each of the four groups shows its
+position, expected time, the decision it supports, and that `UNKNOWN` is an
+acceptable answer. After every owner checkpoint, you see the owner, persisted
+file, and any honest gap.
+
 A valid brief has all four required headings declared in `ownership.yaml`:
 `## The one thing`, `## Rotting`, `## The trade`, and `## Triage`. `## The one
 thing` and `## The trade` must be non-empty. An empty, malformed, or wrong-path
@@ -92,6 +100,23 @@ filled from inference. `Activation complete` appears only after that valid
 brief passes the same check in the same resolved workspace. If the flow stops, run
 `/founder-os-init` again: populated sections are preserved and the first missing
 stage resumes.
+
+The activation receipt leads with the value you can inspect:
+
+- **You came with:** the optional install reason, or `not supplied`.
+- **Your first decision:** today's one thing and its trade.
+- **Based on:** the source files and dates used by the brief.
+- **Saved to:** the exact daily-review path.
+- **Founder OS will remember:** the live queue item, bet link, and explicit
+  missing inputs.
+- **Recommended next move:** one workflow derived from current state.
+
+If you supplied an install reason, Founder OS may then preview how
+`/situation-review` would route it. The preview shows the owner, workflow,
+required state, and expected persistence, then offers **Continue** or **Stop**.
+The specialist workflow runs only after you choose **Continue**. At the
+fifteen-minute hard stop, onboarding shows a copyable `/situation-review`
+command carrying the reason instead of opening another role session.
 
 ## Optional: schedule the cadences
 

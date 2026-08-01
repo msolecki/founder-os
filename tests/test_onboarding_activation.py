@@ -538,6 +538,99 @@ class OnboardingActivationContract(unittest.TestCase):
                 for token in required:
                     self.assertRegex(row, rf"(?i){semantic_pattern(token)}")
 
+    def test_activation_intent_is_optional_persisted_founder_context(self):
+        _, preflight, preflight_offset = section_matching(
+            self.init_body, r"Stage 0.*Preflight"
+        )
+        _, intent, intent_offset = section_matching(
+            self.init_body, r"Activation intent"
+        )
+        _, business, business_offset = section_matching(
+            self.init_body, r"Stage 1/4.*Business"
+        )
+        self.assertLess(preflight_offset, intent_offset)
+        self.assertLess(intent_offset, business_offset)
+
+        for token in (
+            "What made you install Founder OS today?",
+            "optional",
+            "decisions/YYYY-MM-DD-founder-os-installed.md",
+            "## Context",
+            "founder's stated activation reason",
+            "current date",
+            "intent",
+            "not evidence",
+        ):
+            with self.subTest(token=token):
+                self.assertRegex(intent, rf"(?i){semantic_pattern(token)}")
+        self.assertRegex(intent, r"(?is)does not enter.*queue\.md")
+        self.assertRegex(intent, r"(?is)does not (?:alter|change).*first bet")
+        self.assertRegex(
+            intent,
+            r"(?is)does\s+not\s+(?:select|choose).*daily\s+commitment",
+        )
+        self.assertRegex(intent, r"(?is)resume.*preserve.*do not ask again")
+        self.assertRegex(intent, r"(?is)omitted.*does not block")
+
+    def test_each_required_group_explains_progress_time_decision_and_unknowns(self):
+        expected = {
+            r"Stage 1/4.*Business": (
+                "Business 1/4",
+                "about",
+                "company identity",
+            ),
+            r"Stage 2/4.*Customer": (
+                "Customer 2/4",
+                "about two minutes",
+                "good-fit opportunity",
+            ),
+            r"Stage 3/4.*Quarter": (
+                "Quarter 3/4",
+                "about",
+                "quarterly bet",
+            ),
+            r"Stage 4/4.*Money": (
+                "Money 4/4",
+                "about",
+                "financial constraint",
+            ),
+        }
+        for heading, required in expected.items():
+            _, section, _ = section_matching(self.init_body, heading)
+            with self.subTest(stage=heading):
+                for token in required:
+                    self.assertRegex(
+                        section, rf"(?i){semantic_pattern(token)}"
+                    )
+                self.assertRegex(section, r"(?i)UNKNOWN.*acceptable")
+
+    def test_each_owner_checkpoint_has_a_human_readable_success_line(self):
+        expected = {
+            r"Stage 1/4.*Business": ("Chief of Staff", "charter.md"),
+            r"Stage 2/4.*Customer": ("Positioning Advisor", "offer.md"),
+            r"Stage 3/4.*Quarter": ("Strategist", "goals.md"),
+            r"Stage 4/4.*Money": ("CFO", "metrics.md"),
+        }
+        internal_terms = (
+            "capability",
+            "correlation",
+            "hash",
+            "session",
+        )
+        for heading, (owner, path) in expected.items():
+            _, section, _ = section_matching(self.init_body, heading)
+            checkpoint = structured_actions(section).get(
+                "checkpoint presentation"
+            )
+            with self.subTest(stage=heading):
+                self.assertIsNotNone(checkpoint)
+                line = checkpoint[0]
+                self.assertRegex(line, rf"(?i){semantic_pattern(owner)}")
+                self.assertRegex(line, rf"(?i){semantic_pattern(path)}")
+                self.assertRegex(line, r"(?i)gap")
+                for term in internal_terms:
+                    self.assertNotRegex(line, rf"(?i)\b{term}\b")
+
     def test_interview_stages_collect_only_first_brief_inputs(self):
         expected = {
             r"Stage 1/4.*Business": (
@@ -921,6 +1014,70 @@ Status: blocked — cash cap: UNKNOWN
         )
         self.assertLess(first_brief_offset, receipt_offset)
         assert_receipt_order(self, first_brief + receipt)
+
+    def test_activation_receipt_leads_with_value_in_the_required_order(self):
+        _, receipt, _ = section_matching(
+            self.init_body, r"Stage 7.*Activation receipt"
+        )
+        labels = (
+            "You came with:",
+            "Your first decision:",
+            "Based on:",
+            "Saved to:",
+            "Founder OS will remember:",
+            "Recommended next move:",
+        )
+        positions = [receipt.index(label) for label in labels]
+        self.assertEqual(positions, sorted(positions))
+        self.assertRegex(receipt, r"(?is)You came with:.*not supplied")
+        self.assertRegex(receipt, r"(?is)Your first decision:.*one thing.*trade")
+        self.assertRegex(receipt, r"(?is)Based on:.*source files.*dates")
+        self.assertRegex(
+            receipt, r"(?is)Saved to:.*reviews/daily/YYYY-MM-DD\.md"
+        )
+        self.assertRegex(
+            receipt,
+            r"(?is)Founder OS will remember:.*queue item.*bet link.*missing inputs",
+        )
+        self.assertRegex(
+            receipt,
+            r"(?is)Recommended next move:.*exactly one workflow.*current state",
+        )
+
+    def test_activation_reason_returns_through_preview_and_explicit_consent(self):
+        _, receipt, _ = section_matching(
+            self.init_body, r"Stage 7.*Activation receipt"
+        )
+        _, return_flow, _ = section_matching(
+            receipt, r"Return to the activation reason", level=3
+        )
+        for token in (
+            "/situation-review",
+            "selected owner",
+            "workflow",
+            "required state",
+            "expected persistence",
+            "continue",
+            "stop",
+        ):
+            with self.subTest(token=token):
+                self.assertRegex(
+                    return_flow, rf"(?i){semantic_pattern(token)}"
+                )
+        self.assertRegex(
+            return_flow,
+            r"(?is)specialist\s+workflow.*only\s+after.*"
+            r"(?:founder|user).*continue",
+        )
+        self.assertRegex(
+            return_flow,
+            r"(?is)fifteen-minute hard stop.*do not open.*role session",
+        )
+        self.assertRegex(
+            return_flow,
+            r"(?is)one\s+copyable.*?/situation-review.*reason.*"
+            r"end\s+successfully",
+        )
 
     def test_completion_reuses_the_preflight_resolved_workspace(self):
         _, preflight, _ = section_matching(

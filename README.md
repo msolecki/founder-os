@@ -86,6 +86,16 @@ non-empty `## The one thing` and `## The trade`. If onboarding stops, run
 `/founder-os-init` again; it preserves populated sections and resumes from the
 first missing owner output.
 
+After preflight, onboarding asks the optional **“What made you install Founder
+OS today?”** and records a supplied answer as founder-stated context, not
+business evidence. Its validated receipt reads **You came with:**, **Your first
+decision:**, **Based on:**, **Saved to:**, **Founder OS will remember:**, and
+**Recommended next move:**. Only after activation, `/situation-review` may
+preview the owner, workflow, required state, and expected persistence for that
+reason. You choose **Continue** or **Stop**; the specialist workflow runs only
+after **Continue**. At the fifteen-minute hard stop, the flow prints a copyable
+command instead of opening another role session.
+
 Scheduled jobs run only while that machine and its cron service are running.
 See the complete
 [`docs/getting-started.md`](docs/getting-started.md) guide before installing if

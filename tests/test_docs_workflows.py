@@ -624,6 +624,28 @@ class ActivationCopyContractTest(unittest.TestCase):
                 self.assertNotIn("twenty minutes", lowered)
         self.assertNotIn("hand each answer", COMMANDS.lower())
 
+    def test_entry_docs_explain_activation_intent_receipt_and_consentful_return(self):
+        for document in (GETTING_STARTED, ROOT_README, PLUGIN_README):
+            compact = re.sub(r"\s+", " ", document)
+            with self.subTest(document=document[:24]):
+                for marker in (
+                    "What made you install Founder OS today?",
+                    "You came with:",
+                    "Your first decision:",
+                    "Based on:",
+                    "Saved to:",
+                    "Founder OS will remember:",
+                    "Recommended next move:",
+                    "/situation-review",
+                    "Continue",
+                    "Stop",
+                ):
+                    self.assertIn(marker, compact)
+                self.assertRegex(
+                    compact,
+                    r"(?i)specialist workflow.*only after.*Continue",
+                )
+
     def test_activation_requires_a_valid_brief_not_an_existing_file(self):
         activation_documents = {
             "landing": HTML,
