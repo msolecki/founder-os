@@ -307,6 +307,31 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         )
         self.assertEqual(tracked.stdout.strip(), "")
 
+        # `docs/superpowers/` is the only sanctioned home for a plan or design,
+        # and being gitignored is what keeps it internal. A planning artifact
+        # written anywhere else under `docs/` is tracked by default and ships
+        # to the public site — which is how three of them reached `docs/design/`
+        # and had to be deleted one release later. Pin the shape, not one path.
+        published = subprocess.run(
+            ["git", "ls-files", "--", "docs"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+        internal = sorted(
+            name
+            for name in published
+            if re.search(r"/(design|plans|specs|brainstorm)/", name)
+            or re.search(r"/\d{4}-\d{2}-\d{2}-", name)
+        )
+        self.assertEqual(
+            internal,
+            [],
+            "internal planning artifacts are tracked under docs/ and would be "
+            "published: %s — move them to docs/superpowers/" % internal,
+        )
+
     def test_codex_manifest_names_the_real_gateway_and_trust_boundary(self):
         self.assertEqual(
             set(self.codex_manifest["mcpServers"]),
