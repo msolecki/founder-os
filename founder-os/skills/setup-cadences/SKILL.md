@@ -75,8 +75,13 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
        codex -a never exec --sandbox workspace-write --ephemeral -C <workdir> '$founder-os:<workflow>'
 
    If the binary is under `/.nvm/`, disclose that a Node upgrade can move it.
-   Run `<binary> --help` and confirm every generated flag exists before the
-   preview.
+
+   Run `<binary> --help` before the preview, but do not treat it as the
+   complete flag list. Hosts hide accepted flags from help output: Claude Code
+   2.1.x accepts `--max-turns` and does not print it, so a missing flag is a
+   reason to test that one flag, never a reason to stop. Confirm the flags help
+   does list, and prove the rest with the step 7 smoke test — an argv the host
+   rejects fails there, loudly, before any schedule is trusted.
 
 2. **Resolve the scheduler and absolute paths.** `FOUNDER_OS_HOME` is the
    workspace; the working directory is its parent. Cron and system services do

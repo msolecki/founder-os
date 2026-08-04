@@ -39,6 +39,7 @@ They enforce *structure*; they cannot decide whether business advice is good.
 | `check_workspace_files_complete` | A path in `owns:` is not in `workspace_files:`/`portfolio_files:` — so `founder-os-init` would never scaffold it. |
 | `check_skill_writes` | A skill's `metadata.writes` names a path no agent owns, or a path owned by an agent other than the one holding the skill. |
 | `check_sections` | `sections:` declares a path nobody owns, or a skill writes a path `ownership.yaml` declares no sections for. |
+| `check_capture_contract` | `capture` is missing, is held by an agent other than `chief-of-staff`, writes anything but `inbox.md`, or drops a phrase of its bounded input contract — the single nonblank line, the 2048-byte limit, the rejected control characters, the safe `- ` list prefix, the observed-SHA precondition, the post-write re-read, or the uncertain-persistence rule. |
 | `check_beliefs` | A role skill has no `## Beliefs`, has it *after* `## Steps`, or has fewer than 3 bullets. |
 | `check_hooks` | Hook config or matchers are invalid/incomplete, or the guard, recorder, or gateway entry does not compile. |
 | `check_readme_counts` | The README "What's inside" table's Agents/Skills/Cadences counts don't match the package. |
@@ -193,11 +194,15 @@ These local official commands are a release gate, not CI coverage. Adding a
 pinned Claude CLI package to CI would download and execute an npm dependency;
 that requires explicit founder approval before the workflow may change.
 
-Validate the Codex package shape from the installed plugin-creator tooling:
+Validate the Codex package shape from the plugin-creator tooling Codex installs
+in its own home (`$CODEX_HOME`, default `~/.codex`):
 
 ```bash
-python3 /Users/msolecki/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py founder-os
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/plugin-creator/scripts/validate_plugin.py" founder-os
 ```
+
+If that path does not exist, the local Codex install does not ship the
+plugin-creator skill; skip this gate rather than substituting another script.
 
 ## Dual-host notes
 

@@ -4,7 +4,7 @@
 Claude identifies a role directly with ``agent_type`` — as the bare name or
 host-namespaced (``founder-os:cfo``). Codex supplies a ``turn_id`` that
 ``record-agent.py`` maps to the same role. Once a *role* is known, direct
-filesystem, shell, web, and non-Founder-OS MCP access is denied. The seven
+filesystem, shell, web, and non-Founder-OS MCP access is denied. The eight
 local gateway calls are recognized explicitly — under the packaged name
 (``mcp__founder-os-state__*``) and the host-wrapped one
 (``mcp__plugin_founder-os_founder-os-state__*``); a subagent may not open its

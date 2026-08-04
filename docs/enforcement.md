@@ -22,15 +22,20 @@ through a direct file, shell, web, or unrelated MCP tool.
 ## The authoritative state gateway
 
 Both Claude Code and Codex start the same local stdio process named
-`founder-os-state`. It exposes exactly seven actions:
+`founder-os-state`. It exposes exactly eight actions:
 
 - `resolve_workspace`
 - `open_role_session`
 - `list_state`
 - `read_state`
 - `read_reference`
+- `read_portfolio_inputs` *(portfolio sessions only)*
 - `write_owned_state`
 - `close_role_session`
+
+A role's own `tools:` allowlist is narrower than the server: six of these, since
+no role may call `open_role_session`. `portfolio-manager` alone also holds
+`read_portfolio_inputs`.
 
 The main thread resolves one workspace and opens a short-lived role capability.
 That capability is bound to the resolved workspace, role, workflow, and
@@ -68,7 +73,7 @@ For a known packaged role or approved generic fallback, the guard:
 1. denies `Read`, `Write`, `Edit`, `NotebookEdit`, `Glob`, `Grep`, and
    `apply_patch` so role state cannot bypass the gateway;
 2. denies shell, web, and every non-Founder-OS MCP tool under house rule 0;
-3. permits only the seven known local gateway actions;
+3. permits only the eight known local gateway actions;
 4. denies `open_role_session` to subagents so they cannot mint or elevate their
    own authority; and
 5. requires a live capability and, for a named native role, requires the

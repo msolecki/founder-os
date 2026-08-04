@@ -316,8 +316,9 @@ tool whose drafts die when you close the tab is one that quietly asks you to do
 the work twice.
 
 This one isn't a promise either: **no role in this package has a shell, browser,
-direct file tool, or external MCP tool.** Every role exposes only the seven
-bounded `founder-os-state` actions. A known native role must agree with its role
+direct file tool, or external MCP tool.** Every role exposes only six bounded
+`founder-os-state` actions — the Portfolio Manager adds a seventh, and no role
+may mint its own session. A known native role must agree with its role
 capability; the generic-agent fallback receives the same unchanged packaged
 role, active workflow, bounded handoff, workspace, and capability. If your
 setup connects a mailbox, the roles still cannot reach it. A wrong opinion

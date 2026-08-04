@@ -73,12 +73,20 @@ A local agent gets a `tools:` allowlist that is a **subset** of what packaged
 agents hold, and no overlay may grant `Bash`, `WebFetch`, `WebSearch`, an MCP
 tool, or `Agent`.
 
-This one needs no new code to hold: `check_outbound` in
-`hooks/ownership-guard.py` denies subagents the outbound tools regardless of
-any map, and it never consults the map to do it. The doctor's check is an early
-warning so the founder finds out at diagnosis time rather than mid-run. House
-rule 0 is not a default the overlay may override; it is the reason the package
-is installable by someone who has not read it.
+**This rule is a contract, not something the guard enforces for you.**
+`check_outbound` in `hooks/ownership-guard.py` denies the outbound tools to the
+*thirteen packaged roles*, and a local agent is by definition not one of them —
+`_role_of` returns None for it, the role lockdown never applies, and the guard
+reaches `check_outbound` at all only on the role path. A local agent that names
+`Bash` gets whatever the founder's own permission settings allow. The gateway
+still refuses it: a local agent holds no role capability, so every
+`founder-os-state` call is denied.
+
+So `founder-os-doctor` is not an early warning about a tool that would be
+denied mid-run. It is the only thing that reads this rule, and a finding it
+reports is a capability the founder actually granted themselves. House rule 0
+still binds every packaged role; the overlay simply cannot be handed the job of
+enforcing it on agents the founder writes.
 
 ## Merge, precisely
 
