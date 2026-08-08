@@ -123,7 +123,6 @@
       update({ closeGroups: true });
     });
 
-    catalogue?.removeAttribute('open');
     update({ closeGroups: true });
 
     return { update };

@@ -528,7 +528,8 @@ class ActivationCopyContractTest(unittest.TestCase):
             HTML[multi_start:memory_start],
         ):
             with self.subTest(section=section[:80]):
-                self.assertIn('<details class="reference-panel">', section)
+                self.assertIn(
+                    '<details class="reference-panel" open>', section)
                 self.assertIn('<summary class="reference-summary">', section)
 
     def test_hero_names_the_user_problem_result_time_and_decision_first_cta(self):

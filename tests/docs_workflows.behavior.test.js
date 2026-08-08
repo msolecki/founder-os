@@ -404,7 +404,11 @@ test('workflow controller executes every approved state transition', () => {
       grow: 8,
       run: 10,
     };
-    assert.equal(workflowCatalogue.open, false);
+    assert.equal(
+      workflowCatalogue.open,
+      true,
+      'the catalogue keeps the open attribute the markup ships with',
+    );
     assert.equal(workflowCount.textContent, '53 of 53 workflows');
 
     for (const [category, expectedCount] of Object.entries(expectedCounts)) {
