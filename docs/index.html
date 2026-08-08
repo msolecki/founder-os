@@ -1710,7 +1710,7 @@
 
     .workflow-controls {
       display: none;
-      max-width: 60rem;
+      max-width: none;
       margin-top: 1.25rem;
     }
 
@@ -1759,7 +1759,7 @@
     }
 
     .workflow-catalogue {
-      max-width: 60rem;
+      max-width: none;
       margin-top: 1rem;
       overflow: visible;
       background: var(--night-soft);
@@ -1772,7 +1772,7 @@
       align-items: center;
       justify-content: space-between;
       min-height: 3.75rem;
-      padding: 0.9rem 1.1rem;
+      padding: 0.9rem 3.4rem 0.9rem 1.1rem;
       color: var(--ink);
       background: var(--lime);
       cursor: pointer;
@@ -1880,6 +1880,10 @@
 
     .workflow-group summary::-webkit-details-marker {
       display: none;
+    }
+
+    .workflow-group summary::after {
+      content: none;
     }
 
     .workflow-group summary:hover {
@@ -2020,7 +2024,7 @@
       align-items: baseline;
       justify-content: space-between;
       gap: 1rem;
-      padding: 1rem 0;
+      padding: 1rem 3rem 1rem 0;
       margin-bottom: 2rem;
       border-block: 1px solid currentColor;
       cursor: pointer;
@@ -2808,7 +2812,7 @@
       transform: translateY(-50%);
     }
 
-    details[open] summary::after {
+    details[open] > summary::after {
       content: "−";
       color: var(--white);
       background: var(--orange);
@@ -4006,7 +4010,7 @@
         </div>
 
         <details class="workflow-catalogue" id="workflow-catalogue" open>
-          <summary class="workflow-catalogue-summary">Browse all <strong>53</strong> workflows</summary>
+          <summary class="workflow-catalogue-summary"><span>Browse all <strong>53</strong> workflows</span></summary>
           <div class="workflow-catalogue-body">
             <div class="workflow-results-toolbar" id="workflow-results-toolbar">
               <span class="workflow-count" id="workflow-count" aria-live="polite">53 of 53 workflows</span>

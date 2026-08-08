@@ -344,7 +344,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
     def test_readability_contract_is_single_column_and_larger(self):
         compact = re.sub(r"\s+", " ", HTML)
         self.assertRegex(
-            compact, r"\.workflow-catalogue \{[^}]*max-width: 60rem")
+            compact, r"\.workflow-catalogue \{[^}]*max-width: none")
         self.assertRegex(
             compact, r"\.workflow-groups \{[^}]*grid-template-columns: 1fr")
         self.assertRegex(
@@ -389,6 +389,43 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertIn("#c3cfcc", HTML)
         self.assertIn(".workflow-search input:focus-visible", HTML)
         self.assertIn("@media (prefers-reduced-motion: reduce)", HTML)
+
+    def test_disclosure_badge_never_lands_on_summary_content(self):
+        """The shared summary::after badge is absolutely positioned at the
+        right edge, so every summary that overrides the base padding must
+        reserve room for it, and no summary may inherit an open-state badge
+        from an ancestor <details>."""
+        compact = re.sub(r"\s+", " ", HTML)
+
+        # The badge is absolute at right: 0.25rem with a 1.9rem box, so any
+        # summary needs at least ~2.15rem of right padding to stay clear.
+        self.assertRegex(
+            compact, r"summary \{[^}]*padding: 1\.5rem 3rem 1\.5rem 0")
+        self.assertRegex(
+            compact, r"\.reference-summary \{[^}]*padding: 1rem 3rem 1rem 0")
+        self.assertRegex(
+            compact,
+            r"\.workflow-catalogue > summary \{"
+            r"[^}]*padding: 0\.9rem 3\.4rem 0\.9rem 1\.1rem",
+        )
+
+        # Group rows carry their own .workflow-group-meta indicator, so the
+        # shared badge is suppressed there rather than padded around.
+        self.assertRegex(
+            compact, r"\.workflow-group summary::after \{[^}]*content: none")
+
+        # A descendant selector here would paint every nested summary as open
+        # whenever any ancestor <details> is open.
+        self.assertIn("details[open] > summary::after", HTML)
+        self.assertNotRegex(HTML, r"details\[open\] summary::after")
+
+        # The catalogue label must stay one flex item; splitting it across
+        # text nodes lets space-between tear the phrase apart.
+        self.assertIn(
+            '<summary class="workflow-catalogue-summary">'
+            "<span>Browse all <strong>53</strong> workflows</span></summary>",
+            HTML,
+        )
 
     def test_all_fragment_and_aria_references_resolve_to_unique_ids(self):
         parser = DocumentContractParser()
