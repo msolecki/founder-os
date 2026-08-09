@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Brief"
+  short_description: "Run the Daily Brief Founder OS workflow."
+  default_prompt: "Use $daily-brief to handle this Founder OS task."

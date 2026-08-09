@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Delivery Retro"
   short_description: "Run the Delivery Retro Founder OS workflow."

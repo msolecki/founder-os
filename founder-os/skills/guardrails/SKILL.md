@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: guardrails
 description: Enforce the hard refusals every agent obeys — nothing outbound and nothing paid, ever; tax, legal, and medical questions get escalated to a real professional, never answered
+references:
+  - agents/openai.yaml
 ---
 
 # Guardrails

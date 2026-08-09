@@ -681,7 +681,8 @@ class ActivationCopyContractTest(unittest.TestCase):
                     "Saved to:",
                     "Founder OS will remember:",
                     "Recommended next move:",
-                    "/situation-review",
+                    "/founder-os:situation-review",
+                    "$founder-os:situation-review",
                     "Continue",
                     "Stop",
                 ):
@@ -770,21 +771,35 @@ class ActivationCopyContractTest(unittest.TestCase):
         start = GETTING_STARTED.index("## Your first five actions")
         first_five = GETTING_STARTED[start:GETTING_STARTED.index("\n## ", start + 4)]
         for marker in (
-            "/daily-brief",
-            "/capture",
-            "/pipeline-review",
-            "/weekly-review",
+            "/founder-os:daily-brief",
+            "$founder-os:daily-brief",
+            "/founder-os:capture",
+            "$founder-os:capture",
+            "/founder-os:pipeline-review",
+            "$founder-os:pipeline-review",
+            "/founder-os:weekly-review",
+            "$founder-os:weekly-review",
             "Chief of Staff",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, first_five)
+
+    def test_entry_docs_never_copy_unqualified_workflow_commands(self):
+        bare = re.compile(
+            r"`/(?:daily-brief|capture|pipeline-review|weekly-review|"
+            r"situation-review|founder-os-doctor)\b"
+        )
+        for document in (GETTING_STARTED, ROOT_README, PLUGIN_README):
+            with self.subTest(document=document[:24]):
+                self.assertIsNone(bare.search(document))
 
     def test_update_repair_and_uninstall_are_explicit(self):
         for marker in (
             "/plugin marketplace update founder-os",
             "/plugin update founder-os@founder-os",
             "/reload-plugins",
-            "/founder-os-doctor",
+            "/founder-os:founder-os-doctor",
+            "$founder-os:founder-os-doctor",
             "/plugin uninstall founder-os@founder-os",
         ):
             with self.subTest(marker=marker):
@@ -857,7 +872,8 @@ class ActivationCopyContractTest(unittest.TestCase):
                     "source-linked decision",
                     "local Markdown",
                     "fifteen minutes",
-                    "/situation-review",
+                    "/founder-os:situation-review",
+                    "$founder-os:situation-review",
                     "I do not know what matters today",
                     "never sends",
                 ):

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Follow Up Sweep"
+  short_description: "Run the Follow Up Sweep Founder OS workflow."
+  default_prompt: "Use $follow-up-sweep to handle this Founder OS task."

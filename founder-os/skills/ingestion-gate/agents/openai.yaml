@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Ingestion Gate"
   short_description: "Run the Ingestion Gate Founder OS workflow."

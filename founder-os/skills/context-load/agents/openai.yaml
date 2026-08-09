@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Context Load"
   short_description: "Run the Context Load Founder OS workflow."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Automation Audit"
+  short_description: "Run the Automation Audit Founder OS workflow."
+  default_prompt: "Use $automation-audit to handle this Founder OS task."

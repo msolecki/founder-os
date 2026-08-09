@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weekly Review"
+  short_description: "Run the Weekly Review Founder OS workflow."
+  default_prompt: "Use $weekly-review to handle this Founder OS task."

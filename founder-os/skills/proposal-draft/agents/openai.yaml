@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Proposal Draft"
   short_description: "Run the Proposal Draft Founder OS workflow."

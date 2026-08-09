@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: decision-log
 description: Record an irreversible decision with the falsifier that would reverse it — run within 24 hours of the decision, while the reason is still the reason
 metadata:
   writes:
     - decisions/
+references:
+  - agents/openai.yaml
 ---
 
 # Decision Log

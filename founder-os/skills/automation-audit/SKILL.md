@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: automation-audit
 description: Decide whether a manual task is worth automating using payback arithmetic — run before building anything internal, and especially when the founder is enjoying it
 metadata:
   writes:
     - systems.md
+references:
+  - agents/openai.yaml
 ---
 
 # Automation Audit

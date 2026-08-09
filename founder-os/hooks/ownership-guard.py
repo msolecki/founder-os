@@ -65,7 +65,25 @@ NESTED_AGENT_TOOLS = frozenset({"Task", "Agent"})
 DIRECT_FILE_TOOLS = frozenset({
     "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep", "apply_patch",
 })
-MCP_TOOL = re.compile(r"^mcp__")
+TOOL_NAME_ALIASES = {
+    # Factory
+    "Execute": "Bash",
+    "ApplyPatch": "apply_patch",
+    # GitHub Copilot
+    "read": "Read",
+    "write": "Write",
+    "edit": "Edit",
+    "create": "Write",
+    "search": "Grep",
+    "execute": "Bash",
+    # Cursor and Gemini
+    "read_file": "Read",
+    "write_file": "Write",
+    "edit_file": "Edit",
+    "run_terminal_cmd": "Bash",
+    "run_shell_command": "Bash",
+}
+MCP_TOOL = re.compile(r"^(?:mcp__|[A-Za-z0-9._-]+/)")
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 # Agent identities may carry a host namespace — `founder-os:cfo` on Claude
 # Code. turn_id keeps SAFE_ID: it becomes a filename and never holds a colon.
@@ -74,6 +92,7 @@ SAFE_AGENT = re.compile(r"^[A-Za-z0-9._:-]+$")
 # subagent identities. Pinned to `founder-os` by `check_plugin`.
 PLUGIN_NAMESPACE = "founder-os"
 GATEWAY_SERVER = "founder_os_state"
+GATEWAY_SLASH_SERVER = "founder-os-state"
 # The gateway server as each host registers it, normalized: the packaged name,
 # and Claude Code's `mcp__plugin_<plugin>_<server>__<action>` wrapping. Both
 # halves of the wrapped form are validator-pinned (`check_plugin`,
@@ -535,15 +554,32 @@ def _gateway_tool_name(tool_name):
     """
     if not isinstance(tool_name, str) or not MCP_TOOL.match(tool_name):
         return None
-    head, _, action = tool_name.rpartition("__")
-    server = head[len("mcp__"):].replace("-", "_")
-    if server not in GATEWAY_SERVERS:
+    if tool_name.startswith("mcp__"):
+        head, _, action = tool_name.rpartition("__")
+        server = head[len("mcp__"):].replace("-", "_")
+        known_server = server in GATEWAY_SERVERS
+    else:
+        server, separator, action = tool_name.partition("/")
+        if not separator or "/" in action:
+            return None
+        known_server = server == GATEWAY_SLASH_SERVER
+    if not known_server:
         return None
     return action if action in GATEWAY_TOOLS else ""
 
 
 def _valid_text(value):
     return isinstance(value, str) and bool(value.strip()) and "\x00" not in value
+
+
+def _finite_number(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        number = float(value)
+    except (OverflowError, TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
 
 
 def _read_small_regular_json(path):
@@ -614,12 +650,8 @@ def _session_role(tool_input):
         now = time.time()
     except Exception:  # noqa: BLE001 - capability uncertainty must deny
         return None
-    if (
-        isinstance(expires_at, bool)
-        or not isinstance(expires_at, (int, float))
-        or not math.isfinite(float(expires_at))
-        or now >= float(expires_at)
-    ):
+    expires_at = _finite_number(expires_at)
+    if expires_at is None or now >= expires_at:
         return None
     return role
 
@@ -690,9 +722,55 @@ def _tool_paths(tool_name, tool_input):
         log("allow: apply_patch payload contained no recognizable file paths")
         return []
     if tool_name in ("Write", "Edit", "NotebookEdit"):
-        path = tool_input.get("file_path") or tool_input.get("notebook_path")
-        return [path] if isinstance(path, str) and path else []
+        paths = []
+        for key in (
+            "file_path",
+            "notebook_path",
+            "path",
+            "filePath",
+            "notebookPath",
+            "target_file",
+            "targetFile",
+        ):
+            path = tool_input.get(key)
+            if isinstance(path, str) and path and path not in paths:
+                paths.append(path)
+        return paths
     return []
+
+
+def _normalize_hook_payload(data):
+    """Normalize host-specific outer hook fields before policy decisions."""
+    normalized = dict(data)
+    aliases = {
+        "tool_name": ("toolName",),
+        "tool_input": ("toolArgs",),
+        "agent_type": ("agentType", "agentName"),
+        "turn_id": ("turnId",),
+    }
+    for canonical, alternatives in aliases.items():
+        present = [
+            (key, data[key])
+            for key in (canonical,) + alternatives
+            if key in data
+        ]
+        if not present:
+            continue
+        first = present[0][1]
+        if any(value != first for _, value in present[1:]):
+            return None, "conflicting %s aliases" % canonical
+        normalized[canonical] = first
+
+    tool_input = normalized.get("tool_input")
+    if isinstance(tool_input, str):
+        try:
+            tool_input = json.loads(tool_input)
+        except (TypeError, ValueError):
+            return None, "tool input is not valid JSON"
+        normalized["tool_input"] = tool_input
+    if tool_input is not None and not isinstance(tool_input, dict):
+        return None, "tool input is not an object"
+    return normalized, None
 
 
 def check_local_map(agent_type, rel):
@@ -755,11 +833,11 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
 def agent_type_for(data):
     """Resolve the subagent type from Claude input or Codex turn state."""
     direct = data.get("agent_type")
-    if isinstance(direct, str) and SAFE_AGENT.fullmatch(direct):
-        return direct
+    if not isinstance(direct, str) or not SAFE_AGENT.fullmatch(direct):
+        direct = None
     turn_id = data.get("turn_id")
     if not isinstance(turn_id, str) or not SAFE_ID.fullmatch(turn_id):
-        return None
+        return direct
     data_root = os.environ.get("PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
     if not data_root:
         return None
@@ -774,17 +852,31 @@ def agent_type_for(data):
         now = time.time()
     except Exception:
         return None
+    recorded_at = _finite_number(recorded_at)
+    now = _finite_number(now)
     if (
-        isinstance(recorded_at, bool)
-        or not isinstance(recorded_at, (int, float))
-        or not math.isfinite(float(recorded_at))
-        or not math.isfinite(float(now))
-        or float(recorded_at) > float(now) + 300
-        or float(now) - float(recorded_at) >= AGENT_MAPPING_TTL_SECONDS
+        recorded_at is None
+        or now is None
+        or recorded_at > now + 300
+        or now - recorded_at >= AGENT_MAPPING_TTL_SECONDS
     ):
         return None
     resolved = payload.get("agent_type")
-    return resolved if isinstance(resolved, str) and SAFE_AGENT.fullmatch(resolved) else None
+    if not isinstance(resolved, str) or not SAFE_AGENT.fullmatch(resolved):
+        return None
+    if direct is None:
+        return resolved
+    direct_role = _role_of(direct)
+    resolved_role = _role_of(resolved)
+    if (
+        direct.casefold() == resolved.casefold()
+        or direct_role is not None
+        and direct_role == resolved_role
+        or direct in GENERIC_AGENT_TYPES
+        and resolved in GENERIC_AGENT_TYPES
+    ):
+        return direct
+    return None
 
 
 def main():
@@ -799,7 +891,27 @@ def main():
     if not isinstance(data, dict):
         allow("hook input is not an object")
 
-    tool_name = data.get("tool_name") or ""
+    has_identity_marker = any(
+        key in data
+        for key in (
+            "agent_type",
+            "agentType",
+            "agentName",
+            "turn_id",
+            "turnId",
+        )
+    )
+    data, payload_error = _normalize_hook_payload(data)
+    if payload_error:
+        if not has_identity_marker:
+            allow("malformed main-thread hook payload (%s)" % payload_error)
+        _deny_tool(
+            "unresolved role",
+            "<invalid hook payload>",
+            "Host hook payload has %s." % payload_error,
+        )
+
+    tool_name = data.get("tool_name")
     for identity_field, pattern in (("agent_type", SAFE_AGENT),
                                     ("turn_id", SAFE_ID)):
         if identity_field in data:
@@ -827,12 +939,13 @@ def main():
             )
         allow("main thread — the founder is the CEO")
 
-    if not isinstance(tool_name, str):
+    if not isinstance(tool_name, str) or not tool_name.strip():
         _deny_tool(
             agent_type,
             "<invalid tool name>",
             "A role tool invocation must name one concrete tool.",
         )
+    tool_name = TOOL_NAME_ALIASES.get(tool_name, tool_name)
     tool_input = data.get("tool_input")
     if not isinstance(tool_input, dict):
         tool_input = {}

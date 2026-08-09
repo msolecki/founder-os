@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Capture"
   short_description: "Save one unclassified line to the Founder OS inbox."

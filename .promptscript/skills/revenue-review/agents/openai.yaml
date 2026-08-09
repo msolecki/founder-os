@@ -1,0 +1,4 @@
+interface:
+  display_name: "Revenue Review"
+  short_description: "Run the Revenue Review Founder OS workflow."
+  default_prompt: "Use $revenue-review to handle this Founder OS task."

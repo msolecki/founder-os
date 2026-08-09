@@ -6,12 +6,13 @@ source-linked decision, saves it to local Markdown, and produces a valid first
 brief in less than fifteen minutes.
 
 Start with a situation such as **“I do not know what matters today”** or run
-`/situation-review`. The Chief of Staff selects one owner, one workflow, and the
-state destination; you do not need the command catalogue first. It previews the
-decision, route, missing state, and expected destination; the specialist starts
-only after you choose **Continue**, while **Stop** ends without running it.
-Founder OS never sends, pays, signs, cancels, or publishes. The founder remains
-the CEO.
+`/founder-os:situation-review` in Claude Code or
+`$founder-os:situation-review` in Codex. The Chief of Staff selects one owner,
+one workflow, and the state destination; you do not need the command catalogue
+first. It previews the decision, route, missing state, and expected
+destination; the specialist starts only after you choose **Continue**, while
+**Stop** ends without running it. Founder OS never sends, pays, signs, cancels,
+or publishes. The founder remains the CEO.
 
 It does not run the company for you. It persists the decision, its owner, its
 source and the trade you are making in a Markdown workspace you control.
@@ -32,7 +33,7 @@ workspace before installing.
 | A recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) installation | Founder OS is a plugin, not a standalone app. |
 | Python 3.9+ | Runs the local state gateway and host hooks. |
 | PyYAML *(development/tests only)* | Runs the full package validator; the installed runtime remains dependency-light. |
-| Node.js 20+ *(development/tests only)* | Runs the landing-page behavior contract test. |
+| Node.js 22.13+ *(development/tests only)* | Runs the PromptScript compiler and landing-page behavior contract test. |
 | A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Every workflow also works manually. |
 
 Founder OS itself is free and MIT-licensed. Your existing host plan and
@@ -115,12 +116,13 @@ The activation receipt leads with the value you can inspect:
   missing inputs.
 - **Recommended next move:** one workflow derived from current state.
 
-If you supplied an install reason, Founder OS may then preview how
-`/situation-review` would route it. The preview shows the owner, workflow,
-required state, and expected persistence, then offers **Continue** or **Stop**.
-The specialist workflow runs only after you choose **Continue**. At the
-fifteen-minute hard stop, onboarding shows a copyable `/situation-review`
-command carrying the reason instead of opening another role session.
+If you supplied an install reason, Founder OS may then preview how the
+`situation-review` workflow would route it. The preview shows the owner,
+workflow, required state, and expected persistence, then offers **Continue** or
+**Stop**. The specialist workflow runs only after you choose **Continue**. At
+the fifteen-minute hard stop, onboarding shows a copyable host-specific
+`situation-review` command carrying the reason instead of opening another role
+session.
 
 ## What every completed workflow shows
 
@@ -158,11 +160,15 @@ The Portfolio Manager is the only role that reads across them.
 
 ## Your first five actions
 
-1. Run `/daily-brief` before opening email.
-2. Run `/capture Call Anna about the Acme scope`; the next brief or `/triage`
-   drains the saved line.
-3. Run `/pipeline-review` before calling a list of conversations a pipeline.
-4. Run `/weekly-review` on Friday before memory rewrites the week.
+1. Run `/founder-os:daily-brief` in Claude Code or
+   `$founder-os:daily-brief` in Codex before opening email.
+2. Run `/founder-os:capture Call Anna about the Acme scope` or
+   `$founder-os:capture Call Anna about the Acme scope`; the next brief or the
+   `triage` workflow drains the saved line.
+3. Run `/founder-os:pipeline-review` or `$founder-os:pipeline-review` before
+   calling a list of conversations a pipeline.
+4. Run `/founder-os:weekly-review` or `$founder-os:weekly-review` on Friday
+   before memory rewrites the week.
 5. Ask the **Chief of Staff** to route any uncategorized decision. You do not
    need to memorize all 53 workflows.
 
@@ -201,9 +207,10 @@ codex plugin add founder-os@founder-os
 ```
 
 For a workspace that is missing files, stale, or structurally inconsistent,
-run `/founder-os-doctor`. It reports before proposing any repair. For an
-interrupted first run, repeat the host-specific init command; do not delete the
-workspace or manually replay the owner workflows.
+run `/founder-os:founder-os-doctor` in Claude Code or
+`$founder-os:founder-os-doctor` in Codex. It reports before proposing any
+repair. For an interrupted first run, repeat the host-specific init command;
+do not delete the workspace or manually replay the owner workflows.
 
 To remove the plugin:
 

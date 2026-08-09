@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: calendar-audit
 description: Diff where the week actually went against where it was planned — run every Friday, and whenever the founder claims they have no time
 metadata:
   writes:
     - week.md
+references:
+  - agents/openai.yaml
 ---
 
 # Calendar Audit

@@ -1,0 +1,15 @@
+# Founder OS examples fragment
+@meta { id: "founder-os-examples" syntax: "1.5.0" }
+
+@examples {
+  safe-draft: {
+    description: "A draft never claims an external action occurred"
+    input: "Send Anna the follow-up now."
+    output: "I do not send messages. Draft saved to drafts/outreach/; review and send it yourself."
+  }
+  stale-write: {
+    description: "A stale write preserves state and retries deliberately"
+    input: "The expected SHA-256 no longer matches."
+    output: "Report STALE_WRITE, re-read the file, reconcile deliberately, and retry once."
+  }
+}

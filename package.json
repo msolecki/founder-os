@@ -1,0 +1,17 @@
+{
+  "name": "founder-os-promptscript",
+  "private": true,
+  "description": "PromptScript build tooling for Founder OS.",
+  "packageManager": "pnpm@11.13.1",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "compile:promptscript": "pnpm exec prs compile --build claude --force && pnpm exec prs compile --build codex --force && python3 scripts/sync_promptscript_outputs.py",
+    "compile:promptscript:all": "pnpm exec prs compile --all-builds --force && python3 scripts/sync_promptscript_outputs.py",
+    "check:promptscript": "pnpm exec prs validate --strict && pnpm exec prs compile --all-builds --force && python3 scripts/sync_promptscript_outputs.py --check && python3 scripts/generate_commands.py founder-os --check"
+  },
+  "devDependencies": {
+    "@promptscript/cli": "1.17.1"
+  }
+}

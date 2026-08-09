@@ -1,0 +1,6 @@
+interface:
+  display_name: "Strategic Evaluation"
+  short_description: "Trace a hard decision from dated evidence to challenge."
+  default_prompt: "Use $strategic-evaluation to evaluate this material decision before I decide."
+policy:
+  allow_implicit_invocation: true

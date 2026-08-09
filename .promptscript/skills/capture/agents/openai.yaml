@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture"
+  short_description: "Save one unclassified line to the Founder OS inbox."
+  default_prompt: "Use $capture to append exactly one founder-supplied line to inbox.md without classifying it."

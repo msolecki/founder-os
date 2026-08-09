@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Relationship Map"
   short_description: "Run the Relationship Map Founder OS workflow."

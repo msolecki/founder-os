@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Kill Or Continue"
   short_description: "Run the Kill Or Continue Founder OS workflow."

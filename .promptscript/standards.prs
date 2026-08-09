@@ -1,0 +1,23 @@
+# Founder OS standards fragment
+@meta { id: "founder-os-standards" syntax: "1.5.0" }
+
+@standards {
+  @header "Operating Principles"
+  state: [
+    "Read state before advice.",
+    "Every workspace file has exactly one owner.",
+    "Use the local founder-os-state gateway for role reads and writes.",
+    "Verify expected persistence before reporting success."
+  ]
+  evidence: [
+    "Name source paths and source dates.",
+    "Mark missing values unknown; never invent freshness.",
+    "Tier external claims as FACT, VALIDATE, or DISREGARD.",
+    "Use [[slug]] links for entities shared across files."
+  ]
+  orchestration: [
+    "The main thread selects one owner and one workflow.",
+    "Roles return structured results or bounded delegation requests.",
+    "Roles never spawn sibling roles."
+  ]
+}

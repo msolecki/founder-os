@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context Load"
+  short_description: "Run the Context Load Founder OS workflow."
+  default_prompt: "Use $context-load to handle this Founder OS task."

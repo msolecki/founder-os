@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Win Loss Analysis"
   short_description: "Run the Win Loss Analysis Founder OS workflow."

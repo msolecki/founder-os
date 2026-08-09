@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: win-loss-analysis
 description: Reconstruct why a deal was won or lost from the record and the prospect's own words — run within five business days of any deal ending, while they will still take the call
 metadata:
   writes:
     - pipeline.md
+references:
+  - agents/openai.yaml
 ---
 
 # Win/Loss Analysis

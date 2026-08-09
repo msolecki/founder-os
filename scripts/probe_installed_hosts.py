@@ -40,7 +40,6 @@ def isolated_environment(root, host, inherited=None):
         "CLAUDE_PLUGIN_DATA",
         "CLAUDE_PLUGIN_ROOT",
         "CODEX_HOME",
-        "CODEX_PLUGIN_ROOT",
         "FOUNDER_OS_HOME",
         "PLUGIN_DATA",
         "PLUGIN_ROOT",

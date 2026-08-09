@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Draft"
+  short_description: "Run the Content Draft Founder OS workflow."
+  default_prompt: "Use $content-draft to handle this Founder OS task."

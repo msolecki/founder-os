@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: portfolio-review
 description: Rank the businesses against each other, set this week's split of the founder's hours and cash, and name what the split is starving — the one cadence that crosses workspace boundaries
 metadata:
   writes:
     - portfolio.md
+references:
+  - agents/openai.yaml
 ---
 
 # Portfolio Review

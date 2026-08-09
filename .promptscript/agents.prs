@@ -1,0 +1,16 @@
+# Founder OS agent composition
+@meta { id: "founder-os-agents" syntax: "1.5.0" }
+
+@use ./agents/board-member
+@use ./agents/brand-editor
+@use ./agents/cfo
+@use ./agents/chief-of-staff
+@use ./agents/delivery-lead
+@use ./agents/focus-coach
+@use ./agents/network-manager
+@use ./agents/ops-engineer
+@use ./agents/pipeline-coach
+@use ./agents/portfolio-manager
+@use ./agents/positioning-advisor
+@use ./agents/skills-mentor
+@use ./agents/strategist

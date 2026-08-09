@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: offer-design
 description: Turn what the founder does into an outcome with an explicit boundary — run when work is quoted in hours, when every project is bespoke, or when a prospect can't repeat the offer to a colleague
 metadata:
   writes:
     - offer.md
+references:
+  - agents/openai.yaml
 ---
 
 # Offer Design

@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: voice-capture
 description: Build voice.md from the founder's actual sent writing — run before anything ships under their name, and every time they edit a draft before sending
 metadata:
   writes:
     - voice.md
+references:
+  - agents/openai.yaml
 ---
 
 # Voice Capture

@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: strategic-evaluation
 description: Evaluate one material, hard-to-reverse or cross-domain decision through dated evidence, owned perspectives, a recommendation and a Board challenge — run before the founder decides
 metadata:
   writes:
     - evaluations/
+references:
+  - agents/openai.yaml
 ---
 
 # Strategic Evaluation

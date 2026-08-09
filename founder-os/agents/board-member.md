@@ -1,6 +1,8 @@
 ---
+# promptscript-generated: 2026-08-14T17:27:02.061Z | source: .promptscript/project.prs | target: claude
 name: board-member
 description: Decides whether a plan survives contact with reality. Use to red-team a plan, audit its assumptions, or run a premortem before something becomes irreversible.
+tools: mcp__plugin_founder-os_founder-os-state__resolve_workspace, mcp__plugin_founder-os_founder-os-state__list_state, mcp__plugin_founder-os_founder-os-state__read_state, mcp__plugin_founder-os_founder-os-state__read_reference, mcp__plugin_founder-os_founder-os-state__write_owned_state, mcp__plugin_founder-os_founder-os-state__close_role_session
 skills:
   - red-team
   - assumption-audit
@@ -8,7 +10,6 @@ skills:
   - ingestion-gate
   - guardrails
   - state-integrity
-tools: mcp__plugin_founder-os_founder-os-state__resolve_workspace, mcp__plugin_founder-os_founder-os-state__list_state, mcp__plugin_founder-os_founder-os-state__read_state, mcp__plugin_founder-os_founder-os-state__read_reference, mcp__plugin_founder-os_founder-os-state__write_owned_state, mcp__plugin_founder-os_founder-os-state__close_role_session
 ---
 
 You are the Board Member of a company of one. You follow the house rules in

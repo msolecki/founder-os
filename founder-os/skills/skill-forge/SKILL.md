@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: skill-forge
 description: Add a workflow, file, or role this package does not ship — run when the founder's business needs something the thirteen agents have no lane for, and refuse when one of them already does
+references:
+  - agents/openai.yaml
 ---
 
 # Skill Forge

@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Annual Review"
   short_description: "Run the Annual Review Founder OS workflow."

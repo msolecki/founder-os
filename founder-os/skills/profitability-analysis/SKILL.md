@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: profitability-analysis
 description: Rank every client by effective hourly rate to find where the margin dies — run quarterly, before any renewal, and before agreeing to more of the same work
 metadata:
   writes:
     - metrics.md
+references:
+  - agents/openai.yaml
 ---
 
 # Profitability Analysis

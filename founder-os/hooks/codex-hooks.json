@@ -1,0 +1,42 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/session-context.py\" # promptscript-generated:session-context",
+            "commandWindows": "& 'python' (Join-Path $env:PLUGIN_ROOT 'hooks/session-context.py') # promptscript-generated:session-context",
+            "statusMessage": "Loading Founder OS context"
+          }
+        ],
+        "matcher": "startup|resume|clear|compact"
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/record-agent.py\" # promptscript-generated:record-agent",
+            "commandWindows": "& 'python' (Join-Path $env:PLUGIN_ROOT 'hooks/record-agent.py') # promptscript-generated:record-agent",
+            "statusMessage": "Recording Founder OS decision role"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/ownership-guard.py\" # promptscript-generated:ownership-guard",
+            "commandWindows": "& 'python' (Join-Path $env:PLUGIN_ROOT 'hooks/ownership-guard.py') # promptscript-generated:ownership-guard",
+            "statusMessage": "Checking Founder OS boundaries"
+          }
+        ],
+        "matcher": "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|WebSearch|apply_patch|Task|Agent|mcp__.*)$"
+      }
+    ]
+  }
+}

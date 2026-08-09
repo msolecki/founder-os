@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: icp-definition
 description: Narrow who this company serves until the definition excludes real, nameable people — run before any pipeline or content work, and whenever the founder describes their buyer in adjectives
 metadata:
   writes:
     - offer.md
+references:
+  - agents/openai.yaml
 ---
 
 # ICP Definition

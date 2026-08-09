@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: capture
 description: Capture one unstructured thought in the inbox without classifying it — use when the founder needs to remember one thing now and decide what it means later
 metadata:
   writes:
     - inbox.md
+references:
+  - agents/openai.yaml
 ---
 
 # Capture

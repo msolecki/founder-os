@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Follow Up Sweep"
   short_description: "Run the Follow Up Sweep Founder OS workflow."

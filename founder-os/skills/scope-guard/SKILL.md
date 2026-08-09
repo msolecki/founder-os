@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: scope-guard
 description: Rule on whether an ask is inside scope by checking it against the proposal's exclusions — run the moment a client asks for something that was not quoted
 metadata:
   writes:
     - clients/
+references:
+  - agents/openai.yaml
 ---
 
 # Scope Guard

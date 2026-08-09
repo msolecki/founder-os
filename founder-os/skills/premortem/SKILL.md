@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: premortem
 description: Declare the plan already dead six months out and write the story of how it happened — run while the answer can still change the plan
+references:
+  - agents/openai.yaml
 ---
 
 # Premortem

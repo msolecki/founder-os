@@ -1,10 +1,13 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: proposal-draft
 description: Draft a proposal with scope, price, exclusions and an expiry date — run when a qualified deal is ready to close, never before capacity-check, and never with an empty exclusions list
 metadata:
   writes:
     - pipeline.md
     - drafts/proposals/
+references:
+  - agents/openai.yaml
 ---
 
 # Proposal Draft

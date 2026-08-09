@@ -1,10 +1,13 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: daily-brief
 description: Open the day with the one thing that matters — run every weekday morning before the founder picks their own work
 metadata:
   writes:
     - reviews/daily/
     - inbox.md
+references:
+  - agents/openai.yaml
 ---
 
 # Daily Brief

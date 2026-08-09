@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Queue"
   short_description: "Run the Queue Founder OS workflow."

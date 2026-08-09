@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: relationship-map
 description: Map who the founder actually knows by category and days since real contact — run quarterly, before any conference, and whenever cold outreach is proposed with the warm list untouched
 metadata:
   writes:
     - network.md
+references:
+  - agents/openai.yaml
 ---
 
 # Relationship Map

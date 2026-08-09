@@ -1,0 +1,13 @@
+# Founder OS guards fragment
+@meta { id: "founder-os-guards" syntax: "1.5.0" }
+
+@guards {
+  package-guidance: {
+    paths: ["founder-os/**/*.md", "docs/**/*.md"]
+    description: "Founder OS package guidance"
+    content: """
+      Preserve Founder OS contracts when editing package or documentation files.
+      Read the relevant reference and run the package validator before completion.
+    """
+  }
+}

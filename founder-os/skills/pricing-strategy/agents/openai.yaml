@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Pricing Strategy"
   short_description: "Run the Pricing Strategy Founder OS workflow."

@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: learning-plan
 description: Attach one capability to one project that forces it and one real deadline — run after skill-gap names the gap, never before
 metadata:
   writes:
     - skills.md
+references:
+  - agents/openai.yaml
 ---
 
 # Learning Plan

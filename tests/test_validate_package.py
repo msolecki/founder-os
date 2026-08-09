@@ -15,6 +15,7 @@ Two rules this file follows, both learned the hard way:
    fixture looked fine on screen. A dict cannot hold a duplicate key.
 """
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -159,15 +160,21 @@ class ValidatorTestCase(unittest.TestCase):
         }}))
         write(self.root / ".codex-plugin" / "plugin.json", json.dumps({
             "name": "founder-os",
+            "hooks": "./hooks/codex-hooks.json",
             "mcpServers": {
                 "founder-os-state": {
                     "command": "python3",
                     "args": [
-                        "${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"
+                        "mcp/founder_os_state.py"
                     ],
+                    "cwd": ".",
                 },
             },
         }))
+        write(
+            self.root / "hooks" / "codex-hooks.json",
+            json.dumps(V.CODEX_HOOKS_EXPECTED),
+        )
         write(self.root / "mcp" / "founder_os_state.py", "x = 1\n")
 
     def write_agent(self, slug, **kw):
@@ -176,15 +183,6 @@ class ValidatorTestCase(unittest.TestCase):
 
     def write_skill(self, slug, **kw):
         write(self.root / "skills" / slug / "SKILL.md", skill_md(slug, **kw))
-
-    def write_codex_interface(self, slug, data=None, raw=None):
-        payload = data or {"interface": {
-            "display_name": slug.replace("-", " ").title(),
-            "short_description": "Run the shared Founder OS workflow.",
-            "default_prompt": f"Use ${slug} for this Founder OS task.",
-        }}
-        text = raw if raw is not None else yaml.safe_dump(payload, sort_keys=False)
-        write(self.root / "skills" / slug / "agents" / "openai.yaml", text)
 
     def write_codex_interface(self, slug, data=None, raw=None):
         payload = data or {"interface": {
@@ -205,11 +203,10 @@ class ValidatorTestCase(unittest.TestCase):
               yaml.safe_dump(data, sort_keys=False))
 
     def write_hooks(self):
-        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
-            "PreToolUse": [{"matcher":
-                "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
-                "WebSearch|apply_patch|mcp__.*)$",
-                "hooks": []}]}}))
+        write(
+            self.root / "hooks" / "hooks.json",
+            json.dumps(V.CLAUDE_HOOKS_EXPECTED),
+        )
         write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
         write(self.root / "hooks" / "record-agent.py", "x = 1\n")
 
@@ -314,6 +311,63 @@ class TestHostAdapters(ValidatorTestCase):
             errors,
         )
 
+    def test_codex_hooks_are_required(self):
+        self.write_host_adapters()
+        manifest_path = self.root / ".codex-plugin" / "plugin.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest.pop("hooks")
+        write(manifest_path, json.dumps(manifest))
+
+        errors = self.check(V.check_host_adapters)
+
+        self.assertTrue(
+            any("hooks must point to" in error for error in errors),
+            errors,
+        )
+
+    def test_codex_hook_events_and_commands_are_exact(self):
+        self.write_host_adapters()
+        hooks_path = self.root / "hooks" / "codex-hooks.json"
+        hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
+        hooks["hooks"]["PreToolUse"][0]["hooks"][0]["command"] = "true"
+        write(hooks_path, json.dumps(hooks))
+
+        errors = self.check(V.check_host_adapters)
+
+        self.assertTrue(
+            any("must match the exact" in error for error in errors),
+            errors,
+        )
+
+    def test_codex_hook_adapter_cannot_drop_an_event(self):
+        self.write_host_adapters()
+        hooks_path = self.root / "hooks" / "codex-hooks.json"
+        hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
+        del hooks["hooks"]["SubagentStart"]
+        write(hooks_path, json.dumps(hooks))
+
+        errors = self.check(V.check_host_adapters)
+
+        self.assertTrue(
+            any("must match the exact" in error for error in errors),
+            errors,
+        )
+
+    @unittest.skipIf(os.name == "nt", "symlink behavior differs on Windows")
+    def test_codex_hook_adapter_cannot_be_a_symlink(self):
+        self.write_host_adapters()
+        hooks_path = self.root / "hooks" / "codex-hooks.json"
+        outside = self.root.parent / "external-codex-hooks.json"
+        hooks_path.replace(outside)
+        hooks_path.symlink_to(outside)
+
+        errors = self.check(V.check_host_adapters)
+
+        self.assertTrue(
+            any("symlinked Codex hook adapter" in error for error in errors),
+            errors,
+        )
+
 
 class TestCodexInterfaces(ValidatorTestCase):
     def test_missing_codex_skill_interface_is_caught(self):
@@ -414,6 +468,18 @@ class TestAgents(ValidatorTestCase):
         self.write_agent("cfo", description=_OMIT, skills=list(UNIVERSALS))
         self.assertIn("agents/cfo.md: missing 'description'",
                       self.check(V.check_agents))
+
+    def test_agent_level_mcp_servers_are_rejected_for_claude_plugins(self):
+        path = self.root / "agents" / "cfo.md"
+        frontmatter, body = V.parse_frontmatter(path)
+        frontmatter["mcpServers"] = ["founder-os-state"]
+        write(path, _frontmatter(frontmatter, body))
+
+        self.assertIn(
+            "agents/cfo.md: Claude plugin agents do not support mcpServers; "
+            "use the package-level .mcp.json adapter",
+            self.check(V.check_agents),
+        )
 
 
 class TestAgentTools(ValidatorTestCase):
@@ -892,6 +958,20 @@ class TestCheckHooks(unittest.TestCase):
         write(self.root / "hooks" / "ownership-guard.py", "def broken(:\n")
         errs = V.check_hooks(self.root, {})
         self.assertTrue(any("compile" in e for e in errs), errs)
+
+    def test_hook_commands_cannot_be_removed(self):
+        hooks = json.loads(json.dumps(V.CLAUDE_HOOKS_EXPECTED))
+        hooks["hooks"]["PreToolUse"][0]["hooks"] = []
+        write(self.root / "hooks" / "hooks.json", json.dumps(hooks))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        write(self.root / "hooks" / "record-agent.py", "x = 1\n")
+
+        errs = V.check_hooks(self.root, {})
+
+        self.assertTrue(
+            any("must match the exact" in error for error in errs),
+            errs,
+        )
 
     def test_real_plugin_is_clean(self):
         real = Path(__file__).resolve().parents[1] / "founder-os"

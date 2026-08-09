@@ -1,0 +1,4 @@
+interface:
+  display_name: "Queue"
+  short_description: "Run the Queue Founder OS workflow."
+  default_prompt: "Use $queue to handle this Founder OS task."

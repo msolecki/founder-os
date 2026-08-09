@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: context-load
 description: Load charter, goals and metrics with their dates stamped before any cadence runs — the house-rule-1 check that starts every session
+references:
+  - agents/openai.yaml
 ---
 
 # Context Load

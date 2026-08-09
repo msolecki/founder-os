@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Calendar Audit"
   short_description: "Run the Calendar Audit Founder OS workflow."

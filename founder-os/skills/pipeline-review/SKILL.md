@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: pipeline-review
 description: Force every deal to have a next action with a date or leave the pipeline — run weekly, and any time the founder says they have more conversations than they can name
 metadata:
   writes:
     - pipeline.md
+references:
+  - agents/openai.yaml
 ---
 
 # Pipeline Review

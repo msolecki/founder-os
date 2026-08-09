@@ -1,0 +1,25 @@
+# Founder OS PromptScript source of truth
+# Compile with the local PromptScript CLI to any supported agent target.
+
+@meta {
+  id: "founder-os"
+  syntax: "1.5.0"
+  org: "Founder OS"
+  tags: [founder, solopreneur, business, strategy, revenue, focus]
+}
+
+@use ./identity
+@use ./context
+@use ./standards
+@use ./restrictions
+@use ./knowledge
+@use ./guards
+@use ./shortcuts
+@use ./examples
+@use ./hooks
+@use ./mcp-servers
+@use ./plugins
+@use ./agents
+
+# Skills under `.promptscript/skills/` remain native Agent Skills sources.
+# Their frontmatter and adjacent Codex adapter resources are preserved.

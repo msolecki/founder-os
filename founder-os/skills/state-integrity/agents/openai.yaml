@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "State Integrity"
   short_description: "Run the State Integrity Founder OS workflow."

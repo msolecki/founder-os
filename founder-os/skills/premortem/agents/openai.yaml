@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Premortem"
   short_description: "Run the Premortem Founder OS workflow."

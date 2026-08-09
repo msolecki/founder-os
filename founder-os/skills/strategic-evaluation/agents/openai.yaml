@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Strategic Evaluation"
   short_description: "Trace a hard decision from dated evidence to challenge."

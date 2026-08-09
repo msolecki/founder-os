@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: rate-raise
 description: Decide whether the rate rises, by how much, and hand over the script — run when profitability-analysis says the rate is below target, not when the founder feels brave
 metadata:
   writes:
     - metrics.md
+references:
+  - agents/openai.yaml
 ---
 
 # Rate Raise

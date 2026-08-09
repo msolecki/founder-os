@@ -1,0 +1,4 @@
+interface:
+  display_name: "Delivery Retro"
+  short_description: "Run the Delivery Retro Founder OS workflow."
+  default_prompt: "Use $delivery-retro to handle this Founder OS task."

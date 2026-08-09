@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Quarterly Planning"
   short_description: "Run the Quarterly Planning Founder OS workflow."

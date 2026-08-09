@@ -1,0 +1,4 @@
+interface:
+  display_name: "Voice Capture"
+  short_description: "Run the Voice Capture Founder OS workflow."
+  default_prompt: "Use $voice-capture to handle this Founder OS task."

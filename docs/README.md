@@ -11,12 +11,23 @@ and multi-business support when the core loop is already understood.
 It does not run the company for you. It gives your decisions persistent state,
 an owner, and a review rhythm.
 
+PromptScript is the package source of truth. `.promptscript/project.prs`
+composes focused portable instruction and runtime fragments;
+`.promptscript/agents.prs` composes one role file per agent; and
+`.promptscript/skills/` is auto-discovered so every workflow
+and Codex adapter compiles with the selected target. Generated plugin files
+remain host adapters. The gateway, hook guard, scheduler, validator, and tests
+remain executable runtime code.
+
 This directory is the **complete documentation set**. It is written for two
 readers: the **operator** running the package on their own business, and the
 **maintainer** developing against it. Where a fact has a single source of truth
 in the package itself, these pages point at it rather than copy it — a second
 copy of a map goes stale silently, which is the exact failure the package is
 built to prevent.
+
+Codex's packaged hooks use the documented `PLUGIN_ROOT` runtime variable and
+work from business folders both inside and outside Git worktrees.
 
 ## Start here
 
@@ -68,6 +79,9 @@ these disagree, the file wins.
 | Source | What it is |
 |---|---|
 | [`founder-os/CLAUDE.md`](../founder-os/CLAUDE.md) | The guidance loaded into every session. |
+| [`.promptscript/project.prs`](../.promptscript/project.prs) | Portable PromptScript source for identity, contracts, targets, hooks, and MCP. |
+| [`.promptscript/agents.prs`](../.promptscript/agents.prs) | Portable role definitions for all supported agent hosts. |
+| [`.promptscript/skills/`](../.promptscript/skills/) | Auto-discovered source skills and Codex adapter resources. |
 | [`founder-os/README.md`](../founder-os/README.md) | Product philosophy and what the package refuses to do. |
 | [`founder-os/COMMANDS.md`](../founder-os/COMMANDS.md) | The generated command catalogue (never hand-edited). |
 | [`founder-os/references/house-rules.md`](../founder-os/references/house-rules.md) | The seven house rules, in full. |

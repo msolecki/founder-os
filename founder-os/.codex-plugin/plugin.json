@@ -17,12 +17,14 @@
     "focus"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/codex-hooks.json",
   "mcpServers": {
     "founder-os-state": {
       "command": "python3",
       "args": [
-        "${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"
-      ]
+        "mcp/founder_os_state.py"
+      ],
+      "cwd": "."
     }
   },
   "interface": {

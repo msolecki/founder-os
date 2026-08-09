@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Skill Forge"
   short_description: "Run the Skill Forge Founder OS workflow."

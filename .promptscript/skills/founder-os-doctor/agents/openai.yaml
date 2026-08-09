@@ -1,0 +1,4 @@
+interface:
+  display_name: "Founder Os Doctor"
+  short_description: "Run the Founder Os Doctor Founder OS workflow."
+  default_prompt: "Use $founder-os-doctor to handle this Founder OS task."

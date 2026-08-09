@@ -1,9 +1,12 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: queue
 description: Hold the founder's live obligations with a cap, an expiry and one owner — run whenever a cadence produces work that would otherwise live in a paragraph nobody reopens
 metadata:
   writes:
     - queue.md
+references:
+  - agents/openai.yaml
 ---
 
 # Queue

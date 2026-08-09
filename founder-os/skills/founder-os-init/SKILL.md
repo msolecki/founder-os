@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: founder-os-init
 description: Run first-install onboarding — interview the founder, scaffold the workspace, and hand each answer to the agent that owns it
+references:
+  - agents/openai.yaml
 ---
 
 # Founder OS Init

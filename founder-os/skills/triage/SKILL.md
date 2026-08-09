@@ -1,10 +1,13 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: triage
 description: Take the founder's pile of unsorted obligations, keep one, cost the rest, and route them by name — run when they arrive with five things and no idea which matters
 metadata:
   writes:
     - reviews/daily/
     - inbox.md
+references:
+  - agents/openai.yaml
 ---
 
 # Triage
