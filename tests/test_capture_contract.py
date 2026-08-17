@@ -16,7 +16,7 @@ PLUGIN_ROOT = ROOT / "founder-os"
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import validate_package as validator  # noqa: E402
-from _package import parse_frontmatter  # noqa: E402
+from _package import parse_frontmatter, parse_skill_writes  # noqa: E402
 
 
 class CaptureSkillContract(unittest.TestCase):
@@ -28,7 +28,7 @@ class CaptureSkillContract(unittest.TestCase):
     def test_capture_is_held_only_by_the_inbox_owner(self):
         self.assertEqual(self.frontmatter["name"], "capture")
         self.assertEqual(
-            self.frontmatter.get("metadata", {}).get("writes"),
+            parse_skill_writes(self.frontmatter),
             ["inbox.md"],
         )
         holders = []
@@ -142,8 +142,8 @@ class CaptureValidatorContract(unittest.TestCase):
     def test_capture_contract_mutations_are_rejected(self):
         mutations = {
             "extra write": (
-                "    - inbox.md\n",
-                "    - inbox.md\n    - queue.md\n",
+                "writes: '[\"inbox.md\"]'",
+                "writes: '[\"inbox.md\", \"queue.md\"]'",
             ),
             "unsafe normalization": (
                 "Do not trim or normalize",

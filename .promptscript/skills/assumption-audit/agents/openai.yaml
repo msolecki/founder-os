@@ -1,0 +1,4 @@
+interface:
+  display_name: "Assumption Audit"
+  short_description: "Run the Assumption Audit Founder OS workflow."
+  default_prompt: "Use $assumption-audit to handle this Founder OS task."

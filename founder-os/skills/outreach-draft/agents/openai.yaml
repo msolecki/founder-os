@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Outreach Draft"
   short_description: "Run the Outreach Draft Founder OS workflow."

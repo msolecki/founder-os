@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relationship Map"
+  short_description: "Run the Relationship Map Founder OS workflow."
+  default_prompt: "Use $relationship-map to handle this Founder OS task."

@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: bet-sizing
 description: Price a bet by what it costs when it is wrong and cap the downside in writing before it starts — run before any bet enters goals.md
 metadata:
-  writes:
-    - goals.md
+  writes: '["goals.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Bet Sizing

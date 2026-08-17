@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: capacity-check
 description: Compute real deliverable hours before accepting work — run before any yes to a new client, an extra deliverable, or a start date
 metadata:
-  writes:
-    - clients/
+  writes: '["clients/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Capacity Check

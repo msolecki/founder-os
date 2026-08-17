@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - '@promptscript/cli@1.18.0'

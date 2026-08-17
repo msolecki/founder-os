@@ -16,7 +16,7 @@ from pathlib import Path, PurePosixPath
 import yaml
 
 from _package import (SYSTEM_SKILLS, STANDALONE_SKILLS, UNIVERSAL_SKILLS,
-                      parse_frontmatter)
+                      parse_frontmatter, parse_skill_writes)
 
 # House Rule 0, enforced at the tool layer rather than requested in prose.
 # An agent with Bash can curl. An agent with WebFetch can POST. An agent with
@@ -49,6 +49,85 @@ PUBLIC_GATEWAY_TOOLS = {
 
 AGENT_HEADINGS = ["## What triggers you", "## What you do",
                   "## What you produce", "## Who you hand off to"]
+CODEX_OWNERSHIP_MATCHER = (
+    "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|WebSearch|"
+    "apply_patch|Task|Agent|mcp__.*)$"
+)
+
+
+def _codex_hook(script, status_message):
+    slug = script.removesuffix(".py")
+    return {
+        "type": "command",
+        "command": (
+            'python3 "${PLUGIN_ROOT}/hooks/%s" '
+            "# promptscript-generated:%s" % (script, slug)
+        ),
+        "commandWindows": (
+            "& 'python' (Join-Path $env:PLUGIN_ROOT 'hooks/%s') "
+            "# promptscript-generated:%s" % (script, slug)
+        ),
+        "statusMessage": status_message,
+    }
+
+
+def _claude_hook(script, status_message):
+    return {
+        "type": "command",
+        "command": (
+            'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/%s"' % script
+        ),
+        "statusMessage": status_message,
+    }
+
+
+CLAUDE_HOOKS_EXPECTED = {
+    "hooks": {
+        "SessionStart": [{
+            "hooks": [_claude_hook(
+                "session-context.py", "Loading Founder OS context"
+            )],
+            "matcher": "startup|resume|clear|compact",
+        }],
+        "SubagentStart": [{
+            "hooks": [_claude_hook(
+                "record-agent.py", "Recording Founder OS decision role"
+            )],
+        }],
+        "PreToolUse": [{
+            "hooks": [_claude_hook(
+                "ownership-guard.py", "Checking Founder OS boundaries"
+            )],
+            "matcher": (
+                "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
+                "WebSearch|apply_patch|Task|Agent|mcp__.*)$"
+            ),
+        }],
+    },
+}
+
+
+CODEX_HOOKS_EXPECTED = {
+    "hooks": {
+        "SessionStart": [{
+            "matcher": "startup|resume|clear|compact",
+            "hooks": [_codex_hook(
+                "session-context.py", "Loading Founder OS context"
+            )],
+        }],
+        "SubagentStart": [{
+            "hooks": [_codex_hook(
+                "record-agent.py", "Recording Founder OS decision role"
+            )],
+        }],
+        "PreToolUse": [{
+            "matcher": CODEX_OWNERSHIP_MATCHER,
+            "hooks": [_codex_hook(
+                "ownership-guard.py", "Checking Founder OS boundaries"
+            )],
+        }],
+    },
+}
 
 
 def load_agents(root):
@@ -84,6 +163,17 @@ def _tool_names(tools):
 def _agent_targets(tools):
     m = re.search(r"Agent\(([^)]*)\)", str(tools or ""))
     return [t.strip() for t in m.group(1).split(",") if t.strip()] if m else []
+
+
+def _has_symlink_component(path, root):
+    current = path.absolute()
+    stop = root.absolute()
+    while True:
+        if current.is_symlink():
+            return True
+        if current == stop or current.parent == current:
+            return False
+        current = current.parent
 
 
 def check_plugin(root, agents):
@@ -127,11 +217,14 @@ def check_host_adapters(root, agents):
     codex_expected = {
         "founder-os-state": {
             "command": "python3",
-            "args": ["${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"],
+            "args": ["mcp/founder_os_state.py"],
+            "cwd": ".",
         },
     }
 
-    if not claude_path.is_file():
+    if _has_symlink_component(claude_path, root):
+        errs.append(".mcp.json: symlinked Claude adapter is not allowed")
+    elif not claude_path.is_file():
         errs.append(".mcp.json: missing Claude founder-os-state adapter")
     else:
         try:
@@ -145,7 +238,11 @@ def check_host_adapters(root, agents):
                     "${CLAUDE_PLUGIN_ROOT}/mcp/founder_os_state.py"
                 )
 
-    if not codex_path.is_file():
+    if _has_symlink_component(codex_path, root):
+        errs.append(
+            ".codex-plugin/plugin.json: symlinked Codex adapter is not allowed"
+        )
+    elif not codex_path.is_file():
         errs.append(".codex-plugin/plugin.json: missing Codex adapter manifest")
     else:
         try:
@@ -156,12 +253,42 @@ def check_host_adapters(root, agents):
             if codex.get("mcpServers") != codex_expected:
                 errs.append(
                     ".codex-plugin/plugin.json: mcpServers must inline "
-                    "founder-os-state via ${CODEX_PLUGIN_ROOT}/mcp/"
-                    "founder_os_state.py"
+                    "founder-os-state with plugin-root cwd and "
+                    "mcp/founder_os_state.py"
                 )
+            if codex.get("hooks") != "./hooks/codex-hooks.json":
+                errs.append(
+                    ".codex-plugin/plugin.json: hooks must point to "
+                    "./hooks/codex-hooks.json"
+                )
+            codex_hooks = root / "hooks" / "codex-hooks.json"
+            if _has_symlink_component(codex_hooks, root):
+                errs.append(
+                    "hooks/codex-hooks.json: symlinked Codex hook adapter "
+                    "is not allowed"
+                )
+            elif not codex_hooks.is_file():
+                errs.append("hooks/codex-hooks.json: missing Codex hook adapter")
+            else:
+                try:
+                    codex_hook_data = json.loads(
+                        codex_hooks.read_text(encoding="utf-8")
+                    )
+                except (OSError, ValueError) as exc:
+                    errs.append("hooks/codex-hooks.json: invalid JSON (%s)" % exc)
+                else:
+                    if codex_hook_data != CODEX_HOOKS_EXPECTED:
+                        errs.append(
+                            "hooks/codex-hooks.json: must match the exact "
+                            "SessionStart, SubagentStart, and PreToolUse contract"
+                        )
 
     entry = root / "mcp" / "founder_os_state.py"
-    if not entry.is_file():
+    if _has_symlink_component(entry, root):
+        errs.append(
+            "mcp/founder_os_state.py: symlinked gateway entry is not allowed"
+        )
+    elif not entry.is_file():
         errs.append("mcp/founder_os_state.py: missing shared gateway entry")
     else:
         try:
@@ -170,7 +297,9 @@ def check_host_adapters(root, agents):
             errs.append("mcp/founder_os_state.py: does not compile (%s)" % exc)
 
     gateway_path = root / "mcp" / "gateway.py"
-    if gateway_path.is_file():
+    if _has_symlink_component(gateway_path, root):
+        errs.append("mcp/gateway.py: symlinked gateway is not allowed")
+    elif gateway_path.is_file():
         try:
             tree = ast.parse(
                 gateway_path.read_text(encoding="utf-8"),
@@ -270,6 +399,12 @@ def check_agents(root, agents):
         for f in ("name", "description", "skills"):
             if not fm.get(f):
                 errs.append("agents/%s.md: missing '%s'" % (slug, f))
+        if "mcpServers" in fm:
+            errs.append(
+                "agents/%s.md: Claude plugin agents do not support "
+                "mcpServers; use the package-level .mcp.json adapter"
+                % slug
+            )
         if fm.get("name") and fm["name"] != slug:
             errs.append("agents/%s.md: name '%s' does not match the filename"
                         % (slug, fm["name"]))
@@ -584,9 +719,11 @@ def check_skill_writes(root, agents):
         if not (d.is_dir() and (d / "SKILL.md").exists()) or d.name in SYSTEM_SKILLS:
             continue
         fm, _ = parse_frontmatter(d / "SKILL.md")
-        writes = (fm.get("metadata") or {}).get("writes") or []
-        if isinstance(writes, str):
-            writes = [writes]
+        writes = parse_skill_writes(fm)
+        if writes is None:
+            errs.append("skills/%s: metadata.writes must be a list or JSON-encoded list"
+                        % d.name)
+            continue
         agent = holder.get(d.name)
         if agent is None:
             continue
@@ -617,9 +754,11 @@ def check_sections(root, agents):
         if not (d.is_dir() and (d / "SKILL.md").exists()) or d.name in SYSTEM_SKILLS:
             continue
         fm, _ = parse_frontmatter(d / "SKILL.md")
-        writes = (fm.get("metadata") or {}).get("writes") or []
-        if isinstance(writes, str):
-            writes = [writes]
+        writes = parse_skill_writes(fm)
+        if writes is None:
+            errs.append("skills/%s: metadata.writes must be a list or JSON-encoded list"
+                        % d.name)
+            continue
         for w in writes:
             if w not in sections:
                 errs.append("skills/%s: writes '%s' but ownership.yaml declares no "
@@ -647,7 +786,7 @@ def check_capture_contract(root, agents):
     frontmatter, body = parse_frontmatter(capture_path)
     if frontmatter.get("name") != "capture":
         errs.append("skills/capture: name must be 'capture'")
-    if frontmatter.get("metadata") != {"writes": ["inbox.md"]}:
+    if parse_skill_writes(frontmatter) != ["inbox.md"]:
         errs.append(
             "skills/capture: metadata.writes must contain only inbox.md"
         )
@@ -737,12 +876,19 @@ def check_hooks(root, agents):
     """
     errs = []
     hj = root / "hooks" / "hooks.json"
+    if _has_symlink_component(hj, root):
+        return ["hooks/hooks.json: symlinked Claude hook adapter is not allowed"]
     if not hj.exists():
         return ["hooks/hooks.json: missing — the write-time layer is gone"]
     try:
         data = json.loads(hj.read_text(encoding="utf-8"))
     except ValueError as e:
         return ["hooks/hooks.json: not valid JSON (%s)" % e]
+    if data != CLAUDE_HOOKS_EXPECTED:
+        errs.append(
+            "hooks/hooks.json: must match the exact SessionStart, "
+            "SubagentStart, and PreToolUse contract"
+        )
     patterns = [h.get("matcher", "")
                 for h in (data.get("hooks") or {}).get("PreToolUse", [])]
 
@@ -902,16 +1048,7 @@ def _workflow_writes(package_root, workflow):
         frontmatter, _ = parse_frontmatter(path)
     except (OSError, ValueError, yaml.YAMLError):
         return None
-    if "metadata" not in frontmatter:
-        return []
-    metadata = frontmatter.get("metadata")
-    if not isinstance(metadata, dict):
-        return None
-    if "writes" not in metadata:
-        return []
-    writes = metadata.get("writes")
-    if isinstance(writes, str):
-        writes = [writes]
+    writes = parse_skill_writes(frontmatter)
     if (not isinstance(writes, list)
             or any(not _nonblank(value) for value in writes)):
         return None

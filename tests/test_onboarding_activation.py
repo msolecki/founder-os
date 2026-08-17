@@ -18,7 +18,7 @@ PLUGIN_ROOT = ROOT / "founder-os"
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from _package import parse_frontmatter  # noqa: E402
+from _package import parse_frontmatter, parse_skill_writes  # noqa: E402
 
 
 def operative_markdown(body: str) -> str:
@@ -764,7 +764,7 @@ class OnboardingActivationContract(unittest.TestCase):
                 skill_path = PLUGIN_ROOT / "skills" / skill_name / "SKILL.md"
                 self.assertTrue(skill_path.is_file(), skill_path)
                 skill_frontmatter, _ = parse_frontmatter(skill_path)
-                writes = skill_frontmatter.get("metadata", {}).get("writes", [])
+                writes = parse_skill_writes(skill_frontmatter)
                 self.assertTrue(writes, f"{skill_name} declares no writes")
 
                 holders = skill_holders(skill_name)
@@ -799,7 +799,7 @@ class OnboardingActivationContract(unittest.TestCase):
         daily_holders = skill_holders("daily-brief")
         self.assertEqual(len(daily_holders), 1, daily_holders)
         daily_holder = daily_holders[0]
-        daily_writes = daily_frontmatter.get("metadata", {}).get("writes", [])
+        daily_writes = parse_skill_writes(daily_frontmatter)
         self.assertTrue(daily_writes, "daily-brief declares no writes")
         for write_path in daily_writes:
             self.assertEqual(daily_holder, owner_for(write_path, self.ownership))
@@ -1330,7 +1330,7 @@ class DecisionEntryWorkflowContractTest(unittest.TestCase):
         path = PLUGIN_ROOT / "skills" / "strategic-evaluation" / "SKILL.md"
         frontmatter, body = parse_frontmatter(path)
         self.assertEqual(skill_holders("strategic-evaluation"), ["chief-of-staff"])
-        self.assertEqual(frontmatter["metadata"]["writes"], ["evaluations/"])
+        self.assertEqual(parse_skill_writes(frontmatter), ["evaluations/"])
         for token in (
             "O1", "I1", "Perspective mode", "founder has not decided",
             "decision-log", "never call sequential passes independent",

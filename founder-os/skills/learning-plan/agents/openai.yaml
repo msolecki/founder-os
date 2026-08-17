@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Learning Plan"
   short_description: "Run the Learning Plan Founder OS workflow."

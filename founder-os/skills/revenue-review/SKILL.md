@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: revenue-review
 description: Close the month on booked, collected and effective rate — run on the first of the month, scheduled locally after setup-cadences
 metadata:
-  writes:
-    - metrics.md
+  writes: '["metrics.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Revenue Review

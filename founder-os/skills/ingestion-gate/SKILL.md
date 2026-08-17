@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: ingestion-gate
 description: Tier every claim arriving from outside the workspace — fact, validate, or disregard — before it enters a canonical file, and stamp its speaker and date inline in the line that carries it
+references:
+  - agents/openai.yaml
 ---
 
 # Ingestion Gate

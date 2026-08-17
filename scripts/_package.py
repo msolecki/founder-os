@@ -1,4 +1,5 @@
 """Shared package metadata and Markdown frontmatter parsing."""
+import json
 import re
 
 import yaml
@@ -28,3 +29,28 @@ def parse_frontmatter(path):
             % (path, type(data).__name__)
         )
     return data, m.group(2)
+
+
+def parse_skill_writes(frontmatter):
+    """Return a skill's declared paths from list or PromptScript string metadata."""
+    if "metadata" not in frontmatter:
+        return []
+    metadata = frontmatter["metadata"]
+    if not isinstance(metadata, dict):
+        return None
+    if "writes" not in metadata:
+        return []
+
+    writes = metadata["writes"]
+    if isinstance(writes, list):
+        return writes if all(isinstance(item, str) for item in writes) else None
+    if not isinstance(writes, str):
+        return None
+
+    try:
+        decoded = json.loads(writes)
+    except json.JSONDecodeError:
+        return [writes]
+    if not isinstance(decoded, list):
+        return None
+    return decoded if all(isinstance(item, str) for item in decoded) else None

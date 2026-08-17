@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Capacity Check"
   short_description: "Run the Capacity Check Founder OS workflow."

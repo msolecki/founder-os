@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Forge"
+  short_description: "Run the Skill Forge Founder OS workflow."
+  default_prompt: "Use $skill-forge to handle this Founder OS task."

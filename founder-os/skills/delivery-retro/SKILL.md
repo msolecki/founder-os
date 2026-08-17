@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: delivery-retro
 description: Compare estimated against actual hours within five days of shipping — run at every project end, before memory replaces the timesheet
 metadata:
-  writes:
-    - clients/
+  writes: '["clients/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Delivery Retro

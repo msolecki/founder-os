@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Red Team"
   short_description: "Run the Red Team Founder OS workflow."

@@ -1,0 +1,11 @@
+# Founder OS plugins fragment
+@meta { id: "founder-os-plugins" syntax: "1.5.0" }
+
+@plugins {
+  founder-os-runtime: {
+    description: "Bounded local state, ownership guard, and consentful cadences"
+    version: "2.6.0"
+    hooks: ["session-context", "record-agent", "ownership-guard"]
+    mcpServers: ["founder-os-state"]
+  }
+}

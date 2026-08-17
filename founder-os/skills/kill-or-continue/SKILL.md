@@ -1,10 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: kill-or-continue
 description: Force a verdict on a bet against the threshold it was given, with the sunk cost named out loud — run the moment a judgement date passes
 metadata:
-  writes:
-    - goals.md
-    - reviews/quarterly/
+  writes: '["goals.md", "reviews/quarterly/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Kill or Continue

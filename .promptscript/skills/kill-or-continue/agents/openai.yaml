@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kill Or Continue"
+  short_description: "Run the Kill Or Continue Founder OS workflow."
+  default_prompt: "Use $kill-or-continue to handle this Founder OS task."

@@ -2,14 +2,14 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.py\"",
             "statusMessage": "Loading Founder OS context"
           }
-        ]
+        ],
+        "matcher": "startup|resume|clear|compact"
       }
     ],
     "SubagentStart": [
@@ -25,14 +25,14 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^(Read|Write|Edit|NotebookEdit|Glob|Grep|apply_patch|Bash|WebFetch|WebSearch|Task|Agent|mcp__.*)$",
         "hooks": [
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ownership-guard.py\"",
             "statusMessage": "Checking Founder OS boundaries"
           }
-        ]
+        ],
+        "matcher": "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|WebSearch|apply_patch|Task|Agent|mcp__.*)$"
       }
     ]
   }

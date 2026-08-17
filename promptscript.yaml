@@ -1,0 +1,50 @@
+id: founder-os
+syntax: "1.5.0"
+description: "Founder OS instructions, roles, workflows, and runtime contracts."
+includePromptScriptSkill: false
+input:
+  entry: .promptscript/project.prs
+  include:
+    - .promptscript/**/*.prs
+    - .promptscript/skills/**/SKILL.md
+    - .promptscript/skills/**/agents/openai.yaml
+builds:
+  claude:
+    entry: .promptscript/project.prs
+    output: .promptscript/build/claude
+    targets:
+      - claude:
+          version: full
+          skillBaseDir: skills
+  codex:
+    entry: .promptscript/project.prs
+    output: .promptscript/build/codex
+    targets:
+      - codex:
+          version: full
+          skillBaseDir: skills
+  factory:
+    entry: .promptscript/project.prs
+    output: .promptscript/build/factory
+    targets:
+      - factory:
+          version: full
+          rulesMode: split
+  github:
+    entry: .promptscript/project.prs
+    output: .promptscript/build/github
+    targets:
+      - github:
+          version: full
+  cursor:
+    entry: .promptscript/project.prs
+    output: .promptscript/build/cursor
+    targets:
+      - cursor:
+          version: full
+  gemini:
+    entry: .promptscript/project.prs
+    output: .promptscript/build/gemini
+    targets:
+      - gemini:
+          version: full

@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Revenue Review"
   short_description: "Run the Revenue Review Founder OS workflow."

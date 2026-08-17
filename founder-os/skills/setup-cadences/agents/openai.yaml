@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Setup Cadences"
   short_description: "Run the Setup Cadences Founder OS workflow."

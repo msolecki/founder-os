@@ -1,0 +1,15 @@
+# Founder OS knowledge fragment
+@meta { id: "founder-os-knowledge" syntax: "1.5.0" }
+
+@knowledge {
+  @header "Canonical Runtime References"
+  """
+  The package runtime remains intentionally separate from instruction source:
+  `founder-os/mcp/` owns bounded state access, `founder-os/hooks/` owns host
+  defense in depth, and `founder-os/scripts/cadence_manager.py` owns local
+  scheduler state. Canonical ownership, sections, house rules, ingestion,
+  linking, orchestration, extensibility, and multi-business contracts remain
+  in `founder-os/references/`. These files are runtime references, not a second
+  PromptScript source.
+  """
+}

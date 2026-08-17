@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: pricing-strategy
 description: Price the offer against the buyer's outcome and their real alternative, and name the founder's walk-away floor in writing before any negotiation starts
 metadata:
-  writes:
-    - offer.md
+  writes: '["offer.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Pricing Strategy

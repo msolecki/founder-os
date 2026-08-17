@@ -373,6 +373,19 @@ class TestExecutableOrchestrationEnvelope(unittest.TestCase):
                     package_validator._workflow_writes(root, "revenue-review")
                 )
 
+    def test_null_metadata_is_not_read_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill = root / "skills" / "revenue-review" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "---\nname: revenue-review\nmetadata: null\n---\n",
+                encoding="utf-8",
+            )
+            self.assertIsNone(
+                package_validator._workflow_writes(root, "revenue-review")
+            )
+
     def test_native_and_generic_envelopes_use_identical_role_bytes(self):
         native = self._valid_envelope()
         fallback = dict(native)

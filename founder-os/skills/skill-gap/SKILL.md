@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: skill-gap
 description: Name the capability gap between the offer sold today and the offer the quarter's bets require — run before any learning is committed to
 metadata:
-  writes:
-    - skills.md
+  writes: '["skills.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Skill Gap

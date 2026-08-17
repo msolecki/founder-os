@@ -1,0 +1,382 @@
+---
+name: founder-os-init
+description: Run first-install onboarding — interview the founder, scaffold the workspace, and hand each answer to the agent that owns it
+references:
+  - agents/openai.yaml
+---
+
+# Founder OS Init
+
+This is the one resumable path from an installed package to a useful first
+daily brief. It runs as the Chief of Staff. It orchestrates the owner agents;
+it does not borrow their files or call a scaffold an activation.
+
+Activation exists only when a valid brief has been persisted at
+`reviews/daily/YYYY-MM-DD.md` in the workspace resolved at preflight. Until
+then the workspace is incomplete and the next `/founder-os-init` continues it.
+
+## When to use
+
+Run immediately after install, after moving `FOUNDER_OS_HOME`, or to resume an
+interrupted first run. Do not use it to refresh an activated workspace; that is
+`/founder-os-doctor`.
+
+Start with Stage 0. Do not ask whether the founder is ready and do not mutate a
+workspace before preflight succeeds.
+
+## Inputs
+
+- `references/ownership.yaml` — the only source for scaffold paths, headings
+  and owners.
+- `references/multi-business.md` and `~/.founder-os/businesses.yaml`, when the
+  registry exists.
+- `$FOUNDER_OS_HOME`, default `./founder-os/`.
+- the canonical Founder OS context injected into this session;
+- existing workspace files and `reviews/daily/`, read before any question.
+
+### Shared sibling request
+
+Every owner transition returns one request to the main thread with exactly
+`role`, `workflow`, `workspace_id`, `correlation_id`, `handoff`, and
+`expected_persistence`. It carries one bounded handoff of at most 4096 UTF-8
+bytes. The main thread passes that carried answer unchanged; it validates and
+executes the request, while this workflow does not execute another role. Native
+and generic execution both use the byte-identical packaged role under
+`references/orchestration.md`.
+
+## Stage 0 — Preflight
+
+Stage 0 is read-only. Finish every check before the first workspace write:
+
+1. Confirm the plugin manifest, `CLAUDE.md`, `references/house-rules.md`,
+   `references/ownership.yaml`, `references/multi-business.md` and every
+   downstream skill named below exist in the installed package.
+2. Before normal target resolution, read an **explicit resume tuple** from the
+   invocation when one was supplied. It is complete only when it names the
+   exact recorded `FOUNDER_OS_HOME`, business slug and resolved workspace path;
+   a partial tuple stops instead of being guessed.
+3. Resolve the target using the resume-resolution table below. Treat the
+   resulting path, `FOUNDER_OS_HOME` and business slug as one frozen
+   **resolved workspace** tuple for the entire run.
+4. Validate the registry without rewriting it. A second-business request
+   follows `references/multi-business.md`; an ambiguous or invalid slug stops.
+5. Check from filesystem metadata that the target or its nearest existing
+   parent is writable. Do not create a probe file.
+6. Confirm the canonical context is present and carries `CLAUDE.md`, the house
+   rules, ownership map and resolved workspace.
+7. Apply the **daily-review validity invariant**: in this resolved workspace,
+   a candidate `reviews/daily/YYYY-MM-DD.md` is valid only when it contains the
+   headings declared for `reviews/daily/` by `references/ownership.yaml`, with
+   a non-empty `## The one thing` and `## The trade`. Stage 6 uses this exact
+   invariant again; there is no weaker activation check.
+8. If the selected workspace's `decisions/*-founder-os-installed.md` already
+   carries a target checkpoint, compare its `FOUNDER_OS_HOME`, business slug
+   and resolved path with the selected tuple. Any mismatch outside the
+   confirmed-relocation case stops before a read or write outside the selected
+   workspace.
+9. Read the target's `charter.md`, owned outputs and `reviews/daily/`, then
+   classify exactly one activation state:
+
+### Resume resolution
+
+| Invocation state | Selection rule | Action |
+|---|---|---|
+| `no explicit resume tuple` | Use the registry and current `FOUNDER_OS_HOME` for normal resolution. | Select a new, incomplete or activated workspace by the ordinary rules. |
+| `changed active slug` | The complete explicit resume tuple selects the recorded workspace; ignore the registry's active slug. | Validate the checkpoint at that exact path before reading activation state. |
+| `changed home` | The complete explicit resume tuple selects the recorded workspace; ignore the current `FOUNDER_OS_HOME`. | Continue at the recorded path if it exists; otherwise require confirmed relocation. |
+| `confirmed relocation` | Require the exact old tuple, exact new tuple and founder confirmation that the workspace moved. | Select the new path, validate that its checkpoint carries the old tuple, and update the target checkpoint to the new tuple only after every read-only preflight check succeeds. |
+
+Never scan sibling workspaces to find a checkpoint. Never infer relocation
+from a copied directory or a mismatch. The explicit tuple makes the old target
+discoverable; confirmed relocation is the only rebinding procedure.
+
+| State | Evidence | Action |
+|---|---|---|
+| `new` | No populated Founder OS state and no valid daily review. | Scaffold missing paths, then start Stage 1. |
+| `incomplete` | No valid daily review, but one or more owned outputs already contain state. | Preserve every populated section byte-for-byte and resume from the first missing stage. |
+| `activated` | A valid `reviews/daily/YYYY-MM-DD.md` exists in the resolved workspace. | Stop and route to `/founder-os-doctor`; never re-run onboarding over live state. |
+
+Any failed preflight check stops before mutation. Report the failed check, why
+it matters and the exact repair or resume command. Never silently choose a
+different business.
+
+For a `new` workspace, scaffold every `workspace_files:` entry using the H1 and
+ordered empty headings from `sections:`. Create directories as directories.
+For a new second active business, scaffold the portfolio workspace from
+`portfolio_files:` as `multi-business.md` requires. Scaffolding is lifecycle:
+outside Chief of Staff-owned paths, never put content below those headings.
+
+For an `incomplete` workspace, create only missing stubs or missing declared
+headings. Never replace, normalize, reorder or rephrase existing content.
+
+## Activation intent
+
+Only after Stage 0 succeeds, and before the first required group, ask exactly:
+
+> What made you install Founder OS today?
+
+Ask `What made you install Founder OS today?` as the operative prompt; do not
+add another intent question.
+
+The answer is optional. If the founder supplies one, carry it until the Chief
+of Staff writes the Stage 1 install decision, then persist it under `## Context`
+in `decisions/YYYY-MM-DD-founder-os-installed.md` as:
+`Founder's stated activation reason — YYYY-MM-DD: <verbatim reason>`. Use the
+current date. Label it as founder-stated intent, not evidence that the
+underlying business claim is true.
+
+The reason does not enter `queue.md`, does not alter the first bet, and does not
+select the first daily commitment by itself. On resume, read the install
+decision first: preserve a supplied reason byte-for-byte and do not ask again.
+An omitted reason does not block activation. Do not create a progress file or
+other state solely to remember this answer.
+
+## Stage 1/4 — Business
+
+Display `Business 1/4 · about two minutes · establishes the company identity
+the other decisions must serve. UNKNOWN is acceptable; unknown evidence stays
+unknown.`
+
+Ask for the founder's timezone in IANA form, the business in one sentence
+without “and”, and the five-year north star. Explain that timezone records the
+founder's stated zone; it does not install scheduler state.
+
+Write only missing answers to `charter.md` under `## Timezone`, `## Business`
+and `## North star`. On resume, treat a populated section as completed and do
+not ask for or rewrite it. The Chief of Staff owns this file.
+
+- **Target checkpoint:** persist `decisions/YYYY-MM-DD-founder-os-installed.md` with the exact `FOUNDER_OS_HOME`, business slug and resolved workspace path before Stage 2; this owner-written decision record binds later resume runs without creating hidden state.
+- **Checkpoint presentation:** after re-reading both valid owner outputs, show one line in this shape: `Chief of Staff · charter.md and decisions/YYYY-MM-DD-founder-os-installed.md · Gap: <truthful gap or none>`.
+
+Keep that presentation human-readable. Do not expose capabilities, correlation
+identifiers, hashes or internal role-session transitions on the normal success
+path.
+
+## Stage 2/4 — Customer
+
+Display `Customer 2/4 · about two minutes · helps distinguish a good-fit
+opportunity from another distraction. UNKNOWN is acceptable; unknown evidence
+stays unknown.`
+
+Ask for two clients or companies the founder would take again, one they would
+not take again, and the observable difference. Carry the answer in this
+session for `/icp-definition`; do not write it to `offer.md` yourself.
+
+If any part is unknown, carry the known examples and label the missing evidence
+as unknown. Do not turn a preference into customer evidence.
+
+- **Stage checkpoint:** return the Positioning Advisor `/icp-definition` delegation request to the main thread; it opens a fresh sibling session and requires its successful persisted `offer.md` result in the resolved workspace before Stage 3; until that re-read validates, Stage 2 is incomplete rather than an accepted answer held only in memory.
+- **Checkpoint presentation:** after the valid owner output is re-read, show one line in this shape: `Positioning Advisor · offer.md · Gap: <truthful gap or none>`.
+
+Keep that presentation human-readable. Do not expose capabilities, correlation
+identifiers, hashes or internal role-session transitions on the normal success
+path.
+
+## Stage 3/4 — Quarter
+
+Display `Quarter 3/4 · about three minutes · sizes the quarterly bet and the
+condition that would stop it. UNKNOWN is acceptable; unknown evidence stays
+unknown.`
+
+Ask what result must be true in 90 days, the numeric failure threshold, and the
+hours and cash available to pursue it. Carry the answer for
+`/quarterly-planning`; do not write it to `goals.md` yourself.
+
+A missing capacity or cash cap stays unknown. The first bet may be thin, but it
+may not be unsized while pretending to be complete.
+
+- **Stage checkpoint:** return the Strategist `/quarterly-planning` delegation request to the main thread; it opens a fresh sibling session and requires a successful persisted `goals.md` whose `## Bets` contains `Activation status: ready`, exactly one `### Bet`, and non-empty `Proposed:`, `Outcome:`, `Cost:` and `Kill if:` lines before Stage 4; `Activation status: blocked` is resumable persisted state but must halt at Stage 3 rather than advance or re-ask completed interview answers.
+- **Checkpoint presentation:** after the valid owner output is re-read, show one line in this shape: `Strategist · goals.md and reviews/quarterly/ · Gap: <truthful gap or none>`.
+
+Keep that presentation human-readable. Do not expose capabilities, correlation
+identifiers, hashes or internal role-session transitions on the normal success
+path.
+
+## Stage 4/4 — Money
+
+Display `Money 4/4 · about three minutes · identifies the financial constraint
+the first decision must respect. UNKNOWN is acceptable; unknown evidence stays
+unknown.`
+
+Ask for cash on hand, revenue collected over the last three months, and real
+monthly burn including founder pay. Collected is not booked. Carry these values
+to `/revenue-review` and `/runway-forecast`; do not write `metrics.md` yourself.
+
+Unknown values stay unknown. Do not estimate cash, infer receivables, discount
+pipeline into cash, or omit founder pay to make runway look longer.
+
+- **Stage checkpoint:** return `/revenue-review` and then `/runway-forecast` as two CFO delegation requests to the main thread, requiring each successful independently persisted `metrics.md` result in the resolved workspace before Stage 5.
+- **Revenue checkpoint:** run `/revenue-review` in its own CFO sibling session and require a successful persisted `## Close — YYYY-MM` contract in `metrics.md` with heading matcher: `^## Close — \d{4}-\d{2}$` and `Close type: activation-baseline` before `/runway-forecast`; on resume, do not repeat a valid activation close.
+- **Runway checkpoint:** run `/runway-forecast` in a new CFO sibling session after the revenue checkpoint and require a successful persisted `## Runway` contract in `metrics.md` with heading matcher: `^## Runway — as of \d{4}-\d{2}-\d{2}$` before Stage 5; without that distinct dated block, Stage 4 remains incomplete.
+- **Checkpoint presentation:** after both valid CFO outputs are re-read, show one line in this shape: `CFO · metrics.md · Gap: <truthful gap or none>`.
+
+Keep that presentation human-readable. Do not expose capabilities, correlation
+identifiers, hashes or internal role-session transitions on the normal success
+path.
+
+The interview has a hard stop at fifteen minutes. Anything still unanswered
+moves to `queue.md`: unknown cash on hand goes in `## Doing`; every other
+missing fact goes in `## Queued`. Each item gets an id, a date, `bet: none`,
+the owner who can settle it and the missing evidence. There are no `TODO`
+lines. The quarter's cash capacity is a bet constraint, not this blocker.
+
+## Stage 5 — Owner-safe delegation
+
+The Chief of Staff writes only `charter.md`, `queue.md`, `decisions/`,
+`reviews/daily/`, `reviews/weekly/`, `reviews/monthly/` and `inbox.md`; it
+scaffolds other paths as empty lifecycle stubs and delegates all content to the
+owner declared by `references/ownership.yaml`.
+
+Return each owner request to the main thread. Pass the carried answer, resolved
+workspace tuple and bounded-first-run marker unchanged. The main thread alone
+opens the sibling, validates its capability, and advances the sequence; the
+controller does not author, rewrite, score or decide owner business content.
+
+### Sibling checkpoint sequence
+
+| Order | Role | Workflow | Expected persistence |
+|---:|---|---|---|
+| 1 | `chief-of-staff` | `/founder-os-init` | `charter.md`, `queue.md`, install decision checkpoint |
+| 2 | `positioning-advisor` | `/icp-definition` | `offer.md` |
+| 3 | `strategist` | `/quarterly-planning` | `goals.md`, `reviews/quarterly/` |
+| 4 | `cfo` | `/revenue-review` | `metrics.md` close checkpoint |
+| 5 | `cfo` | `/runway-forecast` | `metrics.md` runway checkpoint |
+| 6 | `chief-of-staff` | `/daily-brief` | `reviews/daily/YYYY-MM-DD.md` |
+
+For every row, the main thread calls `open_role_session` for a fresh role
+session, passes that row's capability, waits for the role result, re-reads the
+listed checkpoint, and calls `close_role_session` before advancing. The two CFO
+rows are separate sessions with separate capabilities even though they share
+one owner and file. The next row receives no prior role prose: only the original
+carried answer unchanged plus validated state paths and hashes.
+
+Each request uses the six fields in the shared sibling request above and one
+bounded handoff of at most 4096 UTF-8 bytes. Resume derives a cursor from the
+first invalid checkpoint. It preserves every earlier valid checkpoint and does
+not re-run or re-open its completed sibling session.
+
+| Skill | Holder | Declared writes | Required first-run result |
+|---|---|---|---|
+| `/icp-definition` | `positioning-advisor` | `offer.md` | Evidence-backed ICP or a dated hypothesis with missing validation queued. |
+| `/quarterly-planning` | `strategist` | `goals.md`, `reviews/quarterly/` | One sized partial-quarter bet with a numeric outcome, kill condition and first move. |
+| `/revenue-review` | `cfo` | `metrics.md` | Only supplied or computable close values; every unavailable input stays explicit. |
+| `/runway-forecast` | `cfo` | `metrics.md` | Real cash and burn arithmetic, or an explicit gap and owned queue item. |
+
+The Stage 2–4 checkpoints execute these rows in table order. Stage 5 reconciles
+their persisted results; it does not wait until now to make the first request. The
+two CFO skills share one owner and one file, so `/runway-forecast` reads the
+first-run close that `/revenue-review` just wrote. Treat a dated `## Close —
+YYYY-MM` with `Close type: activation-baseline` and a dated `## Runway` matching
+the Stage 4 expressions as independent completion markers. After each result,
+re-read and validate its own block from the same resolved workspace. Do not
+accept a verbal “done” as persisted state and do not re-run a valid completed
+owner output.
+
+The Chief of Staff may write missing-data queue items and update the target
+checkpoint because it owns those paths. The decision record uses the four
+headings declared for `decisions/`, records the timezone, resolved workspace
+and unknown inputs, and labels itself `none — install record` under
+`## Rejected` and `## Supersedes`.
+
+## Stage 6 — First brief
+
+Use the same resolved workspace tuple — the same `FOUNDER_OS_HOME`, business
+slug and resolved workspace path fixed in Stage 0 — for validation, invocation
+and persistence.
+
+Use the **daily-review validity invariant** from Stage 0 and its headings from
+`references/ownership.yaml`; do not substitute a file-exists check.
+
+- **Minimum-state validation:** in the same resolved workspace, validate non-empty charter identity plus owner-persisted `offer.md`, `queue.md`, a `goals.md` `## Bets` with `Activation status: ready` and its complete committed `### Bet`, a `metrics.md` `## Close — YYYY-MM` block with `Close type: activation-baseline`, and a separate dated `## Runway` block matching Stage 4; truthful financial unknowns are valid, but a blocked quarter or fabricated completeness is not.
+- **Daily-brief invocation:** return the `/daily-brief` request to the main thread, which opens a fresh Chief of Staff sibling session against that same resolved workspace.
+- **Persisted completion:** require a successful persisted write to `reviews/daily/YYYY-MM-DD.md` in that same resolved workspace and validate its declared daily-review headings before continuing.
+
+Minimum state is not “every field known.” It is enough truthful state for the
+brief to choose exactly one first move or the blocking cash unknown. Missing
+historical items do not become rotting work merely because this is day one.
+
+## Stage 7 — Activation receipt
+
+- **Activation receipt:** print `Activation complete` only after the successful persisted write from Stage 6 has been validated and only when no unresolved activation-stage blocker remains.
+
+Re-resolve nothing here. This is the same resolved workspace: the same
+`FOUNDER_OS_HOME`, business slug and path tuple validated in Stage 6. Lead with
+exactly these labels in this order:
+
+- **You came with:** the persisted activation reason, or `not supplied`.
+- **Your first decision:** the daily brief's one thing and its trade.
+- **Based on:** the source files and source dates actually used by the brief.
+- **Saved to:** the exact `reviews/daily/YYYY-MM-DD.md` path that passed re-read.
+- **Founder OS will remember:** the live queue item, bet link and explicit
+  missing inputs.
+- **Recommended next move:** exactly one workflow derived from current state.
+
+Do not render the receipt from role prose or before the persisted daily review
+passes the validity invariant. Put the complete list of written files and
+owners in a collapsed technical detail when the host supports it; otherwise
+link to the workspace-state documentation. The normal receipt leads with the
+founder's decision, its evidence and where it will return.
+
+### Return to the activation reason
+
+Activation is already complete before this optional return. When a supplied
+activation reason exists and the hard stop has not been reached, the Chief of
+Staff may return one `/situation-review` request for that reason. Show its
+preview — selected owner, workflow, required state and expected persistence —
+then offer exactly `Continue` and `Stop`. Run the specialist workflow only
+after the founder chooses `Continue`; the preview never starts it
+automatically.
+
+At the fifteen-minute hard stop, do not open another role session. Show one
+copyable `/situation-review <activation reason>` command carrying the reason
+and end successfully. Do not run the preview or a specialist in that branch.
+
+Name `/setup-cadences` as optional post-activation setup. Do not run it. Do not
+send telemetry, feedback, messages or any other outbound event.
+
+## Resume and failure
+
+Resume state comes only from the persisted outputs in the resolved workspace;
+there is no hidden progress file or second state tracker.
+
+### Failure
+
+On a failed preflight, delegation, validation, invocation or write, halt before
+Stage 7. Print the completed stages, the missing stage and the concrete failed
+condition. Print a copyable `/founder-os-init resume` command carrying the
+explicit resume tuple: the exact `FOUNDER_OS_HOME`, business slug and resolved
+workspace path from the target checkpoint. Omit the success receipt. A caught
+failure in one owner stage must not erase another owner's successful output.
+
+### Resume
+
+- **Preservation:** keep and preserve every populated section byte-for-byte and create only missing stubs or declared headings before continuing from the first missing stage.
+
+On the next run, use the explicit resume tuple — exact `FOUNDER_OS_HOME`,
+business slug and resolved workspace path — to select the checkpoint before
+consulting current defaults. Derive completed stages from valid owned outputs
+and continue from the first invalid checkpoint; do not re-run or re-open a
+valid completed sibling. Compare the tuple to the target checkpoint before
+continuing. A moved
+workspace requires the confirmed relocation procedure from Stage 0; never
+silently rebind it. Do not re-scaffold destructively, re-ask completed stages
+or copy a carried answer into a file owned by someone else. An activated
+classification still routes to the doctor instead of resuming.
+
+## Output
+
+- One resolved business workspace, never a guessed cross-business path.
+- Existing populated state preserved exactly.
+- Owner-persisted charter, ICP/hypothesis, first bet, financial baseline/runway
+  or explicit gaps, queue items and first daily brief.
+- A local activation receipt shown only after the brief validates.
+
+## Guardrails
+
+Never overwrite populated state. Never invent a fact or write content into a
+file owned by another agent. Read `references/ownership.yaml` at runtime; the
+table above describes orchestration, not a replacement owner map.
+
+Never send, publish, pay, invoice, sign, cancel or install anything. No tax,
+legal or medical advice belongs in onboarding. Route those questions according
+to `guardrails` and continue only with the in-scope business facts.

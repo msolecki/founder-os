@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: client-health
 description: Score an engagement on payment, scope, tone and effort before it becomes a crisis — run monthly per active client, and always before a renewal
 metadata:
-  writes:
-    - clients/
+  writes: '["clients/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Client Health

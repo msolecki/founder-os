@@ -207,6 +207,32 @@ class TestHookIntegration(unittest.TestCase):
         self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
 
+    def test_direct_identity_cannot_override_the_codex_turn_mapping(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            (mapping / "turn-role.json").write_text(
+                json.dumps({
+                    "agent_type": "cfo",
+                    "recorded_at": time.time(),
+                }),
+                encoding="utf-8",
+            )
+
+            result = run_codex_hook(
+                {
+                    "agent_type": "general-purpose",
+                    "turn_id": "turn-role",
+                    "tool_name": "Bash",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {"command": "id"},
+                },
+                temp_dir,
+            )
+
+        self.assertIn("deny", result.stdout, result.stderr)
+        self.assertIn("identity mapping is missing or invalid", result.stdout)
+
 
 class TestPatchPaths(unittest.TestCase):
     def setUp(self):
@@ -233,6 +259,20 @@ class TestPatchPaths(unittest.TestCase):
                 "patch": "*** Update File: alternate.md\n"}),
             ["alternate.md"])
 
+    def test_tool_paths_collects_every_distinct_file_alias(self):
+        self.assertEqual(
+            self.guard._tool_paths(
+                "Write",
+                {
+                    "file_path": "first.md",
+                    "path": "second.md",
+                    "target_file": "third.md",
+                    "targetFile": "third.md",
+                },
+            ),
+            ["first.md", "second.md", "third.md"],
+        )
+
 
 class TestAgentTypeFor(unittest.TestCase):
     def setUp(self):
@@ -249,6 +289,43 @@ class TestAgentTypeFor(unittest.TestCase):
         with mock.patch.dict(os.environ, {"PLUGIN_DATA": "/tmp/no-such-data"},
                              clear=False):
             self.assertIsNone(self.guard.agent_type_for({"turn_id": "turn-1"}))
+
+    def test_direct_identity_does_not_replace_a_missing_turn_mapping(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with mock.patch.dict(
+                os.environ,
+                {"PLUGIN_DATA": temp_dir},
+                clear=False,
+            ):
+                resolved = self.guard.agent_type_for({
+                    "agent_type": "cfo",
+                    "turn_id": "turn-missing",
+                })
+
+        self.assertIsNone(resolved)
+
+    def test_generic_identity_variants_agree_on_one_turn(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            (mapping / "turn-generic.json").write_text(
+                json.dumps({
+                    "agent_type": "default",
+                    "recorded_at": time.time(),
+                }),
+                encoding="utf-8",
+            )
+            with mock.patch.dict(
+                os.environ,
+                {"PLUGIN_DATA": temp_dir},
+                clear=False,
+            ):
+                resolved = self.guard.agent_type_for({
+                    "agent_type": "general-purpose",
+                    "turn_id": "turn-generic",
+                })
+
+        self.assertEqual(resolved, "general-purpose")
 
     def test_mapping_symlink_is_not_trusted_as_subagent_identity(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -281,6 +358,28 @@ class TestAgentTypeFor(unittest.TestCase):
                 os.environ, {"PLUGIN_DATA": temp_dir}, clear=False
             ):
                 resolved = self.guard.agent_type_for({"turn_id": "turn-old"})
+        self.assertIsNone(resolved)
+
+    def test_oversized_mapping_timestamp_is_not_trusted(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            (mapping / "turn-huge.json").write_text(
+                json.dumps({
+                    "agent_type": "cfo",
+                    "recorded_at": 10 ** 400,
+                }),
+                encoding="utf-8",
+            )
+            with mock.patch.dict(
+                os.environ,
+                {"PLUGIN_DATA": temp_dir},
+                clear=False,
+            ):
+                resolved = self.guard.agent_type_for({
+                    "turn_id": "turn-huge",
+                })
+
         self.assertIsNone(resolved)
 
     def test_record_agent_prunes_expired_mappings_and_stamps_new_one(self):
@@ -354,6 +453,22 @@ class TestAgentTypeFor(unittest.TestCase):
             )
 
         self.assertIn("deny", result.stdout, result.stderr)
+
+    def test_direct_role_with_unresolved_turn_is_denied(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_codex_hook(
+                {
+                    "agent_type": "cfo",
+                    "turn_id": "missing-subagent-turn",
+                    "tool_name": "Bash",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {"command": "id"},
+                },
+                temp_dir,
+            )
+
+        self.assertIn("deny", result.stdout, result.stderr)
+        self.assertIn("identity mapping is missing or invalid", result.stdout)
 
     def test_present_invalid_identity_markers_are_not_treated_as_main(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -976,17 +1091,24 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
         self._deny_payload(result)
 
     def test_malformed_tool_name_cannot_trigger_the_outer_fail_open(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            result = run_codex_hook(
-                {
-                    "agent_type": "cfo",
-                    "tool_name": ["mcp__founder-os-state__read_state"],
-                    "cwd": str(REPO_ROOT),
-                    "tool_input": {},
-                },
-                temp_dir,
-            )
-        self._deny_payload(result)
+        for tool_name in (
+            ["mcp__founder-os-state__read_state"],
+            None,
+            False,
+            "",
+        ):
+            with self.subTest(tool_name=tool_name), \
+                    tempfile.TemporaryDirectory() as temp_dir:
+                result = run_codex_hook(
+                    {
+                        "agent_type": "cfo",
+                        "tool_name": tool_name,
+                        "cwd": str(REPO_ROOT),
+                        "tool_input": {},
+                    },
+                    temp_dir,
+                )
+                self._deny_payload(result)
 
     def test_clock_failure_invalidates_capability_instead_of_escaping(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1009,6 +1131,10 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
         mutations = (
             ("closed", lambda record: record.update(status="closed")),
             ("expired", lambda record: record.update(expires_at=0)),
+            (
+                "oversized expiration",
+                lambda record: record.update(expires_at=10 ** 400),
+            ),
             (
                 "wrong hash",
                 lambda record: record.update(capability_hash="0" * 64),
@@ -1236,6 +1362,140 @@ class TestHostRuntimeShapes(unittest.TestCase):
 
     PREFIXED_RESOLVE = "mcp__plugin_founder-os_founder-os-state__resolve_workspace"
 
+    def test_native_target_tool_names_are_normalized_for_roles(self):
+        cases = (
+            ("Execute", {"command": "pwd"}),
+            ("ApplyPatch", {"patch": "*** Begin Patch"}),
+            ("read", {"path": "metrics.md"}),
+            ("write", {"path": "metrics.md"}),
+            ("edit", {"path": "metrics.md"}),
+            ("create", {"path": "metrics.md"}),
+            ("search", {"query": "cash"}),
+            ("execute", {"command": "pwd"}),
+            ("read_file", {"path": "metrics.md"}),
+            ("write_file", {"path": "metrics.md"}),
+            ("edit_file", {"path": "metrics.md"}),
+            ("run_terminal_cmd", {"command": "pwd"}),
+            ("run_shell_command", {"command": "pwd"}),
+        )
+        for tool_name, tool_input in cases:
+            with self.subTest(tool_name=tool_name):
+                result = run_hook({
+                    "agent_type": "cfo",
+                    "tool_name": tool_name,
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": tool_input,
+                })
+                self.assertIn("deny", result.stdout, result.stderr)
+
+    def test_github_outer_payload_fields_are_normalized(self):
+        result = run_hook({
+            "agentName": "cfo",
+            "toolName": "execute",
+            "cwd": str(REPO_ROOT),
+            "toolArgs": json.dumps({"command": "pwd"}),
+        })
+
+        self.assertIn("deny", result.stdout, result.stderr)
+
+    def test_github_string_tool_args_still_enforce_ownership(self):
+        result = run_hook({
+            "agentName": "general-purpose",
+            "toolName": "write",
+            "cwd": str(REPO_ROOT),
+            "toolArgs": json.dumps({"path": "founder-os/goals.md"}),
+        })
+
+        self.assertIn("deny", result.stdout, result.stderr)
+        self.assertIn("strategist", result.stdout)
+
+    def test_conflicting_host_aliases_are_denied(self):
+        result = run_hook({
+            "agent_type": "general-purpose",
+            "agentName": "cfo",
+            "tool_name": "Read",
+            "cwd": str(REPO_ROOT),
+            "tool_input": {"file_path": "metrics.md"},
+        })
+
+        self.assertIn("deny", result.stdout, result.stderr)
+        self.assertIn("conflicting agent_type aliases", result.stdout)
+
+    def test_malformed_main_thread_tool_input_remains_fail_open(self):
+        result = run_hook({
+            "tool_name": "Write",
+            "cwd": str(REPO_ROOT),
+            "tool_input": ["not", "an", "object"],
+        })
+
+        self.assertEqual(result.stdout.strip(), "", result.stderr)
+        self.assertEqual(result.returncode, 0)
+
+    def test_factory_applypatch_obeys_non_role_ownership(self):
+        result = run_hook({
+            "agent_type": "general-purpose",
+            "tool_name": "ApplyPatch",
+            "cwd": str(REPO_ROOT),
+            "tool_input": {
+                "patch": (
+                    "*** Begin Patch\n"
+                    "*** Update File: founder-os/goals.md\n"
+                    "@@\n-old\n+new\n"
+                    "*** End Patch\n"
+                ),
+            },
+        })
+
+        self.assertIn("deny", result.stdout, result.stderr)
+        self.assertIn("strategist", result.stdout)
+
+    def test_native_write_aliases_obey_non_role_ownership(self):
+        for tool_name in (
+            "write",
+            "edit",
+            "create",
+            "write_file",
+            "edit_file",
+        ):
+            with self.subTest(tool_name=tool_name):
+                result = run_hook({
+                    "agent_type": "general-purpose",
+                    "tool_name": tool_name,
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "path": str(PLUGIN_ROOT / "goals.md"),
+                    },
+                })
+                self.assertIn("deny", result.stdout, result.stderr)
+                self.assertIn("strategist", result.stdout)
+
+    def test_cursor_target_file_obeys_non_role_ownership(self):
+        result = run_hook({
+            "agent_type": "general-purpose",
+            "tool_name": "write_file",
+            "cwd": str(REPO_ROOT),
+            "tool_input": {
+                "target_file": str(PLUGIN_ROOT / "goals.md"),
+            },
+        })
+
+        self.assertIn("deny", result.stdout, result.stderr)
+        self.assertIn("strategist", result.stdout)
+
+    def test_every_supplied_path_alias_is_checked(self):
+        result = run_hook({
+            "agent_type": "general-purpose",
+            "tool_name": "Write",
+            "cwd": str(REPO_ROOT),
+            "tool_input": {
+                "file_path": "/etc/hosts",
+                "path": str(PLUGIN_ROOT / "goals.md"),
+            },
+        })
+
+        self.assertIn("deny", result.stdout, result.stderr)
+        self.assertIn("strategist", result.stdout)
+
     # CFG-001 — subagents that are not Founder OS roles are outside the
     # gateway lockdown. Only the overlay and the ownership map bind them.
     def test_general_purpose_read_is_allowed(self):
@@ -1371,11 +1631,28 @@ class TestRuntimeShapeFailOpen(unittest.TestCase):
         for tool_name in (
             "mcp__founder-os-state__resolve_workspace",
             "mcp__plugin_founder-os_founder-os-state__resolve_workspace",
+            "founder-os-state/resolve_workspace",
         ):
             with self.subTest(tool_name=tool_name):
                 p = run_hook({"agent_type": "cfo", "tool_name": tool_name,
                               "cwd": str(REPO_ROOT), "tool_input": {}})
                 self.assertEqual(p.stdout.strip(), "")
+
+    def test_github_foreign_mcp_servers_remain_denied_for_roles(self):
+        for tool_name in (
+            "other-server/resolve_workspace",
+            "founder_os_state/resolve_workspace",
+        ):
+            with self.subTest(tool_name=tool_name):
+                p = run_hook({
+                    "agent_type": "cfo",
+                    "tool_name": tool_name,
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {},
+                })
+
+                self.assertIn("deny", p.stdout)
+                self.assertIn("Other MCP servers are not allowed", p.stdout)
 
     def test_role_name_in_the_wrong_case_is_still_the_role(self):
         # Role-ness decides whether the lockdown applies at all, so a near

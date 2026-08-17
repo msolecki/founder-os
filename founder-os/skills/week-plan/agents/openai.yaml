@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Week Plan"
   short_description: "Run the Week Plan Founder OS workflow."

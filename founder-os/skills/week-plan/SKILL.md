@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: week-plan
 description: Turn this quarter's bets into blocks with dates — run every Monday before the week fills itself
 metadata:
-  writes:
-    - week.md
+  writes: '["week.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Week Plan

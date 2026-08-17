@@ -1,0 +1,4 @@
+interface:
+  display_name: "Calendar Audit"
+  short_description: "Run the Calendar Audit Founder OS workflow."
+  default_prompt: "Use $calendar-audit to handle this Founder OS task."

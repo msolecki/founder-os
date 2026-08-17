@@ -8,8 +8,9 @@ current business state into one source-linked decision, saves it to local
 Markdown, and produces a valid first brief in less than fifteen minutes.
 
 Start with the situation, not the catalogue: say **“I do not know what matters
-today”** or run `/situation-review`. The Chief of Staff selects one owner, one
-workflow, and the state destination. It previews that route and its missing
+today”** or run `/founder-os:situation-review` in Claude Code or
+`$founder-os:situation-review` in Codex. The Chief of Staff selects one owner,
+one workflow, and the state destination. It previews that route and its missing
 state first; the specialist starts only after you choose **Continue**, while
 **Stop** ends without running it. Founder OS never sends, pays, signs, cancels,
 or publishes; the founder remains the CEO.
@@ -93,11 +94,12 @@ After preflight, onboarding asks the optional **“What made you install Founder
 OS today?”** and records a supplied answer as founder-stated context, not
 business evidence. Its validated receipt reads **You came with:**, **Your first
 decision:**, **Based on:**, **Saved to:**, **Founder OS will remember:**, and
-**Recommended next move:**. Only after activation, `/situation-review` may
-preview the owner, workflow, required state, and expected persistence for that
-reason. You choose **Continue** or **Stop**; the specialist workflow runs only
-after **Continue**. At the fifteen-minute hard stop, the flow prints a copyable
-command instead of opening another role session.
+**Recommended next move:**. Only after activation, the host-specific
+`situation-review` command may preview the owner, workflow, required state, and
+expected persistence for that reason. You choose **Continue** or **Stop**; the
+specialist workflow runs only after **Continue**. At the fifteen-minute hard
+stop, the flow prints a copyable command instead of opening another role
+session.
 
 Then, if you want the company to come to you rather than wait to be opened,
 run the matching host command:
@@ -137,18 +139,24 @@ the source date without inventing a freshness label.
 
 ## Your first five actions
 
-1. Run `/daily-brief` before opening email.
-2. Run `/capture Call Anna about the Acme scope` to save one unclassified line.
-3. Run `/pipeline-review` so every live deal earns a dated next move.
-4. Run `/weekly-review` on Friday.
+1. Run `/founder-os:daily-brief` in Claude Code or
+   `$founder-os:daily-brief` in Codex before opening email.
+2. Run `/founder-os:capture Call Anna about the Acme scope` or
+   `$founder-os:capture Call Anna about the Acme scope` to save one
+   unclassified line.
+3. Run `/founder-os:pipeline-review` or `$founder-os:pipeline-review` so every
+   live deal earns a dated next move.
+4. Run `/founder-os:weekly-review` or `$founder-os:weekly-review` on Friday.
 5. Ask the **Chief of Staff** to route an uncategorized decision.
 
 ## Update, repair, or uninstall
 
 Update with `/plugin marketplace update founder-os`, then
 `/plugin update founder-os@founder-os` and `/reload-plugins`. Use
-`/founder-os-doctor` for a live workspace that looks stale or structurally
-wrong. In Codex, run `codex plugin marketplace upgrade founder-os`, replace the
+`/founder-os:founder-os-doctor` in Claude Code or
+`$founder-os:founder-os-doctor` in Codex for a live workspace that looks stale
+or structurally wrong. In Codex, run `codex plugin marketplace upgrade
+founder-os`, replace the
 cached install with `codex plugin remove founder-os@founder-os` followed by
 `codex plugin add founder-os@founder-os`, and start a new conversation. Remove
 the Claude plugin with `/plugin uninstall founder-os@founder-os`, or the Codex
@@ -158,6 +166,25 @@ from the installed plugin. Prompts and context sent through Claude Code or Codex
 remain governed by that environment's data-handling terms.
 
 ## What's inside
+
+PromptScript is the source of truth for the package. The identity, operating
+principles, restrictions, role dispatch contract, hooks, MCP declaration, and
+examples are composed from `.promptscript/project.prs` and its focused
+fragments. `.promptscript/agents.prs` composes one `.promptscript/agents/<name>.prs`
+file per role. Every skill under `.promptscript/skills/` is auto-discovered and
+compiled for the selected host. The generated files in this directory are
+adapters, not a second prompt source.
+
+The same source can target Claude Code, Codex, Factory AI, GitHub Copilot,
+Cursor, Gemini CLI, and every other target supported by PromptScript. Founder
+OS keeps the local state gateway, ownership guard, scheduler, and validator as
+runtime code because PromptScript compiles instructions and configuration; it
+does not replace enforcement code.
+
+Claude Code and Codex select separate generated hook adapters from the plugin
+manifest. The Claude adapter is `hooks/hooks.json`; Codex uses
+`hooks/codex-hooks.json` and resolves its commands through
+`PLUGIN_ROOT`.
 
 | Content | Count |
 |---------|-------|
@@ -203,15 +230,15 @@ the next sibling if the workflow requires one. No subagent summons another.
 ## A day with Founder OS
 
 Morning: if you enabled local cadences and the machine was running, the brief is
-already there — `/daily-brief` ran at 08:00 and named the one thing that matters
-today. Otherwise, you type it yourself. A thought at 15:00: run
-`/capture Call Anna about the Acme scope`; one unchanged line lands in
-`inbox.md`, and the next brief or `/triage` drains it. A prospect to move: `/pipeline-review`. A
-draft to send: `/outreach-draft` writes it to `drafts/`, you press send.
-Friday: `/weekly-review` compares committed to done and sweeps the queue.
-Month-end: `/revenue-review` closes the books. Don't know who to ask? Ask the
-chief-of-staff — routing is its decision, not yours. The full catalogue with
-schedules is [`COMMANDS.md`](COMMANDS.md).
+already there - `daily-brief` ran at 08:00 and named the one thing that matters
+today. Otherwise, you invoke it yourself. A thought at 15:00: run `capture`
+with `Call Anna about the Acme scope`; one unchanged line lands in `inbox.md`,
+and the next brief or `triage` drains it. A prospect to move:
+`pipeline-review`. A draft to send: `outreach-draft` writes it to `drafts/`,
+you press send. Friday: `weekly-review` compares committed to done and sweeps
+the queue. Month-end: `revenue-review` closes the books. Don't know who to ask?
+Ask the chief-of-staff - routing is its decision, not yours. The full catalogue
+with schedules is [`COMMANDS.md`](COMMANDS.md).
 
 ## More than one business
 
@@ -220,7 +247,7 @@ registry (`~/.founder-os/businesses.yaml`) that names them. Every cadence takes
 the business slug as an argument; scheduler artifacts carry an exact identity,
 so two businesses keep independent schedules without touching each other. What
 multi-business adds is exactly one decision: **how your hours and cash split
-across businesses** — the Portfolio Manager owns it, `/portfolio-review` makes
+across businesses** - the Portfolio Manager owns it, `portfolio-review` makes
 it weekly, and `portfolio.md` records it. Everything else deliberately stays
 per-business: no agent reads across books except the portfolio-manager, and it
 reads two sections per business, not the books. Full procedure:
@@ -277,7 +304,7 @@ nobody started in 15 working days was passed over by 15 daily briefs; the queue
 just writes down a decision you already made fifteen times. A queue that only
 grows is a to-do list, and you already have one of those.
 
-**There is a door.** `/capture` takes one line from you at 15:00 with no fields
+**There is a door.** `capture` takes one line from you at 15:00 with no fields
 and no classification, then appends it unchanged to `inbox.md`. The next brief
 or triage empties the inbox to zero — every line becomes a queue item, or gets
 named and refused with the owner whose file already holds it. It has no clock

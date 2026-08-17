@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: annual-review
 description: Read twelve months of decisions back and score the judgment rather than the outcome — run once a year, from decisions/ and nothing else
 metadata:
-  writes:
-    - reviews/quarterly/
+  writes: '["reviews/quarterly/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Annual Review

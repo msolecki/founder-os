@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Triage"
   short_description: "Run the Triage Founder OS workflow."

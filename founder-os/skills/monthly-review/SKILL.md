@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: monthly-review
 description: Read the month back against the charter and name the drift — run after the CFO closes the books, never before
 metadata:
-  writes:
-    - reviews/monthly/
+  writes: '["reviews/monthly/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Monthly Review

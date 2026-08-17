@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: founder-os-doctor
 description: Diagnose workspace rot — missing files, stale metrics, goals without bets, orphan clients, silent cadences — and report before repairing anything
+references:
+  - agents/openai.yaml
 ---
 
 # Founder OS Doctor

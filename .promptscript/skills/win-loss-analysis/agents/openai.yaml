@@ -1,0 +1,4 @@
+interface:
+  display_name: "Win Loss Analysis"
+  short_description: "Run the Win Loss Analysis Founder OS workflow."
+  default_prompt: "Use $win-loss-analysis to handle this Founder OS task."

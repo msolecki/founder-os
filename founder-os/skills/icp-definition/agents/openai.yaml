@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Icp Definition"
   short_description: "Run the Icp Definition Founder OS workflow."

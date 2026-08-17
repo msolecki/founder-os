@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: weekly-review
 description: Score the week's commitments against what actually happened and name the pattern across weeks — run Friday afternoon, before the week is remembered kindly
 metadata:
-  writes:
-    - reviews/weekly/
+  writes: '["reviews/weekly/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Weekly Review

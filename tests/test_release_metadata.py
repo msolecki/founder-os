@@ -16,6 +16,8 @@ CLAUDE_MANIFEST_PATH = (
     REPO_ROOT / "founder-os" / ".claude-plugin" / "plugin.json"
 )
 CODEX_MANIFEST_PATH = REPO_ROOT / "founder-os" / ".codex-plugin" / "plugin.json"
+PROMPTSCRIPT_AGENTS_PATH = REPO_ROOT / ".promptscript" / "agents.prs"
+PROMPTSCRIPT_PLUGINS_PATH = REPO_ROOT / ".promptscript" / "plugins.prs"
 CHANGELOG_PATH = REPO_ROOT / "CHANGELOG.md"
 CI_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 DEVELOPMENT_PATH = REPO_ROOT / "docs" / "development.md"
@@ -36,6 +38,7 @@ DOCTOR_PATH = (
     REPO_ROOT / "founder-os" / "skills" / "founder-os-doctor" / "SKILL.md"
 )
 FEATURE_LIST_PATH = REPO_ROOT / "feature_list.json"
+REQUIREMENTS_PATH = REPO_ROOT / "requirements-dev.txt"
 RELEASE_VERSION = "2.6.0"
 ACTIVATION_DESCRIPTION = (
     "Know what matters today with one source-linked daily decision from your "
@@ -53,6 +56,12 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         cls.codex_manifest = json.loads(
             CODEX_MANIFEST_PATH.read_text(encoding="utf-8")
         )
+        cls.promptscript_agents = PROMPTSCRIPT_AGENTS_PATH.read_text(
+            encoding="utf-8"
+        )
+        cls.promptscript_plugins = PROMPTSCRIPT_PLUGINS_PATH.read_text(
+            encoding="utf-8"
+        )
         cls.changelog = CHANGELOG_PATH.read_text(encoding="utf-8")
         cls.ci = CI_PATH.read_text(encoding="utf-8")
         cls.development = DEVELOPMENT_PATH.read_text(encoding="utf-8")
@@ -64,14 +73,28 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         cls.getting_started = GETTING_STARTED_PATH.read_text(encoding="utf-8")
         cls.troubleshooting = TROUBLESHOOTING_PATH.read_text(encoding="utf-8")
         cls.commands = COMMANDS_PATH.read_text(encoding="utf-8")
+        cls.requirements = REQUIREMENTS_PATH.read_text(encoding="utf-8")
 
     def test_all_release_versions_match_2_6_0(self):
+        promptscript_version = re.search(
+            r"(?ms)^@plugins \{.*?^  founder-os-runtime: \{.*?"
+            r'^    version: "([^"]+)"',
+            self.promptscript_plugins,
+        )
+        self.assertIsNotNone(promptscript_version)
         versions = {
             "marketplace": self.marketplace["plugins"][0]["version"],
             "claude": self.claude_manifest["version"],
             "codex": self.codex_manifest["version"],
+            "promptscript": promptscript_version.group(1),
         }
         self.assertEqual(set(versions.values()), {RELEASE_VERSION}, versions)
+
+    def test_portable_agents_do_not_embed_claude_plugin_tool_names(self):
+        self.assertNotIn(
+            "mcp__plugin_founder-os_founder-os-state__",
+            self.promptscript_agents,
+        )
 
     def test_marketplace_and_plugin_descriptions_lead_with_activation(self):
         descriptions = {
@@ -387,6 +410,14 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         self.assertNotIn("npx", self.ci)
         self.assertNotIn("npm install", self.ci)
         self.assertNotIn("npm exec", self.ci)
+
+    def test_python_development_dependency_is_pinned(self):
+        self.assertEqual(self.requirements.strip(), "PyYAML==6.0.3")
+        self.assertIn(
+            "python3 -m pip install -r requirements-dev.txt",
+            self.ci,
+        )
+        self.assertNotRegex(self.ci, r"(?m)^\s*run:\s*pip install ")
 
     def test_development_guide_documents_both_official_local_gates(self):
         normalized = " ".join(self.development.split())

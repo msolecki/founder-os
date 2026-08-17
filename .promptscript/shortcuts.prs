@@ -1,0 +1,32 @@
+# Founder OS shortcuts fragment
+@meta { id: "founder-os-shortcuts" syntax: "1.5.0" }
+
+@shortcuts {
+  "/situation-review": {
+    prompt: true
+    description: "Route one unclear situation to one Founder OS workflow"
+    content: """
+      Route the founder's situation to exactly one owner and workflow. Preview
+      missing state and expected persistence. Wait for Continue before delegation.
+    """
+  }
+  "/founder-os-init": {
+    prompt: true
+    description: "Run resumable Founder OS onboarding"
+    content: """
+      Run the host-specific onboarding flow. Stop before any specialist run unless
+      the founder explicitly chooses Continue. Persist and verify the first brief.
+    """
+  }
+  "/setup-cadences": {
+    prompt: true
+    description: "Preview and install local Founder OS cadences"
+    content: """
+      Preview scheduler changes, show exact files and identities, snapshot state,
+      and ask for consent before applying local cadence jobs.
+    """
+  }
+  "/daily-brief": "Open the day with the one thing that matters."
+  "/capture": "Capture one founder-supplied line without classifying it."
+  "/weekly-review": "Score committed work against what actually happened."
+}

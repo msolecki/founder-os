@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audience Research"
+  short_description: "Run the Audience Research Founder OS workflow."
+  default_prompt: "Use $audience-research to handle this Founder OS task."

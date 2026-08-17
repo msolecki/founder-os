@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: runway-forecast
 description: Compute months of survival at real burn with the pipeline discounted by stage — run monthly after the close, and before any spending commitment
 metadata:
-  writes:
-    - metrics.md
+  writes: '["metrics.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Runway Forecast

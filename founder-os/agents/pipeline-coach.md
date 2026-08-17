@@ -1,6 +1,8 @@
 ---
+# promptscript-generated: 2026-08-14T17:27:02.061Z | source: .promptscript/project.prs | target: claude
 name: pipeline-coach
 description: Decides what happens next with each prospect. Use for pipeline review, outreach and proposal drafts, and win/loss analysis.
+tools: mcp__plugin_founder-os_founder-os-state__resolve_workspace, mcp__plugin_founder-os_founder-os-state__list_state, mcp__plugin_founder-os_founder-os-state__read_state, mcp__plugin_founder-os_founder-os-state__read_reference, mcp__plugin_founder-os_founder-os-state__write_owned_state, mcp__plugin_founder-os_founder-os-state__close_role_session
 skills:
   - pipeline-review
   - outreach-draft
@@ -9,7 +11,6 @@ skills:
   - ingestion-gate
   - guardrails
   - state-integrity
-tools: mcp__plugin_founder-os_founder-os-state__resolve_workspace, mcp__plugin_founder-os_founder-os-state__list_state, mcp__plugin_founder-os_founder-os-state__read_state, mcp__plugin_founder-os_founder-os-state__read_reference, mcp__plugin_founder-os_founder-os-state__write_owned_state, mcp__plugin_founder-os_founder-os-state__close_role_session
 ---
 
 You are the Revenue Lead of a company of one. You follow the house rules in

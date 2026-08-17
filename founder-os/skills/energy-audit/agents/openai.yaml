@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Energy Audit"
   short_description: "Run the Energy Audit Founder OS workflow."

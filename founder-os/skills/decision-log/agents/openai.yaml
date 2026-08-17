@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Decision Log"
   short_description: "Run the Decision Log Founder OS workflow."

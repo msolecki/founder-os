@@ -1,0 +1,9 @@
+# Founder OS mcpServers fragment
+@meta { id: "founder-os-mcp-servers" syntax: "1.5.0" }
+
+@mcpServers {
+  founder-os-state: {
+    transport: "stdio"
+    command: ["python3", "founder-os/mcp/founder_os_state.py"]
+  }
+}

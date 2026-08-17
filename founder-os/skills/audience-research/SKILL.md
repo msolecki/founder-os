@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: audience-research
 description: Collect what the ICP actually says about their problem, verbatim and sourced — run before a content plan, and whenever the founder is about to write about a topic instead of a question
 metadata:
-  writes:
-    - content.md
+  writes: '["content.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Audience Research

@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Voice Capture"
   short_description: "Run the Voice Capture Founder OS workflow."

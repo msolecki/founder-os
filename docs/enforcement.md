@@ -66,7 +66,9 @@ Failures use one stable code and one recovery action:
 
 `ownership-guard.py` runs for direct file tools, `Bash`, web tools, and all MCP
 tools. Claude supplies `agent_type`; Codex supplies a `turn_id` recorded by
-`record-agent.py` at `SubagentStart`.
+`record-agent.py` at `SubagentStart`. Factory, GitHub, Cursor, and Gemini native
+tool names are normalized to the same direct-file and outbound classes before
+the guard decides.
 
 For a known packaged role or approved generic fallback, the guard:
 

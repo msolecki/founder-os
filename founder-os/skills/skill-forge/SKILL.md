@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: skill-forge
 description: Add a workflow, file, or role this package does not ship — run when the founder's business needs something the thirteen agents have no lane for, and refuse when one of them already does
+references:
+  - agents/openai.yaml
 ---
 
 # Skill Forge
@@ -112,9 +115,10 @@ beliefs matter.
    `$FOUNDER_OS_HOME/_local/skills/local-<slug>/SKILL.md` and
    `agents/openai.yaml`, from
    `references/skill-template.md` verbatim: frontmatter with `name` and
-   `description`, `metadata.writes` for every path it writes, `## Beliefs`
-   before `## Steps`, `## Output` naming the exact file and heading, and
-   `agents/openai.yaml` must name `$local-<slug>` in `default_prompt`; the
+   `description`, `metadata.writes` as a JSON-encoded array string containing
+   every path it writes, `## Beliefs` before `## Steps`, `## Output` naming the
+   exact file and heading, and `agents/openai.yaml` must name `$local-<slug>` in
+   `default_prompt`; the
    `local-` prefix is not decoration — a packaged skill
    added upstream next year must not silently shadow this one.
 

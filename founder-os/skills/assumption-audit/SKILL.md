@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: assumption-audit
 description: List what must be true for a plan to work, strike what is already evidence, and rank the rest by cost to test — run before the plan is expensive
+references:
+  - agents/openai.yaml
 ---
 
 # Assumption Audit

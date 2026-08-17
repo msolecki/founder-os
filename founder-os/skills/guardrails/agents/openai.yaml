@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Guardrails"
   short_description: "Run the Guardrails Founder OS workflow."

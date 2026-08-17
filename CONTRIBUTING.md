@@ -8,7 +8,9 @@ contribution guide. This file is the short version.
 ## Before you open a PR
 
 ```bash
-pip install pyyaml
+python3 -m pip install -r requirements-dev.txt
+pnpm install
+pnpm run check:promptscript
 python3 scripts/validate_package.py founder-os   # 13 agent(s), 53 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md if frontmatter changed
 python3 scripts/smoke_installed_copy.py          # copied local gateway lifecycle
@@ -17,7 +19,7 @@ node --test tests/*.behavior.test.js              # landing behavior
 python3 scripts/check_local_links.py              # local docs and anchors
 ```
 
-CI runs all six on every push and PR, and a red build is a no from the
+CI runs every listed gate on each push and PR, and a red build is a no from the
 machine before it is a review comment from a human.
 
 ## The rules the validator cannot read

@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Founder Os Init"
   short_description: "Run the Founder Os Init Founder OS workflow."

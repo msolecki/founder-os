@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: follow-up-sweep
 description: Surface everyone past their contact interval and give each one a real reason to hear from the founder — run weekly, capped at five, and never with "just checking in"
 metadata:
-  writes:
-    - network.md
+  writes: '["network.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Follow-up Sweep

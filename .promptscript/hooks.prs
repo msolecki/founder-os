@@ -1,0 +1,42 @@
+# Founder OS hooks fragment
+@meta { id: "founder-os-hooks" syntax: "1.5.0" }
+
+@hooks {
+  session-context: {
+    event: "session-start"
+    matcher: "startup|resume|clear|compact"
+    command: ["python3", "founder-os/hooks/session-context.py"]
+    cwd: "project"
+    statusMessage: "Loading Founder OS context"
+  }
+  record-agent: {
+    event: "subagent-start"
+    command: ["python3", "founder-os/hooks/record-agent.py"]
+    cwd: "project"
+    statusMessage: "Recording Founder OS decision role"
+  }
+  ownership-guard: {
+    event: "pre-tool-use"
+    matcher: "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|WebSearch|apply_patch|Task|Agent|mcp__.*)$"
+    targets: {
+      codex: {
+        matcher: "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|WebSearch|apply_patch|Task|Agent|mcp__.*)$"
+      }
+      factory: {
+        matcher: "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Execute|ApplyPatch|Task|Agent|mcp__.*)$"
+      }
+      github: {
+        matcher: "^(read|write|edit|create|search|execute|mcp__.*|[A-Za-z0-9._-]+/[A-Za-z0-9._-]+)$"
+      }
+      cursor: {
+        matcher: "^(read_file|write_file|edit_file|run_terminal_cmd|mcp__.*)$"
+      }
+      gemini: {
+        matcher: "^(read_file|write_file|edit_file|run_shell_command|mcp__.*)$"
+      }
+    }
+    command: ["python3", "founder-os/hooks/ownership-guard.py"]
+    cwd: "project"
+    statusMessage: "Checking Founder OS boundaries"
+  }
+}

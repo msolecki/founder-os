@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Skill Gap"
   short_description: "Run the Skill Gap Founder OS workflow."

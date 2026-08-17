@@ -1,10 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: content-draft
 description: Draft one planned piece around a single idea the founder learned by doing — run against the plan, never to fill a slot, and never after 10pm on anything naming a person
 metadata:
-  writes:
-    - content.md
-    - drafts/content/
+  writes: '["content.md", "drafts/content/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Content Draft

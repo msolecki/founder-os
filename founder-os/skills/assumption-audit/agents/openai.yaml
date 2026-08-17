@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Assumption Audit"
   short_description: "Run the Assumption Audit Founder OS workflow."

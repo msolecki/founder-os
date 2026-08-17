@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: red-team
 description: Attack a finished plan as a hostile reader and return a verdict, not a list of concerns — run when the founder sounds certain
+references:
+  - agents/openai.yaml
 ---
 
 # Red Team

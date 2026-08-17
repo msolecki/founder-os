@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Situation Review"
   short_description: "Route one unclear situation to one Founder OS workflow."

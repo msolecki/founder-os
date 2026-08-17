@@ -579,6 +579,7 @@ def _adapter_command(installed_plugin, host):
     if host == "claude":
         manifest_path = installed_plugin / ".mcp.json"
         root_variable = "${CLAUDE_PLUGIN_ROOT}"
+        adapter_cwd = installed_plugin
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             server = manifest["mcpServers"]["founder-os-state"]
@@ -586,7 +587,8 @@ def _adapter_command(installed_plugin, host):
             raise SmokeFailure("Claude installed adapter is unreadable") from exc
     elif host == "codex":
         manifest_path = installed_plugin / ".codex-plugin" / "plugin.json"
-        root_variable = "${CODEX_PLUGIN_ROOT}"
+        root_variable = None
+        adapter_cwd = installed_plugin
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             server = manifest["mcpServers"]["founder-os-state"]
@@ -601,12 +603,20 @@ def _adapter_command(installed_plugin, host):
         or not isinstance(server.get("args"), list)
         or len(server["args"]) != 1
         or not isinstance(server["args"][0], str)
+        or (host == "codex" and server.get("cwd") != ".")
     ):
         raise SmokeFailure("%s installed adapter has an invalid command" % host)
-    argument = server["args"][0].replace(root_variable, str(installed_plugin))
-    if root_variable in argument:
+    argument = server["args"][0]
+    if root_variable is not None:
+        argument = argument.replace(root_variable, str(installed_plugin))
+    if root_variable is not None and root_variable in argument:
         raise SmokeFailure("%s installed adapter root did not expand" % host)
-    entry = Path(argument).resolve()
+    entry_path = Path(argument)
+    entry = (
+        entry_path
+        if entry_path.is_absolute()
+        else adapter_cwd / entry_path
+    ).resolve()
     try:
         entry.relative_to(installed_plugin)
     except ValueError as exc:

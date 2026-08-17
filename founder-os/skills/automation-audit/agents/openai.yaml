@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Automation Audit"
   short_description: "Run the Automation Audit Founder OS workflow."

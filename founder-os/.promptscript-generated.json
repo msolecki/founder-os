@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "managed": [
+    ".mcp.json",
+    "CLAUDE.md",
+    "hooks/codex-hooks.json",
+    "hooks/hooks.json"
+  ]
+}

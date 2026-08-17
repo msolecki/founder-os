@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: tool-stack-review
 description: Decide what is paid for and unused, and hand the founder the cancel list — run quarterly, and 30 days before any annual renewal bills
 metadata:
-  writes:
-    - systems.md
+  writes: '["systems.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Tool Stack Review

@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: situation-review
 description: Route one unclear business situation to exactly one Founder OS owner and workflow — use when the founder describes what is happening, asks what to do next, or does not know which role to ask
+references:
+  - agents/openai.yaml
 ---
 
 # Situation Review

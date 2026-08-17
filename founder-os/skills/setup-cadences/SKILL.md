@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: setup-cadences
 description: Turn the cadences into real scheduled jobs on the founder's own machine — run once, after their first brief, so the package stops waiting to be opened
+references:
+  - agents/openai.yaml
 ---
 
 # Setup Cadences

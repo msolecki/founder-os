@@ -1,10 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: quarterly-planning
 description: Close last quarter's bets with verdicts and commit at most three new ones, each with a kill condition — run in the first days of the quarter, once the numbers that settle the old one are in
 metadata:
-  writes:
-    - goals.md
-    - reviews/quarterly/
+  writes: '["goals.md", "reviews/quarterly/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Quarterly Planning

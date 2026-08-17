@@ -9,8 +9,7 @@ frontmatter.
 name: <skill-slug>
 description: <one line, starts with a verb, says when to use it>
 metadata:
-  writes:
-    - <path, copied exactly from references/ownership.yaml>
+  writes: '["<path, copied exactly from references/ownership.yaml>"]'
 ---
 
 # <Human Title>
@@ -94,14 +93,14 @@ This catches the one class of bug no other check sees: an agent running a skill
 whose output belongs to somebody else — `agent -> skill` and `file -> owner` can
 both be valid while `skill -> file` is not.
 
-Use the `ownership.yaml` spelling exactly. Directory entries keep their trailing
-slash and are not expanded to a filename:
+PromptScript requires every value under `metadata` to be a string. Encode the
+list of paths as a JSON array string, while keeping the `ownership.yaml`
+spelling exactly. Directory entries keep their trailing slash and are not
+expanded to a filename:
 
 ```yaml
 metadata:
-  writes:
-    - reviews/daily/          # correct
-    - reviews/daily/2026-07-15.md   # WRONG — not an entry in ownership.yaml
+  writes: '["reviews/daily/"]'
 ```
 
 **A skill that writes nothing omits `metadata` entirely.** This is correct for

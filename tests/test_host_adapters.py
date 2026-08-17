@@ -56,8 +56,9 @@ class TestHostMcpAdapters(unittest.TestCase):
         )
         self.assertEqual(
             codex["args"],
-            ["${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"],
+            ["mcp/founder_os_state.py"],
         )
+        self.assertEqual(codex["cwd"], ".")
 
     def test_declared_entry_is_the_single_shared_gateway_entry(self):
         self.assertTrue(ENTRY_PATH.is_file())
@@ -67,7 +68,7 @@ class TestHostMcpAdapters(unittest.TestCase):
             self.assertEqual(adapter["command"], "python3")
             self.assertEqual(len(adapter["args"]), 1)
             self.assertTrue(
-                adapter["args"][0].endswith("/mcp/founder_os_state.py")
+                adapter["args"][0].endswith("mcp/founder_os_state.py")
             )
 
     def test_gateway_exposes_only_the_contract_tool_set(self):
@@ -96,6 +97,7 @@ class TestHostMcpAdapters(unittest.TestCase):
                 ".mcp.json",
                 ".codex-plugin/plugin.json",
                 "mcp/founder_os_state.py",
+                "hooks/codex-hooks.json",
                 "hooks/record-agent.py",
                 "hooks/ownership-guard.py",
             ):
@@ -113,7 +115,7 @@ class TestHostMcpAdapters(unittest.TestCase):
             errors = package_validator.check_host_adapters(root, {})
 
         self.assertTrue(
-            any("CODEX_PLUGIN_ROOT" in error for error in errors),
+            any("plugin-root cwd" in error for error in errors),
             errors,
         )
 

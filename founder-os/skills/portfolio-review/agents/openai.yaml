@@ -1,3 +1,4 @@
+# promptscript-generated:codex-skill-interface
 interface:
   display_name: "Portfolio Review"
   short_description: "Run the Portfolio Review Founder OS workflow."

@@ -1,6 +1,9 @@
 ---
+# promptscript-generated: 2026-08-14T09:55:27.938Z | source: .promptscript/project.prs | target: claude
 name: state-integrity
 description: Resolve every workspace write against the ownership map before making it — refuse and hand off by name when the acting agent is not the owner
+references:
+  - agents/openai.yaml
 ---
 
 # State Integrity

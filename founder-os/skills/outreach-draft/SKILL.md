@@ -1,10 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: outreach-draft
 description: Draft a first contact or a follow-up written from the prospect's problem — run when a deal needs a next action, and never to send "just checking in"
 metadata:
-  writes:
-    - pipeline.md
-    - drafts/outreach/
+  writes: '["pipeline.md", "drafts/outreach/"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Outreach Draft

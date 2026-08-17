@@ -1,9 +1,11 @@
 ---
+# promptscript-generated: 2026-08-16T23:46:19.432Z | source: .promptscript/project.prs | target: claude
 name: energy-audit
 description: Read the calendar record for when the founder's output is good and when it isn't — run monthly, once the ledger has enough weeks to mean something
 metadata:
-  writes:
-    - week.md
+  writes: '["week.md"]'
+references:
+  - agents/openai.yaml
 ---
 
 # Energy Audit
