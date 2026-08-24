@@ -1,0 +1,4 @@
+interface:
+  display_name: "Experiment"
+  short_description: "Run the Experiment Founder OS workflow."
+  default_prompt: "Use $experiment to handle this Founder OS task."

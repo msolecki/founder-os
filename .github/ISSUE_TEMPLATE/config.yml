@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question, or showing your workspace
+    url: https://github.com/msolecki/founder-os/discussions
+    about: >-
+      Q&A, ideas that are not yet a proposal, and workspaces worth showing other
+      founders. Anything that is not a bug or a concrete change starts here.
+  - name: Security or trust issue
+    url: https://msolecki.github.io/founder-os/trust.html
+    about: >-
+      A hook that allows what it should deny, an outbound path that should not
+      exist, or anything touching the no-telemetry promise. Report it privately
+      first — the trust center says how.

@@ -75,13 +75,13 @@ SECTION_START = HTML.index(
 SECTION = HTML[SECTION_START:HTML.index("</section>", SECTION_START)]
 
 EXPECTED_ENTRIES = {
-    "plan": (10, "Set direction"),
+    "plan": (11, "Set direction"),
     "sell": (4, "Move a deal"),
     "deliver": (4, "Deliver well"),
-    "money": (5, "Know the numbers"),
+    "money": (6, "Know the numbers"),
     "focus": (12, "Protect focus"),
     "grow": (8, "Grow deliberately"),
-    "run": (10, "Run operations"),
+    "run": (11, "Run operations"),
 }
 
 class DocumentContractParser(HTMLParser):
@@ -298,7 +298,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
             category: label for category, (_, label) in EXPECTED_ENTRIES.items()
         })
 
-    def test_category_counts_still_partition_all_53_workflows(self):
+    def test_category_counts_still_partition_every_workflow(self):
         counts = Counter()
         groups = re.findall(
                 r'<details class="workflow-group"[^>]*data-category="([^"]+)"'
@@ -423,7 +423,8 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         # text nodes lets space-between tear the phrase apart.
         self.assertIn(
             '<summary class="workflow-catalogue-summary">'
-            "<span>Browse all <strong>53</strong> workflows</span></summary>",
+            f"<span>Browse all <strong>{SKILL_COUNT}</strong> workflows</span>"
+            "</summary>",
             HTML,
         )
 

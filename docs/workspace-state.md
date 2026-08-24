@@ -34,8 +34,9 @@ map does not own.
 | `reviews/weekly/` | chief-of-staff | `## Committed vs done`, `## Days per bet`, `## The pattern`, `## Next week` |
 | `reviews/monthly/` | chief-of-staff | `## What the month says we do`, `## vs the charter`, `## Bets`, `## Decisions`, `## Last month's correction`, `## The correction` |
 | `goals.md` | strategist | `## Bets` |
+| `experiments/` | strategist | `## Hypothesis`, `## Threshold`, `## Judgment`, `## Result`, `## Verdict` |
 | `reviews/quarterly/` | strategist | `## Last quarter's verdicts`, `## Never measured`, `## This quarter's bets`, `## What we are not doing`, `## Verdicts`, `## Scorecard`, `## Bad call, good outcome`, `## Falsifiers that fired and were ignored`, `## Blind months`, `## Rules for next year` |
-| `metrics.md` | cfo | `## Close`, `## Runway`, `## Profitability`, `## Rate` |
+| `metrics.md` | cfo | `## Close`, `## Runway`, `## Profitability`, `## Rate`, `## Signals` |
 | `offer.md` | positioning-advisor | `## ICP`, `## Offer`, `## Pricing` |
 | `pipeline.md` | pipeline-coach | `## Live`, `## Won`, `## Dead`, `## Win/loss`, `## Last review` |
 | `drafts/outreach/` | pipeline-coach | `## Draft`, `## Provenance`, `## Sent` |

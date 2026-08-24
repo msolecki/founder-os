@@ -28,7 +28,17 @@ Read first, in order — house rule 1:
   the id of the queue item it became
 - `queue.md` — all five sections. `## Done` is the week's score with no memory
   involved; the other four are what you are about to sweep.
+- `metrics.md` `## Signals` — the three behaviours read this afternoon by
+  `signal-check`, and their last four readings
 - `reviews/weekly/` — the last four weeks: this is where the pattern lives
+
+Five entries, and the fifth is a **section**, not a fifth file. `context-load`
+step 5 caps a cadence at its own file plus one and then names the licence this
+list is: a period review reads across books by design, and what it reads is
+fixed here in the package rather than widened in the session. `## Signals` is
+added under that licence and nowhere else — it was not swapped in for an
+existing input, because all four of the others are load-bearing for the score
+and this one answers a different question entirely.
 
 ## Beliefs
 
@@ -67,11 +77,30 @@ Read first, in order — house rule 1:
    is dead and nobody has said the word. Name it, and hand to the
    **Strategist** for `kill-or-continue`. You do not kill it; you refuse to let
    it stay unmentioned.
-4. **Read the last four reviews for the repeated reason.** If "client work took
+4. **Say which signal moved, from `metrics.md` `## Signals`.** One sentence,
+   about a signal outside its normal range or crossing back into it — and
+   nothing when all three sat inside it. This is the only line in the review
+   that is about behaviour rather than about commitments, and it is the only one
+   that can be true before the month closes: *you booked four conversations this
+   week against a normal of six, for the second week running.*
+
+   **Do not recompute it and do not read `pipeline.md` to check.** The CFO owns
+   that reading and took it at 15:30; taking a second one here produces two
+   numbers that disagree by a deal, and the founder will believe whichever they
+   read last. If the `Read:` date is more than 14 days old, say the signals are
+   stale and do not quote them — a stale lead measure quoted confidently is
+   worse than no lead measure, because it arrives with the authority of
+   arriving early.
+
+   A signal outside its range for three consecutive weeks belongs in step 5 as
+   a pattern rather than here as an observation, and it belongs to the **CFO** and the
+   **Strategist** between them: the behaviour changed a quarter before the close
+   will say so, and this is the week that was worth knowing.
+5. **Read the last four reviews for the repeated reason.** If "client work took
    over" appears three times, it is not a reason, it is the operating model.
    State it as the operating model and let the founder decide whether they want
    it. This is the finding the week itself can never produce.
-5. **Sweep the queue. This is the only place the reaper runs.** Run `queue` and
+6. **Sweep the queue. This is the only place the reaper runs.** Run `queue` and
    walk its clocks: 21 days in `## Queued` is a drop, 14 days in `## Blocked` is a
    drop or a promoted blocker, 5 working days in `## Doing` is an item that was
    always a project. Do not carry a reap into next week. A reaper that can be
@@ -82,12 +111,12 @@ Read first, in order — house rule 1:
    Report the counts, not the items — the items are in `## Dropped` with their
    reasons, where anybody who wants them can read them.
 
-   **Five or more drops in one sweep is a step 4 finding, not a good week's
+   **Five or more drops in one sweep is a step 5 finding, not a good week's
    pruning.** The reaper is working; the intake isn't. The founder is accepting
    obligations they were never going to meet, at a rate of one a day, and the
    queue is now just the place where that gets measured. Say it as the operating
    model and let them decide whether they want it.
-6. **Commit one thing for next week, and put it in the queue.** Week-scale, tied
+7. **Commit one thing for next week, and put it in the queue.** Week-scale, tied
    to a bet, with a Friday-observable result. Not three. Run `queue`: it goes to
    `## Queued` with an id, which means it has 21 days to live, which means if this
    commitment is still unstarted on the third Friday from now the queue will kill
@@ -102,6 +131,7 @@ Append to `reviews/weekly/YYYY-Www.md`:
     ## Committed vs done
     <N>/5 — <one line per miss, no reasons attached>
     Queue: doing <n>/3 | queued <n>/15 | blocked <n> | aged out this sweep <n> | bet:none <n>/<n>
+    Signals: <the one that moved, or "all three inside range" — read YYYY-MM-DD>
     ## Days per bet
     - <bet>: <N> days
     ## The pattern
@@ -116,7 +146,7 @@ here is cross-week or it is filler.
 
 Do not accept a reason. Reasons are what the founder brings; the count is what
 you bring. If a reason is real it will show up three weeks running, and then it
-stops being a reason and becomes step 4.
+stops being a reason and becomes step 5.
 
 Do not average. "A mixed week" is not an output — 2/5 is.
 

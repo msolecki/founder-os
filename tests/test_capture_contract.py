@@ -170,11 +170,14 @@ class CaptureValidatorContract(unittest.TestCase):
 
 
 class CapturePublicCountContract(unittest.TestCase):
-    def test_capture_moves_the_package_to_fifty_three_workflows(self):
-        self.assertEqual(
-            len(list((PLUGIN_ROOT / "skills").glob("*/SKILL.md"))),
-            53,
-        )
+    def test_every_public_surface_publishes_the_packaged_workflow_count(self):
+        """The five public surfaces, checked against the package, not a literal.
+
+        This landed pinned to 53 because /capture was the skill that produced
+        that number. The property it was protecting is not 53 — it is that all
+        five surfaces agree with the directory.
+        """
+        skills = len(list((PLUGIN_ROOT / "skills").glob("*/SKILL.md")))
         for path in (
             ROOT / "README.md",
             PLUGIN_ROOT / "README.md",
@@ -185,7 +188,7 @@ class CapturePublicCountContract(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertRegex(
                     path.read_text(encoding="utf-8"),
-                    r"(?i)53 (?:skills|workflows)",
+                    r"(?i)%d (?:skills|workflows)" % skills,
                 )
 
 

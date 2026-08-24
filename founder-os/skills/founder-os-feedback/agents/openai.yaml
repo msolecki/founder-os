@@ -1,0 +1,4 @@
+interface:
+  display_name: "Founder OS Feedback"
+  short_description: "Run the Founder OS Feedback workflow."
+  default_prompt: "Use $founder-os-feedback to handle this Founder OS task."

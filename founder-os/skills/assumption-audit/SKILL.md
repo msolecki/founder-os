@@ -80,6 +80,13 @@ Read first — house rule 1:
    test?** That one is load-bearing, whatever the founder marked it, and the
    reluctance is the evidence. Move it to the top of the ranking and say why it
    moved.
+8. **Hand the cheapest test to `/experiment`, by name, in the same pass.** The
+   ranking is the deliverable and it is also where every previous audit stopped
+   — the founder read a good table, agreed with it, and tested nothing, because
+   a table is not a commitment and nothing in the workspace was going to ask
+   again. Name the **Strategist** and the one assumption that goes to them.
+   **One, not the list.** Handing over five is handing over none, and the whole
+   argument of step 5 was that cheapest-first is what gets tested on Tuesday.
 
 ## Output
 
@@ -92,8 +99,21 @@ No file. The Board owns no workspace state. Hand back a table:
     Struck as already evidence: <N> — <where each was settled>
     Least willing to test: <#> — <why that is the answer>
 
+Close with the handoff, on its own line, naming the one assumption that leaves
+this table:
+
+    To test: #<n> — <the assumption> → Strategist, /experiment
+
+The **Strategist** opens it as an `experiments/` file with a threshold and a
+judgment date; that file is where the answer to "did we actually test it" lives,
+and this table is where it stops living. Return the request to the main thread
+in the shared shape — `role`, `workflow`, `workspace_id`, `correlation_id`,
+`handoff`, `expected_persistence` — with `experiments/` in
+`expected_persistence`, and stop the current pass.
+
 If the audit changes the plan, the **Strategist** rewrites `goals.md` and the
-**Chief of Staff** logs the change. You advise; you do not write company state.
+**Chief of Staff** logs the change. You advise; you do not write company state,
+and that includes the experiment file — you name the test, they open it.
 
 ## Guardrails
 

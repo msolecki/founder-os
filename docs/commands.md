@@ -8,7 +8,7 @@ name as a host-neutral label.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 
-This reference covers all 53 workflows shipped by the package.
+This reference covers all 56 workflows shipped by the package.
 
 > This page is the annotated, grouped reference. The **generated, always-current
 > catalogue** is [`founder-os/COMMANDS.md`](../founder-os/COMMANDS.md), derived
@@ -30,7 +30,7 @@ In Claude use `/founder-os:daily-brief`, `/founder-os:pipeline-review`, and
 `/founder-os:weekly-review`. In Codex use `$founder-os:daily-brief`,
 `$founder-os:pipeline-review`, and `$founder-os:weekly-review`.
 
-## The 10 cadences
+## The 11 cadences
 
 Scheduled by the host-specific `setup-cadences` skill; every one also works typed by hand. See
 [`cadences.md`](cadences.md) for the scheduling mechanics.

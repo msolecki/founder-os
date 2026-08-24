@@ -164,13 +164,13 @@ The Portfolio Manager is the only role that reads across them.
 3. Run `/pipeline-review` before calling a list of conversations a pipeline.
 4. Run `/weekly-review` on Friday before memory rewrites the week.
 5. Ask the **Chief of Staff** to route any uncategorized decision. You do not
-   need to memorize all 53 workflows.
+   need to memorize all 56 workflows.
 
 ## What the 13 agents are
 
 The agents are specialized roles, not 13 autonomous processes running all day.
 Each role owns one kind of decision and one part of the workspace. A workflow
-invokes the relevant role when you ask for it; scheduled cadences invoke ten of
+invokes the relevant role when you ask for it; scheduled cadences invoke eleven of
 those workflows at defined times.
 
 When you do not know which role or command to use, ask the **Chief of Staff**.

@@ -1,0 +1,45 @@
+name: Idea
+description: A workflow, agent or check that should exist and does not
+title: "[idea] "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One field below is required and it is the one that decides whether this
+        gets built: **which decision does it improve?**
+
+        Founder OS is thirteen agents because each one owns exactly one decision
+        no other agent can make. An idea with no decision attached is a feature,
+        and a backlog of features with no decisions behind them is how a
+        thirteen-agent package becomes a hundred-and-sixty-seven-agent package
+        that nobody can route inside.
+  - type: textarea
+    id: decision
+    attributes:
+      label: Which decision does this improve?
+      description: >-
+        Name the call the founder makes badly today, and what they would do
+        differently with this. "It would be useful" is not a decision. "I cannot
+        tell which client is unprofitable until the month closes" is.
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What do you do instead today?
+      description: The workaround, however ugly. An idea with no current workaround is usually a decision nobody is actually making.
+    validations:
+      required: true
+  - type: input
+    id: existing
+    attributes:
+      label: Which existing workflow is closest?
+      description: >-
+        Check founder-os/COMMANDS.md first. The commonest correct answer to a new
+        workflow is that a packaged one already owns the decision — and the second
+        commonest is that this belongs in your own `_local/` overlay via
+        `/skill-forge`, not in the package.
+      placeholder: "none, or e.g. profitability-analysis"
+    validations:
+      required: true

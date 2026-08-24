@@ -1,0 +1,114 @@
+name: Bug
+description: Something is broken — a failed write, a wrong owner, a hook that denies what it should allow
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste workspace contents.** Paths yes, numbers and client names
+        no — this form is public and your workspace is not.
+
+        `/founder-os-doctor` output is safe to paste: it reports structure, not
+        content. Read it before you send it anyway.
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Which workflow
+      description: The skill that was running. The full catalogue is in founder-os/COMMANDS.md.
+      options:
+        - annual-review
+        - assumption-audit
+        - audience-research
+        - automation-audit
+        - bet-sizing
+        - calendar-audit
+        - capacity-check
+        - capture
+        - client-health
+        - content-draft
+        - content-plan
+        - context-load
+        - daily-brief
+        - decision-log
+        - delivery-retro
+        - energy-audit
+        - experiment
+        - follow-up-sweep
+        - founder-os-doctor
+        - founder-os-feedback
+        - founder-os-init
+        - guardrails
+        - icp-definition
+        - ingestion-gate
+        - kill-or-continue
+        - learning-plan
+        - monthly-review
+        - offer-design
+        - outreach-draft
+        - pipeline-review
+        - portfolio-review
+        - premortem
+        - pricing-strategy
+        - profitability-analysis
+        - proposal-draft
+        - quarterly-planning
+        - queue
+        - rate-raise
+        - red-team
+        - relationship-map
+        - revenue-review
+        - runway-forecast
+        - scope-guard
+        - setup-cadences
+        - signal-check
+        - situation-review
+        - skill-forge
+        - skill-gap
+        - state-integrity
+        - strategic-evaluation
+        - tool-stack-review
+        - triage
+        - voice-capture
+        - week-plan
+        - weekly-review
+        - win-loss-analysis
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Host
+      options:
+        - Claude Code
+        - Codex
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      placeholder: "2.6.0"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected it to do
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What it did instead
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: /founder-os-doctor output
+      description: Run `/founder-os-doctor` and paste the report. It names paths and structural findings, never file contents.
+      render: text
+    validations:
+      required: true
