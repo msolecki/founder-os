@@ -121,8 +121,10 @@ LaunchAgents and persistent user-systemd timers catch up.
 `ROLE_NOT_OWNER` denial names the canonical owner; hand off to that role.
 `STALE_WRITE` means the file changed after the role read it; re-read and
 reconcile once. `INVALID_DOCUMENT_STRUCTURE` means the proposed full document
-does not match `ownership.yaml`. Do not route around any of these with a direct
-file tool. See [`enforcement.md`](enforcement.md).
+does not match `ownership.yaml` — commonly after an update that declared a new
+section, which the read that preceded the write listed under
+`missing_sections`; the owner writes that heading in, empty. Do not route
+around any of these with a direct file tool. See [`enforcement.md`](enforcement.md).
 
 **"An agent refused to send / post / pay."** By design (house rule 0). No agent
 sends, ever. It drafts to `drafts/…`; you press the button. Saying "just send it"

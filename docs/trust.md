@@ -89,11 +89,25 @@ does not delete the founder's Markdown workspace or local overlay.
 
 ## Reporting a security or trust issue
 
-Read the detailed [enforcement guide](enforcement.md) and
-[getting-started guide](getting-started.md) first. Report issues at the
-[repository issue tracker](https://github.com/msolecki/founder-os/issues), but
-never paste credentials, private business state, client names, entity slugs,
-amounts, or absolute paths into a public issue.
+**A security issue goes to the private form first**, at
+[Security → Report a vulnerability](https://github.com/msolecki/founder-os/security/advisories/new),
+which is private between the reporter and the maintainer until an advisory is
+published. That is a hook that allows what it should deny, an outbound or
+spending path reachable from a packaged role, a path escape out of the
+workspace, or anything touching the no-telemetry promise. The full scope, and
+the list of documented boundaries that are not vulnerabilities, is in
+[`SECURITY.md`](https://github.com/msolecki/founder-os/blob/main/SECURITY.md).
+
+**A trust question is not a security issue and is better in public.** What the
+package does with data, where state lives, what reaches the model host: read the
+[enforcement guide](enforcement.md) and the
+[getting-started guide](getting-started.md), then ask in
+[Discussions](https://github.com/msolecki/founder-os/discussions) or open a
+[bug report](https://github.com/msolecki/founder-os/issues/new?template=bug.yml).
+
+Either way, never paste credentials, private business state, client names,
+entity slugs, amounts, or absolute paths. A private advisory becomes public when
+it is published.
 
 This page describes product boundaries. It is not legal, tax, medical, or
 investment advice and does not replace Claude Code or Codex policies.

@@ -45,6 +45,7 @@ Scheduled by the host-specific `setup-cadences` skill; every one also works type
 | `/follow-up-sweep` | Friday 14:00 | network-manager |
 | `/content-plan` | Wednesday 10:00 | brand-editor |
 | `/calendar-audit` | Friday 15:00 | focus-coach |
+| `/signal-check` | Friday 15:30 | cfo |
 | `/revenue-review` | 1st of month 09:00 | cfo |
 | `/quarterly-planning` | Jan/Apr/Jul/Oct 1st 11:00 | strategist |
 
@@ -69,6 +70,7 @@ Scheduled by the host-specific `setup-cadences` skill; every one also works type
 | `/quarterly-planning` | Close last quarter's bets with verdicts and commit at most three new ones, each with a kill condition. |
 | `/bet-sizing` | Price a bet by what it costs when wrong; cap the downside in writing before it starts. |
 | `/kill-or-continue` | Force a verdict on a bet against its threshold, with the sunk cost named out loud. |
+| `/experiment` | Open a test with a threshold written before the result exists, and close it on its judgment date with a verdict that leaves the file. |
 | `/annual-review` | Read twelve months of decisions back and score the judgment, not the outcome. |
 
 ### board-member — surviving reality
@@ -105,6 +107,7 @@ Scheduled by the host-specific `setup-cadences` skill; every one also works type
 | Command | What it does |
 |---|---|
 | `/revenue-review` | Close the month on booked, collected, and effective rate. |
+| `/signal-check` | Read the three behaviours the founder can still change this week and record them against their normal range. |
 | `/runway-forecast` | Compute months of survival at real burn, pipeline discounted by stage. |
 | `/profitability-analysis` | Rank every client by effective hourly rate to find where the margin dies. |
 | `/rate-raise` | Decide whether the rate rises, by how much, and hand over the script. |
@@ -141,6 +144,7 @@ Scheduled by the host-specific `setup-cadences` skill; every one also works type
 |---|---|
 | `/automation-audit` | Decide whether a manual task is worth automating, using payback arithmetic. |
 | `/tool-stack-review` | Decide what is paid for and unused; hand over the cancel list. |
+| `/founder-os-feedback` | Compose a Founder OS bug report or workflow complaint locally and hand over a prefilled GitHub link to send yourself. |
 
 ### portfolio-manager — across businesses *(multi-business only)*
 | Command | What it does |

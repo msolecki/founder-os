@@ -291,6 +291,35 @@ class TestReport(unittest.TestCase):
 
         self.assertIn("msolecki.github.io 15 uniques", lines[4])
 
+    def test_a_malformed_uniques_value_costs_one_line_not_the_report(self):
+        """`_number` exists for exactly this and the sort key skipped it."""
+        self.series([self.row("2026-08-10", 5, 12)])
+        (self.root / "referrers-2026-08-10.csv").write_text(
+            "referrer,count,uniques\nmsolecki.github.io,68,15\n"
+            "Google,4,not a number\n",
+            encoding="utf-8")
+
+        lines = report.report(report.load(self.root / "traffic.csv"),
+                              self.root, date(2026, 8, 10))
+
+        self.assertEqual(5, len(lines))
+        self.assertIn("msolecki.github.io 15 uniques", lines[4])
+
+    def test_a_snapshot_older_than_the_window_is_named_not_counted(self):
+        """A photograph of June printed beside a 28-day trend reads as part of
+        it. The filename was the only thing limiting the damage."""
+        self.series([self.row("2026-08-10", 5, 12)])
+        (self.root / "referrers-2026-02-10.csv").write_text(
+            "referrer,count,uniques\nold-referrer,900,400\n",
+            encoding="utf-8")
+
+        lines = report.report(report.load(self.root / "traffic.csv"),
+                              self.root, date(2026, 8, 10))
+
+        self.assertNotIn("old-referrer", lines[4])
+        self.assertIn("referrers-2026-02-10.csv", lines[4])
+        self.assertIn("before the window", lines[4])
+
     def test_a_missing_referrer_snapshot_says_so_instead_of_guessing(self):
         self.series([self.row("2026-08-10", 5, 12)])
         lines = report.report(report.load(self.root / "traffic.csv"),

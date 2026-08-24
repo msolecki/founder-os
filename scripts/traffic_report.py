@@ -93,15 +93,29 @@ def latest(rows, field) -> str:
 
 
 def sources(directory: Path, today: date, limit=3):
-    """The newest referrer snapshot, if one was taken. They are photographs."""
-    snapshots = sorted(directory.glob("referrers-*.csv"))
-    if not snapshots:
-        return None, []
-    newest = snapshots[-1]
-    with newest.open(encoding="utf-8", newline="") as handle:
+    """The newest referrer snapshot inside the reporting window.
+
+    They are photographs, so the newest is the only one worth reading — but a
+    photograph from outside the window is of a different month, and printing it
+    beside a 28-day trend reads as part of it. Named and not counted.
+    """
+    window_from = today - timedelta(days=WINDOW_DAYS)
+    inside, outside = None, None
+    for snapshot in sorted(directory.glob("referrers-*.csv")):
+        try:
+            stamp = date.fromisoformat(snapshot.stem.split("referrers-", 1)[1])
+        except (IndexError, ValueError):
+            continue
+        if stamp > window_from:
+            inside = snapshot
+        else:
+            outside = snapshot
+    if inside is None:
+        return (outside.name if outside else None), []
+    with inside.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
-    rows.sort(key=lambda row: int(row.get("uniques") or 0), reverse=True)
-    return newest.name, rows[:limit]
+    rows.sort(key=lambda row: _number(row, "uniques"), reverse=True)
+    return inside.name, rows[:limit]
 
 
 def report(rows, directory: Path, today: date):
@@ -147,7 +161,12 @@ def report(rows, directory: Path, today: date):
     )
 
     name, top = sources(directory, today)
-    if not top:
+    if not top and name:
+        lines.append(
+            "Traffic sources: no referrer snapshot in the last %dd — the "
+            "newest is %s, from before the window." % (WINDOW_DAYS, name)
+        )
+    elif not top:
         lines.append("Traffic sources: no referrer snapshot in %s." % directory)
     else:
         lines.append(

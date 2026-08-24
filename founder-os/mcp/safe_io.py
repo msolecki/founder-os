@@ -460,6 +460,53 @@ class SafeStateIO:
                 pass
             raise self._open_error(error)
 
+    def ensure_directory(self, relative_path: str) -> None:
+        """Create a directory `workspace_files:` declares and the scaffold lacks.
+
+        `founder-os-init` creates every declared directory at install time, so a
+        workspace scaffolded before the package declared one has no repair path:
+        `_open_parent` walks with `O_DIRECTORY` and never creates, and the
+        owner's first write dies on ENOENT. Only the caller's already-owned
+        declared directory reaches here, and each component is created through
+        the same `O_NOFOLLOW` walk the read and write paths use, so a symlink in
+        the chain is still refused rather than followed.
+        """
+        self._require_secure_primitives()
+        relative = self._validate_file_path(relative_path)
+        parts = relative.parts
+        if self._workspace_fd < 0 or not parts:
+            raise SafeStateError("STATE_IO_ERROR")
+        if parts[0] == "_local":
+            raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
+        try:
+            current = os.dup(self._workspace_fd)
+        except OSError:
+            raise SafeStateError("STATE_IO_ERROR")
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        if hasattr(os, "O_CLOEXEC"):
+            flags |= os.O_CLOEXEC
+        try:
+            for component in parts:
+                if component in ("", ".", ".."):
+                    raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
+                try:
+                    descriptor = os.open(component, flags, dir_fd=current)
+                except FileNotFoundError:
+                    try:
+                        os.mkdir(component, 0o700, dir_fd=current)
+                    except FileExistsError:
+                        pass
+                    descriptor = os.open(component, flags, dir_fd=current)
+                os.close(current)
+                current = descriptor
+        except OSError as error:
+            raise self._open_error(error)
+        finally:
+            try:
+                os.close(current)
+            except OSError:
+                pass
+
     def atomic_replace(
         self,
         relative_path: str,

@@ -32,7 +32,7 @@ Read first, in order — house rule 1:
   `signal-check`, and their last four readings
 - `reviews/weekly/` — the last four weeks: this is where the pattern lives
 
-Five entries, and the fifth is a **section**, not a fifth file. `context-load`
+Five entries, and the fourth is a **section**, not a fourth file. `context-load`
 step 5 caps a cadence at its own file plus one and then names the licence this
 list is: a period review reads across books by design, and what it reads is
 fixed here in the package rather than widened in the session. `## Signals` is

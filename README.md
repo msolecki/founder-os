@@ -167,7 +167,7 @@ The full recovery branches are in
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (what init scaffolds), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
 | Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Maps Claude `agent_type` or Codex `turn_id`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the local gateway. |
-| Validator | `scripts/validate_package.py` | 17 build-time checks (below). CI runs it on every push. |
+| Validator | `scripts/validate_package.py` | 18 build-time checks (below). CI runs it on every push. |
 | Cadences | `founder-os/scripts/cadence_manager.py` | Previews, snapshots, and safely applies ten jobs per business plus one conditional portfolio job through cron, launchd, or persistent user systemd. Exact identities prevent sibling schedules from being overwritten. |
 | Local overlay | `founder-os/references/extensibility.md` | Per-business extension without a fork: `$FOUNDER_OS_HOME/_local/` may **add** a file, skill or agent and can never reassign or remove one the package ships. Merged into the guard's map per workspace; validated by `founder-os-doctor`, because a build-time validator cannot see a stranger's workspace. Forged by `/skill-forge`, whose commonest correct answer is "a packaged agent already owns this decision". |
 | Multi-business | `founder-os/references/multi-business.md` | One workspace per business + a registry (`~/.founder-os/businesses.yaml`) + a portfolio workspace. The hook resolves all registered roots; `context-load` step 0 picks the business before any file opens. |
@@ -192,9 +192,10 @@ button.
 
 ### Enforcement is layered, deliberately
 
-1. **Build time** — `scripts/validate_package.py`: 17 build-time checks cover
+1. **Build time** — `scripts/validate_package.py`: 18 build-time checks cover
    both manifests/adapters, strict frontmatter and tools, one-level sibling
-   orchestration, ownership/section joins, beliefs, hooks, and public counts.
+   orchestration, ownership/section joins, beliefs, hooks, public counts, and
+   the reference pages' membership against the package.
 2. **State access** — the local `founder-os-state` gateway is the authoritative
    write boundary. Role reads require a live role capability; write uncertainty
    fails closed with one of seven stable error codes, and successful writes use
@@ -228,7 +229,7 @@ founder-os/                       # the plugin (what gets installed)
   references/                     # ownership.yaml, house-rules, skill-template,
                                   # ingestion-gate, linking, multi-business
   images/                         # org chart (mermaid + png)
-scripts/validate_package.py       # build-time validator (17 checks)
+scripts/validate_package.py       # build-time validator (18 checks)
 scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it
 tests/                            # validator mutations + hook subprocess + registry roots
 CHANGELOG.md                      # what shipped in each version

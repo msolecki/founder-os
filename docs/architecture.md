@@ -301,12 +301,16 @@ The same package runs under Claude Code and Codex:
 - **Codex** reads `.codex-plugin/plugin.json` (which points `skills` at
   `./skills/`) and, per skill, `skills/<name>/agents/openai.yaml` — a small
   interface file (`display_name`, `short_description`, `default_prompt`). Its
-  inline `mcpServers` entry points at the same gateway with
-  `${CODEX_PLUGIN_ROOT}`.
+  inline `mcpServers` entry reaches the same gateway as `./mcp/founder_os_state.py`
+  with `"cwd": "."`, resolved from the plugin root the host launches it in.
+  `${CODEX_PLUGIN_ROOT}` is not expanded there, and an unexpanded path is a
+  gateway that never starts.
 - The `SessionStart` and guard hooks are written to handle both: Claude supplies
-  `agent_type` on tool calls directly; Codex supplies `turn_id`, resolved through
-  the `record-agent.py` mapping. `AGENTS.md` at the repo root points Codex at
-  `founder-os/CLAUDE.md` as the canonical guidance.
+  `agent_type` on tool calls directly; Codex identifies every call by `turn_id`
+  and `record-agent.py` holds the mapping — `UserPromptSubmit` records the main
+  turn, `SubagentStart` records a subagent's role. A Codex turn with no mapping
+  is denied rather than treated as the founder. `AGENTS.md` at the repo root
+  points Codex at `founder-os/CLAUDE.md` as the canonical guidance.
 - The main thread prefers a named native role where the host exposes it. The
   portable generic-agent fallback receives the byte-identical packaged role
   file, one active workflow, one bounded handoff, and the same role capability;

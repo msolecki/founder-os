@@ -38,7 +38,8 @@ class OwnershipError(Exception):
         "ROLE_NOT_OWNER": "Request a handoff to the canonical owner",
         "STALE_WRITE": "Re-read, reconcile deliberately, then retry once",
         "INVALID_DOCUMENT_STRUCTURE": (
-            "Correct the proposed document before retrying"
+            "Carry every heading references/ownership.yaml declares for this "
+            "path, in its order, then retry"
         ),
         "STATE_IO_ERROR": "Preserve the original file and surface the error",
     }
@@ -303,12 +304,55 @@ class OwnershipSchema:
             return ()
         return self._sections[match]
 
-    def validate_document(self, relative_path: str, content: str) -> None:
+    def directory_for(self, relative_path: str) -> Optional[str]:
+        """The declared directory this path lives in, or None for a flat file.
+
+        `founder-os-init` scaffolds `workspace_files:` at install time, so a
+        workspace scaffolded before a directory was declared does not have it
+        and its owner has nowhere to write. The write path uses this to create
+        the one directory the map already promised.
+        """
+        match = self._matching_key(relative_path)
+        if match is None or not match.endswith("/"):
+            return None
+        return match
+
+    def missing_sections(
+        self,
+        relative_path: str,
+        content: str,
+    ) -> Tuple[str, ...]:
+        """Declared headings the document does not carry, in declared order.
+
+        Reported on read so an owner sees a section added by a package update
+        before its write is refused for lacking one.
+        """
         if not isinstance(content, str):
-            raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
+            return ()
         required = self.sections_for(relative_path)
         if not required:
-            raise OwnershipError("PATH_OUTSIDE_WORKSPACE")
+            return ()
+        present = self._headings(content)
+        return tuple(
+            heading for heading in required
+            if not any(
+                self._heading_matches(candidate, heading)
+                for candidate in present
+            )
+        )
+
+    @staticmethod
+    def _heading_matches(actual_heading: str, required_heading: str) -> bool:
+        if actual_heading == required_heading:
+            return True
+        prefix = required_heading + " — "
+        return (
+            actual_heading.startswith(prefix)
+            and bool(actual_heading[len(prefix):].strip())
+        )
+
+    @staticmethod
+    def _headings(content: str) -> List[str]:
         actual = []
         fence_character = None
         fence_length = 0
@@ -343,15 +387,17 @@ class OwnershipSchema:
                 and not line.startswith("### ")
             ):
                 actual.append(line.rstrip())
+        return actual
+
+    def validate_document(self, relative_path: str, content: str) -> None:
+        if not isinstance(content, str):
+            raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
+        required = self.sections_for(relative_path)
+        if not required:
+            raise OwnershipError("PATH_OUTSIDE_WORKSPACE")
+        actual = self._headings(content)
         if len(actual) != len(required):
             raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
         for actual_heading, required_heading in zip(actual, required):
-            if actual_heading == required_heading:
-                continue
-            prefix = required_heading + " — "
-            if (
-                actual_heading.startswith(prefix)
-                and actual_heading[len(prefix):].strip()
-            ):
-                continue
-            raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
+            if not self._heading_matches(actual_heading, required_heading):
+                raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
