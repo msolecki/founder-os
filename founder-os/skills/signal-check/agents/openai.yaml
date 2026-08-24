@@ -1,0 +1,4 @@
+interface:
+  display_name: "Signal Check"
+  short_description: "Run the Signal Check Founder OS workflow."
+  default_prompt: "Use $signal-check to handle this Founder OS task."

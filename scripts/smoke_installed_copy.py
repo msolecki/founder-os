@@ -664,7 +664,8 @@ def check_mcp_lifecycle(installed_plugin, workspace_root, host):
         "## Close\nInitial probe\n\n"
         "## Runway\nUnknown\n\n"
         "## Profitability\nUnknown\n\n"
-        "## Rate\nUnknown\n"
+        "## Rate\nUnknown\n\n"
+        "## Signals\nUnknown\n"
     )
     updated_content = initial_content.replace("Initial probe", "Persisted probe")
     metrics_path = workspace_root / "metrics.md"

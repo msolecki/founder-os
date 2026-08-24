@@ -29,7 +29,7 @@ Code or Codex environment and adds no account or subscription of its own.
 
 [Getting started](../docs/getting-started.md) ·
 [Example workspace](../examples/studio-north/README.md) ·
-[All 53 workflows](COMMANDS.md) ·
+[All 56 workflows](COMMANDS.md) ·
 [Report an issue](https://github.com/msolecki/founder-os/issues)
 
 ## Before you install
@@ -42,7 +42,7 @@ Code or Codex environment and adds no account or subscription of its own.
 | A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Manual workflows need none. |
 
 The agents are specialized roles invoked when needed, not thirteen autonomous
-processes running all day. Ten cadences can optionally run on a local
+processes running all day. Eleven cadences can optionally run on a local
 schedule; the rest run when you call them or when the Chief of Staff routes a
 question.
 
@@ -162,8 +162,8 @@ remain governed by that environment's data-handling terms.
 | Content | Count |
 |---------|-------|
 | Agents  | 13    |
-| Skills  | 53    |
-| Cadences | 10   |
+| Skills  | 56    |
+| Cadences | 11   |
 
 The full catalogue — every skill, its agent, and its schedule — is
 [`COMMANDS.md`](COMMANDS.md), generated from the package so it cannot drift.

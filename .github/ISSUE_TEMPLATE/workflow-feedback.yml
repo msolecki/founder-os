@@ -1,0 +1,109 @@
+name: Workflow feedback
+description: A workflow ran and did the wrong thing, or the right thing badly
+title: "[workflow] "
+labels: ["workflow-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Founder OS reads and writes your own Markdown files, and those files are
+        yours. **Do not paste workspace contents here.** Naming a path is useful
+        — `metrics.md`, `pipeline.md ## Live`. Naming a client, an amount or a
+        revenue figure is not, and this form is public.
+
+        `/founder-os-feedback` fills this in for you from the session that went
+        wrong, and refuses to copy a number out of your workspace while it does.
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Which workflow
+      description: The skill that ran. The full catalogue is in founder-os/COMMANDS.md.
+      options:
+        - annual-review
+        - assumption-audit
+        - audience-research
+        - automation-audit
+        - bet-sizing
+        - calendar-audit
+        - capacity-check
+        - capture
+        - client-health
+        - content-draft
+        - content-plan
+        - context-load
+        - daily-brief
+        - decision-log
+        - delivery-retro
+        - energy-audit
+        - experiment
+        - follow-up-sweep
+        - founder-os-doctor
+        - founder-os-feedback
+        - founder-os-init
+        - guardrails
+        - icp-definition
+        - ingestion-gate
+        - kill-or-continue
+        - learning-plan
+        - monthly-review
+        - offer-design
+        - outreach-draft
+        - pipeline-review
+        - portfolio-review
+        - premortem
+        - pricing-strategy
+        - profitability-analysis
+        - proposal-draft
+        - quarterly-planning
+        - queue
+        - rate-raise
+        - red-team
+        - relationship-map
+        - revenue-review
+        - runway-forecast
+        - scope-guard
+        - setup-cadences
+        - signal-check
+        - situation-review
+        - skill-forge
+        - skill-gap
+        - state-integrity
+        - strategic-evaluation
+        - tool-stack-review
+        - triage
+        - voice-capture
+        - week-plan
+        - weekly-review
+        - win-loss-analysis
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Host
+      options:
+        - Claude Code
+        - Codex
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      description: The `version` field in `founder-os/.codex-plugin/plugin.json`, or the first line of `/founder-os-doctor`.
+      placeholder: "2.6.0"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected it to do
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What it did instead
+    validations:
+      required: true

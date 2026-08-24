@@ -165,8 +165,8 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         }
         self.assertEqual(counts, {
             "agents": 13,
-            "skills": 53,
-            "cadences": 10,
+            "skills": 56,
+            "cadences": 11,
             "validator": 17,
             "doctor": 20,
         })
@@ -346,12 +346,22 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         self.assertIn("Role-owned Markdown writes", capabilities)
 
     def test_feature_ledger_uses_the_current_workflow_count(self):
+        """Derived, not copied — the ledger row quotes the catalogue summary.
+
+        It read `Browse all 53 workflows` while the package shipped 56, which
+        is the drift this test was named after and was not catching.
+        """
+        skills = len(list(
+            (REPO_ROOT / "founder-os" / "skills").glob("*/SKILL.md")
+        ))
         ledger = json.loads(FEATURE_LIST_PATH.read_text(encoding="utf-8"))
         focus_ring = next(
             feature for feature in ledger["features"]
             if "[A11Y-004]" in feature["description"]
         )
-        self.assertIn("Browse all 53 workflows", focus_ring["description"])
+        self.assertIn(
+            "Browse all %d workflows" % skills, focus_ring["description"]
+        )
 
     def test_internal_launch_working_material_is_not_shipped(self):
         product_hunt = REPO_ROOT / "docs" / "product-hunt"

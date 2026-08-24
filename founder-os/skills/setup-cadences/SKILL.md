@@ -44,6 +44,7 @@ If `/proc/version` contains `microsoft`, stop and explain the limitation.
 | `/follow-up-sweep` | Friday 14:00 | `0 14 * * 5` |
 | `/content-plan` | Wednesday 10:00 | `0 10 * * 3` |
 | `/calendar-audit` | Friday 15:00 | `0 15 * * 5` |
+| `/signal-check` | Friday 15:30 | `30 15 * * 5` |
 | `/revenue-review` | first of month 09:00 | `0 9 1 * *` |
 | `/quarterly-planning` | Jan/Apr/Jul/Oct first 11:00 | `0 11 1 1,4,7,10 *` |
 

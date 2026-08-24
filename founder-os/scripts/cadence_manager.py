@@ -83,6 +83,7 @@ BUSINESS_CADENCES = (
     Cadence("follow-up-sweep", "0 14 * * 5"),
     Cadence("content-plan", "0 10 * * 3"),
     Cadence("calendar-audit", "0 15 * * 5"),
+    Cadence("signal-check", "30 15 * * 5"),
     Cadence("revenue-review", "0 9 1 * *"),
     Cadence("quarterly-planning", "0 11 1 1,4,7,10 *"),
 )
@@ -273,6 +274,7 @@ def _launchd_calendar(workflow: str):
         "follow-up-sweep": {"Weekday": 5, "Hour": 14, "Minute": 0},
         "content-plan": {"Weekday": 3, "Hour": 10, "Minute": 0},
         "calendar-audit": {"Weekday": 5, "Hour": 15, "Minute": 0},
+        "signal-check": {"Weekday": 5, "Hour": 15, "Minute": 30},
         "revenue-review": {"Day": 1, "Hour": 9, "Minute": 0},
         "portfolio-review": {"Weekday": 1, "Hour": 8, "Minute": 15},
     }
@@ -335,6 +337,7 @@ def _systemd_calendar(workflow: str) -> str:
         "follow-up-sweep": "Fri *-*-* 14:00:00",
         "content-plan": "Wed *-*-* 10:00:00",
         "calendar-audit": "Fri *-*-* 15:00:00",
+        "signal-check": "Fri *-*-* 15:30:00",
         "revenue-review": "*-*-01 09:00:00",
         "quarterly-planning": "*-01,04,07,10-01 11:00:00",
         "portfolio-review": "Mon *-*-* 08:15:00",

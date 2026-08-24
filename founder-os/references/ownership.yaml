@@ -29,6 +29,7 @@ workspace_files:
   - systems.md
   - decisions/
   - evaluations/
+  - experiments/
   - reviews/daily/
   - reviews/weekly/
   - reviews/monthly/
@@ -60,6 +61,7 @@ owns:
     - reviews/monthly/
   strategist:
     - goals.md
+    - experiments/
     - reviews/quarterly/
   cfo:
     - metrics.md
@@ -137,11 +139,19 @@ sections:
     - "## Timezone"
   goals.md:
     - "## Bets"
+  # Four of these five are lagging: Close, Runway, Profitability and Rate all
+  # describe a month that has already happened. `## Signals` is the one the
+  # founder can still change this week, and its cap of three is part of the
+  # contract rather than an economy — an uncapped signals section becomes a
+  # dashboard within a quarter, which is precisely the product Founder OS
+  # refuses to be. Three signals, each with a source, a value, the date it was
+  # read, and the range that counts as normal.
   metrics.md:
     - "## Close"
     - "## Runway"
     - "## Profitability"
     - "## Rate"
+    - "## Signals"
   offer.md:
     - "## ICP"
     - "## Offer"
@@ -217,6 +227,18 @@ sections:
     - "## Rejected"
     - "## What would change our mind"
     - "## Supersedes"
+  # An experiment is the same genus as a decision — a dated record whose value
+  # is that it cannot be edited into agreement with the outcome. `## Threshold`
+  # is the field that separates it from an observation: a number and a date,
+  # written before the test runs, exactly as `Kill if:` is written before the
+  # bet does. An experiment closed against a threshold invented afterwards is a
+  # report, and a report has never forced anybody to stop doing anything.
+  experiments/:
+    - "## Hypothesis"
+    - "## Threshold"
+    - "## Judgment"
+    - "## Result"
+    - "## Verdict"
   evaluations/:
     - "## Decision"
     - "## Scope"

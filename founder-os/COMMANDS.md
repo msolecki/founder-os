@@ -26,6 +26,7 @@ Scheduled by the host-specific `setup-cadences` skill; every one also works type
 | `/follow-up-sweep` | Friday 14:00 | network-manager |
 | `/content-plan` | Wednesday 10:00 | brand-editor |
 | `/calendar-audit` | Friday 15:00 | focus-coach |
+| `/signal-check` | Friday 15:30 | cfo |
 | `/revenue-review` | first of month 09:00 | cfo |
 | `/quarterly-planning` | Jan/Apr/Jul/Oct first 11:00 | strategist |
 
@@ -54,11 +55,12 @@ Decides what gets published and where, and owns how the founder sounds. Use for 
 
 ### cfo
 
-Decides whether the company can afford something and whether it actually makes money. Use for the monthly close, runway, profitability, and rate raises. Gives no tax or legal advice.
+Decides whether the company can afford something and whether it actually makes money. Use for the monthly close, runway, profitability, rate raises, and the weekly signal check. Gives no tax or legal advice.
 
 | Command | What it does |
 |---|---|
 | `/revenue-review` | Close the month on booked, collected and effective rate — run on the first of the month, scheduled locally after setup-cadences |
+| `/signal-check` | Read the three behaviours the founder can still change this week and record them against their normal range — run Friday afternoon, before the weekly review scores the week |
 | `/runway-forecast` | Compute months of survival at real burn with the pipeline discounted by stage — run monthly after the close, and before any spending commitment |
 | `/profitability-analysis` | Rank every client by effective hourly rate to find where the margin dies — run quarterly, before any renewal, and before agreeing to more of the same work |
 | `/rate-raise` | Decide whether the rate rises, by how much, and hand over the script — run when profitability-analysis says the rate is below target, not when the founder feels brave |
@@ -111,12 +113,13 @@ Decides who to talk to and when to follow up. Use for relationship mapping and t
 
 ### ops-engineer
 
-Decides what to automate and what to tolerate. Use for automation audits and reviewing the tool stack.
+Decides what to automate and what to tolerate. Use for automation audits, reviewing the tool stack, and reporting a Founder OS workflow that misbehaved.
 
 | Command | What it does |
 |---|---|
 | `/automation-audit` | Decide whether a manual task is worth automating using payback arithmetic — run before building anything internal, and especially when the founder is enjoying it |
 | `/tool-stack-review` | Decide what is paid for and unused, and hand the founder the cancel list — run quarterly, and 30 days before any annual renewal bills |
+| `/founder-os-feedback` | Compose a Founder OS bug report or workflow complaint locally and hand the founder a prefilled GitHub link to send themselves — run right after a workflow does the wrong thing |
 
 ### pipeline-coach
 
@@ -158,13 +161,14 @@ Decides which capability to build next and how. Use for skill-gap analysis and l
 
 ### strategist
 
-Decides what bet the company makes this quarter and what it kills. Use for quarterly planning, sizing a bet, kill-or-continue calls, and the annual review.
+Decides what bet the company makes this quarter and what it kills. Use for quarterly planning, sizing a bet, running an experiment to its judgment date, kill-or-continue calls, and the annual review.
 
 | Command | What it does |
 |---|---|
 | `/quarterly-planning` | Close last quarter's bets with verdicts and commit at most three new ones, each with a kill condition — run in the first days of the quarter, once the numbers that settle the old one are in |
 | `/bet-sizing` | Price a bet by what it costs when it is wrong and cap the downside in writing before it starts — run before any bet enters goals.md |
 | `/kill-or-continue` | Force a verdict on a bet against the threshold it was given, with the sunk cost named out loud — run the moment a judgement date passes |
+| `/experiment` | Open a test with a threshold written before the result exists, and close it on its judgment date with a verdict that leaves the file — run when the founder asks how they will know something worked |
 | `/annual-review` | Read twelve months of decisions back and score the judgment rather than the outcome — run once a year, from decisions/ and nothing else |
 
 ## System commands

@@ -5,11 +5,40 @@ and the source repo — the [root README](README.md) explains how the machine
 works, and its *Adding a skill* / *Adding an agent* sections are the actual
 contribution guide. This file is the short version.
 
+## Reporting something without opening a PR
+
+Most useful feedback is not a pull request, and until now this file did not say
+where it goes. It goes to one of three forms in
+[`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE), and each exists because the
+reports it collects are different:
+
+- **[Workflow feedback](https://github.com/msolecki/founder-os/issues/new?template=workflow-feedback.yml)**
+  — a workflow ran and did the wrong thing, or the right thing badly. This is
+  the report almost nobody sends, because nothing is broken enough to feel worth
+  the form, and it is the one that says the product is wrong rather than broken.
+- **[Bug](https://github.com/msolecki/founder-os/issues/new?template=bug.yml)** —
+  a failed write, a wrong owner, a hook that denies what it should allow. Bring
+  the `/founder-os-doctor` output; it reports structure, never file contents.
+- **[Idea](https://github.com/msolecki/founder-os/issues/new?template=idea.yml)**
+  — one field is required and it is *which decision does this improve*. Without
+  it the backlog fills with features that have no decision behind them, which is
+  the failure mode this package is built against.
+
+Anything else — a question, a workspace worth showing, an idea that is not a
+proposal yet — starts in
+[Discussions](https://github.com/msolecki/founder-os/discussions).
+
+`/founder-os-feedback` fills any of the three in from the session that went
+wrong and hands you a prefilled link. It sends nothing: you read what it wrote
+and post it from your own account. It also never quotes your workspace —
+**neither should you.** Paths are useful in a public issue; your revenue, your
+clients and your rates are not.
+
 ## Before you open a PR
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os   # 13 agent(s), 53 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os   # 13 agent(s), 56 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md if frontmatter changed
 python3 scripts/smoke_installed_copy.py          # copied local gateway lifecycle
 python3 -m unittest discover -s tests            # OK
@@ -19,6 +48,12 @@ python3 scripts/check_local_links.py              # local docs and anchors
 
 CI runs all six on every push and PR, and a red build is a no from the
 machine before it is a review comment from a human.
+
+Adding a skill or an agent moves counts that are published in a dozen places.
+Do not type the new number from memory — run the validator, read the number it
+gives you, and write that one. `check_readme_counts` fails the build with the
+exact figure, and the issue-template workflow dropdown is pinned to the skills
+directory by `tests/test_feedback_channels.py` for the same reason.
 
 ## The rules the validator cannot read
 

@@ -26,6 +26,14 @@ complete workspace for your own business.
 7. Open
    [`decisions/2026-07-18-raised-sprint-floor.md`](decisions/2026-07-18-raised-sprint-floor.md).
    It records the rejected option and the evidence that would reverse the call.
+8. Open [`metrics.md`](metrics.md) at `## Signals`. Three weekly behaviours,
+   each read off a file another cadence already keeps, each with the range that
+   makes the reading legible. The weekly review quotes the one that moved; it
+   does not recount it.
+9. Open
+   [`experiments/2026-07-14-sprint-price-without-custom-scope.md`](experiments/2026-07-14-sprint-price-without-custom-scope.md).
+   The threshold and the judgment date were written before any result existed,
+   which is what stops the verdict being written to agree with the outcome.
 
 ## What this demonstrates
 
@@ -34,10 +42,13 @@ complete workspace for your own business.
 - IDs and bet references make work traceable across the queue, week, and reviews.
 - Pipeline claims carry a speaker, channel, and date; founder decisions do not.
 - A decision log stores the falsifier, not just the decision.
+- Lagging numbers close the month; signals say what changed this week, early
+  enough to do something about it.
+- An experiment's threshold is written at the open, never at the close.
 
 Founder OS knows only what is recorded in files like these. It does not sync a
 calendar, CRM, inbox, or bank account by itself.
 
 See [`docs/getting-started.md`](../../docs/getting-started.md) to install the
 plugin and the generated [`COMMANDS.md`](../../founder-os/COMMANDS.md) for all
-53 workflows.
+56 workflows.
