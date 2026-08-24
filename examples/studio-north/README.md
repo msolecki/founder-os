@@ -32,8 +32,17 @@ complete workspace for your own business.
    does not recount it.
 9. Open
    [`experiments/2026-07-14-sprint-price-without-custom-scope.md`](experiments/2026-07-14-sprint-price-without-custom-scope.md).
-   The threshold and the judgment date were written before any result existed,
-   which is what stops the verdict being written to agree with the outcome.
+   It is open: the threshold and the judgment date are written and the result is
+   empty. That order is what stops a verdict being written to agree with the
+   outcome.
+10. Follow the closed one all the way out.
+    [`experiments/2026-06-08-cold-email-books-discovery-calls.md`](experiments/2026-06-08-cold-email-books-discovery-calls.md)
+    returned 0 against a threshold of 2 and closed `not met` — and its
+    `Handed to:` line points at
+    [`decisions/2026-07-10-stopped-cold-email.md`](decisions/2026-07-10-stopped-cold-email.md),
+    which cites the experiment by name. That is the whole loop: an assumption
+    becomes a test, the test becomes a verdict, and the verdict changes what the
+    company does. An experiment that stopped at step 9 would have been a report.
 
 ## What this demonstrates
 
@@ -45,6 +54,8 @@ complete workspace for your own business.
 - Lagging numbers close the month; signals say what changed this week, early
   enough to do something about it.
 - An experiment's threshold is written at the open, never at the close.
+- A verdict leaves the experiment file. `not met` that changes nothing is a
+  report, and reports are why nobody re-reads a results folder.
 
 Founder OS knows only what is recorded in files like these. It does not sync a
 calendar, CRM, inbox, or bank account by itself.

@@ -179,9 +179,14 @@ users pay for. The workflow writes to an orphan branch called `metrics`, which
 shares no history with `main` and never merges into it. **It creates the branch
 itself on the first run**, so there is nothing to set up by hand.
 
-- `metrics/traffic.csv` — one row per day, keyed by date. Reading the same day
-  twice updates the row; the API's most recent day is always partial, so today's
-  numbers are corrected by tomorrow's run rather than duplicated.
+- `metrics/traffic.csv` — one row per day, keyed by date:
+  `date,clones_count,clones_uniques,views_count,views_uniques,stars,forks,issues_opened,automation_suspected`.
+  Reading the same day twice updates the row; the API's most recent day is
+  always partial, so today's numbers are corrected by tomorrow's run rather than
+  duplicated. `issues_opened` counts issues only — `type:issue` in the search
+  query, because the REST `open_issues_count` field counts pull requests too —
+  and a quiet day inside the window is `0` rather than blank, since blank means
+  unmeasured and the difference is the whole point of the column.
 - `metrics/referrers-YYYY-MM-DD.csv`, `metrics/paths-YYYY-MM-DD.csv` — whole
   snapshots. They describe overlapping fourteen-day windows with no way to
   subtract one from another, so they are photographs and not a series.

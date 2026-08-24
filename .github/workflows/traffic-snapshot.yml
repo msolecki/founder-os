@@ -47,6 +47,16 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}" > api/repository.json
           gh api "repos/${GITHUB_REPOSITORY}/traffic/popular/referrers" > api/referrers.json
           gh api "repos/${GITHUB_REPOSITORY}/traffic/popular/paths" > api/paths.json
+          # The one number here that is unambiguously a person. `type:issue`
+          # excludes pull requests, which the REST `open_issues_count` field
+          # famously does not. Same fourteen-day window as the traffic API so
+          # the two backfill together.
+          since="$(date -u -d '13 days ago' +%F)"
+          echo "ISSUES_SINCE=${since}" >> "$GITHUB_ENV"
+          gh api -X GET search/issues \
+            -f q="repo:${GITHUB_REPOSITORY} type:issue created:>=${since}" \
+            -f per_page=100 \
+            --jq '[.items[].created_at]' > api/issues.json
 
       - name: Check out the series, creating the orphan branch on first run
         env:
@@ -73,6 +83,8 @@ jobs:
             --clones api/clones.json \
             --views api/views.json \
             --repository api/repository.json \
+            --issues api/issues.json \
+            --issues-since "${ISSUES_SINCE}" \
             --referrers api/referrers.json \
             --paths api/paths.json \
             --out series/metrics/traffic.csv \

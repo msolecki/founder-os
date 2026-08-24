@@ -101,6 +101,66 @@ class DocumentContractParser(HTMLParser):
             self.references.extend(attributes.get(name, "").split())
 
 
+class ExampleWorkspaceLoopTest(unittest.TestCase):
+    """The example is the tour most readers take before installing anything.
+
+    Traffic showed `examples/studio-north/reviews/daily/2026-07-20.md` in the
+    top five paths on the repo, ahead of most documentation — people read the
+    output before they read the pitch. So the loop it demonstrates has to be
+    whole: an experiment that only ever opens teaches that verdicts are
+    optional, which is the one thing the skill refuses.
+    """
+
+    EXPERIMENTS = REPO_ROOT / "examples" / "studio-north" / "experiments"
+    DECISIONS = REPO_ROOT / "examples" / "studio-north" / "decisions"
+
+    def experiments(self):
+        return {path.stem: path.read_text(encoding="utf-8")
+                for path in self.EXPERIMENTS.glob("*.md")}
+
+    def test_the_example_shows_an_open_and_a_closed_experiment(self):
+        statuses = {name: re.search(r"^Status: (\w+)$", body, re.M).group(1)
+                    for name, body in self.experiments().items()}
+        self.assertIn("open", statuses.values())
+        self.assertIn("closed", statuses.values())
+
+    def test_every_threshold_carries_a_number_and_a_date(self):
+        for name, body in self.experiments().items():
+            section = body.split("## Threshold", 1)[1].split("\n## ", 1)[0]
+            with self.subTest(experiment=name):
+                self.assertRegex(section, r"\d")
+                self.assertRegex(section, r"\d{4}-\d{2}-\d{2}")
+
+    def test_an_open_experiment_has_no_result_written_yet(self):
+        """The order is the contract: threshold first, result later."""
+        for name, body in self.experiments().items():
+            if "Status: closed" in body:
+                continue
+            result = body.split("## Result", 1)[1].split("## Verdict", 1)[0]
+            with self.subTest(experiment=name):
+                self.assertEqual(result.strip(), "")
+
+    def test_a_closed_experiment_hands_its_verdict_out_of_the_file(self):
+        closed = {name: body for name, body in self.experiments().items()
+                  if "Status: closed" in body}
+        self.assertTrue(closed, "the example closes no experiment")
+        decisions = " ".join(
+            path.read_text(encoding="utf-8")
+            for path in self.DECISIONS.glob("*.md")
+        )
+        for name, body in closed.items():
+            with self.subTest(experiment=name):
+                handoff = re.search(r"^Handed to: (\S+)", body, re.M)
+                self.assertIsNotNone(handoff, "no Handed to: line")
+                self.assertNotEqual(handoff.group(1), "none")
+                self.assertIn(
+                    "[[%s]]" % name,
+                    decisions,
+                    "the verdict names a handoff target that never cites it "
+                    "back — the loop is drawn but not closed",
+                )
+
+
 class WorkflowLibraryContractTest(unittest.TestCase):
     def test_one_page_publishes_the_current_dual_host_contract(self):
         nav = HTML[HTML.index('<div class="nav-links"'):HTML.index("</nav>")]

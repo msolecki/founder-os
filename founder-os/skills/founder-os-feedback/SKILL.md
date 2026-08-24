@@ -92,7 +92,18 @@ opens none of them, and the next section is why.
    founder's business, any proper noun that is a client's, any currency amount:
    strike it and say you struck it. The founder can put it back. This scan is
    the step, not a caution attached to one.
-7. **Print the body, then the URL, in that order.** The body first so it is read
+7. **Build the URL by field id, never as one `body`.** These are YAML issue
+   forms, and a form ignores `body=` — the canonical prefill key is each field's
+   `id`, so the parameters are `workflow`, `host`, `version`, `expected`,
+   `actual` and, for a bug, `doctor`. A link built the old way opens an empty
+   form and the founder retypes everything, which is the exact friction this
+   skill exists to remove. Percent-encode every value.
+
+   **The two dropdowns are best-effort.** `workflow` and `host` prefill by their
+   option label where the host accepts it; if the form opens with either unset,
+   that is one click and not a bug. Every free-text field is reliable and those
+   are the ones carrying the founder's words.
+8. **Print the body, then the URL, in that order.** The body first so it is read
    as a draft rather than as a link. Then the URL, and one line saying it opens a
    prefilled form on GitHub and posts nothing until they submit it.
 
@@ -101,13 +112,22 @@ opens none of them, and the next section is why.
 No file. Nothing is written to the workspace, and nothing is written anywhere
 else.
 
-Print the assembled body, then the link:
+Print the assembled body, then the link — one parameter per form field, all
+percent-encoded:
 
-    https://github.com/msolecki/founder-os/issues/new?template=workflow-feedback.yml&title=<urlencoded title>&body=<urlencoded body>
+    https://github.com/msolecki/founder-os/issues/new?template=workflow-feedback.yml
+      &title=<title>
+      &workflow=<slug>&host=<Claude%20Code|Codex|Both>&version=<x.y.z>
+      &expected=<what they expected>&actual=<what happened>
 
-The same shape with `template=bug.yml` or `template=idea.yml`. Percent-encode
-both parameters; a body with a `#` or an `&` in it silently truncates the form
-otherwise, and the founder finds out after clicking.
+`template=bug.yml` takes the same parameters plus `&doctor=<report>`.
+`template=idea.yml` takes `&decision=`, `&today=` and `&existing=`.
+
+**There is no `body` parameter here and adding one does nothing.** A YAML issue
+form is prefilled by field `id`; `body=` belongs to the old Markdown templates
+and is silently dropped, which produces an empty form and a founder who assumes
+the skill is broken. An unencoded `#` or `&` truncates a value the same way, and
+both failures are discovered after the click rather than before.
 
 Close with exactly one line:
 
