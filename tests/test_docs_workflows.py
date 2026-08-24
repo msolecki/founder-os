@@ -187,6 +187,41 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertIn('href="index.html"', trust_html)
         self.assertIn('href="trust.html"', HTML)
 
+    def test_the_website_section_is_true_of_the_website(self):
+        """The trust center says no third-party tag; this is what checks it.
+
+        A trust page whose claims are prose is a promise. The claim here is
+        machine-checkable, so it is checked: any script the landing page loads
+        from another origin makes the section a lie, and a false trust center
+        costs more than the numbers a counter would have produced.
+        """
+        trust_html = (REPO_ROOT / "docs" / "trust.html").read_text(
+            encoding="utf-8"
+        )
+        trust_md = (REPO_ROOT / "docs" / "trust.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("## The website", trust_md)
+        self.assertIn('id="website"', trust_html)
+
+        sources = re.findall(r'<script[^>]*\bsrc="([^"]+)"', HTML)
+        self.assertTrue(sources, "the page loads no script at all")
+        for source in sources:
+            with self.subTest(script=source):
+                self.assertNotRegex(
+                    source,
+                    r"^(?:[a-z]+:)?//",
+                    "docs/trust.html claims no third-party tag runs on the "
+                    "site; %s is one. Change the claim in the same commit or "
+                    "drop the script." % source,
+                )
+
+        policy = re.search(
+            r'http-equiv="Content-Security-Policy" content="([^"]+)"', HTML
+        )
+        self.assertIsNotNone(policy)
+        self.assertIn("script-src 'self'", policy.group(1))
+
     def test_launch_page_declares_favicon_and_apple_touch_icon(self):
         self.assertIn('rel="icon" type="image/svg+xml"', HTML)
         self.assertIn('rel="apple-touch-icon"', HTML)
