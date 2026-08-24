@@ -5,9 +5,16 @@ contact_links:
     about: >-
       Q&A, ideas that are not yet a proposal, and workspaces worth showing other
       founders. Anything that is not a bug or a concrete change starts here.
-  - name: Security or trust issue
-    url: https://msolecki.github.io/founder-os/trust.html
+  - name: Report a security issue privately
+    url: https://github.com/msolecki/founder-os/security/advisories/new
     about: >-
       A hook that allows what it should deny, an outbound path that should not
-      exist, or anything touching the no-telemetry promise. Report it privately
-      first — the trust center says how.
+      exist, or anything touching the no-telemetry promise. This form is private
+      between you and the maintainer; SECURITY.md has the scope. Never paste
+      workspace contents — a published advisory is public.
+  - name: Trust question, not a security issue
+    url: https://msolecki.github.io/founder-os/trust.html
+    about: >-
+      What the package does with data, where state lives, what reaches the model
+      host. The trust center answers most of them; the rest belong in
+      Discussions.

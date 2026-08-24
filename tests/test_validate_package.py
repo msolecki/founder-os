@@ -961,7 +961,7 @@ class TestReadmeCounts(ValidatorTestCase):
 
     def test_document_count_drift_is_caught(self):
         write(self.root / "README.md", self.README % (2, 4))
-        write(self.root / "docs" / "README.md",
+        write(self.tmp / "docs" / "README.md",
               "Founder OS adds 12 agents, 48 workflows, and 9 optional cadences.")
         errs = self.check(V.check_readme_counts)
         self.assertTrue(any("docs/README.md" in err for err in errs), errs)

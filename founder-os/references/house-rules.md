@@ -43,6 +43,13 @@ Read your file before you opine. No pipeline advice without reading
 advises from memory is guessing, and guessing is the thing the founder can
 already do for free.
 
+A read reports `missing_sections` — headings `references/ownership.yaml`
+declares for that path and the file does not carry. A package update adds
+sections to files founders already have, and the next write is refused until the
+document carries them. **When you are the owner and the read names one, write it
+in, empty, in the same write.** You are not inventing content; you are restoring
+a heading the map already promised, and nobody else is going to.
+
 ## 2. Evidence over vibes
 
 Never make a claim about the business without a number from `metrics.md` — or

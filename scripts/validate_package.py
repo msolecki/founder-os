@@ -846,14 +846,29 @@ def check_readme_counts(root, agents):
             errs.append("README.md: claims %d %s, the package has %d — a count "
                         "that drifts is a second map" % (claimed, label.lower(), real))
 
-    docs = [root / "docs" / "README.md", root / "docs" / "getting-started.md",
-            root / "docs" / "index.html", root / ".codex-plugin" / "plugin.json"]
+    # The site lives at the repository root, not inside the package. These were
+    # written as `root / "docs" / ...` and `founder-os/docs/` has never existed,
+    # so the loop below skipped every one of them and the whole docs half of
+    # this check was dead — which is how docs/index.html kept saying "nine
+    # cadences" through two releases that added one.
+    #
+    # index.html is deliberately not in this list: its catalogue carries a per-
+    # category "9 workflows" on every group heading, which these patterns cannot
+    # tell from a package count. tests/test_docs_workflows.py and the feature
+    # ledger's derived count are what hold that page.
+    site = root.parent / "docs"
+    docs = [("docs/README.md", site / "README.md"),
+            ("docs/getting-started.md", site / "getting-started.md"),
+            ("docs/commands.md", site / "commands.md"),
+            ("docs/cadences.md", site / "cadences.md"),
+            (".codex-plugin/plugin.json",
+             root / ".codex-plugin" / "plugin.json")]
     patterns = {
         "Agents": r"(\d+)\s+(?:specialized\s+business\s+roles|decision-owning executive agents|agents)",
         "Skills": r"(\d+)\s+(?:skills|workflows)",
         "Cadences": r"(\d+)\s+(?:optional\s+)?(?:operating\s+)?cadences",
     }
-    for path in docs:
+    for name, path in docs:
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
@@ -861,7 +876,89 @@ def check_readme_counts(root, agents):
             values = [int(value) for value in re.findall(pattern, text, re.I)]
             if values and any(value != actual.get(label) for value in values):
                 errs.append("%s: %s count drifts from package value %d" %
-                            (path.relative_to(root), label.lower(), actual.get(label, 0)))
+                            (name, label.lower(), actual.get(label, 0)))
+    return errs
+
+
+def _schedule_table_rows(text):
+    """Commands listed in a page's schedule tables, and only those.
+
+    Identified by a `When` column, because both pages carry other tables of
+    commands and matching any row that starts with a command let a workflow
+    absent from the schedule pass on the strength of its role-table row.
+    """
+    rows = set()
+    in_schedule = False
+    for line in text.splitlines():
+        if not line.startswith("|"):
+            in_schedule = False
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if "When" in cells:
+            in_schedule = True
+            continue
+        if not in_schedule:
+            continue
+        match = re.fullmatch(r"`/?([a-z0-9-]+)`", cells[0]) if cells else None
+        if match:
+            rows.add(match.group(1))
+    return rows
+
+
+def check_docs_parity(root, agents):
+    """The reference pages must name what the package actually ships.
+
+    A count is the cheap half of this and `check_readme_counts` has it. The
+    expensive half is membership: `docs/commands.md` lost three workflows and
+    `docs/agents.md` lost two skills and two owned paths across two releases,
+    while every count on both pages stayed correct. Sets, not numbers — and no
+    per-role parsing, because the Board Member owns "*nothing.*" and its Owns
+    line carries a `Read, Glob, Grep` in backticks.
+
+    Skipped whole when the site is absent, which is every test fixture: the
+    pages are the storefront, not the structure.
+    """
+    errs = []
+    site = root.parent / "docs"
+    commands = site / "commands.md"
+    agents_page = site / "agents.md"
+    cadence_source = root / "skills" / "setup-cadences" / "SKILL.md"
+    if not (commands.exists() and agents_page.exists()
+            and cadence_source.exists()):
+        return errs
+
+    cadences = set(re.findall(
+        r"^\|\s*`/([a-z0-9-]+)`\s*\|[^|]*\|\s*`[^`]+`\s*\|\s*$",
+        cadence_source.read_text(encoding="utf-8"), re.M))
+    for page in (commands, site / "cadences.md"):
+        if not page.exists():
+            continue
+        rows = _schedule_table_rows(page.read_text(encoding="utf-8"))
+        for missing in sorted(cadences - rows):
+            errs.append("docs/%s: schedule table omits the cadence '%s'"
+                        % (page.name, missing))
+
+    listed = set(re.findall(r"`/([a-z0-9-]+)`",
+                            commands.read_text(encoding="utf-8")))
+    packaged = {path.parent.name for path in (root / "skills").glob("*/SKILL.md")}
+    for missing in sorted(packaged - listed):
+        errs.append("docs/commands.md: no row for the '%s' workflow" % missing)
+    for extra in sorted(listed - packaged):
+        errs.append("docs/commands.md: '%s' is not a packaged workflow" % extra)
+
+    named = set(re.findall(r"`([A-Za-z0-9_./-]+)`",
+                           agents_page.read_text(encoding="utf-8")))
+    for agent, record in sorted(agents.items()):
+        for skill in sorted(_agent_skills(record)):
+            if skill not in UNIVERSAL_SKILLS and skill not in named:
+                errs.append("docs/agents.md: %s lists no '%s' skill"
+                            % (agent, skill))
+    schema = load_ownership_schema(root)
+    for owner, owned in sorted((schema or {}).get("owns", {}).items()):
+        for owned_path in owned:
+            if owned_path not in named:
+                errs.append("docs/agents.md: %s is not shown owning '%s'"
+                            % (owner, owned_path))
     return errs
 
 
@@ -870,7 +967,7 @@ CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,
           check_sections, check_capture_contract, check_beliefs, check_hooks,
-          check_readme_counts]
+          check_readme_counts, check_docs_parity]
 
 
 def run_checks(root):

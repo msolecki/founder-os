@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import stat
 import tempfile
 import textwrap
 import threading
@@ -542,6 +543,106 @@ class StateGatewayWriteTests(unittest.TestCase):
             set(event),
         )
 
+    def test_an_upgrade_that_adds_a_section_is_reported_on_read_then_written(self):
+        """The whole upgrade path for a section the founder's file predates.
+
+        The write is refused, correctly — a document that has lost a declared
+        heading is the drift this check exists for. What the founder needs is
+        to learn which heading before the refusal, which is what the read says.
+        """
+        capability = self._open("cfo", correlation_id="corr-upgrade")
+        before = _metrics()
+        created = self._write(capability, "metrics.md", before, create_only=True)
+        self.assertFalse(created["isError"], created)
+        digest = created["structuredContent"]["after_sha256"]
+
+        ownership = self.package / "references" / "ownership.yaml"
+        ownership.write_text(
+            _ownership_yaml().replace(
+                '  metrics.md:\n    - "## Close"\n',
+                '  metrics.md:\n    - "## Close"\n    - "## Signals"\n',
+            ),
+            encoding="utf-8",
+        )
+
+        read = self._call(
+            "read_state", {"capability": capability, "paths": ["metrics.md"]}
+        )
+        self.assertFalse(read["isError"], read)
+        self.assertEqual(
+            ["## Signals"],
+            read["structuredContent"]["files"][0]["missing_sections"],
+        )
+
+        refused = self._write(
+            capability, "metrics.md", before, expected_sha256=digest
+        )
+        self._assert_error(refused, code="INVALID_DOCUMENT_STRUCTURE")
+
+        repaired = before.replace(
+            "## Runway", "## Signals\n\nNone yet.\n\n## Runway"
+        )
+        accepted = self._write(
+            capability, "metrics.md", repaired, expected_sha256=digest
+        )
+        self.assertFalse(accepted["isError"], accepted)
+
+        read = self._call(
+            "read_state", {"capability": capability, "paths": ["metrics.md"]}
+        )
+        self.assertEqual(
+            [], read["structuredContent"]["files"][0]["missing_sections"]
+        )
+
+    def test_a_declared_directory_the_scaffold_never_made_is_created(self):
+        """An upgrade adds a directory to the map; older workspaces lack it.
+
+        `founder-os-init` creates `workspace_files:` at install time and never
+        runs again, so the owner of a newly declared directory would otherwise
+        get STATE_IO_ERROR on its first write and no way to repair it.
+        """
+        capability = self._open("chief-of-staff", correlation_id="corr-dir")
+        self.assertFalse((self.workspace / "decisions").exists())
+        document = (
+            "# Decision\n\n## Context\n\nWhy.\n\n"
+            "## Rejected\n\nThe other one.\n\n"
+            "## What would change our mind\n\nA number.\n\n"
+            "## Supersedes\n\nNothing.\n"
+        )
+
+        created = self._write(
+            capability, "decisions/2026-08-25.md", document, create_only=True
+        )
+
+        self.assertFalse(created["isError"], created)
+        self.assertEqual(
+            document,
+            (self.workspace / "decisions" / "2026-08-25.md").read_text(
+                encoding="utf-8"
+            ),
+        )
+        self.assertEqual(
+            0o700,
+            stat.S_IMODE((self.workspace / "decisions").stat().st_mode),
+        )
+
+    def test_a_symlinked_directory_component_is_refused_not_followed(self):
+        outside = self.base / "outside"
+        outside.mkdir()
+        (self.workspace / "decisions").symlink_to(outside)
+        capability = self._open("chief-of-staff", correlation_id="corr-link")
+
+        response = self._write(
+            capability,
+            "decisions/2026-08-25.md",
+            "# D\n\n## Context\n\nA.\n\n## Rejected\n\nB.\n\n"
+            "## What would change our mind\n\nC.\n\n## Supersedes\n\nD.\n",
+            create_only=True,
+        )
+
+        self._assert_error(response, code="PATH_OUTSIDE_WORKSPACE")
+        self.assertEqual([], list(outside.iterdir()))
+
     def test_cfo_can_create_and_replace_metrics_with_literal_sha256_values(self):
         capability = self._open("cfo", correlation_id="corr-success")
         before_literal = _metrics(close="Booked: 10")
@@ -669,7 +770,10 @@ class StateGatewayWriteTests(unittest.TestCase):
                 self._assert_error(
                     response,
                     code="INVALID_DOCUMENT_STRUCTURE",
-                    action="Correct the proposed document before retrying",
+                    action=(
+                        "Carry every heading references/ownership.yaml "
+                        "declares for this path, in its order, then retry"
+                    ),
                 )
 
     def test_required_h2_headings_accept_the_canonical_dated_suffix(self):

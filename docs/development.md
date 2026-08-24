@@ -21,7 +21,7 @@ is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
 
-`scripts/validate_package.py` runs 17 build-time checks (each named function).
+`scripts/validate_package.py` runs 18 build-time checks (each named function).
 They enforce *structure*; they cannot decide whether business advice is good.
 
 | Check | Fails when… |
@@ -43,6 +43,7 @@ They enforce *structure*; they cannot decide whether business advice is good.
 | `check_beliefs` | A role skill has no `## Beliefs`, has it *after* `## Steps`, or has fewer than 3 bullets. |
 | `check_hooks` | Hook config or matchers are invalid/incomplete, or the guard, recorder, or gateway entry does not compile. |
 | `check_readme_counts` | The README "What's inside" table's Agents/Skills/Cadences counts don't match the package. |
+| `check_docs_parity` | A cadence is missing from a schedule table in `docs/commands.md` or `docs/cadences.md`; `docs/commands.md` has no row for a packaged workflow or a row for something the package does not ship; or `docs/agents.md` omits a skill an agent holds or a path it owns. |
 
 The **system skills** (`founder-os-init`, `founder-os-doctor`, `context-load`,
 `guardrails`, `state-integrity`, `ingestion-gate`) are exempt from the

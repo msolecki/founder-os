@@ -76,7 +76,7 @@ class Gateway:
         },
         {
             "name": "read_state",
-            "description": "Read one or more state records through a capability.",
+            "description": "Read one or more state records through a capability. Each record carries missing_sections: headings the ownership map declares for that path and the file does not have.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -318,9 +318,21 @@ class Gateway:
             raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
         io_handle = self._io(binding.root)
         try:
-            return {"files": io_handle.read_many(paths)}
+            files = io_handle.read_many(paths)
         finally:
             io_handle.close()
+        try:
+            schema = OwnershipSchema.load(
+                self._packaged_root / "references" / "ownership.yaml"
+            )
+        except OwnershipError:
+            return {"files": files}
+        for entry in files:
+            entry["missing_sections"] = list(schema.missing_sections(
+                str(entry.get("path") or ""),
+                entry.get("content"),
+            ))
+        return {"files": files}
 
     def _read_reference(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         metadata, binding = self._session_workspace(arguments.get("capability"))
@@ -424,6 +436,9 @@ class Gateway:
                     raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
 
                 io_handle = self._io(binding.root)
+                declared_directory = schema.directory_for(raw_path)
+                if declared_directory is not None:
+                    io_handle.ensure_directory(declared_directory)
                 payload = io_handle.atomic_replace(
                     raw_path,
                     content_bytes,

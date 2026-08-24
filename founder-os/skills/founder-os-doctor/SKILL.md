@@ -19,6 +19,12 @@ the thing that broke them.
 Monthly, and immediately after any of these:
 
 - An agent said something that felt wrong. It usually read something stale.
+- **Founder OS updated.** A release can declare a file, a directory or a section
+  the founder's workspace predates, and `founder-os-init` scaffolds once and
+  never runs again. The gateway repairs the two cheapest cases by itself — it
+  creates a declared directory on the owner's first write, and it names a missing
+  declared heading in every read — but nothing tells the founder the rest of the
+  inventory drifted. That is this run.
 - The founder returns after two weeks away.
 - `founder-os-init` refused to run because a workspace already exists.
 - The founder is about to report a problem with this package upstream —
@@ -106,7 +112,9 @@ a health report that lists a screen of green checks trains the founder to skim i
 Only two things, and both of them are structural:
 
 - **Create a missing file as an empty stub**, carrying its H1 and the headings
-  `sections:` declares for it. Nothing under them.
+  `sections:` declares for it. Nothing under them. For a directory entry, create
+  the directory and no member file: the members are a client, a decision, a
+  review, and inventing one would invent the thing it records.
 - **Restore a missing section heading, empty**, to a file that already exists —
   only a heading the map declares. A heading the map does not declare is a
   finding for its owner, never a repair: deleting it would destroy content.

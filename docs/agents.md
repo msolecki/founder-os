@@ -51,11 +51,12 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 ### Chief of Staff
 - **Decides:** what deserves the founder's attention right now, and who handles
   it.
-- **Owns:** `charter.md`, `inbox.md`, `queue.md`, `decisions/`, `reviews/daily/`,
-  `reviews/weekly/`, `reviews/monthly/`.
-- **Skills:** `daily-brief`, `weekly-review`, `monthly-review`, `decision-log`,
-  `triage`, `queue`, `situation-review`, `strategic-evaluation` (plus the system
-  skills `founder-os-init`, `founder-os-doctor`, `context-load`).
+- **Owns:** `charter.md`, `inbox.md`, `queue.md`, `decisions/`, `evaluations/`,
+  `reviews/daily/`, `reviews/weekly/`, `reviews/monthly/`.
+- **Skills:** `capture`, `daily-brief`, `weekly-review`, `monthly-review`,
+  `decision-log`, `triage`, `queue`, `situation-review`,
+  `strategic-evaluation` (plus the system skills `founder-os-init`,
+  `founder-os-doctor`, `context-load`).
 - **Notes:** the default entry point and the role that decides routing. It
   returns the canonical delegation request; the main thread executes it.
   `queue.md` is the state between a cadence that produces an obligation and the
@@ -73,9 +74,9 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 
 ### Strategist
 - **Decides:** what bet the company makes this quarter, and what it kills.
-- **Owns:** `goals.md`, `reviews/quarterly/`.
+- **Owns:** `goals.md`, `experiments/`, `reviews/quarterly/`.
 - **Skills:** `quarterly-planning`, `bet-sizing`, `kill-or-continue`,
-  `annual-review`.
+  `experiment`, `annual-review`.
 
 ### Positioning Advisor
 - **Decides:** exactly who the company serves and what it sells them.
@@ -100,8 +101,8 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 - **Decides:** whether the company can afford something and whether it actually
   makes money.
 - **Owns:** `metrics.md`.
-- **Skills:** `revenue-review`, `runway-forecast`, `profitability-analysis`,
-  `rate-raise`.
+- **Skills:** `revenue-review`, `signal-check`, `runway-forecast`,
+  `profitability-analysis`, `rate-raise`.
 - **Refuses:** tax and legal advice. Names the professional and what number to
   bring them.
 
@@ -133,7 +134,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 ### Ops Engineer
 - **Decides:** what to automate vs. tolerate.
 - **Owns:** `systems.md`.
-- **Skills:** `automation-audit`, `tool-stack-review`.
+- **Skills:** `automation-audit`, `tool-stack-review`, `founder-os-feedback`.
 
 ### Portfolio Manager *(multi-business only)*
 - **Decides:** how the founder's hours and cash split across businesses.

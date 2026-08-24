@@ -59,14 +59,16 @@ Failures use one stable code and one recovery action:
 | `PATH_OUTSIDE_WORKSPACE` | Path or symlink escaped the bounded root; refuse without guessing another path. |
 | `ROLE_NOT_OWNER` | The role does not own the target; hand off to the canonical owner. |
 | `STALE_WRITE` | The file changed since read; re-read, reconcile, then retry once. |
-| `INVALID_DOCUMENT_STRUCTURE` | Required headings or lifecycle shape are absent; correct the proposed document first. |
+| `INVALID_DOCUMENT_STRUCTURE` | Required headings or lifecycle shape are absent; carry every heading `ownership.yaml` declares for the path, in its order. A read reports `missing_sections` before the write is attempted. |
 | `STATE_IO_ERROR` | A bounded filesystem operation failed; preserve the original and surface the error. |
 
 ## What the host guard does
 
 `ownership-guard.py` runs for direct file tools, `Bash`, web tools, and all MCP
-tools. Claude supplies `agent_type`; Codex supplies a `turn_id` recorded by
-`record-agent.py` at `SubagentStart`.
+tools. Claude supplies `agent_type`; Codex supplies a `turn_id` and
+`record-agent.py` holds what it maps to — `UserPromptSubmit` records the main
+turn, `SubagentStart` records a subagent's role. A `turn_id` with no mapping is
+denied; the fail-open case below is a call carrying no identity marker at all.
 
 For a known packaged role or approved generic fallback, the guard:
 

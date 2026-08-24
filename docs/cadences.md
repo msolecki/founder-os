@@ -1,6 +1,6 @@
 # Cadences and scheduling
 
-Founder OS can run nine recurring workflows per business and one conditional
+Founder OS can run ten recurring workflows per business and one conditional
 portfolio review. Every workflow still works manually; scheduling is optional
 and local to your machine. There is no Founder OS cloud scheduler.
 
@@ -16,6 +16,7 @@ and local to your machine. There is no Founder OS cloud scheduler.
 | `follow-up-sweep` | Friday 14:00 | network-manager |
 | `content-plan` | Wednesday 10:00 | brand-editor |
 | `calendar-audit` | Friday 15:00 | focus-coach |
+| `signal-check` | Friday 15:30 | cfo |
 | `revenue-review` | first of month 09:00 | cfo |
 | `quarterly-planning` | Jan/Apr/Jul/Oct first 11:00 | strategist |
 

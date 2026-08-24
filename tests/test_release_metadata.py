@@ -43,6 +43,19 @@ ACTIVATION_DESCRIPTION = (
 )
 
 
+def _validator_check_count():
+    """len(CHECKS) read out of the validator's source, never typed twice."""
+    tree = ast.parse(VALIDATOR_PATH.read_text(encoding="utf-8"))
+    checks = next(
+        node.value
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "CHECKS"
+                for target in node.targets)
+    )
+    return len(checks.elts)
+
+
 class ReleaseMetadataContractTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -108,6 +121,12 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         self.assertIn("Codex remains beta/manual", historical)
 
     def test_changelog_records_the_decision_first_2_6_candidate(self):
+        """Derived where the package can move, literal where the story cannot.
+
+        The workflow and check counts are the same growing sets every other
+        published number is derived from; typing them here again would make
+        this test the thing that certifies the drift.
+        """
         release_heading = "## 2.6.0 — 2026-08-01"
         self.assertIn(release_heading, self.changelog)
         unreleased = self.changelog.split("## Unreleased", 1)[1].split(
@@ -122,9 +141,11 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "activation intent",
             "workflow receipt",
             "/capture",
-            "53 workflows",
+            "%d workflows" % len(list(
+                (REPO_ROOT / "founder-os" / "skills").glob("*/SKILL.md")
+            )),
             "Continue",
-            "17 build-time checks",
+            "%d build-time checks" % _validator_check_count(),
         ):
             with self.subTest(marker=marker):
                 self.assertRegex(release, rf"(?i){re.escape(marker)}")
@@ -140,15 +161,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             re.MULTILINE,
         ))
 
-        validator_tree = ast.parse(VALIDATOR_PATH.read_text(encoding="utf-8"))
-        checks_node = next(
-            node.value
-            for node in validator_tree.body
-            if isinstance(node, ast.Assign)
-            and any(isinstance(target, ast.Name) and target.id == "CHECKS"
-                    for target in node.targets)
-        )
-        validator_count = len(checks_node.elts)
+        validator_count = _validator_check_count()
 
         doctor_source = DOCTOR_PATH.read_text(encoding="utf-8")
         doctor_table = doctor_source.split("## The checks", 1)[1].split(
@@ -167,7 +180,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "agents": 13,
             "skills": 56,
             "cadences": 11,
-            "validator": 17,
+            "validator": 18,
             "doctor": 20,
         })
 

@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES = REPO_ROOT / ".github" / "ISSUE_TEMPLATE"
 SKILLS = REPO_ROOT / "founder-os" / "skills"
 DISCUSSIONS = "https://github.com/msolecki/founder-os/discussions"
+ADVISORIES = "https://github.com/msolecki/founder-os/security/advisories/new"
 
 
 def load(name):
@@ -88,6 +89,33 @@ class TestIssueTemplates(unittest.TestCase):
             DISCUSSIONS,
             [link["url"] for link in config["contact_links"]],
         )
+
+    def test_the_security_route_is_private_and_lands_somewhere_real(self):
+        """The contact link promised "privately first" and pointed at a page
+        with no security section, whose only reporting advice was the public
+        tracker. A private route has to be a private form, named in every place
+        that sends someone to it."""
+        urls = [link["url"] for link in load("config.yml")["contact_links"]]
+        self.assertIn(ADVISORIES, urls)
+
+        policy = REPO_ROOT / "SECURITY.md"
+        self.assertTrue(policy.is_file(), "SECURITY.md is the scope document")
+        self.assertIn(ADVISORIES, policy.read_text(encoding="utf-8"))
+
+        for page in ("trust.md", "trust.html"):
+            with self.subTest(page=page):
+                text = (REPO_ROOT / "docs" / page).read_text(encoding="utf-8")
+                self.assertIn(ADVISORIES, text)
+
+    def test_the_trust_center_carries_every_section_the_markdown_does(self):
+        """The two are one page in two formats; a section in only one of them
+        is a promise the other half of the audience never reads."""
+        html = (REPO_ROOT / "docs" / "trust.html").read_text(encoding="utf-8")
+        for anchor_id in ("website", "security"):
+            with self.subTest(section=anchor_id):
+                self.assertIn('id="%s"' % anchor_id, html)
+                self.assertIn('href="#%s"' % anchor_id, html)
+
 
 
 class TestFeedbackIsReachable(unittest.TestCase):

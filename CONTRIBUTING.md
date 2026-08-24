@@ -28,6 +28,13 @@ Anything else — a question, a workspace worth showing, an idea that is not a
 proposal yet — starts in
 [Discussions](https://github.com/msolecki/founder-os/discussions).
 
+**A security issue uses none of the three.** A hook that allows what it should
+deny, an outbound path that should not exist, or anything touching the
+no-telemetry promise goes to
+[Security → Report a vulnerability](https://github.com/msolecki/founder-os/security/advisories/new),
+privately, before it is public. [`SECURITY.md`](SECURITY.md) has the scope and
+the boundaries that are documented rather than broken.
+
 `/founder-os-feedback` fills any of the three in from the session that went
 wrong and hands you a prefilled link. It sends nothing: you read what it wrote
 and post it from your own account. It also never quotes your workspace —

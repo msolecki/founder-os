@@ -41,9 +41,12 @@ the package — `context-load` step 5 — and the bound is **sections, not files
   already exist there.
 - `drafts/proposals/` `## Sent` — what actually went out, as the founder
   reported it. Never `## Draft`; a body on disk is not a sent body.
-- `content.md` `## Shipped` and `network.md` `## Sweep` — the two other places a
-  weekly behaviour is already recorded, read only when a signal names one as its
-  source.
+- `content.md` `## Shipped`, `network.md` `## Sweep` and `week.md` `## Ledger` —
+  the three other places a weekly behaviour is already recorded, read only when
+  a signal names one as its source. Step 2 names the same five, and the founder
+  whose signals came from the example workspace has one sourced from the ledger:
+  a step that offers a source this list withholds is a refusal waiting to
+  happen on a Friday afternoon.
 
 Nothing here is counted by hand and nothing new is asked of the founder. Step 2
 is why.
