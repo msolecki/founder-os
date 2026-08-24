@@ -586,7 +586,7 @@ def _adapter_command(installed_plugin, host):
             raise SmokeFailure("Claude installed adapter is unreadable") from exc
     elif host == "codex":
         manifest_path = installed_plugin / ".codex-plugin" / "plugin.json"
-        root_variable = "${CODEX_PLUGIN_ROOT}"
+        root_variable = None
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             server = manifest["mcpServers"]["founder-os-state"]
@@ -603,10 +603,16 @@ def _adapter_command(installed_plugin, host):
         or not isinstance(server["args"][0], str)
     ):
         raise SmokeFailure("%s installed adapter has an invalid command" % host)
-    argument = server["args"][0].replace(root_variable, str(installed_plugin))
-    if root_variable in argument:
-        raise SmokeFailure("%s installed adapter root did not expand" % host)
-    entry = Path(argument).resolve()
+    argument = server["args"][0]
+    if host == "claude":
+        argument = argument.replace(root_variable, str(installed_plugin))
+        if root_variable in argument:
+            raise SmokeFailure("Claude installed adapter root did not expand")
+        entry = Path(argument).resolve()
+    else:
+        if server.get("cwd") != ".":
+            raise SmokeFailure("Codex installed adapter must use plugin cwd")
+        entry = (installed_plugin / argument).resolve()
     try:
         entry.relative_to(installed_plugin)
     except ValueError as exc:

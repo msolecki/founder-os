@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Remember Codex turn_id -> agent_type for the ownership guard.
+"""Remember Codex turn_id -> identity for the ownership guard.
 
-Claude includes ``agent_type`` directly in PreToolUse. Codex provides it at
-SubagentStart and then identifies later tool calls by ``turn_id``. Keeping the
-small mapping in PLUGIN_DATA lets the same ownership guard enforce both hosts.
-Unknown input deliberately fails open.
+Claude includes ``agent_type`` directly in PreToolUse. Codex identifies every
+tool call by ``turn_id``: UserPromptSubmit records the main turn explicitly,
+while SubagentStart records the subagent type. Keeping the small mapping in
+PLUGIN_DATA lets the same ownership guard enforce both hosts. Unknown input
+deliberately fails open here; the guard fails closed for an unmapped Codex
+turn.
 """
 import itertools
 import json
@@ -18,6 +20,7 @@ import time
 from pathlib import Path
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+MAIN_AGENT_TYPE = "__founder_os_main__"
 MAPPING_TTL_SECONDS = 24 * 60 * 60
 MAPPING_SCAN_LIMIT = 256
 
@@ -89,7 +92,14 @@ def main():
     if not isinstance(data, dict):
         return
     turn_id = data.get("turn_id")
-    agent_type = data.get("agent_type")
+    if data.get("hook_event_name") == "UserPromptSubmit":
+        if "agent_type" in data:
+            return
+        agent_type = MAIN_AGENT_TYPE
+    else:
+        agent_type = data.get("agent_type")
+        if agent_type == MAIN_AGENT_TYPE:
+            return
     if not all(isinstance(v, str) and SAFE_ID.fullmatch(v)
                for v in (turn_id, agent_type)):
         return

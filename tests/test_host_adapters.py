@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -56,7 +57,38 @@ class TestHostMcpAdapters(unittest.TestCase):
         )
         self.assertEqual(
             codex["args"],
-            ["${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"],
+            ["./mcp/founder_os_state.py"],
+        )
+        self.assertEqual(codex["cwd"], ".")
+
+    def test_codex_declared_command_completes_initialize_handshake(self):
+        codex = self._codex_server()
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "clientInfo": {"name": "host-adapter-test", "version": "1"},
+            },
+        }
+
+        result = subprocess.run(
+            [codex["command"], *codex["args"]],
+            input=json.dumps(request) + "\n",
+            capture_output=True,
+            text=True,
+            cwd=PLUGIN_ROOT / codex["cwd"],
+            timeout=5,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        response = json.loads(result.stdout.splitlines()[0])
+        self.assertEqual(response["id"], 1)
+        self.assertEqual(
+            response["result"]["serverInfo"]["name"],
+            "founder-os-state",
         )
 
     def test_declared_entry_is_the_single_shared_gateway_entry(self):
@@ -113,7 +145,7 @@ class TestHostMcpAdapters(unittest.TestCase):
             errors = package_validator.check_host_adapters(root, {})
 
         self.assertTrue(
-            any("CODEX_PLUGIN_ROOT" in error for error in errors),
+            any("./mcp/founder_os_state.py" in error for error in errors),
             errors,
         )
 

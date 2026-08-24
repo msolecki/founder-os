@@ -339,7 +339,46 @@ class TestAgentTypeFor(unittest.TestCase):
             )
             self.assertTrue((mapping / "turn-new.json").is_file())
 
-    def test_unresolved_safe_turn_id_is_denied_instead_of_treated_as_main(self):
+    def test_user_prompt_turn_is_recorded_as_main_thread_and_allowed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            record = subprocess.run(
+                [sys.executable, str(PLUGIN_ROOT / "hooks" / "record-agent.py")],
+                input=json.dumps(
+                    {
+                        "hook_event_name": "UserPromptSubmit",
+                        "turn_id": "main-turn",
+                        "prompt": "Continue the repair.",
+                    }
+                ),
+                capture_output=True,
+                text=True,
+                cwd=str(REPO_ROOT),
+                env={**os.environ, "PLUGIN_DATA": temp_dir},
+            )
+            self.assertEqual(record.returncode, 0, record.stderr)
+            mapping = json.loads(
+                (Path(temp_dir) / "agent-types" / "main-turn.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(mapping["agent_type"], "__founder_os_main__")
+
+            result = run_codex_hook(
+                {
+                    "turn_id": "main-turn",
+                    "tool_name": "Write",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {
+                        "file_path": str(PLUGIN_ROOT / "metrics.md"),
+                    },
+                },
+                temp_dir,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "")
+
+    def test_unresolved_safe_turn_id_is_denied(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             result = run_codex_hook(
                 {
@@ -349,6 +388,20 @@ class TestAgentTypeFor(unittest.TestCase):
                     "tool_input": {
                         "file_path": str(PLUGIN_ROOT / "metrics.md"),
                     },
+                },
+                temp_dir,
+            )
+
+        self.assertIn("deny", result.stdout, result.stderr)
+
+    def test_reserved_main_identity_cannot_be_supplied_directly(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = run_codex_hook(
+                {
+                    "agent_type": "__founder_os_main__",
+                    "tool_name": "Bash",
+                    "cwd": str(REPO_ROOT),
+                    "tool_input": {"command": "id"},
                 },
                 temp_dir,
             )
@@ -417,6 +470,21 @@ class TestOutboundGuard(unittest.TestCase):
                       "tool_input": {"command": "ls"}})
         self.assertEqual(p.stdout.strip(), "")
         self.assertEqual(p.returncode, 0)
+
+    def test_user_prompt_submit_records_main_turn_before_tool_use(self):
+        hooks = json.loads(
+            (PLUGIN_ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8")
+        )["hooks"]
+        commands = [
+            hook["command"]
+            for group in hooks.get("UserPromptSubmit", [])
+            for hook in group.get("hooks", [])
+            if hook.get("type") == "command"
+        ]
+        self.assertTrue(
+            any("record-agent.py" in command for command in commands),
+            commands,
+        )
 
 
 class TestDirectFileBoundary(unittest.TestCase):

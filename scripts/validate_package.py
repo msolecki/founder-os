@@ -127,7 +127,8 @@ def check_host_adapters(root, agents):
     codex_expected = {
         "founder-os-state": {
             "command": "python3",
-            "args": ["${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"],
+            "args": ["./mcp/founder_os_state.py"],
+            "cwd": ".",
         },
     }
 
@@ -156,8 +157,8 @@ def check_host_adapters(root, agents):
             if codex.get("mcpServers") != codex_expected:
                 errs.append(
                     ".codex-plugin/plugin.json: mcpServers must inline "
-                    "founder-os-state via ${CODEX_PLUGIN_ROOT}/mcp/"
-                    "founder_os_state.py"
+                    "founder-os-state via ./mcp/founder_os_state.py with "
+                    "cwd '.'"
                 )
 
     entry = root / "mcp" / "founder_os_state.py"
@@ -743,8 +744,20 @@ def check_hooks(root, agents):
         data = json.loads(hj.read_text(encoding="utf-8"))
     except ValueError as e:
         return ["hooks/hooks.json: not valid JSON (%s)" % e]
+    hooks = data.get("hooks") or {}
     patterns = [h.get("matcher", "")
-                for h in (data.get("hooks") or {}).get("PreToolUse", [])]
+                for h in hooks.get("PreToolUse", [])]
+    main_recorders = [
+        hook.get("command", "")
+        for group in hooks.get("UserPromptSubmit", [])
+        for hook in group.get("hooks", [])
+        if isinstance(hook, dict) and hook.get("type") == "command"
+    ]
+    if not any("record-agent.py" in command for command in main_recorders):
+        errs.append(
+            "hooks/hooks.json: UserPromptSubmit must record the Codex main "
+            "turn via record-agent.py"
+        )
 
     def covered(tool_name):
         for pat in list(patterns):

@@ -89,6 +89,7 @@ SESSION_FIELDS = frozenset({
     "correlation_id", "workflow", "expires_at", "status",
 })
 AGENT_MAPPING_TTL_SECONDS = 24 * 60 * 60
+MAIN_AGENT_TYPE = "__founder_os_main__"
 
 # The founder's local overlay (references/extensibility.md). `_local/` is the
 # directory; the file below it is the additive half of the ownership map.
@@ -800,6 +801,12 @@ def main():
         allow("hook input is not an object")
 
     tool_name = data.get("tool_name") or ""
+    if data.get("agent_type") == MAIN_AGENT_TYPE:
+        _deny_tool(
+            "unresolved role",
+            tool_name if isinstance(tool_name, str) else "<invalid tool name>",
+            "The main-thread identity is reserved for a recorded Codex turn.",
+        )
     for identity_field, pattern in (("agent_type", SAFE_AGENT),
                                     ("turn_id", SAFE_ID)):
         if identity_field in data:
@@ -817,13 +824,15 @@ def main():
                     "A present subagent identity marker is invalid.",
                 )
     agent_type = agent_type_for(data)
+    if agent_type == MAIN_AGENT_TYPE:
+        allow("recorded Codex main thread — the founder is the CEO")
     if not agent_type:
         turn_id = data.get("turn_id")
         if isinstance(turn_id, str) and SAFE_ID.fullmatch(turn_id):
             _deny_tool(
                 "unresolved Codex role",
                 tool_name if isinstance(tool_name, str) else "<invalid tool name>",
-                "The SubagentStart identity mapping is missing or invalid.",
+                "The turn identity mapping is missing or invalid.",
             )
         allow("main thread — the founder is the CEO")
 
