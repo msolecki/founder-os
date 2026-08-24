@@ -162,9 +162,8 @@ class ValidatorTestCase(unittest.TestCase):
             "mcpServers": {
                 "founder-os-state": {
                     "command": "python3",
-                    "args": [
-                        "${CODEX_PLUGIN_ROOT}/mcp/founder_os_state.py"
-                    ],
+                    "args": ["./mcp/founder_os_state.py"],
+                    "cwd": ".",
                 },
             },
         }))
@@ -206,6 +205,12 @@ class ValidatorTestCase(unittest.TestCase):
 
     def write_hooks(self):
         write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "UserPromptSubmit": [{"hooks": [{
+                "type": "command",
+                "command": (
+                    "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\""
+                ),
+            }]}],
             "PreToolUse": [{"matcher":
                 "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
                 "WebSearch|apply_patch|mcp__.*)$",
@@ -892,6 +897,18 @@ class TestCheckHooks(unittest.TestCase):
         write(self.root / "hooks" / "ownership-guard.py", "def broken(:\n")
         errs = V.check_hooks(self.root, {})
         self.assertTrue(any("compile" in e for e in errs), errs)
+
+    def test_user_prompt_submit_must_record_main_turn_identity(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher":
+                "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
+                "WebSearch|apply_patch|mcp__.*)$", "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        write(self.root / "hooks" / "record-agent.py", "x = 1\n")
+
+        errs = V.check_hooks(self.root, {})
+
+        self.assertTrue(any("UserPromptSubmit" in e for e in errs), errs)
 
     def test_real_plugin_is_clean(self):
         real = Path(__file__).resolve().parents[1] / "founder-os"
