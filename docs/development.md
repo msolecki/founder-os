@@ -153,12 +153,54 @@ Under `tests/`:
 - `test_release_metadata.py` — pins release versions, activation-led metadata,
   changelog sections and the reproducible release-gate contract.
 - `test_docs_workflows.py` / `docs_workflows.behavior.test.js` — the landing
-  site's workflow content.
+  site's workflow content, and the trust center's claim that no third-party
+  script runs on it.
+- `test_feedback_channels.py` — the issue templates, and the pin that keeps
+  their workflow dropdown equal to the skills directory.
+- `test_traffic_snapshot.py` — the traffic series' dedup and its
+  automation rule, and the snapshot workflow's branch and permission contract.
 
 Run `python3 scripts/smoke_installed_copy.py` for the clean-copy lifecycle and
 `python3 -m unittest discover -s tests` for the complete Python suite. The smoke
 starts the copied gateway over stdio and uses local subprocesses only; it does
 not invoke an LLM or make network calls.
+
+## Repository traffic — the `metrics` branch
+
+The GitHub Traffic API keeps fourteen days and then the data is gone.
+`.github/workflows/traffic-snapshot.yml` runs weekly and on
+`workflow_dispatch`, and turns that sliding window into a series.
+
+**The series is not on `main`, and that is the whole design constraint.** This
+repository is also the plugin marketplace, so every commit on the default branch
+reaches every installed copy at the next `/plugin marketplace update`. Fifty-two
+commits a year of analytics inside the product package is bandwidth the founder's
+users pay for. The workflow writes to an orphan branch called `metrics`, which
+shares no history with `main` and never merges into it. **It creates the branch
+itself on the first run**, so there is nothing to set up by hand.
+
+- `metrics/traffic.csv` — one row per day, keyed by date. Reading the same day
+  twice updates the row; the API's most recent day is always partial, so today's
+  numbers are corrected by tomorrow's run rather than duplicated.
+- `metrics/referrers-YYYY-MM-DD.csv`, `metrics/paths-YYYY-MM-DD.csv` — whole
+  snapshots. They describe overlapping fourteen-day windows with no way to
+  subtract one from another, so they are photographs and not a series.
+
+To read it:
+
+```bash
+git fetch origin metrics && git switch metrics
+python3 scripts/traffic_report.py metrics/traffic.csv
+```
+
+**Report unique cloners, never `count`.** A clone count includes
+`actions/checkout` on this repo's own CI and a re-clone from every
+`/plugin marketplace update`. The measured case: 2026-08-12 recorded 41 clones
+and zero unique views. `automation_suspected` flags exactly that shape — no
+unique viewer, more than ten clones — and `traffic_report.py` drops those days
+from the trend rather than zeroing them, because zero would claim a quiet day
+and the truth is that we do not know. None of these numbers are users. They are
+machines that cloned a repository, and some of them are ours.
 
 ## Releasing
 

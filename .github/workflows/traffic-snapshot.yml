@@ -1,0 +1,96 @@
+# The Traffic API keeps fourteen days and then the data is gone. A month of
+# history — including the launch week — already is. This turns the sliding
+# window into a series.
+#
+# The series lives on the orphan `metrics` branch, never on main, because this
+# repository is also the plugin marketplace: every commit on main reaches every
+# installed copy on the next `/plugin marketplace update`. Fifty-two commits a
+# year of analytics in the product package is bandwidth the founder's users pay
+# for. The branch has no shared history with main and never merges into it.
+name: traffic-snapshot
+
+on:
+  schedule:
+    # Weekly is enough with a fourteen-day API window: one failed run still
+    # leaves a week of slack before a day would be lost.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: traffic-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the scripts from the default branch
+        uses: actions/checkout@v4
+        with:
+          path: source
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Read the Traffic API
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p api
+          gh api "repos/${GITHUB_REPOSITORY}/traffic/clones" > api/clones.json
+          gh api "repos/${GITHUB_REPOSITORY}/traffic/views" > api/views.json
+          gh api "repos/${GITHUB_REPOSITORY}" > api/repository.json
+          gh api "repos/${GITHUB_REPOSITORY}/traffic/popular/referrers" > api/referrers.json
+          gh api "repos/${GITHUB_REPOSITORY}/traffic/popular/paths" > api/paths.json
+
+      - name: Check out the series, creating the orphan branch on first run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p series
+          cd series
+          git init -q
+          git remote add origin \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth=1 origin metrics; then
+            git checkout -q FETCH_HEAD
+            git switch -q -c metrics
+          else
+            echo "no metrics branch yet — starting one with no history"
+            git checkout -q --orphan metrics
+          fi
+
+      - name: Merge today's reading into the series
+        run: |
+          set -euo pipefail
+          python3 source/scripts/traffic_snapshot.py \
+            --clones api/clones.json \
+            --views api/views.json \
+            --repository api/repository.json \
+            --referrers api/referrers.json \
+            --paths api/paths.json \
+            --out series/metrics/traffic.csv \
+            --date "$(date -u +%F)"
+
+      - name: Report what the series now says
+        run: python3 source/scripts/traffic_report.py series/metrics/traffic.csv
+
+      - name: Commit and push the series
+        run: |
+          set -euo pipefail
+          cd series
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add metrics
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          git commit -q -m "chore(metrics): traffic snapshot $(date -u +%F)"
+          git push -q origin metrics

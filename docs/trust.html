@@ -104,6 +104,7 @@
         <li><a href="#authority">Authority</a></li>
         <li><a href="#hooks">Hooks</a></li>
         <li><a href="#installed-copy">Installed copies</a></li>
+        <li><a href="#website">This website</a></li>
       </ul>
     </nav>
 
@@ -137,6 +138,13 @@
         <p class="eyebrow">Enforcement boundary</p>
         <h2>Hooks are guardrails, not a security sandbox.</h2>
         <p>Bundled hooks require review and trust where the host asks for it. If they are disabled or untrusted, session guidance and runtime guard coverage are absent. Main-thread founder activity remains outside the role boundary by design.</p>
+      </article>
+
+      <article id="website" class="wide boundary">
+        <p class="eyebrow">This website</p>
+        <h2>The site runs no analytics script.</h2>
+        <p>These pages are static files on GitHub Pages. Founder OS runs no page-view counter, no cookies, and no third-party tag on them; the Content-Security-Policy allows scripts only from this origin, so one could not load by accident. GitHub keeps its own server logs and reports aggregate visit and clone counts for any public repository — that is GitHub's collection under GitHub's terms, and nothing joins it to a founder's workspace.</p>
+        <p>The plugin is the separate thing, and it sends nothing at all: no telemetry, not even opt-in. If a cookieless counter is ever added to this site, it will be named in this section in the release that adds it.</p>
       </article>
 
       <article id="installed-copy" class="wide">
