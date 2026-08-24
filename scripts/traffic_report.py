@@ -58,6 +58,23 @@ def windows(rows, today):
     return recent, prior, flagged
 
 
+def raw_windows(rows, today):
+    """The same two windows with nothing excluded, for counts that are not traffic."""
+    recent_from = today - timedelta(days=WINDOW_DAYS)
+    prior_from = today - timedelta(days=WINDOW_DAYS * 2)
+    recent, prior = [], []
+    for row in rows:
+        try:
+            stamp = date.fromisoformat(row["date"])
+        except ValueError:
+            continue
+        if stamp > recent_from:
+            recent.append(row)
+        elif stamp > prior_from:
+            prior.append(row)
+    return recent, prior
+
+
 def total(rows, field) -> int:
     return sum(_number(row, field) for row in rows)
 
@@ -89,6 +106,7 @@ def sources(directory: Path, today: date, limit=3):
 
 def report(rows, directory: Path, today: date):
     recent, prior, flagged = windows(rows, today)
+    raw_recent, raw_prior = raw_windows(rows, today)
     lines = []
 
     now = total(recent, "clones_uniques")
@@ -114,9 +132,18 @@ def report(rows, directory: Path, today: date):
     else:
         lines.append("Excluded as automation: 0 days in the last 28.")
 
+    # Issues are counted over the raw window, automation days included. A day
+    # whose clone numbers were CI is still a day on which a person could open an
+    # issue, and excluding it would undercount the one signal here that is
+    # unambiguously a human.
+    now = total(raw_recent, "issues_opened")
+    before = total(raw_prior, "issues_opened")
+    measured = any(row.get("issues_opened") for row in raw_recent)
     lines.append(
-        "Stars %s | forks %s, as of the last snapshot."
-        % (latest(rows, "stars"), latest(rows, "forks"))
+        "New issues, last 28d: %s (previous 28d: %s). Stars %s | forks %s, as "
+        "of the last snapshot."
+        % (now if measured else "not recorded", before,
+           latest(rows, "stars"), latest(rows, "forks"))
     )
 
     name, top = sources(directory, today)

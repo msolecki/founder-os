@@ -118,6 +118,50 @@ class TestMerge(unittest.TestCase):
         self.assertEqual(by_date["2026-08-18"]["stars"], "9")
 
 
+class TestIssueColumn(unittest.TestCase):
+    """The feedback channel's own signal, and the reason A3 exists."""
+
+    def test_issues_land_on_the_day_they_were_opened(self):
+        rows = snapshot.merge(
+            {}, clones(), views(), REPOSITORY, "2026-08-12",
+            issues=["2026-08-10T09:00:00Z", "2026-08-10T17:00:00Z",
+                    "2026-08-12T08:00:00Z"],
+            issues_since="2026-08-10",
+        )
+        by_date = {row["date"]: row for row in rows}
+        self.assertEqual(by_date["2026-08-10"]["issues_opened"], "2")
+        self.assertEqual(by_date["2026-08-12"]["issues_opened"], "1")
+
+    def test_a_quiet_day_inside_the_window_is_zero_not_blank(self):
+        """Blank means unmeasured; zero means nobody wrote. Different facts."""
+        rows = snapshot.merge(
+            {}, clones(), views(), REPOSITORY, "2026-08-12",
+            issues=[], issues_since="2026-08-10",
+        )
+        by_date = {row["date"]: row for row in rows}
+        self.assertEqual(by_date["2026-08-11"]["issues_opened"], "0")
+
+    def test_a_day_before_the_window_keeps_its_blank(self):
+        series = {row["date"]: row for row in snapshot.merge(
+            {}, clones(("2026-07-01", 3, 2)), views(("2026-07-01", 4, 2)),
+            REPOSITORY, "2026-07-01")}
+
+        rows = snapshot.merge(series, clones(), views(), REPOSITORY,
+                              "2026-08-12", issues=[],
+                              issues_since="2026-08-10")
+
+        by_date = {row["date"]: row for row in rows}
+        self.assertEqual(by_date["2026-07-01"]["issues_opened"], "")
+
+    def test_an_issue_lands_even_on_a_day_traffic_never_reported(self):
+        """The traffic endpoints skip silent days; an issue still happened."""
+        rows = snapshot.merge(
+            {}, clones(), views(), REPOSITORY, "2026-08-12",
+            issues=["2026-08-11T12:00:00Z"], issues_since="2026-08-10",
+        )
+        self.assertIn("2026-08-11", {row["date"] for row in rows})
+
+
 class TestRoundTrip(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -163,7 +207,7 @@ class TestRoundTrip(unittest.TestCase):
         self.assertEqual(
             header,
             "date,clones_count,clones_uniques,views_count,views_uniques,"
-            "stars,forks,automation_suspected",
+            "stars,forks,issues_opened,automation_suspected",
         )
 
 
@@ -217,6 +261,24 @@ class TestReport(unittest.TestCase):
 
         self.assertIn("Unique cloners, last 28d: 5", lines[0])
         self.assertIn("2026-08-12", lines[2])
+
+    def test_new_issues_are_counted_including_automation_days(self):
+        """A day whose clones were CI is still a day a person can file an issue."""
+        self.series([
+            self.row("2026-08-10", 5, 12, issues_opened="1"),
+            self.row("2026-08-12", 3, 0, flagged="true", issues_opened="2"),
+        ])
+
+        lines = report.report(report.load(self.root / "traffic.csv"),
+                              self.root, date(2026, 8, 12))
+
+        self.assertIn("New issues, last 28d: 3", lines[3])
+
+    def test_an_unmeasured_issue_column_says_so_rather_than_reporting_zero(self):
+        self.series([self.row("2026-08-10", 5, 12)])
+        lines = report.report(report.load(self.root / "traffic.csv"),
+                              self.root, date(2026, 8, 10))
+        self.assertIn("New issues, last 28d: not recorded", lines[3])
 
     def test_a_referrer_snapshot_is_read_when_one_exists(self):
         self.series([self.row("2026-08-10", 5, 12)])

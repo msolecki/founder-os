@@ -118,6 +118,28 @@ class TestFeedbackSkillTargetsARealTemplate(unittest.TestCase):
                 self.assertIn("template=%s" % name, skill)
                 self.assertTrue((TEMPLATES / name).is_file())
 
+    def test_the_prefill_uses_field_ids_and_never_a_body_parameter(self):
+        """A YAML issue form ignores `body=`; it prefills by each field's id.
+
+        The plan this came from specified the `body=` shape, which opens an
+        empty form. The failure is invisible until someone clicks the link, so
+        it is pinned here instead.
+        """
+        skill = (SKILLS / "founder-os-feedback" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        output = skill[skill.index("## Output"):]
+        self.assertNotIn("&body=", output)
+
+        ids = {
+            block["id"]
+            for block in load("workflow-feedback.yml")["body"]
+            if block.get("id")
+        }
+        for field in sorted(ids):
+            with self.subTest(field=field):
+                self.assertIn("&%s=" % field, output)
+
     def test_the_skill_refuses_to_quote_workspace_values(self):
         """The rule lives in Beliefs so it survives a step-level refactor."""
         skill = (SKILLS / "founder-os-feedback" / "SKILL.md").read_text(

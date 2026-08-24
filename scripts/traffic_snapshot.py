@@ -19,6 +19,7 @@ import argparse
 import csv
 import json
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 FIELDS = [
@@ -29,6 +30,7 @@ FIELDS = [
     "views_uniques",
     "stars",
     "forks",
+    "issues_opened",
     "automation_suspected",
 ]
 
@@ -50,6 +52,14 @@ def _day_key(timestamp: str) -> str:
     return timestamp.split("T", 1)[0]
 
 
+def _days_from(first: str, last: str):
+    """Every date in the closed interval, so a quiet day is a zero and not a gap."""
+    start, end = date.fromisoformat(first), date.fromisoformat(last)
+    while start <= end:
+        yield start.isoformat()
+        start += timedelta(days=1)
+
+
 def read_series(path: Path):
     """Load the existing series, keyed by date. A missing file is an empty one."""
     if not path.is_file():
@@ -60,7 +70,8 @@ def read_series(path: Path):
             for row in rows if row.get("date")}
 
 
-def merge(series, clones, views, repository, snapshot_date):
+def merge(series, clones, views, repository, snapshot_date, issues=None,
+          issues_since=None):
     """Fold one API reading into the series and return it, sorted by date.
 
     Traffic rows overwrite by date: the API is authoritative about a day and the
@@ -68,6 +79,13 @@ def merge(series, clones, views, repository, snapshot_date):
     run rather than duplicated. Stars and forks are the opposite — they are a
     reading taken now, not a property of any past day, so they are written only
     against the snapshot date and never backfilled over an earlier reading.
+
+    Issues are a third shape. They belong to the day they were opened, like
+    traffic, but the traffic endpoints only return days with activity — so a day
+    that saw an issue and no clone would have no row to write it into. Every day
+    from `issues_since` forward therefore gets an explicit count, zero included,
+    because a blank and a zero mean different things and the whole point of this
+    column is telling a quiet week from an unmeasured one.
     """
     merged = {date: dict(row) for date, row in series.items()}
 
@@ -84,6 +102,15 @@ def merge(series, clones, views, repository, snapshot_date):
         row["date"] = _day_key(entry["timestamp"])
         row["views_count"] = str(entry.get("count", 0))
         row["views_uniques"] = str(entry.get("uniques", 0))
+
+    if issues is not None and issues_since:
+        opened = {}
+        for timestamp in issues:
+            opened[_day_key(timestamp)] = opened.get(_day_key(timestamp), 0) + 1
+        for day in _days_from(issues_since, snapshot_date):
+            row = merged.setdefault(day, {field: "" for field in FIELDS})
+            row["date"] = day
+            row["issues_opened"] = str(opened.get(day, 0))
 
     today = merged.setdefault(snapshot_date, {field: "" for field in FIELDS})
     today["date"] = snapshot_date
@@ -128,6 +155,12 @@ def main(argv=None) -> int:
     parser.add_argument("--clones", required=True, type=Path)
     parser.add_argument("--views", required=True, type=Path)
     parser.add_argument("--repository", required=True, type=Path)
+    parser.add_argument("--issues", type=Path,
+                        help="JSON list of ISO timestamps, one per issue "
+                             "opened in the window")
+    parser.add_argument("--issues-since",
+                        help="YYYY-MM-DD; the first day --issues covers, so "
+                             "quiet days are recorded as zero")
     parser.add_argument("--referrers", type=Path)
     parser.add_argument("--paths", type=Path)
     parser.add_argument("--out", required=True, type=Path,
@@ -138,7 +171,9 @@ def main(argv=None) -> int:
 
     load = lambda path: json.loads(path.read_text(encoding="utf-8"))
     rows = merge(read_series(args.out), load(args.clones), load(args.views),
-                 load(args.repository), args.date)
+                 load(args.repository), args.date,
+                 issues=load(args.issues) if args.issues else None,
+                 issues_since=args.issues_since)
     write_series(args.out, rows)
 
     if args.referrers:
