@@ -47,6 +47,17 @@ workspace_files:
 portfolio_files:
   - portfolio.md
 
+# Generated, non-authoritative, owned by nobody. The dashboard writes this
+# directory and no agent may cite what is in it. It is excluded from every
+# ownership join on purpose: a derived file with an owner is an invitation to
+# treat it as state, and the whole point of `evidence over vibes` is that the
+# company's claims trace to a file an agent had to justify writing.
+#
+# One directory entry rather than four file entries, because `_validate_owned_path`
+# in mcp/ownership.py refuses a non-directory path that does not end in `.md`.
+derived_files:
+  - _dashboard/
+
 owns:
   portfolio-manager:
     - portfolio.md

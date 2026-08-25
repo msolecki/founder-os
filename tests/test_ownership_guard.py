@@ -560,6 +560,18 @@ class TestDirectFileBoundary(unittest.TestCase):
         self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
 
+    def test_derived_dashboard_directory_is_denied_to_every_role(self):
+        # `_dashboard/` appears in derived_files:, never in owns:. The denial is
+        # the unowned-path baseline, so it must name no owner to hand off to.
+        for role in ("cfo", "chief-of-staff", "ops-engineer"):
+            p = run_hook({"agent_type": role, "tool_name": "Write",
+                          "cwd": str(REPO_ROOT),
+                          "tool_input": {
+                              "file_path": str(PLUGIN_ROOT / "_dashboard"
+                                               / "notes.md")}})
+            self.assertIn("deny", p.stdout, role)
+            self.assertNotIn("handoff to", p.stdout, role)
+
     def test_path_outside_workspace_is_denied(self):
         p = run_hook({"agent_type": "cfo", "tool_name": "Write",
                       "cwd": str(REPO_ROOT),

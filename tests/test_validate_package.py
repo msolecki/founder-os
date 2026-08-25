@@ -1061,5 +1061,47 @@ class TestRunChecksContainment(unittest.TestCase):
         self.assertTrue(any("hooks.json" in err for err in errs), errs)
 
 
+
+REAL_PLUGIN = Path(__file__).resolve().parents[1] / "founder-os"
+
+
+class TestDerivedFiles(unittest.TestCase):
+    def setUp(self):
+        self.agents = V.load_agents(REAL_PLUGIN)
+
+    def test_packaged_map_declares_the_dashboard_directory(self):
+        data = V.load_ownership_schema(REAL_PLUGIN)
+        self.assertIn("_dashboard/", data["derived_files"])
+
+    def test_derived_path_needs_no_owner(self):
+        self.assertEqual(V.check_ownership(REAL_PLUGIN, self.agents), [])
+        self.assertEqual(
+            V.check_workspace_files_complete(REAL_PLUGIN, self.agents), [])
+
+    def test_packaged_map_passes_check_derived_files(self):
+        self.assertEqual(V.check_derived_files(REAL_PLUGIN, self.agents), [])
+
+    def test_check_derived_files_rejects_an_owned_derived_path(self):
+        root = Path(tempfile.mkdtemp()) / "founder-os"
+        write(root / "references" / "ownership.yaml", yaml.safe_dump({
+            "workspace_files": ["charter.md"],
+            "portfolio_files": ["portfolio.md"],
+            "derived_files": ["_dashboard/"],
+            "owns": {"chief-of-staff": ["charter.md", "_dashboard/"],
+                     "portfolio-manager": ["portfolio.md"]},
+            "sections": {"charter.md": ["## Business"],
+                         "portfolio.md": ["## Businesses"],
+                         "_dashboard/": ["## Anything"]},
+        }))
+        errs = V.check_derived_files(root, {})
+        self.assertTrue(any("derived but owned by" in e for e in errs), errs)
+        self.assertTrue(any("declares sections" in e for e in errs), errs)
+
+    def test_check_derived_files_is_registered(self):
+        names = [check.__name__ for check in V.CHECKS]
+        self.assertIn("check_derived_files", names)
+
+
+
 if __name__ == "__main__":
     unittest.main()
