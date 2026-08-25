@@ -336,3 +336,193 @@ def build_bets(sources, today: date):
     facts[0] = number_fact("bets_open", len(bets), str(len(bets)), cite)
     return (Panel(id="bets", title="Bets", status=panel_status(tuple(facts)),
                   facts=tuple(facts), citations=(cite,)), tuple(bets))
+
+
+_ARITHMETIC = re.compile(
+    r"Available\s+(?P<available>[\d.]+)\s*h.*?"
+    r"Committed delivery\s+(?P<delivery>[\d.]+)\s*h.*?"
+    r"Free\s+(?P<free>[\d.]+)\s*h.*?"
+    r"Planned\s+(?P<planned>[\d.]+)\s*h", re.S)
+_TABLE_ROW = re.compile(r"^\|(?P<cells>.+)\|[ \t]*$", re.M)
+_TIME_RANGE = re.compile(r"(\d{1,2}):(\d{2})\s*[–—-]\s*(\d{1,2}):(\d{2})")
+_SIGNAL = re.compile(
+    r"^(?P<name>[^—]+?)\s*—\s*source:\s*(?P<source>[^—]+?)\s*—\s*"
+    r"(?P<value>-?[\d.]+)\s*—\s*normal\s*(?P<low>[\d.]+)\s*[–—-]\s*"
+    r"(?P<high>[\d.]+)"
+    r"(?:\s*—\s*last four:\s*(?P<series>[\d.,\s]+))?\s*$")
+
+
+@dataclass(frozen=True)
+class Signal:
+    name: str
+    source: str
+    value: Optional[float]
+    low: Optional[float]
+    high: Optional[float]
+    series: Tuple[float, ...]
+    state: str
+
+
+@dataclass(frozen=True)
+class Block:
+    day: str
+    hours: Optional[float]
+    title: str
+    serves: str
+
+
+def build_brief(sources, today: date) -> Panel:
+    cite = "reviews/daily/"
+    newest = sources.newest_member("reviews/daily/")
+    if newest is None or not newest.readable:
+        return Panel(id="brief", title="Today", status=STATUS_MISSING,
+                     facts=(unknown("one_thing", cite),), citations=(cite,))
+    cite = newest.path
+    one_thing = (newest.sections.get("## The one thing") or "").strip()
+    trade = (newest.sections.get("## The trade") or "").strip()
+    rotting = newest.sections.get("## Rotting")
+    triage = newest.sections.get("## Triage")
+
+    facts = [
+        text_fact("one_thing", one_thing, "%s ## The one thing" % cite)
+        if one_thing else unknown("one_thing", "%s ## The one thing" % cite),
+        text_fact("trade", trade, "%s ## The trade" % cite)
+        if trade else unknown("trade", "%s ## The trade" % cite),
+        number_fact("rotting_count", len(parse.split_entries(rotting)),
+                    str(len(parse.split_entries(rotting))),
+                    "%s ## Rotting" % cite)
+        if rotting is not None else unknown("rotting_count", "%s ## Rotting" % cite),
+        number_fact("triage_count", len(parse.split_entries(triage)),
+                    str(len(parse.split_entries(triage))),
+                    "%s ## Triage" % cite)
+        if triage is not None else unknown("triage_count", "%s ## Triage" % cite),
+    ]
+    stamped = parse.parse_iso_date(Path(cite).stem)
+    if stamped is not None:
+        age = (today - stamped).days
+        facts.append(number_fact("brief_age_days", age, "%d days" % age, cite))
+    else:
+        facts.append(unknown("brief_age_days", cite))
+    return Panel(id="brief", title="Today", status=panel_status(tuple(facts)),
+                 facts=tuple(facts), citations=(cite,))
+
+
+def build_signals(sources):
+    cite = "metrics.md ## Signals"
+    body = sources.section("metrics.md", "## Signals")
+    if body is None:
+        return (Panel(id="signals", title="Signals", status=STATUS_MISSING,
+                      facts=(unknown("signal_count", cite),), citations=(cite,)), ())
+    signals = []
+    for entry in parse.split_entries(body):
+        match = _SIGNAL.match(entry.title.strip())
+        if match is None:
+            continue
+        series_raw = match.group("series") or ""
+        series = tuple(
+            float(part) for part in re.findall(r"-?[\d.]+", series_raw))
+        value = float(match.group("value"))
+        low = float(match.group("low"))
+        high = float(match.group("high"))
+        if value < low:
+            state = "below"
+        elif value > high:
+            state = "above"
+        else:
+            state = "in"
+        signals.append(Signal(
+            name=match.group("name").strip(),
+            source=match.group("source").strip(),
+            value=value, low=low, high=high, series=series, state=state))
+    facts = [number_fact("signal_count", len(signals), str(len(signals)), cite)]
+    for signal in signals:
+        facts.append(number_fact(
+            "signal.%s" % signal.name, signal.value,
+            "%g" % signal.value, cite))
+    return (Panel(id="signals", title="Signals",
+                  status=panel_status(tuple(facts)), facts=tuple(facts),
+                  citations=(cite,)), tuple(signals))
+
+
+def _row_cells(line: str):
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def _range_hours(text: str) -> Optional[float]:
+    match = _TIME_RANGE.search(text)
+    if match is None:
+        return None
+    start = int(match.group(1)) * 60 + int(match.group(2))
+    end = int(match.group(3)) * 60 + int(match.group(4))
+    return round((end - start) / 60.0, 2) if end > start else None
+
+
+def build_week(sources):
+    arithmetic_cite = "week.md ## Arithmetic"
+    blocks_cite = "week.md ## Blocks"
+    arithmetic = sources.section("week.md", "## Arithmetic")
+    match = _ARITHMETIC.search(arithmetic or "")
+    labels = (("available_hours", "available"), ("delivery_hours", "delivery"),
+              ("free_hours", "free"), ("planned_hours", "planned"))
+    facts = []
+    for key, group in labels:
+        if match is None:
+            facts.append(unknown(key, arithmetic_cite))
+        else:
+            value = float(match.group(group))
+            facts.append(number_fact(key, value, "%gh" % value, arithmetic_cite))
+
+    blocks = []
+    body = sources.section("week.md", "## Blocks")
+    for row in _TABLE_ROW.finditer(body or ""):
+        cells = _row_cells(row.group(0))
+        if len(cells) < 4:
+            continue
+        hours = _range_hours(cells[1])
+        if hours is None:
+            continue
+        blocks.append(Block(day=cells[0], hours=hours, title=cells[2],
+                            serves=cells[3]))
+
+    per_bet = {}
+    for block in blocks:
+        per_bet[block.serves] = per_bet.get(block.serves, 0.0) + (block.hours or 0.0)
+    for key in sorted(per_bet):
+        facts.append(number_fact("planned.%s" % key, round(per_bet[key], 2),
+                                 "%gh" % round(per_bet[key], 2), blocks_cite))
+    facts.append(number_fact("block_count", len(blocks), str(len(blocks)),
+                             blocks_cite))
+    return (Panel(id="week", title="This week",
+                  status=panel_status(tuple(facts)), facts=tuple(facts),
+                  citations=(arithmetic_cite, blocks_cite)), tuple(blocks))
+
+
+def _money_fact(key, body, label, cite):
+    raw = parse.parse_field(body or "", label)
+    value = parse.parse_money(raw)
+    if value.number is None:
+        return unknown(key, cite)
+    return number_fact(key, value.number, raw, cite, currency=value.currency)
+
+
+def build_cash(sources, today: date) -> Panel:
+    close_cite = "metrics.md ## Close"
+    runway_cite = "metrics.md ## Runway"
+    close = sources.section("metrics.md", "## Close")
+    runway = sources.section("metrics.md", "## Runway")
+    facts = [
+        _money_fact("booked", close, "Booked", close_cite),
+        _money_fact("collected", close, "Collected", close_cite),
+        _money_fact("effective_rate", close, "Effective rate", close_cite),
+        _money_fact("cash_on_hand", close, "Cash on hand", close_cite),
+        _money_fact("runway_months", runway, "Runway", runway_cite),
+    ]
+    closed = parse.parse_iso_date(parse.parse_field(close or "", "Closed"))
+    if closed is not None:
+        age = (today - closed).days
+        facts.append(number_fact("close_age_days", age, "%d days" % age, close_cite))
+    else:
+        facts.append(unknown("close_age_days", close_cite))
+    return Panel(id="cash", title="Cash and rate",
+                 status=panel_status(tuple(facts)), facts=tuple(facts),
+                 citations=(close_cite, runway_cite))

@@ -205,5 +205,86 @@ class TestBetsPanel(unittest.TestCase):
             "B1.days_to_kill").number, 42.0)
 
 
+class TestBriefPanel(unittest.TestCase):
+    def test_reads_the_newest_daily_review(self):
+        panel = analyze.build_brief(example_sources(), TODAY)
+        self.assertIn("Acme proposal scope", fact(panel, "one_thing").display)
+        self.assertEqual(fact(panel, "rotting_count").number, 1.0)
+        self.assertIn("website redesign", fact(panel, "trade").display)
+
+    def test_brief_age_in_days(self):
+        panel = analyze.build_brief(example_sources(), date(2026, 7, 23))
+        self.assertEqual(fact(panel, "brief_age_days").number, 3.0)
+
+    def test_no_brief_at_all_is_missing(self):
+        def clear(home):
+            for item in (home / "reviews" / "daily").glob("*.md"):
+                item.unlink()
+        panel = analyze.build_brief(example_sources(clear), TODAY)
+        self.assertEqual(panel.status, analyze.STATUS_MISSING)
+
+
+class TestSignalsPanel(unittest.TestCase):
+    def test_three_signals_with_bands_and_series(self):
+        panel, signals = analyze.build_signals(example_sources())
+        self.assertEqual(len(signals), 3)
+        proof = [s for s in signals if s.name == "Proof hours worked"][0]
+        self.assertEqual(proof.value, 2.0)
+        self.assertEqual((proof.low, proof.high), (5.0, 7.0))
+        self.assertEqual(proof.series, (6.0, 5.0, 4.0, 2.0))
+        self.assertEqual(proof.state, "below")
+        self.assertEqual(proof.source, "week.md ## Ledger")
+
+    def test_a_signal_inside_its_band_reads_in(self):
+        def raise_it(home):
+            text = (home / "metrics.md").read_text(encoding="utf-8")
+            (home / "metrics.md").write_text(
+                text.replace("## Live — 2 — normal 3-5", "## Live — 4 — normal 3-5"),
+                encoding="utf-8")
+        _, signals = analyze.build_signals(example_sources(raise_it))
+        self.assertEqual(signals[0].state, "in")
+
+    def test_signal_count_is_a_fact(self):
+        panel, _ = analyze.build_signals(example_sources())
+        self.assertEqual(fact(panel, "signal_count").number, 3.0)
+
+
+class TestWeekPanel(unittest.TestCase):
+    def test_arithmetic_and_blocks(self):
+        panel, blocks = analyze.build_week(example_sources())
+        self.assertEqual(fact(panel, "available_hours").number, 40.0)
+        self.assertEqual(fact(panel, "delivery_hours").number, 24.0)
+        self.assertEqual(fact(panel, "planned_hours").number, 9.0)
+        self.assertEqual(len(blocks), 5)
+
+    def test_planned_hours_split_by_bet(self):
+        panel, _ = analyze.build_week(example_sources())
+        self.assertEqual(fact(panel, "planned.B1").number, 4.5)
+        self.assertEqual(fact(panel, "planned.B2").number, 4.5)
+
+    def test_missing_arithmetic_is_unknown_not_zero(self):
+        def strip(home):
+            (home / "week.md").write_text(
+                "# Week of 2026-07-20\n\n## Arithmetic\n\n"
+                "## Shape\n\nDeep hours 09:00-11:30.\n",
+                encoding="utf-8")
+        panel, _ = analyze.build_week(example_sources(strip))
+        self.assertFalse(fact(panel, "available_hours").known)
+
+
+class TestCashPanel(unittest.TestCase):
+    def test_close_figures(self):
+        panel = analyze.build_cash(example_sources(), TODAY)
+        self.assertEqual(fact(panel, "booked").number, 31000.0)
+        self.assertEqual(fact(panel, "collected").number, 24000.0)
+        self.assertEqual(fact(panel, "effective_rate").number, 214.0)
+        self.assertEqual(fact(panel, "cash_on_hand").number, 68000.0)
+        self.assertEqual(fact(panel, "runway_months").number, 9.7)
+
+    def test_close_age_is_measured_from_the_closed_date(self):
+        panel = analyze.build_cash(example_sources(), TODAY)
+        self.assertEqual(fact(panel, "close_age_days").number, 19.0)
+
+
 if __name__ == "__main__":
     unittest.main()
