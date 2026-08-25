@@ -29,7 +29,7 @@ Code or Codex environment and adds no account or subscription of its own.
 
 [Getting started](../docs/getting-started.md) ·
 [Example workspace](../examples/studio-north/README.md) ·
-[All 56 workflows](COMMANDS.md) ·
+[All 57 workflows](COMMANDS.md) ·
 [Report an issue](https://github.com/msolecki/founder-os/issues)
 
 ## Before you install
@@ -162,7 +162,7 @@ remain governed by that environment's data-handling terms.
 | Content | Count |
 |---------|-------|
 | Agents  | 13    |
-| Skills  | 56    |
+| Skills  | 57    |
 | Cadences | 11   |
 
 The full catalogue — every skill, its agent, and its schedule — is

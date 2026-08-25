@@ -210,7 +210,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         }
         self.assertEqual(counts, {
             "agents": 13,
-            "skills": 56,
+            "skills": 57,
             "cadences": 11,
             "validator": 20,
             "doctor": 20,

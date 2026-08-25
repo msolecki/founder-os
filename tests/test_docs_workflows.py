@@ -81,7 +81,7 @@ EXPECTED_ENTRIES = {
     "money": (6, "Know the numbers"),
     "focus": (12, "Protect focus"),
     "grow": (8, "Grow deliberately"),
-    "run": (11, "Run operations"),
+    "run": (12, "Run operations"),
 }
 
 class DocumentContractParser(HTMLParser):

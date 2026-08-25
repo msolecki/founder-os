@@ -4,7 +4,7 @@ Founder OS is for a solo service founder using
 [Claude Code](https://code.claude.com/docs) or
 [Codex](https://developers.openai.com/codex/plugins/build). Describe one
 situation or run the `situation-review` workflow; it routes a source-linked decision into a
-local Markdown workspace. Behind that first path are **13 agents, 56 skills, 11
+local Markdown workspace. Behind that first path are **13 agents, 57 skills, 11
 optional cadences**, one owner per file, an authoritative local state gateway,
 and multi-business support when the core loop is already understood.
 
@@ -36,7 +36,7 @@ built to prevent.
 - **[`workspace-state.md`](workspace-state.md)** — every workspace file, its
   owner, its pinned sections, and how work moves through them. Includes the
   guided tour of the `studio-north` example.
-- **[`commands.md`](commands.md)** — all 56 skills grouped by the agent that
+- **[`commands.md`](commands.md)** — all 57 skills grouped by the agent that
   runs them, the system commands, and the cadence schedule.
 - **[`cadences.md`](cadences.md)** — how `setup-cadences` safely previews and
   installs local cron, launchd, or persistent user-systemd jobs.

@@ -1027,7 +1027,7 @@ class TestRealPackage(unittest.TestCase):
         agents, errs = V.run_checks(real)
         self.assertEqual(errs, [])
         self.assertEqual(len(agents), 13)
-        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 56)
+        self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 57)
 
 
 class TestRunChecksContainment(unittest.TestCase):

@@ -21,7 +21,7 @@ actions**
 
 It is a plugin for [Claude Code](https://code.claude.com/docs) and
 [Codex](https://developers.openai.com/codex/plugins/build) for a company of one
-— or a founder running several. Behind the daily decision are **13 agents, 56
+— or a founder running several. Behind the daily decision are **13 agents, 57
 skills, 11 scheduled cadences** and one Markdown workspace per business. The
 roles own separate decisions; a local state gateway keeps their state from
 silently crossing those boundaries on either host.
@@ -31,7 +31,7 @@ Codex environment and adds no account or subscription of its own.
 
 [Getting started](docs/getting-started.md) ·
 [Example workspace](examples/studio-north/README.md) ·
-[All 56 workflows](founder-os/COMMANDS.md) ·
+[All 57 workflows](founder-os/COMMANDS.md) ·
 [Product philosophy](founder-os/README.md) ·
 [Feedback](https://github.com/msolecki/founder-os/issues/new/choose)
 

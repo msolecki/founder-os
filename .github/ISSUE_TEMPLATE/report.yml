@@ -47,6 +47,7 @@ body:
         - content-plan
         - context-load
         - daily-brief
+        - dashboard
         - decision-log
         - delivery-retro
         - energy-audit

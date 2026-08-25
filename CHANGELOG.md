@@ -5,6 +5,25 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+**The workspace as one page that cites its own sources.** `/dashboard` renders
+bets, pipeline, signals, the week, the queue and the close as one local page,
+every number printed beside the file and section it came from. It writes one
+directory, `_dashboard/`, declared in the ownership map under a new
+`derived_files:` key that gives it no owner and no sections, so no agent may
+write it and nothing on the page counts as evidence. A value it could not read
+renders as "not recorded" and its snapshot cell is written empty; where two
+files disagree it shows both readings and names the field that would settle
+them. It repairs nothing: a missing section is reported, never filled in. One
+workflow, bringing the package to **57 workflows**.
+
+**The queue caps are written down once.** `references/thresholds.yaml` is the
+one place those numbers live now, and `queue`, `founder-os-doctor` and the
+dashboard all read it rather than restating it. `check_thresholds` fails the
+build when a skill states a limit without citing that file.
+
+**Verification.** The package now runs **21 build-time checks**, adding the
+thresholds check and the derived-files ownership check.
+
 ## 2.7.0 — 2026-09-01
 
 **Experiments, signals, and a way to report a bad run.** `/experiment` opens a
