@@ -47,7 +47,7 @@ clients and your rates are not.
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os   # 13 agent(s), 56 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os   # 13 agent(s), 57 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md if frontmatter changed
 python3 scripts/smoke_installed_copy.py          # copied local gateway lifecycle
 python3 -m unittest discover -s tests            # OK

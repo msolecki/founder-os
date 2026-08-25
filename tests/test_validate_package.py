@@ -1018,7 +1018,7 @@ class TestReadmeCounts(ValidatorTestCase):
 
 class TestRealPackage(unittest.TestCase):
     def test_shipped_package_passes_every_check(self):
-        """The '13 agents, 56 skills, 0 errors' acceptance line, executable.
+        """The '13 agents, 57 skills, 0 errors' acceptance line, executable.
 
         Every other test here validates a synthetic fixture; this is the only
         one that would catch a regression in the package actually shipped.

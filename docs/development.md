@@ -8,7 +8,7 @@ tests, CI, and releasing.
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os     # 13 agent(s), 56 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os     # 13 agent(s), 57 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os    # regenerate COMMANDS.md if frontmatter changed
 python3 scripts/smoke_installed_copy.py            # installed-copy smoke: PASS
 python3 -m unittest discover -s tests              # OK
@@ -21,7 +21,7 @@ is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
 
-`scripts/validate_package.py` runs 20 build-time checks (each named function).
+`scripts/validate_package.py` runs 21 build-time checks (each named function).
 They enforce *structure*; they cannot decide whether business advice is good.
 
 | Check | Fails when… |
@@ -51,9 +51,9 @@ They enforce *structure*; they cannot decide whether business advice is good.
 The **system skills** (`founder-os-init`, `founder-os-doctor`, `context-load`,
 `guardrails`, `state-integrity`, `ingestion-gate`) are exempt from the
 writes/beliefs checks — they are cross-cutting and write no workspace file of
-their own. `setup-cadences` and `skill-forge` are **standalone** (belong to no
-agent by design). Both sets are defined in `scripts/_package.py`, and that code
-— not any prose — is the authority on which skills are exempt.
+their own. `setup-cadences`, `skill-forge` and `dashboard` are **standalone**
+(belong to no agent by design). Both sets are defined in `scripts/_package.py`,
+and that code — not any prose — is the authority on which skills are exempt.
 
 ## What the validator cannot check (review holds the bar)
 

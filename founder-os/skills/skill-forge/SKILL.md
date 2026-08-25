@@ -5,7 +5,7 @@ description: Add a workflow, file, or role this package does not ship — run wh
 
 # Skill Forge
 
-Thirteen agents and fifty-six workflows are the shape of a company of one in
+Thirteen agents and fifty-seven workflows are the shape of a company of one in
 general. Nobody runs a company in general. Somewhere in this founder's week
 there is a recurring decision the package has no lane for — a licensing
 partner, a production rhythm, a regulator, a second product with its own
