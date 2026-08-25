@@ -436,9 +436,6 @@ class Gateway:
                     raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
 
                 io_handle = self._io(binding.root)
-                declared_directory = schema.directory_for(raw_path)
-                if declared_directory is not None:
-                    io_handle.ensure_directory(declared_directory)
                 payload = io_handle.atomic_replace(
                     raw_path,
                     content_bytes,
@@ -446,6 +443,7 @@ class Gateway:
                         expected_sha256 if valid_expected else None
                     ),
                     create_only=valid_create,
+                    declared_directory=schema.directory_for(raw_path),
                 )
             except (OwnershipError, SafeStateError) as error:
                 if journal_path:

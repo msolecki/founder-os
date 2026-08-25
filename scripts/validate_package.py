@@ -857,18 +857,15 @@ def check_readme_counts(root, agents):
     # tell from a package count. tests/test_docs_workflows.py and the feature
     # ledger's derived count are what hold that page.
     site = root.parent / "docs"
-    docs = [("docs/README.md", site / "README.md"),
-            ("docs/getting-started.md", site / "getting-started.md"),
-            ("docs/commands.md", site / "commands.md"),
-            ("docs/cadences.md", site / "cadences.md"),
-            (".codex-plugin/plugin.json",
-             root / ".codex-plugin" / "plugin.json")]
+    docs = [site / "README.md", site / "getting-started.md",
+            site / "commands.md", site / "cadences.md",
+            root / ".codex-plugin" / "plugin.json"]
     patterns = {
         "Agents": r"(\d+)\s+(?:specialized\s+business\s+roles|decision-owning executive agents|agents)",
         "Skills": r"(\d+)\s+(?:skills|workflows)",
         "Cadences": r"(\d+)\s+(?:optional\s+)?(?:operating\s+)?cadences",
     }
-    for name, path in docs:
+    for path in docs:
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
@@ -876,7 +873,8 @@ def check_readme_counts(root, agents):
             values = [int(value) for value in re.findall(pattern, text, re.I)]
             if values and any(value != actual.get(label) for value in values):
                 errs.append("%s: %s count drifts from package value %d" %
-                            (name, label.lower(), actual.get(label, 0)))
+                            (path.relative_to(root.parent), label.lower(),
+                             actual.get(label, 0)))
     return errs
 
 
@@ -899,7 +897,7 @@ def _schedule_table_rows(text):
             continue
         if not in_schedule:
             continue
-        match = re.fullmatch(r"`/?([a-z0-9-]+)`", cells[0]) if cells else None
+        match = re.fullmatch(r"`/?([a-z0-9-]+)`", cells[0])
         if match:
             rows.add(match.group(1))
     return rows
