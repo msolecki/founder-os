@@ -127,5 +127,83 @@ class TestPanelPrimitives(unittest.TestCase):
         self.assertNotEqual(before, after)
 
 
+COUNTED = ("Counted from: pipeline.md ## Won | amount >= 15000 | target 3\n")
+
+
+class TestCountedFromGrammar(unittest.TestCase):
+    def test_full_expression(self):
+        spec = analyze.parse_counted_from(
+            "pipeline.md ## Won | amount >= 15000 | target 3")
+        self.assertEqual(spec.path, "pipeline.md")
+        self.assertEqual(spec.section, "## Won")
+        self.assertEqual(spec.minimum, 15000.0)
+        self.assertEqual(spec.target, 3.0)
+
+    def test_path_and_section_only(self):
+        spec = analyze.parse_counted_from("drafts/proposals/ ## Sent")
+        self.assertEqual(spec.path, "drafts/proposals/")
+        self.assertEqual(spec.section, "## Sent")
+        self.assertIsNone(spec.minimum)
+
+    def test_anything_outside_the_grammar_is_refused(self):
+        for bad in ("pipeline.md", "count the won deals",
+                    "pipeline.md ## Won | roughly 3",
+                    "pipeline.md ## Won | amount > 15000"):
+            self.assertIsNone(analyze.parse_counted_from(bad), bad)
+
+
+class TestBetsPanel(unittest.TestCase):
+    def test_days_to_judgment_without_any_new_field(self):
+        panel, bets = analyze.build_bets(example_sources(), TODAY)
+        first = bets[0]
+        self.assertEqual(first.key, "B1")
+        self.assertEqual(first.judgment, date(2026, 9, 30))
+        self.assertEqual(fact(panel, "B1.days_to_judgment").number, 72.0)
+
+    def test_without_opened_there_is_no_elapsed_bar(self):
+        _, bets = analyze.build_bets(example_sources(), TODAY)
+        self.assertIsNone(bets[0].elapsed)
+
+    def test_opened_gives_an_exact_elapsed_fraction(self):
+        def add_opened(home):
+            text = (home / "goals.md").read_text(encoding="utf-8")
+            (home / "goals.md").write_text(
+                text.replace("Judgment date: 2026-09-30",
+                             "Opened: 2026-07-01\n\nJudgment date: 2026-09-30", 1),
+                encoding="utf-8")
+        _, bets = analyze.build_bets(example_sources(add_opened), TODAY)
+        self.assertAlmostEqual(bets[0].elapsed, 19 / 91, places=3)
+        self.assertFalse(bets[0].elapsed_assumed)
+
+    def test_counted_from_produces_progress_against_a_target(self):
+        def add_counted(home):
+            text = (home / "goals.md").read_text(encoding="utf-8")
+            (home / "goals.md").write_text(
+                text.replace("Downside cap: 40 founder hours",
+                             COUNTED + "\nDownside cap: 40 founder hours", 1),
+                encoding="utf-8")
+        _, bets = analyze.build_bets(example_sources(add_counted), TODAY)
+        self.assertEqual(bets[0].progress, 0.0)
+        self.assertEqual(bets[0].target, 3.0)
+
+    def test_unparseable_counted_from_raises_a_finding_not_a_guess(self):
+        def bad(home):
+            text = (home / "goals.md").read_text(encoding="utf-8")
+            (home / "goals.md").write_text(
+                text.replace("Downside cap: 40 founder hours",
+                             "Counted from: the won deals\n\n"
+                             "Downside cap: 40 founder hours", 1),
+                encoding="utf-8")
+        _, bets = analyze.build_bets(example_sources(bad), TODAY)
+        self.assertIsNone(bets[0].progress)
+
+    def test_kill_date_is_read_from_the_kill_condition(self):
+        _, bets = analyze.build_bets(example_sources(), TODAY)
+        self.assertEqual(bets[0].kill_date, date(2026, 8, 31))
+        self.assertEqual(fact(
+            analyze.build_bets(example_sources(), TODAY)[0],
+            "B1.days_to_kill").number, 42.0)
+
+
 if __name__ == "__main__":
     unittest.main()

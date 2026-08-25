@@ -189,3 +189,150 @@ def build_pipeline(sources, today: date) -> Panel:
     )
     return Panel(id="pipeline", title="Pipeline", status=panel_status(facts),
                  facts=facts, citations=citations)
+
+
+_COUNTED = re.compile(
+    r"^(?P<path>[A-Za-z0-9_./-]+)\s+##\s+(?P<section>[^|]+?)"
+    r"(?:\s*\|\s*amount\s*>=\s*(?P<amount>\d+(?:\.\d+)?))?"
+    r"(?:\s*\|\s*target\s+(?P<target>\d+(?:\.\d+)?))?\s*$")
+
+
+@dataclass(frozen=True)
+class CountSpec:
+    path: str
+    section: str
+    minimum: Optional[float]
+    target: Optional[float]
+
+
+def parse_counted_from(raw: Optional[str]) -> Optional[CountSpec]:
+    """The closed grammar from spec §9, or None.
+
+    Closed on purpose. A grammar that falls back to best effort is a grammar that
+    silently reports the wrong number for a bet the founder is about to judge.
+    """
+    match = _COUNTED.match((raw or "").strip())
+    if match is None:
+        return None
+    section = match.group("section").strip()
+    if not section:
+        return None
+    amount = match.group("amount")
+    target = match.group("target")
+    return CountSpec(
+        path=match.group("path"),
+        section="## %s" % section,
+        minimum=float(amount) if amount else None,
+        target=float(target) if target else None,
+    )
+
+
+@dataclass(frozen=True)
+class Bet:
+    key: str
+    name: str
+    threshold: Optional[str]
+    opened: Optional[date]
+    judgment: Optional[date]
+    kill: Optional[str]
+    kill_date: Optional[date]
+    counted: Optional[CountSpec]
+    kill_counted: Optional[CountSpec]
+    progress: Optional[float]
+    target: Optional[float]
+    elapsed: Optional[float]
+    elapsed_assumed: bool
+
+
+def _count_against(sources, spec: CountSpec) -> Optional[float]:
+    """How many things the declared source actually holds, or None.
+
+    Two shapes, because the workspace has two. A flat file's section holds a list
+    or a run of H3 blocks; a directory's section lives once inside each member
+    file, which is what makes `drafts/proposals/ ## Sent` countable — a proposal
+    counts when the founder has reported sending it, and not before.
+    """
+    body = sources.section(spec.path, spec.section)
+    if body is not None:
+        entries = parse.split_entries(body)
+        if spec.minimum is None:
+            return float(len(entries))
+        matched = 0
+        for entry in entries:
+            raw = parse.parse_field(entry.body, "Amount") or entry.title
+            value = parse.parse_money(raw)
+            if value.number is not None and value.number >= spec.minimum:
+                matched += 1
+        return float(matched)
+
+    members = sources.members.get(spec.path)
+    if members is None:
+        return None
+    matched = 0
+    for member in members:
+        section = member.sections.get(spec.section)
+        if section is None or not section.strip() or parse.is_declared_empty(section):
+            continue
+        if spec.minimum is not None:
+            value = parse.parse_money(section)
+            if value.number is None or value.number < spec.minimum:
+                continue
+        matched += 1
+    return float(matched)
+
+
+def build_bets(sources, today: date):
+    cite = "goals.md ## Bets"
+    body = sources.section("goals.md", "## Bets")
+    if body is None:
+        return (Panel(id="bets", title="Bets", status=STATUS_MISSING,
+                      facts=(unknown("bets_open", cite),), citations=(cite,)), ())
+
+    bets = []
+    facts = [number_fact("bets_open", 0, "0", cite)]
+    for entry in parse.split_entries(body):
+        parts = re.split(r"\s+[—–-]\s+", entry.title, maxsplit=1)
+        key = parts[0].strip()
+        name = parts[1].strip() if len(parts) > 1 else ""
+        judgment = parse.parse_iso_date(parse.parse_field(entry.body, "Judgment date"))
+        opened = parse.parse_iso_date(parse.parse_field(entry.body, "Opened"))
+        kill = parse.parse_field(entry.body, "Kill condition")
+        counted = parse_counted_from(parse.parse_field(entry.body, "Counted from"))
+        kill_counted = parse_counted_from(
+            parse.parse_field(entry.body, "Kill counted from"))
+
+        progress = _count_against(sources, counted) if counted else None
+        target = counted.target if counted else None
+
+        # No `Opened:` means no elapsed bar. A start date inferred from the
+        # quarter would draw a fraction of a window nobody recorded, which is
+        # the same class of claim as a figure we could not read.
+        elapsed = None
+        elapsed_assumed = opened is None
+        if opened is not None and judgment is not None and judgment > opened:
+            span = (judgment - opened).days
+            elapsed = max(0.0, min(1.0, (today - opened).days / span))
+
+        bets.append(Bet(
+            key=key, name=name,
+            threshold=parse.parse_field(entry.body, "Threshold"),
+            opened=opened, judgment=judgment, kill=kill,
+            kill_date=parse.parse_iso_date(kill), counted=counted,
+            kill_counted=kill_counted, progress=progress, target=target,
+            elapsed=elapsed, elapsed_assumed=elapsed_assumed))
+
+        if judgment is not None:
+            days = (judgment - today).days
+            facts.append(number_fact(
+                "%s.days_to_judgment" % key, days, "%d days" % days, cite))
+        else:
+            facts.append(unknown("%s.days_to_judgment" % key, cite))
+        kill_date = parse.parse_iso_date(kill)
+        if kill_date is not None:
+            days = (kill_date - today).days
+            facts.append(number_fact(
+                "%s.days_to_kill" % key, days, "%d days" % days, cite))
+
+    facts[0] = number_fact("bets_open", len(bets), str(len(bets)), cite)
+    return (Panel(id="bets", title="Bets", status=panel_status(tuple(facts)),
+                  facts=tuple(facts), citations=(cite,)), tuple(bets))
