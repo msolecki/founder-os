@@ -178,6 +178,7 @@ Cross-cutting; not tied to one agent's decision.
 | Command | What it does |
 |---|---|
 | `/context-load` | Load charter, goals and metrics with their dates stamped before any cadence runs — the house-rule-1 check that starts every session |
+| `/dashboard` | Render the workspace as one page — what the bets, pipeline, week, queue and close actually say right now, every number carrying the file it came from *(standalone — run it yourself)* |
 | `/founder-os-doctor` | Diagnose workspace rot — missing files, stale metrics, goals without bets, orphan clients, silent cadences — and report before repairing anything |
 | `/founder-os-init` | Run first-install onboarding — interview the founder, scaffold the workspace, and hand each answer to the agent that owns it |
 | `/guardrails` | Enforce the hard refusals every agent obeys — nothing outbound and nothing paid, ever; tax, legal, and medical questions get escalated to a real professional, never answered |

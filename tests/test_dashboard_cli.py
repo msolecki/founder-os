@@ -151,5 +151,27 @@ class TestRunnableAsACommand(unittest.TestCase):
         self.assertTrue((workspace / "_dashboard" / "facts.json").exists())
 
 
+class TestPackaging(unittest.TestCase):
+    def test_skill_exists_with_frontmatter(self):
+        skill = PLUGIN_ROOT / "skills" / "dashboard" / "SKILL.md"
+        text = skill.read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("---\n"))
+        self.assertIn("name: dashboard", text)
+
+    def test_skill_declares_no_writes_because_it_owns_nothing(self):
+        text = (PLUGIN_ROOT / "skills" / "dashboard" / "SKILL.md").read_text(
+            encoding="utf-8")
+        self.assertNotIn("writes:", text.split("---")[1])
+
+    def test_skill_is_system_and_standalone(self):
+        spec = importlib.util.spec_from_file_location(
+            "fos_package", REPO_ROOT / "scripts" / "_package.py")
+        package = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(package)
+        self.assertIn("dashboard", package.SYSTEM_SKILLS)
+        self.assertIn("dashboard", package.STANDALONE_SKILLS)
+
+
+
 if __name__ == "__main__":
     unittest.main()

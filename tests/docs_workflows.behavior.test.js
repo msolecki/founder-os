@@ -411,7 +411,7 @@ test('workflow controller executes every approved state transition', () => {
       money: 6,
       focus: 12,
       grow: 8,
-      run: 11,
+      run: 12,
     };
     assert.equal(
       workflowCatalogue.open,

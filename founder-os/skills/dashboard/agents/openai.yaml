@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dashboard"
+  short_description: "Run the Dashboard Founder OS workflow."
+  default_prompt: "Use $dashboard to handle this Founder OS task."

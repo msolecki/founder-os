@@ -8,7 +8,7 @@ name as a host-neutral label.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 
-This reference covers all 56 workflows shipped by the package.
+This reference covers all 57 workflows shipped by the package.
 
 > This page is the annotated, grouped reference. The **generated, always-current
 > catalogue** is [`founder-os/COMMANDS.md`](../founder-os/COMMANDS.md), derived
@@ -165,3 +165,4 @@ Cross-cutting; not tied to one agent's decision.
 | `/state-integrity` | Resolve every write against the ownership map before making it; refuse and hand off by name when the acting agent is not the owner. |
 | `/setup-cadences` | Turn the cadences into real scheduled jobs on the founder's machine — run once, after the first brief. *(standalone — run it yourself)* |
 | `/skill-forge` | Add a workflow, file, or role this package does not ship — or name the packaged agent that already owns the decision and refuse. Writes the local overlay in your workspace, never the packaged map. *(standalone — run it yourself)* |
+| `/dashboard` | Render the workspace as one page — what the bets, pipeline, week, queue and close actually say right now, every number carrying the file it came from. Writes only `_dashboard/`, which no agent owns and nothing may cite as evidence. *(standalone — run it yourself)* |
