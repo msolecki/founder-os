@@ -1,0 +1,19 @@
+# The numbers the workflows enforce, in one place because they are read in more
+# than one. `queue` states the caps and clocks the Friday sweep applies;
+# `founder-os-doctor` reports against the same numbers; the dashboard draws them
+# as the denominator on a meter. Three readers of a number written down once.
+#
+# A cap changed here changes every reader. A cap changed in a SKILL.md and not
+# here is the drift this file exists to make impossible, and `check_thresholds`
+# fails the build when a skill states a limit without pointing at this file.
+queue:
+  doing_cap: 3
+  queued_cap: 15
+  doing_days: 5
+  queued_days: 21
+  blocked_days: 14
+signals:
+  cap: 3
+briefs:
+  window: 10
+  acted_one_in: 5

@@ -1103,5 +1103,37 @@ class TestDerivedFiles(unittest.TestCase):
 
 
 
+class TestThresholdsCheck(unittest.TestCase):
+    def setUp(self):
+        self.agents = V.load_agents(REAL_PLUGIN)
+
+    def test_no_errors_against_the_package(self):
+        self.assertEqual(V.check_thresholds(REAL_PLUGIN, self.agents), [])
+
+    def test_absent_file_is_an_error_only_once_a_skill_states_a_limit(self):
+        bare = Path(tempfile.mkdtemp()) / "founder-os"
+        write(bare / "skills" / "daily-brief" / "SKILL.md", "---\nname: x\n---\n")
+        self.assertEqual(V.check_thresholds(bare, {}), [])
+
+        citing = Path(tempfile.mkdtemp()) / "founder-os"
+        write(citing / "skills" / "queue" / "SKILL.md", "---\nname: queue\n---\n")
+        errs = V.check_thresholds(citing, {})
+        self.assertTrue(any("skills/queue" in e for e in errs), errs)
+
+    def test_a_group_nothing_cites_is_an_error(self):
+        root = Path(tempfile.mkdtemp()) / "founder-os"
+        write(root / "references" / "thresholds.yaml",
+              "queue:\n  doing_cap: 3\nnobodycitesthis:\n  cap: 1\n")
+        errs = V.check_thresholds(root, {})
+        self.assertTrue(
+            any("nothing cites the 'nobodycitesthis' group" in e for e in errs),
+            errs)
+
+    def test_check_is_registered(self):
+        names = [check.__name__ for check in V.CHECKS]
+        self.assertIn("check_thresholds", names)
+
+
+
 if __name__ == "__main__":
     unittest.main()

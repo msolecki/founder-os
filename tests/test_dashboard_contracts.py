@@ -120,5 +120,15 @@ class TestActiveBusinesses(unittest.TestCase):
         self.assertEqual(paused, 0)
 
 
+class TestThresholds(unittest.TestCase):
+    def test_queue_caps_and_clocks_load(self):
+        contracts = load_dashboard("contracts")
+        thresholds = contracts.load_thresholds()
+        self.assertEqual(thresholds["queue"]["doing_cap"], 3)
+        self.assertEqual(thresholds["queue"]["queued_cap"], 15)
+        self.assertEqual(thresholds["queue"]["queued_days"], 21)
+        self.assertEqual(thresholds["signals"]["cap"], 3)
+
+
 if __name__ == "__main__":
     unittest.main()

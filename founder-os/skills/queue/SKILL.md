@@ -167,7 +167,10 @@ If no owner's file will take the date, the item is not real yet.
 
 ## The clocks
 
-Every section has a cap or a clock, and nothing is exempt from both:
+Every section has a cap or a clock, and nothing is exempt from both. The numbers
+below are written down once, in `references/thresholds.yaml` (`queue.doing_cap`,
+`queue.queued_cap`, `queue.doing_days`, `queue.queued_days`,
+`queue.blocked_days`); this table restates them and that file settles them.
 
 | section | cap | clock | when it fires |
 |---|---|---|---|
