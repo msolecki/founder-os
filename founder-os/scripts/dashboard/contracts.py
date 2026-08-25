@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -67,6 +68,36 @@ def load_ownership(path: Optional[Path] = None) -> OwnershipView:
         sections=sections,
         owners=owners,
     )
+
+
+_THRESHOLD_LINE = re.compile(r"^(?P<indent> *)(?P<key>[a-z_]+):\s*(?P<value>.*)$")
+
+
+def load_thresholds(path: Optional[Path] = None):
+    """The package's numeric limits as {group: {key: number}}.
+
+    A two-level flat map is the whole format, parsed here rather than with
+    PyYAML because PyYAML is a development dependency and this runs on the
+    founder's machine.
+    """
+    target = Path(path) if path else plugin_root() / "references" / "thresholds.yaml"
+    groups: dict = {}
+    current = None
+    for line in target.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = _THRESHOLD_LINE.match(line)
+        if match is None:
+            raise ValueError("thresholds.yaml: cannot parse %r" % line)
+        value = match.group("value").split("#", 1)[0].strip()
+        if not match.group("indent"):
+            current = match.group("key")
+            groups[current] = {}
+            continue
+        if current is None:
+            raise ValueError("thresholds.yaml: %r has no group" % line)
+        groups[current][match.group("key")] = float(value)
+    return groups
 
 
 @dataclass(frozen=True)

@@ -286,5 +286,32 @@ class TestCashPanel(unittest.TestCase):
         self.assertEqual(fact(panel, "close_age_days").number, 19.0)
 
 
+class TestQueuePanel(unittest.TestCase):
+    def setUp(self):
+        self.thresholds = contracts.load_thresholds()
+
+    def test_counts_against_declared_caps(self):
+        panel = analyze.build_queue(example_sources(), self.thresholds)
+        self.assertEqual(fact(panel, "doing").number, 1.0)
+        self.assertEqual(fact(panel, "doing_cap").number, 3.0)
+        self.assertEqual(fact(panel, "queued").number, 2.0)
+        self.assertEqual(fact(panel, "queued_cap").number, 15.0)
+        self.assertEqual(fact(panel, "blocked").number, 0.0)
+
+    def test_blocked_says_none_and_counts_zero_not_unknown(self):
+        panel = analyze.build_queue(example_sources(), self.thresholds)
+        self.assertTrue(fact(panel, "blocked").known)
+
+    def test_over_cap_is_reported(self):
+        def overfill(home):
+            text = (home / "queue.md").read_text(encoding="utf-8")
+            extra = "".join("- [q-x%d] filler — bet: B1\n" % n for n in range(5))
+            (home / "queue.md").write_text(
+                text.replace("## Doing\n\n", "## Doing\n\n" + extra, 1),
+                encoding="utf-8")
+        panel = analyze.build_queue(example_sources(overfill), self.thresholds)
+        self.assertEqual(fact(panel, "over_cap").number, 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()

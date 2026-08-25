@@ -212,7 +212,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "agents": 13,
             "skills": 56,
             "cadences": 11,
-            "validator": 19,
+            "validator": 20,
             "doctor": 20,
         })
 

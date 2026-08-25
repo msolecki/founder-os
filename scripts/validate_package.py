@@ -615,6 +615,48 @@ def check_derived_files(root, agents):
     return errs
 
 
+_THRESHOLD_CITERS = ("queue", "founder-os-doctor")
+
+
+def check_thresholds(root, agents):
+    """A limit is stated once and cited everywhere else.
+
+    Both directions. A skill that enforces a cap without pointing at the file has
+    made a private copy of the number; a key in the file that nothing cites is a
+    limit nothing enforces. Either way the package holds two answers to one
+    question, which is how `ownership.yaml`'s comment block describes a bug.
+    """
+    errs = []
+    citers = [slug for slug in _THRESHOLD_CITERS
+              if (root / "skills" / slug / "SKILL.md").exists()]
+    path = root / "references" / "thresholds.yaml"
+    if not path.exists():
+        # Absent is only wrong once something enforces a limit. A package that
+        # ships neither citer has no number to keep in one place.
+        return ["references/thresholds.yaml: missing, but skills/%s state limits "
+                "against it" % ", skills/".join(citers)] if citers else errs
+    text = path.read_text(encoding="utf-8")
+    groups = re.findall(r"^([a-z_]+):\s*$", text, re.M)
+    if not groups:
+        errs.append("references/thresholds.yaml: no groups")
+    for slug in citers:
+        skill = root / "skills" / slug / "SKILL.md"
+        if "references/thresholds.yaml" not in skill.read_text(encoding="utf-8"):
+            errs.append("skills/%s: states a limit without citing "
+                        "references/thresholds.yaml" % slug)
+    corpus = "\n".join(
+        p.read_text(encoding="utf-8")
+        for p in sorted((root / "skills").glob("*/SKILL.md")))
+    corpus += "\n" + "\n".join(
+        p.read_text(encoding="utf-8")
+        for p in sorted((root / "references").glob("*.md")))
+    for group in groups:
+        if group not in corpus:
+            errs.append("references/thresholds.yaml: nothing cites the '%s' "
+                        "group" % group)
+    return errs
+
+
 def check_skill_writes(root, agents):
     errs = []
     sdir = root / "skills"
@@ -1179,8 +1221,8 @@ def check_docs_parity(root, agents):
 CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check_agents,
           check_agent_tools, check_one_level_orchestration,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
-          check_ownership, check_derived_files, check_workspace_files_complete,
-          check_skill_writes,
+          check_ownership, check_derived_files, check_thresholds,
+          check_workspace_files_complete, check_skill_writes,
           check_sections, check_capture_contract, check_beliefs, check_hooks,
           check_readme_counts, check_docs_parity,
           check_version_sites]

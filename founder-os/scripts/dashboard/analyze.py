@@ -526,3 +526,37 @@ def build_cash(sources, today: date) -> Panel:
     return Panel(id="cash", title="Cash and rate",
                  status=panel_status(tuple(facts)), facts=tuple(facts),
                  citations=(close_cite, runway_cite))
+
+
+_QUEUE_SECTIONS = ("## Doing", "## Queued", "## Blocked", "## Done", "## Dropped")
+
+
+def build_queue(sources, thresholds) -> Panel:
+    cite = "queue.md"
+    caps = (thresholds or {}).get("queue", {})
+    facts = []
+    counts = {}
+    for heading in _QUEUE_SECTIONS:
+        key = heading.replace("## ", "").lower()
+        body = sources.section("queue.md", heading)
+        section_cite = "%s %s" % (cite, heading)
+        if body is None:
+            facts.append(unknown(key, section_cite))
+            continue
+        count = len(parse.split_entries(body))
+        counts[key] = count
+        facts.append(number_fact(key, count, str(count), section_cite))
+
+    over = 0
+    for key, cap_key in (("doing", "doing_cap"), ("queued", "queued_cap")):
+        cap = caps.get(cap_key)
+        if cap is None:
+            continue
+        facts.append(number_fact(
+            cap_key, cap, "%g" % cap, "references/thresholds.yaml"))
+        if counts.get(key) is not None and counts[key] > cap:
+            over += 1
+    facts.append(number_fact("over_cap", over, str(over),
+                             "references/thresholds.yaml"))
+    return Panel(id="queue", title="Queue", status=panel_status(tuple(facts)),
+                 facts=tuple(facts), citations=(cite, "references/thresholds.yaml"))
