@@ -23,7 +23,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     __package__ = "dashboard"
 
-from . import analyze, collect, contracts, snapshots
+from . import analyze, collect, contracts, render, snapshots
 
 EXIT_OK = 0
 EXIT_UNRESOLVED = 2
@@ -137,6 +137,21 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     destination = Path(args.out) if args.out else (
         (portfolio or live[0].home) / "_dashboard" / "index.html")
+    page = render.render(payloads, generated=generated,
+                         active_slug=args.slug or "", paused=paused)
+    if len(page.encode("utf-8")) > args.max_bytes:
+        sys.stderr.write(
+            "Page is %d bytes, over the %d limit; nothing was written.\n"
+            % (len(page.encode("utf-8")), args.max_bytes))
+        return EXIT_WRITE
+    try:
+        write_atomic(destination, page)
+    except OSError as error:
+        sys.stderr.write("Could not write %s: %s\n" % (destination, error))
+        return EXIT_WRITE
+    if args.open_page:
+        import webbrowser
+        webbrowser.open(destination.as_uri())
     sys.stdout.write("%s\n" % destination)
     return EXIT_OK
 

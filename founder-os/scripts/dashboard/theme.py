@@ -166,8 +166,9 @@ svg.spark { width: 100%; height: auto; display: block; overflow: visible; }
 .table-scroll { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-family: var(--mono);
         font-size: 11.5px; font-variant-numeric: tabular-nums; }
-th, td { text-align: right; padding: 4px 10px 4px 0; white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; }
+th, td { text-align: right; padding: 4px 10px 4px 0; vertical-align: top; }
+th { white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: nowrap; }
 th { color: var(--ink-faint); font-weight: 500; border-bottom: 1px solid var(--line); }
 .view { display: block; }
 body.js .view[hidden] { display: none; }

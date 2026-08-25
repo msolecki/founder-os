@@ -105,6 +105,32 @@ class TestCli(unittest.TestCase):
         self.assertIn("file-unreadable", checks)
 
 
+class TestPage(unittest.TestCase):
+    def setUp(self):
+        self.main = load_main()
+        self.workspace = Path(tempfile.mkdtemp()) / "founder-os"
+        shutil.copytree(EXAMPLE, self.workspace)
+
+    def _run(self, *args):
+        out = io.StringIO()
+        err = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = self.main.main(list(args))
+        return code, out.getvalue(), err.getvalue()
+
+    def test_a_normal_run_writes_the_page(self):
+        self._run("--home", str(self.workspace), "--now", "2026-07-20")
+        page = self.workspace / "_dashboard" / "index.html"
+        self.assertTrue(page.exists())
+        self.assertIn("Studio North", page.read_text(encoding="utf-8"))
+
+    def test_out_overrides_the_destination(self):
+        target = Path(tempfile.mkdtemp()) / "elsewhere" / "page.html"
+        self._run("--home", str(self.workspace), "--now", "2026-07-20",
+                  "--out", str(target))
+        self.assertTrue(target.exists())
+
+
 class TestRunnableAsACommand(unittest.TestCase):
     """`python3 <plugin>/scripts/dashboard` is the interface the skill documents.
 
