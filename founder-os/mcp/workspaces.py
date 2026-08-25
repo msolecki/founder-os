@@ -221,20 +221,7 @@ class WorkspaceResolver:
         return candidate.resolve()
 
     def _load_registry(self) -> Optional[dict[str, Any]]:
-        path = self._home / ".founder-os" / "businesses.yaml"
-        try:
-            if not path.exists():
-                return None
-            if not path.is_file():
-                raise WorkspaceResolutionError()
-            source = path.read_text(encoding="utf-8")
-            registry = self._parse_registry(source)
-            self._validate_registry(registry)
-            return registry
-        except WorkspaceResolutionError:
-            raise
-        except (OSError, TypeError, ValueError):
-            raise WorkspaceResolutionError()
+        return load_registry(self._home)
 
     @classmethod
     def _parse_registry(cls, source: str) -> dict[str, Any]:
@@ -416,3 +403,26 @@ class WorkspaceResolver:
             and value != "portfolio"
             and _SLUG_PATTERN.fullmatch(value) is not None
         )
+
+
+def load_registry(home: Path) -> Optional[dict[str, Any]]:
+    """The business registry, or None when this install has never had one.
+
+    Public because the gateway is not the only reader: the dashboard needs every
+    active business rather than one binding, and asking it to parse the file
+    again would put a second registry parser in the package.
+    """
+    path = Path(home) / ".founder-os" / "businesses.yaml"
+    try:
+        if not path.exists():
+            return None
+        if not path.is_file():
+            raise WorkspaceResolutionError()
+        source = path.read_text(encoding="utf-8")
+        registry = WorkspaceResolver._parse_registry(source)
+        WorkspaceResolver._validate_registry(registry)
+        return registry
+    except WorkspaceResolutionError:
+        raise
+    except (OSError, TypeError, ValueError):
+        raise WorkspaceResolutionError()
