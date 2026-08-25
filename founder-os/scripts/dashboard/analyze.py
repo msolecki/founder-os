@@ -560,3 +560,80 @@ def build_queue(sources, thresholds) -> Panel:
                              "references/thresholds.yaml"))
     return Panel(id="queue", title="Queue", status=panel_status(tuple(facts)),
                  facts=tuple(facts), citations=(cite, "references/thresholds.yaml"))
+
+
+def build_facts(sources, today: date, generated: str, thresholds) -> Facts:
+    bets_panel, bets = build_bets(sources, today)
+    signals_panel, signals = build_signals(sources)
+    week_panel, blocks = build_week(sources)
+    panels = {
+        "brief": build_brief(sources, today),
+        "bets": bets_panel,
+        "pipeline": build_pipeline(sources, today),
+        "signals": signals_panel,
+        "week": week_panel,
+        "queue": build_queue(sources, thresholds),
+        "cash": build_cash(sources, today),
+    }
+
+    findings = []
+    described = []
+    for path in sorted(sources.files):
+        entry = sources.files[path]
+        described.append({
+            "path": path, "exists": entry.exists, "readable": entry.readable,
+            "sha256": entry.sha256, "mtime": entry.mtime,
+            "sections_found": sorted(entry.sections),
+            "sections_missing": list(entry.missing),
+        })
+        if not entry.exists:
+            findings.append(Finding("warn", "file-absent",
+                                    "%s is declared but not present" % path, path))
+        elif not entry.readable:
+            findings.append(Finding("serious", "file-unreadable",
+                                    "%s could not be decoded as UTF-8" % path, path))
+        for heading in entry.missing:
+            findings.append(Finding("warn", "section-missing",
+                                    "%s has no %s" % (path, heading),
+                                    "%s %s" % (path, heading)))
+
+    return Facts(
+        schema=SCHEMA, generated=generated, today=today.isoformat(),
+        business={"slug": sources.slug, "name": sources.name,
+                  "home": str(sources.home), "timezone": sources.timezone},
+        panels=panels, findings=tuple(findings), sources=tuple(described),
+        details={"bets": bets, "signals": signals, "blocks": blocks})
+
+
+def _fact_dict(item: Fact):
+    return {"key": item.key, "number": item.number, "display": item.display,
+            "cite": item.cite, "currency": item.currency, "known": item.known}
+
+
+def to_dict(facts: Facts):
+    return {
+        "schema": facts.schema,
+        "generated": facts.generated,
+        "today": facts.today,
+        "business": dict(facts.business),
+        "sources": [dict(item) for item in facts.sources],
+        "panels": {
+            key: {
+                "id": panel.id,
+                "title": panel.title,
+                "status": panel.status,
+                "hash": panel_hash(panel),
+                "facts": [_fact_dict(item) for item in panel.facts],
+                "citations": list(panel.citations),
+                "readings": [
+                    {"label": reading.label, "fact": _fact_dict(reading.fact)}
+                    for reading in panel.readings],
+                "settle_with": panel.settle_with,
+            }
+            for key, panel in sorted(facts.panels.items())
+        },
+        "integrity": [
+            {"severity": f.severity, "check": f.check, "detail": f.detail,
+             "cite": f.cite}
+            for f in facts.findings],
+    }
