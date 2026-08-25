@@ -626,6 +626,25 @@ class StateGatewayWriteTests(unittest.TestCase):
             stat.S_IMODE((self.workspace / "decisions").stat().st_mode),
         )
 
+    def test_only_the_declared_directory_is_created_never_a_deeper_one(self):
+        """`decisions/` is a promise the map made; `decisions/2026/` is not.
+
+        Longest-prefix ownership makes a nested path owned, so without this
+        bound a typo would quietly scaffold a directory tree nobody declared.
+        """
+        capability = self._open("chief-of-staff", correlation_id="corr-deep")
+
+        response = self._write(
+            capability,
+            "decisions/2026/08/25.md",
+            "# D\n\n## Context\n\nA.\n\n## Rejected\n\nB.\n\n"
+            "## What would change our mind\n\nC.\n\n## Supersedes\n\nD.\n",
+            create_only=True,
+        )
+
+        self._assert_error(response, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "decisions" / "2026").exists())
+
     def test_a_symlinked_directory_component_is_refused_not_followed(self):
         outside = self.base / "outside"
         outside.mkdir()
