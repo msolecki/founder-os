@@ -163,11 +163,11 @@ The full recovery branches are in
 | Piece | Where | What it does |
 |---|---|---|
 | Agents | `founder-os/agents/*.md` | 13 role definitions. Every role exposes the same bounded state-gateway tool surface and four mandated headings. |
-| Skills | `founder-os/skills/*/SKILL.md` | 56 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
+| Skills | `founder-os/skills/*/SKILL.md` | 57 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (what init scaffolds), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
 | Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Maps Claude `agent_type` or Codex `turn_id`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the local gateway. |
-| Validator | `scripts/validate_package.py` | 20 build-time checks (below). CI runs it on every push. |
+| Validator | `scripts/validate_package.py` | 21 build-time checks (below). CI runs it on every push. |
 | Cadences | `founder-os/scripts/cadence_manager.py` | Previews, snapshots, and safely applies ten jobs per business plus one conditional portfolio job through cron, launchd, or persistent user systemd. Exact identities prevent sibling schedules from being overwritten. |
 | Local overlay | `founder-os/references/extensibility.md` | Per-business extension without a fork: `$FOUNDER_OS_HOME/_local/` may **add** a file, skill or agent and can never reassign or remove one the package ships. Merged into the guard's map per workspace; validated by `founder-os-doctor`, because a build-time validator cannot see a stranger's workspace. Forged by `/skill-forge`, whose commonest correct answer is "a packaged agent already owns this decision". |
 | Multi-business | `founder-os/references/multi-business.md` | One workspace per business + a registry (`~/.founder-os/businesses.yaml`) + a portfolio workspace. The hook resolves all registered roots; `context-load` step 0 picks the business before any file opens. |
@@ -192,7 +192,7 @@ button.
 
 ### Enforcement is layered, deliberately
 
-1. **Build time** — `scripts/validate_package.py`: 20 build-time checks cover
+1. **Build time** — `scripts/validate_package.py`: 21 build-time checks cover
    both manifests/adapters, strict frontmatter and tools, one-level sibling
    orchestration, ownership/section joins, beliefs, hooks, public counts, and
    the reference pages' membership against the package.
@@ -222,14 +222,14 @@ founder-os/                       # the plugin (what gets installed)
   README.md                       # the product: org, philosophy, refusals
   COMMANDS.md                     # generated catalogue: every command, owner, schedule
   agents/           (13)
-  skills/           (56)
+  skills/           (57)
   mcp/                            # one eight-tool local state gateway
   scripts/cadence_manager.py      # safe scheduler preview/snapshot/apply
   hooks/                          # hooks.json + ownership-guard.py
   references/                     # ownership.yaml, house-rules, skill-template,
                                   # ingestion-gate, linking, multi-business
   images/                         # org chart (mermaid + png)
-scripts/validate_package.py       # build-time validator (19 checks)
+scripts/validate_package.py       # build-time validator (21 checks)
 scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it
 tests/                            # validator mutations + hook subprocess + registry roots
 CHANGELOG.md                      # what shipped in each version
@@ -243,7 +243,7 @@ second landing-page index.
 
 ```bash
 pip install pyyaml
-python3 scripts/validate_package.py founder-os   # expect: 13 agent(s), 56 skill(s), 0 error(s)
+python3 scripts/validate_package.py founder-os   # expect: 13 agent(s), 57 skill(s), 0 error(s)
 python3 scripts/generate_commands.py founder-os  # regenerate COMMANDS.md (CI checks it)
 python3 scripts/smoke_installed_copy.py          # clean installed-copy lifecycle
 python3 -m unittest discover -s tests            # expect: OK
