@@ -87,5 +87,21 @@ class TestDerivedFiles(unittest.TestCase):
         self.assertIn("metrics.md", document["workspace_files"])
 
 
+
+class TestNoAgentOwnsTheDerivedDirectory(unittest.TestCase):
+    def test_the_packaged_map_gives_it_no_owner(self):
+        document = ownership.load_document(
+            PLUGIN_ROOT / "references" / "ownership.yaml")
+        owned = {path for paths in document["owns"].values() for path in paths}
+        self.assertNotIn("_dashboard/", owned)
+        self.assertIn("_dashboard/", document["derived_files"])
+
+    def test_it_declares_no_sections_so_no_write_can_be_structured(self):
+        document = ownership.load_document(
+            PLUGIN_ROOT / "references" / "ownership.yaml")
+        self.assertNotIn("_dashboard/", document["sections"])
+
+
+
 if __name__ == "__main__":
     unittest.main()

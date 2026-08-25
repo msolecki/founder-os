@@ -497,6 +497,9 @@ def load_ownership_schema(root):
         "portfolio_files": _ownership_string_list(
             data.get("portfolio_files", []), "portfolio_files"
         ),
+        "derived_files": _ownership_string_list(
+            data.get("derived_files", []), "derived_files"
+        ),
         "owns": normalized_owns,
         "sections": normalized_sections,
     }
@@ -537,6 +540,9 @@ def check_ownership(root, agents):
     for f in data["portfolio_files"]:
         if f not in seen:
             errs.append("ownership.yaml: portfolio file '%s' has no owner" % f)
+    derived = set(data["derived_files"])
+    for f in sorted(derived & set(seen)):
+        errs.append("ownership.yaml: '%s' is declared derived and also owned" % f)
     return errs
 
 
@@ -566,6 +572,46 @@ def check_workspace_files_complete(root, agents):
                 errs.append("ownership.yaml: '%s' is owned by '%s' but is not in "
                             "workspace_files: or portfolio_files: — "
                             "founder-os-init will never scaffold it" % (f, agent))
+    return errs
+
+
+def check_derived_files(root, agents):
+    """Derived paths stay out of every ownership join.
+
+    `derived_files:` exists so the dashboard can write inside the workspace
+    without becoming state. That only holds while nothing owns the path, nothing
+    declares its sections, and no skill claims to write it — the three joins that
+    would quietly turn a generated file into evidence.
+    """
+    errs = []
+    p = root / "references" / "ownership.yaml"
+    if not p.exists():
+        return errs
+    data = load_ownership_schema(root)
+    derived = set(data["derived_files"])
+    if not derived:
+        return errs
+    for agent, files in data["owns"].items():
+        for f in files:
+            if f in derived:
+                errs.append("ownership.yaml: '%s' is derived but owned by '%s'"
+                            % (f, agent))
+    for f in data["sections"]:
+        if f in derived:
+            errs.append("ownership.yaml: '%s' is derived but declares sections" % f)
+    sdir = root / "skills"
+    if sdir.is_dir():
+        for d in sorted(sdir.iterdir()):
+            if not (d.is_dir() and (d / "SKILL.md").exists()):
+                continue
+            fm, _ = parse_frontmatter(d / "SKILL.md")
+            writes = (fm.get("metadata") or {}).get("writes") or []
+            if isinstance(writes, str):
+                writes = [writes]
+            for w in writes:
+                if w in derived:
+                    errs.append("skills/%s: declares a write to the derived path "
+                                "'%s'" % (d.name, w))
     return errs
 
 
@@ -1133,7 +1179,8 @@ def check_docs_parity(root, agents):
 CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check_agents,
           check_agent_tools, check_one_level_orchestration,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
-          check_ownership, check_workspace_files_complete, check_skill_writes,
+          check_ownership, check_derived_files, check_workspace_files_complete,
+          check_skill_writes,
           check_sections, check_capture_contract, check_beliefs, check_hooks,
           check_readme_counts, check_docs_parity,
           check_version_sites]
