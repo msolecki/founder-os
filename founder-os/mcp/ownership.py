@@ -22,12 +22,17 @@ _ROLES = {
     "skills-mentor",
     "strategist",
 }
-_TOP_LEVEL_KEYS = {
+_REQUIRED_TOP_LEVEL_KEYS = {
     "workspace_files",
     "portfolio_files",
     "owns",
     "sections",
 }
+# `derived_files:` is optional on purpose. The check below is a subset test, not
+# an equality test: a founder's `_local/` overlay and every ownership.yaml
+# written before this key existed must keep loading unchanged.
+_TOP_LEVEL_KEYS = _REQUIRED_TOP_LEVEL_KEYS | {"derived_files"}
+_LIST_KEYS = {"workspace_files", "portfolio_files", "derived_files"}
 
 
 class OwnershipError(Exception):
@@ -107,7 +112,7 @@ def _parse_subset(contents: str) -> Dict[str, object]:
             key = stripped[:-1]
             if key in parsed:
                 raise _schema_error()
-            if key in {"workspace_files", "portfolio_files"}:
+            if key in _LIST_KEYS:
                 parsed[key] = []
             elif key in {"owns", "sections"}:
                 parsed[key] = {}
@@ -120,7 +125,7 @@ def _parse_subset(contents: str) -> Dict[str, object]:
         if current_top is None:
             raise _schema_error()
 
-        if current_top in {"workspace_files", "portfolio_files"}:
+        if current_top in _LIST_KEYS:
             if indent != 2 or not stripped.startswith("- "):
                 raise _schema_error()
             values = parsed[current_top]
@@ -191,25 +196,42 @@ def _validate_requested_path(value: str) -> str:
     return value
 
 
+def load_document(path: Path) -> Dict[str, object]:
+    """The whole parsed map, for readers that need more than an owner lookup.
+
+    The gateway needs owners and sections; the dashboard needs the file lists
+    too. Both go through this function so the package keeps one parser and one
+    validation point for the map.
+    """
+    try:
+        contents = Path(path).read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        raise _schema_error()
+    parsed = _parse_subset(contents)
+    keys = set(parsed)
+    if not keys <= _TOP_LEVEL_KEYS or not _REQUIRED_TOP_LEVEL_KEYS <= keys:
+        raise _schema_error()
+    parsed.setdefault("derived_files", [])
+    return parsed
+
+
 class OwnershipSchema:
     def __init__(
         self,
         owners: Dict[str, str],
         sections: Dict[str, Tuple[str, ...]],
+        derived: Tuple[str, ...] = (),
     ):
         self._owners = owners
         self._sections = sections
+        self._derived = derived
+
+    def derived_paths(self) -> Tuple[str, ...]:
+        return self._derived
 
     @classmethod
     def load(cls, path: Path) -> "OwnershipSchema":
-        try:
-            contents = Path(path).read_text(encoding="utf-8")
-        except (OSError, UnicodeError):
-            raise _schema_error()
-
-        parsed = _parse_subset(contents)
-        if set(parsed) != _TOP_LEVEL_KEYS:
-            raise _schema_error()
+        parsed = load_document(path)
 
         workspace_files = parsed["workspace_files"]
         portfolio_files = parsed["portfolio_files"]
@@ -234,6 +256,18 @@ class OwnershipSchema:
             if not isinstance(owned_path, str):
                 raise _schema_error()
             _validate_owned_path(owned_path)
+
+        derived_files = parsed["derived_files"]
+        if not isinstance(derived_files, list):
+            raise _schema_error()
+        for derived_path in derived_files:
+            if not isinstance(derived_path, str):
+                raise _schema_error()
+            _validate_owned_path(derived_path)
+        if len(set(derived_files)) != len(derived_files):
+            raise _schema_error()
+        if set(derived_files) & set(all_files):
+            raise _schema_error()
 
         owners: Dict[str, str] = {}
         for role, role_paths in owns.items():
@@ -279,7 +313,7 @@ class OwnershipSchema:
                     raise _schema_error()
             validated_sections[owned_path] = tuple(headings)
 
-        return cls(owners=owners, sections=validated_sections)
+        return cls(owners, validated_sections, tuple(derived_files))
 
     def _matching_key(self, relative_path: str) -> Optional[str]:
         path = _validate_requested_path(relative_path)
