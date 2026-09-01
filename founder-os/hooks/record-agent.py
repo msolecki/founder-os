@@ -7,6 +7,13 @@ while SubagentStart records the subagent type. Keeping the small mapping in
 PLUGIN_DATA lets the same ownership guard enforce both hosts. Unknown input
 deliberately fails open here; the guard fails closed for an unmapped Codex
 turn.
+
+Which of the two events fired comes from ``--event`` in the registration, not
+from the payload. The two registrations are otherwise identical, and a host
+that omits or renames ``hook_event_name`` would silently record nothing for the
+founder's own turn — after which the guard denies every main-thread tool call
+carrying a valid ``turn_id``, and the founder's thread has no way back. The
+payload field stays as a fallback for a host that passes no argument.
 """
 import itertools
 import json
@@ -21,6 +28,8 @@ from pathlib import Path
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 MAIN_AGENT_TYPE = "__founder_os_main__"
+MAIN_EVENT = "user-prompt"
+SUBAGENT_EVENT = "subagent-start"
 MAPPING_TTL_SECONDS = 24 * 60 * 60
 MAPPING_SCAN_LIMIT = 256
 
@@ -73,6 +82,20 @@ def _prune_mappings(target_dir, now):
                 pass
 
 
+def _declared_event(argv):
+    """The event the registration declares, or None when it declares nothing."""
+    events = (MAIN_EVENT, SUBAGENT_EVENT)
+    for index, value in enumerate(argv):
+        if value == "--event" and index + 1 < len(argv):
+            if argv[index + 1] in events:
+                return argv[index + 1]
+        elif value.startswith("--event="):
+            declared = value.split("=", 1)[1]
+            if declared in events:
+                return declared
+    return None
+
+
 def _fsync_directory(path):
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     if hasattr(os, "O_CLOEXEC"):
@@ -84,7 +107,8 @@ def _fsync_directory(path):
         os.close(descriptor)
 
 
-def main():
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else list(argv)
     try:
         data = json.load(sys.stdin)
     except (ValueError, TypeError):
@@ -92,8 +116,19 @@ def main():
     if not isinstance(data, dict):
         return
     turn_id = data.get("turn_id")
-    if data.get("hook_event_name") == "UserPromptSubmit":
-        if "agent_type" in data:
+    event = _declared_event(argv)
+    if event is None:
+        event = (MAIN_EVENT
+                 if data.get("hook_event_name") == "UserPromptSubmit"
+                 else SUBAGENT_EVENT)
+    if event == MAIN_EVENT:
+        # The *value*, not the key. Gating on presence reintroduces the payload
+        # dependency `--event` exists to remove, and this one fails closed on
+        # the founder's own thread: a host that puts `agent_type: null` on a
+        # UserPromptSubmit payload records nothing, and the guard then denies
+        # every main-thread call on that turn with no way back.
+        supplied = data.get("agent_type")
+        if isinstance(supplied, str) and SAFE_ID.fullmatch(supplied):
             return
         agent_type = MAIN_AGENT_TYPE
     else:

@@ -339,6 +339,54 @@ class TestAgentTypeFor(unittest.TestCase):
             )
             self.assertTrue((mapping / "turn-new.json").is_file())
 
+    def test_the_registration_not_the_payload_decides_the_main_turn(self):
+        """One script, two events. A host that stops sending
+        `hook_event_name` would record nothing for the founder's own turn, and
+        the guard denies every tool call on a turn it cannot resolve."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            record = subprocess.run(
+                [
+                    sys.executable,
+                    str(PLUGIN_ROOT / "hooks" / "record-agent.py"),
+                    "--event",
+                    "user-prompt",
+                ],
+                input=json.dumps(
+                    {"turn_id": "main-turn", "prompt": "Continue the repair."}
+                ),
+                capture_output=True,
+                text=True,
+                cwd=str(REPO_ROOT),
+                env={**os.environ, "PLUGIN_DATA": temp_dir},
+            )
+            self.assertEqual(record.returncode, 0, record.stderr)
+            mapping = json.loads(
+                (Path(temp_dir) / "agent-types" / "main-turn.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(mapping["agent_type"], "__founder_os_main__")
+
+    def test_a_subagent_registration_never_records_a_payloadless_main_turn(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            record = subprocess.run(
+                [
+                    sys.executable,
+                    str(PLUGIN_ROOT / "hooks" / "record-agent.py"),
+                    "--event",
+                    "subagent-start",
+                ],
+                input=json.dumps({"turn_id": "sub-turn"}),
+                capture_output=True,
+                text=True,
+                cwd=str(REPO_ROOT),
+                env={**os.environ, "PLUGIN_DATA": temp_dir},
+            )
+            self.assertEqual(record.returncode, 0, record.stderr)
+            self.assertFalse(
+                (Path(temp_dir) / "agent-types" / "sub-turn.json").exists()
+            )
+
     def test_user_prompt_turn_is_recorded_as_main_thread_and_allowed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             record = subprocess.run(

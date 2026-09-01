@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\" --event user-prompt",
             "statusMessage": "Recording Founder OS main turn"
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\" --event subagent-start",
             "statusMessage": "Recording Founder OS decision role"
           }
         ]

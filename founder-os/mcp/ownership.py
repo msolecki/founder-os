@@ -39,7 +39,7 @@ class OwnershipError(Exception):
         "STALE_WRITE": "Re-read, reconcile deliberately, then retry once",
         "INVALID_DOCUMENT_STRUCTURE": (
             "Carry every heading references/ownership.yaml declares for this "
-            "path, in its order, then retry"
+            "path, in its order and no others, then retry"
         ),
         "STATE_IO_ERROR": "Preserve the original file and surface the error",
     }
@@ -322,23 +322,67 @@ class OwnershipSchema:
         relative_path: str,
         content: str,
     ) -> Tuple[str, ...]:
-        """Declared headings the document does not carry, in declared order.
+        """Declared headings whose absence would refuse the next write.
 
         Reported on read so an owner sees a section added by a package update
-        before its write is refused for lacking one.
+        before its write is refused for lacking one. That only works if this
+        answers the same question `validate_document` asks, which is not "is
+        every heading present somewhere" but "does this document match the
+        declared list exactly, in order". A file carrying all five headings with
+        `## Signals` second reported nothing missing and was then refused, with
+        an action line telling the owner to carry headings it already carried.
+
+        So this reports the headings genuinely absent when any are — the
+        upgrade case, where the answer the owner needs is the one heading to
+        add. When every declared heading is present and the write would still
+        be refused, the file carries them in the wrong order, and this names
+        the ones out of position instead of reporting nothing.
+
+        Empty does not promise the write is accepted: a document can also be
+        refused for carrying a heading the map does not declare, which is not a
+        missing section. `INVALID_DOCUMENT_STRUCTURE` names both halves.
+
+        A path the ownership map does not describe has no declared headings, so
+        it returns `()` rather than raising — `read_state` accepts paths this
+        map was never meant to classify, and a read is not the place to refuse
+        them.
         """
         if not isinstance(content, str):
             return ()
-        required = self.sections_for(relative_path)
+        try:
+            required = self.sections_for(relative_path)
+        except OwnershipError:
+            return ()
         if not required:
             return ()
         present = self._headings(content)
-        return tuple(
+        if self._headings_match(present, required):
+            return ()
+        absent = tuple(
             heading for heading in required
             if not any(
                 self._heading_matches(candidate, heading)
                 for candidate in present
             )
+        )
+        if absent:
+            return absent
+        # Every declared heading is somewhere in the file and the write will
+        # still be refused, so the file carries them in the wrong order. Naming
+        # the ones out of position is the only answer that helps: reporting
+        # nothing sent the owner to a refusal whose action line told them to
+        # carry headings they already had.
+        return tuple(
+            heading for index, heading in enumerate(required)
+            if index >= len(present)
+            or not self._heading_matches(present[index], heading)
+        )
+
+    @classmethod
+    def _headings_match(cls, actual, required) -> bool:
+        return len(actual) == len(required) and all(
+            cls._heading_matches(actual_heading, required_heading)
+            for actual_heading, required_heading in zip(actual, required)
         )
 
     @staticmethod
@@ -395,9 +439,5 @@ class OwnershipSchema:
         required = self.sections_for(relative_path)
         if not required:
             raise OwnershipError("PATH_OUTSIDE_WORKSPACE")
-        actual = self._headings(content)
-        if len(actual) != len(required):
+        if not self._headings_match(self._headings(content), required):
             raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")
-        for actual_heading, required_heading in zip(actual, required):
-            if not self._heading_matches(actual_heading, required_heading):
-                raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")

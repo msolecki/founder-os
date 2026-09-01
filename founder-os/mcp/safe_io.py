@@ -288,6 +288,12 @@ class SafeStateIO:
         role: str,
         workflow: Optional[str] = None,
     ) -> Dict[str, object]:
+        """Read one packaged file a role is entitled to, and nothing else.
+
+        The two plugin manifests are on the list because a role holds no file
+        tool: `founder-os-feedback` must quote the shipped version, and the only
+        alternative left to it is the version it remembers from training.
+        """
         relative = self._validate_file_path(path)
         allowed = {
             "CLAUDE.md",
@@ -296,6 +302,8 @@ class SafeStateIO:
             "references/house-rules.md",
             "references/multi-business.md",
             "references/orchestration.md",
+            ".claude-plugin/plugin.json",
+            ".codex-plugin/plugin.json",
         }
         if workflow is not None:
             allowed.add(
@@ -444,9 +452,18 @@ class SafeStateIO:
         parts = relative.parts
         if self._workspace_fd < 0 or not parts:
             raise SafeStateError("STATE_IO_ERROR")
-        creatable = (
-            len(Path(declared_directory).parts) if declared_directory else 0
-        )
+        creatable = 0
+        if declared_directory:
+            declared = Path(declared_directory).parts
+            # The components created come from `relative`, not from
+            # `declared_directory` — the argument only bounds how many. So the
+            # two have to be the same path, or a caller passing a deeper
+            # unrelated key would license mkdir on components it never named.
+            # The one caller today derives it from this very path; this is what
+            # keeps that true for the next one.
+            if parts[:len(declared)] != declared:
+                raise SafeStateError("PATH_OUTSIDE_WORKSPACE")
+            creatable = len(declared)
         try:
             current = os.dup(self._workspace_fd)
         except OSError:

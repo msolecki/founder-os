@@ -187,7 +187,7 @@ Three kinds of skill:
 | Event | Hook | What it does |
 |---|---|---|
 | `SessionStart` (startup/resume/clear/compact) | `session-context.py` | Injects `founder-os/CLAUDE.md` into the session as additional context. This is how the house rules and state map are present in every session. |
-| `SubagentStart` | `record-agent.py` | Records `turn_id → agent_type` for Codex (Claude includes `agent_type` directly; Codex identifies later tool calls by `turn_id`). Lets one guard enforce both hosts. |
+| `UserPromptSubmit` and `SubagentStart` | `record-agent.py` | Records `turn_id → agent_type` for Codex (Claude includes `agent_type` directly; Codex identifies later tool calls by `turn_id`). Lets one guard enforce both hosts. The same script is registered under both events and each registration passes `--event`, because a payload field that stops arriving would record nothing for the main turn — and the guard denies every call on a turn it cannot resolve. |
 | `PreToolUse` on direct file, shell, web, and MCP tools | `ownership-guard.py` | Denies known roles direct file/outbound/unknown-MCP access, denies self-elevation, and checks gateway capabilities against native role identity. |
 
 The gateway and guard are covered in full in
@@ -307,9 +307,10 @@ The same package runs under Claude Code and Codex:
   gateway that never starts.
 - The `SessionStart` and guard hooks are written to handle both: Claude supplies
   `agent_type` on tool calls directly; Codex identifies every call by `turn_id`
-  and `record-agent.py` holds the mapping — `UserPromptSubmit` records the main
-  turn, `SubagentStart` records a subagent's role. A Codex turn with no mapping
-  is denied rather than treated as the founder. `AGENTS.md` at the repo root
+  and `record-agent.py` holds the mapping — the `--event user-prompt`
+  registration records the main turn, `--event subagent-start` records a
+  subagent's role. A Codex turn with no mapping is denied rather than treated as
+  the founder. `AGENTS.md` at the repo root
   points Codex at `founder-os/CLAUDE.md` as the canonical guidance.
 - The main thread prefers a named native role where the host exposes it. The
   portable generic-agent fallback receives the byte-identical packaged role
