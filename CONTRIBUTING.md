@@ -12,13 +12,15 @@ where it goes. It goes to one of three forms in
 [`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE), and each exists because the
 reports it collects are different:
 
-- **[Workflow feedback](https://github.com/msolecki/founder-os/issues/new?template=workflow-feedback.yml)**
-  — a workflow ran and did the wrong thing, or the right thing badly. This is
-  the report almost nobody sends, because nothing is broken enough to feel worth
-  the form, and it is the one that says the product is wrong rather than broken.
-- **[Bug](https://github.com/msolecki/founder-os/issues/new?template=bug.yml)** —
-  a failed write, a wrong owner, a hook that denies what it should allow. Bring
-  the `/founder-os-doctor` output; it reports structure, never file contents.
+- **[Report a problem](https://github.com/msolecki/founder-os/issues/new?template=report.yml)**
+  — one form, and its first question is the only one that ever separated two:
+  did the workflow finish? *It errored, was denied, or wrote the wrong bytes* is
+  a defect. *It completed and the result was wrong* is the report almost nobody
+  sends, because nothing was broken enough to feel worth the form — and it is
+  the one that says the product is wrong rather than merely broken. Bring the
+  `/founder-os-doctor` output if you can run it; it reports structure, never
+  file contents, and it is optional because a broken enough install cannot
+  produce it.
 - **[Idea](https://github.com/msolecki/founder-os/issues/new?template=idea.yml)**
   — one field is required and it is *which decision does this improve*. Without
   it the backlog fills with features that have no decision behind them, which is

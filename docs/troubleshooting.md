@@ -153,7 +153,7 @@ that drifts is a second map.
 
 ## Extending Founder OS for one business
 
-Thirteen agents and fifty-three workflows are the shape of a company of one *in
+Thirteen agents and fifty-six workflows are the shape of a company of one *in
 general*. If your business has a decision none of them covers — a licensing
 partner, a production rhythm, a regulator — you do not have to fork. Run
 `/skill-forge`.

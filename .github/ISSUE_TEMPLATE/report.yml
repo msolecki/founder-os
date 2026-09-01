@@ -1,7 +1,7 @@
-name: Workflow feedback
-description: A workflow ran and did the wrong thing, or the right thing badly
-title: "[workflow] "
-labels: ["workflow-feedback"]
+name: Report a problem
+description: A workflow errored, denied, or wrote the wrong thing — or ran cleanly and the result was wrong
+title: "[report] "
+labels: ["report"]
 body:
   - type: markdown
     attributes:
@@ -14,10 +14,25 @@ body:
         `/founder-os-feedback` fills this in for you from the session that went
         wrong, and refuses to copy a number out of your workspace while it does.
   - type: dropdown
+    id: kind
+    attributes:
+      label: What happened
+      description: >-
+        The split is mechanical, not a judgement: did the workflow finish? One
+        of these is a defect with a stack trace behind it; the other is the
+        report almost nobody sends, because nothing was broken enough to feel
+        worth the form — and it is the one that says the product is wrong rather
+        than merely broken.
+      options:
+        - It errored, was denied, or wrote the wrong bytes
+        - It completed and the result was wrong or useless
+    validations:
+      required: true
+  - type: dropdown
     id: workflow
     attributes:
       label: Which workflow
-      description: The skill that ran. The full catalogue is in founder-os/COMMANDS.md.
+      description: The skill that was running. The full catalogue is in founder-os/COMMANDS.md.
       options:
         - annual-review
         - assumption-audit
@@ -91,8 +106,7 @@ body:
     id: version
     attributes:
       label: Plugin version
-      description: The `version` field in `founder-os/.codex-plugin/plugin.json`, or the first line of `/founder-os-doctor`.
-      placeholder: "2.6.0"
+      description: The first line of `/founder-os-doctor`, or the `version` field in `founder-os/.claude-plugin/plugin.json`.
     validations:
       required: true
   - type: textarea
@@ -107,3 +121,16 @@ body:
       label: What it did instead
     validations:
       required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: /founder-os-doctor output
+      description: >-
+        Run `/founder-os-doctor` and paste the report. It names paths and
+        structural findings, never file contents. Optional on purpose — an
+        install broken enough to need reporting is an install that may not be
+        able to run it, and a required field there would have turned the worst
+        bugs into no report at all.
+      render: text
+    validations:
+      required: false
