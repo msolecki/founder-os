@@ -852,6 +852,108 @@ def _as_number(value):
     return NUMBER_WORDS.get(text)
 
 
+# Scanned for version literals nobody registered. A file here may hold the
+# version only at a site `bump_version.py` declares.
+VERSION_SCANNED = (
+    "README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "docs/getting-started.md",
+    "docs/development.md",
+    "docs/trust.md",
+    "docs/trust.html",
+    "founder-os/README.md",
+    "founder-os/CLAUDE.md",
+    ".github/ISSUE_TEMPLATE/report.yml",
+    ".github/ISSUE_TEMPLATE/idea.yml",
+)
+
+
+def check_version_sites(root, agents):
+    """Every place the version is written must be one `bump_version.py` knows.
+
+    A release moves one number through eleven files. The list of eleven lived in
+    a prose checklist, which is a hand-kept list of places — the same shape as
+    every count this package refuses to hand-keep. So the list lives in
+    `scripts/bump_version.py`, this reads it, and a twelfth site added without
+    telling that script fails the build instead of shipping a package that
+    disagrees with itself about which version it is.
+
+    Skipped whole when the repository is absent, which is every test fixture:
+    the release sites are a property of this repo, not of a package layout.
+    """
+    errs = []
+    repo = root.parent
+    bump = repo / "scripts" / "bump_version.py"
+    manifest = root / ".claude-plugin" / "plugin.json"
+    if not (bump.exists() and manifest.exists()):
+        return errs
+    try:
+        version = json.loads(manifest.read_text(encoding="utf-8"))["version"]
+    except (ValueError, KeyError):
+        return [".claude-plugin/plugin.json: no readable version"]
+
+    namespace = {"__file__": str(bump)}
+    try:
+        exec(compile(bump.read_text(encoding="utf-8"), str(bump), "exec"),
+             namespace)
+    except Exception as error:  # noqa: BLE001 - a broken script is the finding
+        return ["scripts/bump_version.py: does not import (%s)" % error]
+    sites = namespace.get("SITES") or ()
+    records = namespace.get("RECORDS") or ()
+
+    declared = {}
+    for relative, pattern, description in sites:
+        path = repo / relative
+        if not path.exists():
+            errs.append("scripts/bump_version.py: names %s, which does not "
+                        "exist" % relative)
+            continue
+        text = path.read_text(encoding="utf-8")
+        found = re.findall(pattern, text)
+        if len(found) != 1:
+            errs.append("%s: %s matched %d times, not once — bump_version.py "
+                        "would rewrite the wrong thing" % (relative,
+                                                           description,
+                                                           len(found)))
+            continue
+        if found[0][1] != version:
+            errs.append("%s: %s says %s, the package is %s"
+                        % (relative, description, found[0][1], version))
+        declared[relative] = declared.get(relative, 0) + 1
+
+    # A record is a version that must *not* move: it names a release that
+    # already shipped. Counted as accounted-for, never rewritten.
+    for relative, pattern, description in records:
+        path = repo / relative
+        if not path.exists():
+            errs.append("scripts/bump_version.py: records %s in %s, which does "
+                        "not exist" % (description, relative))
+            continue
+        declared[relative] = declared.get(relative, 0) + len(
+            re.findall(pattern, path.read_text(encoding="utf-8"))
+        )
+
+    # The other half: a version literal in a scanned file that no site claims.
+    # CHANGELOG.md is exempt — its older headings are a record of versions that
+    # were, and rewriting those is the failure this whole check descends from.
+    for relative in sorted({site[0] for site in sites} | set(VERSION_SCANNED)):
+        path = repo / relative
+        if not path.exists():
+            continue
+        literals = len(re.findall(
+            r"(?<![\d.])%s(?![\d.])" % re.escape(version),
+            path.read_text(encoding="utf-8"),
+        ))
+        if literals > declared.get(relative, 0):
+            errs.append(
+                "%s: writes %s %d time(s) and bump_version.py knows %d of "
+                "them — a version it does not rewrite ships stale"
+                % (relative, version, literals, declared.get(relative, 0))
+            )
+    return errs
+
+
 def check_readme_counts(root, agents):
     """README's counts must match the package, or the README is a second map.
 
@@ -1028,7 +1130,8 @@ CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_workspace_files_complete, check_skill_writes,
           check_sections, check_capture_contract, check_beliefs, check_hooks,
-          check_readme_counts, check_docs_parity]
+          check_readme_counts, check_docs_parity,
+          check_version_sites]
 
 
 def run_checks(root):

@@ -21,7 +21,7 @@ is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
 
-`scripts/validate_package.py` runs 18 build-time checks (each named function).
+`scripts/validate_package.py` runs 19 build-time checks (each named function).
 They enforce *structure*; they cannot decide whether business advice is good.
 
 | Check | Fails when… |
@@ -43,6 +43,7 @@ They enforce *structure*; they cannot decide whether business advice is good.
 | `check_beliefs` | A role skill has no `## Beliefs`, has it *after* `## Steps`, or has fewer than 3 bullets. |
 | `check_hooks` | Hook config or matchers are invalid/incomplete, or the guard, recorder, or gateway entry does not compile. |
 | `check_readme_counts` | The README "What's inside" table's Agents/Skills/Cadences counts don't match the package. |
+| `check_version_sites` | A version literal appears somewhere `scripts/bump_version.py` does not know to rewrite, a declared site stops matching exactly once, or one of them disagrees with the manifest. |
 | `check_docs_parity` | A cadence is missing from a schedule table in `docs/commands.md` or `docs/cadences.md`; `docs/commands.md` has no row for a packaged workflow or a row for something the package does not ship; or `docs/agents.md` omits a skill an agent holds or a path it owns. |
 
 The **system skills** (`founder-os-init`, `founder-os-doctor`, `context-load`,
@@ -210,14 +211,36 @@ machines that cloned a repository, and some of them are ours.
 
 ## Releasing
 
-1. Bump the version in `.claude-plugin/marketplace.json` and both package
-   manifests: `founder-os/.claude-plugin/plugin.json` and
-   `founder-os/.codex-plugin/plugin.json`.
-2. Add a `CHANGELOG.md` entry (SemVer, dated).
+Write the `## Unreleased` entry **before** the bump, not after. The bump renames
+that heading, so whatever is written there on the day is what the release says
+forever — and an entry composed after the tag is composed from memory.
+
+```bash
+python3 scripts/bump_version.py 2.7.0 --dry-run   # every site, nothing written
+python3 scripts/bump_version.py 2.7.0
+```
+
+1. `scripts/bump_version.py` moves the version through all eleven places that
+   carry it — the marketplace entry, both package manifests, the gateway's
+   `SERVER_VERSION`, the installed-host probe, three test constants, the landing
+   page proof line and the architecture note — then renames `## Unreleased` to
+   the dated heading and opens a fresh empty one above it. It refuses to run
+   against an empty `## Unreleased`.
+2. The list of eleven lives in that script's `SITES`, and `check_version_sites`
+   reads it: a twelfth place that carries the version fails the build rather
+   than shipping a package that disagrees with itself. Its `RECORDS` table is
+   the opposite — versions that name a release which already shipped and must
+   *not* move.
 3. Run every command from **Before you open a PR**, then run both official local
    Claude gates and the Codex plugin validator below.
 4. Tag / publish only after the release plan's remaining gates are complete.
    The repo *is* the marketplace, so a merge to the default branch ships it.
+
+**A published entry is never rewritten.** `v2.6.0` was tagged with 53 workflows
+and 17 checks, and its changelog section was later edited to claim 56 and 18 and
+to describe three workflows the tag does not contain — because a test asserted
+that the released section carried the *current* counts. `## Unreleased` is the
+section that tracks the package; everything below it is a record.
 
 The `solkova-core:release` skill can build a SemVer release from Conventional
 Commits if you use it.
