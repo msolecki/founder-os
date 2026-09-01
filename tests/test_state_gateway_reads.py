@@ -7,6 +7,7 @@ import os
 import stat
 import sys
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -53,6 +54,40 @@ ROLE_WORKFLOWS = {
 }
 
 
+def _ownership_yaml() -> str:
+    """The smallest map that still describes a read: an owner and its sections."""
+    return textwrap.dedent(
+        """\
+        workspace_files:
+          - metrics.md
+          - inbox.md
+          - experiments/
+        portfolio_files:
+          - portfolio.md
+        owns:
+          cfo:
+            - metrics.md
+          chief-of-staff:
+            - inbox.md
+          strategist:
+            - experiments/
+          portfolio-manager:
+            - portfolio.md
+        sections:
+          metrics.md:
+            - "## Close"
+            - "## Signals"
+          inbox.md:
+            - "## Inbox"
+          experiments/:
+            - "## Hypothesis"
+            - "## Threshold"
+          portfolio.md:
+            - "## Businesses"
+        """
+    )
+
+
 def write_packaged_root(root: Path) -> Path:
     """Create a small package fixture without depending on installed assets."""
     agents = root / "agents"
@@ -68,6 +103,23 @@ def write_packaged_root(root: Path) -> Path:
         skill = root / "skills" / workflow
         skill.mkdir(parents=True)
         (skill / "SKILL.md").write_text("# workflow\n", encoding="utf-8")
+    for directory in (".claude-plugin", ".codex-plugin"):
+        manifest = root / directory
+        manifest.mkdir()
+        (manifest / "plugin.json").write_text(
+            '{"name": "founder-os", "version": "9.9.9"}\n',
+            encoding="utf-8",
+        )
+        (manifest / "marketplace.json").write_text("{}\n", encoding="utf-8")
+    # Without this the gateway's schema load failed, `read_state` took its old
+    # degraded path, and every assertion on the read shape was written against
+    # a package that could not answer `missing_sections` at all — which is how
+    # a read regression on that field passed the whole suite.
+    references = root / "references"
+    references.mkdir(parents=True, exist_ok=True)
+    (references / "ownership.yaml").write_text(
+        _ownership_yaml(), encoding="utf-8"
+    )
     return root
 
 
@@ -945,9 +997,13 @@ class SafeStateIOTests(unittest.TestCase):
         self.package = write_packaged_root(self.root / "package")
         (self.package / "CLAUDE.md").write_text("# package\n", encoding="utf-8")
         references = self.package / "references"
-        references.mkdir()
+        references.mkdir(exist_ok=True)
+        # `ownership.yaml` is deliberately absent from this list: the fixture
+        # already wrote the real map and the gateway parses it on every read.
+        # Overwriting it with its own filename made the schema unparseable, so
+        # `read_state` returned the degraded shape and the assertions below were
+        # written against a package that could not answer `missing_sections`.
         for name in (
-            "ownership.yaml",
             "house-rules.md",
             "multi-business.md",
             "orchestration.md",
@@ -1238,6 +1294,8 @@ class SafeStateIOTests(unittest.TestCase):
             "references/house-rules.md",
             "references/multi-business.md",
             "references/orchestration.md",
+            ".claude-plugin/plugin.json",
+            ".codex-plugin/plugin.json",
         )
         for path in allowed:
             with self.subTest(path=path):
@@ -1263,6 +1321,8 @@ class SafeStateIOTests(unittest.TestCase):
             "references/not-allowed.md",
             "../CLAUDE.md",
             "agents/../CLAUDE.md",
+            ".codex-plugin/marketplace.json",
+            ".claude-plugin/marketplace.json",
         ):
             with self.subTest(path=path):
                 self.assert_safe_error(
@@ -1416,9 +1476,13 @@ class GatewayReadSurfaceTests(unittest.TestCase):
         self.package = write_packaged_root(self.root / "package")
         (self.package / "CLAUDE.md").write_text("# package\n", encoding="utf-8")
         references = self.package / "references"
-        references.mkdir()
+        references.mkdir(exist_ok=True)
+        # `ownership.yaml` is deliberately absent from this list: the fixture
+        # already wrote the real map and the gateway parses it on every read.
+        # Overwriting it with its own filename made the schema unparseable, so
+        # `read_state` returned the degraded shape and the assertions below were
+        # written against a package that could not answer `missing_sections`.
         for name in (
-            "ownership.yaml",
             "house-rules.md",
             "multi-business.md",
             "orchestration.md",
@@ -1486,6 +1550,10 @@ class GatewayReadSurfaceTests(unittest.TestCase):
             "sha256": hashlib.sha256(b"gateway state\n").hexdigest(),
             "size": len(b"gateway state\n"),
             "mtime_ns": self.state_file.stat().st_mtime_ns,
+            # A path the ownership map does not describe has no declared
+            # headings. The field is still present: a role branching on it must
+            # not have to tell "nothing declared" from "the gateway gave up".
+            "missing_sections": [],
         }
         read = self.payload(
             self.gateway.call(
@@ -1642,6 +1710,79 @@ class GatewayReadSurfaceTests(unittest.TestCase):
                     "Preserve the original file and surface the error",
                 )
 
+
+    def open_capability(self, role="chief-of-staff", workflow="daily-brief"):
+        workspace = self.payload(
+            self.gateway.call(
+                "resolve_workspace", {"project_dir": str(self.project)}
+            )
+        )
+        session = self.payload(
+            self.gateway.call(
+                "open_role_session",
+                {
+                    "workspace_id": workspace["workspace_id"],
+                    "role": role,
+                    "correlation_id": "corr-missing-sections",
+                    "workflow": workflow,
+                },
+            )
+        )
+        return session["capability"]
+
+    def test_a_read_of_a_path_the_map_does_not_describe_still_succeeds(self):
+        """`read_state` accepts paths the ownership map was never meant to hold.
+
+        `_validate_file_path` allows any relative path; the map's own check
+        requires `.md` and rejects `_local/`. Deriving `missing_sections` let
+        the second refuse what the first had already read, so a workspace note
+        turned a successful read into PATH_OUTSIDE_WORKSPACE.
+        """
+        (self.workspace / "notes.txt").write_bytes(b"note\n")
+        local = self.workspace / "_local"
+        local.mkdir()
+        (local / "ownership.yaml").write_bytes(b"owns: {}\n")
+        capability = self.open_capability()
+
+        for path in ("notes.txt", "_local/ownership.yaml"):
+            with self.subTest(path=path):
+                read = self.payload(self.gateway.call(
+                    "read_state", {"capability": capability, "paths": [path]}
+                ))
+                self.assertEqual([], read["files"][0]["missing_sections"])
+
+    def test_a_batch_read_does_not_lose_the_file_beside_an_unmapped_one(self):
+        (self.workspace / "notes.txt").write_bytes(b"note\n")
+        capability = self.open_capability()
+        read = self.payload(self.gateway.call(
+            "read_state",
+            {"capability": capability, "paths": ["state.md", "notes.txt"]},
+        ))
+        self.assertEqual(
+            ["state.md", "notes.txt"],
+            [entry["path"] for entry in read["files"]],
+        )
+
+    def test_missing_sections_answers_the_question_the_write_will_ask(self):
+        """Empty here has to mean the ordering will not be refused there.
+
+        A file carrying every declared heading in the wrong order reported
+        nothing missing, and the write then refused it with an action line
+        telling the owner to carry headings it already carried.
+        """
+        (self.workspace / "metrics.md").write_text(
+            "# M\n\n## Signals\n\n## Close\n", encoding="utf-8"
+        )
+        capability = self.open_capability()
+        read = self.payload(self.gateway.call(
+            "read_state", {"capability": capability, "paths": ["metrics.md"]}
+        ))
+        # Both declared headings are in the file and both are in the wrong
+        # place. Reporting nothing is what sent the owner to a refusal telling
+        # them to carry headings they already carried.
+        self.assertEqual(
+            ["## Close", "## Signals"], read["files"][0]["missing_sections"]
+        )
 
     def test_gateway_forged_workspace_and_capability_return_stable_domain_actions(self) -> None:
         self.assert_gateway_error(

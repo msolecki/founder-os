@@ -791,7 +791,7 @@ class StateGatewayWriteTests(unittest.TestCase):
                     code="INVALID_DOCUMENT_STRUCTURE",
                     action=(
                         "Carry every heading references/ownership.yaml "
-                        "declares for this path, in its order, then retry"
+                        "declares for this path, in its order and no others, then retry"
                     ),
                 )
 

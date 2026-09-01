@@ -747,17 +747,39 @@ def check_hooks(root, agents):
     hooks = data.get("hooks") or {}
     patterns = [h.get("matcher", "")
                 for h in hooks.get("PreToolUse", [])]
-    main_recorders = [
-        hook.get("command", "")
-        for group in hooks.get("UserPromptSubmit", [])
-        for hook in group.get("hooks", [])
-        if isinstance(hook, dict) and hook.get("type") == "command"
-    ]
-    if not any("record-agent.py" in command for command in main_recorders):
-        errs.append(
-            "hooks/hooks.json: UserPromptSubmit must record the Codex main "
-            "turn via record-agent.py"
-        )
+
+    def recorders(event):
+        return [
+            hook.get("command", "")
+            for group in hooks.get(event, [])
+            for hook in group.get("hooks", [])
+            if isinstance(hook, dict) and hook.get("type") == "command"
+            and "record-agent.py" in hook.get("command", "")
+        ]
+
+    # One script under two events, and both registrations have to exist. Which
+    # one fired is the host's knowledge, and a payload that stops carrying
+    # `hook_event_name` records nothing — after which the guard denies every
+    # Codex tool call on the unrecorded turn. The existence half was checked for
+    # the main turn only, so deleting the whole SubagentStart block validated
+    # clean while every subagent turn went unmapped.
+    for event, flag, denied in (
+        ("UserPromptSubmit", "--event user-prompt", "the founder's main turn"),
+        ("SubagentStart", "--event subagent-start", "every subagent turn"),
+    ):
+        registrations = recorders(event)
+        if not registrations:
+            errs.append(
+                "hooks/hooks.json: %s must record its turn via "
+                "record-agent.py — without it the guard denies %s under Codex"
+                % (event, denied)
+            )
+        for command in registrations:
+            if flag not in command:
+                errs.append(
+                    "hooks/hooks.json: the %s registration of record-agent.py "
+                    "must pass %s" % (event, flag)
+                )
 
     def covered(tool_name):
         for pat in list(patterns):

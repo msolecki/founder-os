@@ -311,6 +311,25 @@ class Gateway:
         finally:
             io_handle.close()
 
+    def _ownership_schema(self) -> OwnershipSchema:
+        """The parsed ownership map, re-read only when the file changes.
+
+        Every read and every write needs it, and it changes when the package is
+        upgraded and at no other time. Parsing the whole map once per gateway
+        call made a five-file workflow re-read and re-parse it five times.
+        """
+        path = self._packaged_root / "references" / "ownership.yaml"
+        try:
+            stamp = (path.stat().st_mtime_ns, path.stat().st_size)
+        except OSError:
+            raise OwnershipError("STATE_IO_ERROR")
+        cached = getattr(self, "_ownership_cache", None)
+        if cached is not None and cached[0] == stamp:
+            return cached[1]
+        schema = OwnershipSchema.load(path)
+        self._ownership_cache = (stamp, schema)
+        return schema
+
     def _read_state(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         _, binding = self._session_workspace(arguments.get("capability"))
         paths = arguments.get("paths")
@@ -321,12 +340,11 @@ class Gateway:
             files = io_handle.read_many(paths)
         finally:
             io_handle.close()
-        try:
-            schema = OwnershipSchema.load(
-                self._packaged_root / "references" / "ownership.yaml"
-            )
-        except OwnershipError:
-            return {"files": files}
+        # An unreadable ownership map fails the read the same way it already
+        # fails the write. Reads used to degrade to no `missing_sections` at
+        # all, which is a promise quietly withdrawn: a role branching on the
+        # field stops seeing upgrade drift and nothing says so.
+        schema = self._ownership_schema()
         for entry in files:
             entry["missing_sections"] = list(schema.missing_sections(
                 str(entry.get("path") or ""),
@@ -421,9 +439,7 @@ class Gateway:
                 if "expected_sha256" in arguments and not valid_expected:
                     raise OwnershipError("STALE_WRITE")
 
-                schema = OwnershipSchema.load(
-                    self._packaged_root / "references" / "ownership.yaml"
-                )
+                schema = self._ownership_schema()
                 owner = schema.owner_for(raw_path)
                 if owner is None:
                     raise OwnershipError("PATH_OUTSIDE_WORKSPACE")

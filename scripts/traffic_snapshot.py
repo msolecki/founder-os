@@ -169,6 +169,13 @@ def main(argv=None) -> int:
                         help="the snapshot date, YYYY-MM-DD")
     args = parser.parse_args(argv)
 
+    if bool(args.issues) != bool(args.issues_since):
+        parser.error(
+            "--issues and --issues-since go together. Without the start date "
+            "a quiet day is written blank, and a blank is how this file says "
+            "unmeasured"
+        )
+
     load = lambda path: json.loads(path.read_text(encoding="utf-8"))
     rows = merge(read_series(args.out), load(args.clones), load(args.views),
                  load(args.repository), args.date,

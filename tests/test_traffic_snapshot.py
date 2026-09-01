@@ -199,6 +199,30 @@ class TestRoundTrip(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["clones_count"], "41")
 
+    def test_issues_without_a_start_date_fails_instead_of_dropping_them(self):
+        """The pair is required in fact; leaving it optional in the parser
+        writes a blank column and reports success."""
+        for name, payload in (("clones", clones()), ("views", views()),
+                              ("repository", REPOSITORY),
+                              ("issues", ["2026-08-11T12:00:00Z"])):
+            (self.root / ("%s.json" % name)).write_text(
+                json.dumps(payload), encoding="utf-8")
+
+        with contextlib.redirect_stderr(io.StringIO()) as captured:
+            with self.assertRaises(SystemExit) as raised:
+                snapshot.main([
+                    "--clones", str(self.root / "clones.json"),
+                    "--views", str(self.root / "views.json"),
+                    "--repository", str(self.root / "repository.json"),
+                    "--issues", str(self.root / "issues.json"),
+                    "--out", str(self.root / "metrics" / "traffic.csv"),
+                    "--date", "2026-08-11",
+                ])
+
+        self.assertNotEqual(0, raised.exception.code)
+        self.assertIn("--issues-since", captured.getvalue())
+        self.assertFalse((self.root / "metrics" / "traffic.csv").exists())
+
     def test_the_header_is_the_documented_schema(self):
         self.run_snapshot("2026-08-11", [("2026-08-11", 1, 1)],
                           [("2026-08-11", 1, 1)])
@@ -262,6 +286,22 @@ class TestReport(unittest.TestCase):
         self.assertIn("Unique cloners, last 28d: 5", lines[0])
         self.assertIn("2026-08-12", lines[2])
 
+    def test_a_flagged_day_in_the_prior_window_is_excluded_and_disclosed(self):
+        """Dropping automation from one window and disclosing only the other
+        prints growth a flat month never had."""
+        rows = [self.row("2026-06-%02d" % day, 3, 2,
+                         flagged="true" if day < 8 else "false")
+                for day in range(3, 29)]
+        rows += [self.row("2026-07-%02d" % day, 3, 2) for day in range(1, 29)]
+        self.series(rows)
+
+        lines = report.report(report.load(self.root / "traffic.csv"),
+                              self.root, date(2026, 7, 28))
+
+        self.assertIn("+0%", lines[0])
+        self.assertIn("0 days in the last 28", lines[2])
+        self.assertIn("5 day(s) in the previous 28", lines[2])
+
     def test_new_issues_are_counted_including_automation_days(self):
         """A day whose clones were CI is still a day a person can file an issue."""
         self.series([
@@ -279,6 +319,16 @@ class TestReport(unittest.TestCase):
         lines = report.report(report.load(self.root / "traffic.csv"),
                               self.root, date(2026, 8, 10))
         self.assertIn("New issues, last 28d: not recorded", lines[3])
+
+    def test_a_prior_window_with_no_issue_column_says_so_rather_than_zero(self):
+        self.series([
+            self.row("2026-07-01", 5, 12),
+            self.row("2026-08-10", 5, 12, issues_opened="2"),
+        ])
+        lines = report.report(report.load(self.root / "traffic.csv"),
+                              self.root, date(2026, 8, 10))
+        self.assertIn("New issues, last 28d: 2 (previous 28d: not recorded)",
+                      lines[3])
 
     def test_a_referrer_snapshot_is_read_when_one_exists(self):
         self.series([self.row("2026-08-10", 5, 12)])
@@ -326,6 +376,21 @@ class TestReport(unittest.TestCase):
                               self.root, date(2026, 8, 10))
         self.assertIn("no referrer snapshot", lines[4])
 
+    def test_an_empty_in_window_snapshot_is_not_reported_as_a_missing_one(self):
+        """GitHub answers a quiet week with an empty list, and a header-only
+        file is that answer — not the absence of one."""
+        self.series([self.row("2026-08-10", 5, 12)])
+        (self.root / "referrers-2026-08-10.csv").write_text(
+            "referrer,count,uniques\n", encoding="utf-8")
+
+        lines = report.report(report.load(self.root / "traffic.csv"),
+                              self.root, date(2026, 8, 10))
+
+        self.assertIn("referrers-2026-08-10.csv", lines[4])
+        self.assertIn("lists none", lines[4])
+        self.assertNotIn("before the window", lines[4])
+        self.assertNotIn("no referrer snapshot", lines[4])
+
     def test_it_prints_exactly_five_lines(self):
         self.series([self.row("2026-08-10", 5, 12)])
         self.assertEqual(
@@ -333,6 +398,30 @@ class TestReport(unittest.TestCase):
                               self.root, date(2026, 8, 10))),
             5,
         )
+
+    def test_a_row_with_no_real_date_costs_the_default_not_the_report(self):
+        """`windows()` already skips it; the reporting date has to as well."""
+        path = self.series([self.row("2026-08-10", 5, 12)])
+        with path.open("a", encoding="utf-8", newline="") as handle:
+            handle.write("total,,,,,,,,\n")
+
+        with contextlib.redirect_stdout(io.StringIO()) as captured:
+            self.assertEqual(report.main([str(path)]), 0)
+
+        self.assertIn("Unique cloners, last 28d: 5", captured.getvalue())
+
+    def test_a_series_with_no_parsable_date_says_so_instead_of_raising(self):
+        path = self.root / "traffic.csv"
+        path.write_text("date,clones_uniques\ntotal,4\n", encoding="utf-8")
+        with contextlib.redirect_stderr(io.StringIO()) as captured:
+            self.assertEqual(report.main([str(path)]), 1)
+        self.assertIn("no row with a YYYY-MM-DD date", captured.getvalue())
+
+    def test_a_malformed_today_is_a_message_not_a_traceback(self):
+        path = self.series([self.row("2026-08-10", 5, 12)])
+        with contextlib.redirect_stderr(io.StringIO()) as captured:
+            self.assertEqual(report.main([str(path), "--today", "yesterday"]), 1)
+        self.assertIn("YYYY-MM-DD", captured.getvalue())
 
     def test_a_missing_series_fails_loudly_rather_than_printing_zeroes(self):
         with contextlib.redirect_stderr(io.StringIO()) as captured:

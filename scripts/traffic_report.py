@@ -38,24 +38,24 @@ def windows(rows, today):
 
     A flagged day is dropped rather than zeroed. Zeroing it would say the repo
     had a quiet Tuesday; dropping it says we do not know, which is true.
+
+    Both windows lose their flagged days and both report them. Dropping from
+    one and disclosing the other is how a flat month prints as growth.
     """
     recent_from = today - timedelta(days=WINDOW_DAYS)
     prior_from = today - timedelta(days=WINDOW_DAYS * 2)
-    recent, prior, flagged = [], [], []
+    recent, prior, flagged_recent, flagged_prior = [], [], [], []
     for row in rows:
         try:
             stamp = date.fromisoformat(row["date"])
         except ValueError:
             continue
-        if row.get("automation_suspected") == "true":
-            if stamp > recent_from:
-                flagged.append(row)
-            continue
+        flagged = row.get("automation_suspected") == "true"
         if stamp > recent_from:
-            recent.append(row)
+            (flagged_recent if flagged else recent).append(row)
         elif stamp > prior_from:
-            prior.append(row)
-    return recent, prior, flagged
+            (flagged_prior if flagged else prior).append(row)
+    return recent, prior, flagged_recent, flagged_prior
 
 
 def raw_windows(rows, today):
@@ -79,10 +79,18 @@ def total(rows, field) -> int:
     return sum(_number(row, field) for row in rows)
 
 
-def delta(now: int, before: int) -> str:
-    if before == 0:
+def delta(now: int, before: int, now_days: int, before_days: int) -> str:
+    """Compare per measured day rather than sum against sum.
+
+    The windows rarely hold the same number of measured days: automation days
+    are dropped from both, and a day nobody recorded is in neither. Twenty-eight
+    days of traffic set against twenty-three invents the difference.
+    """
+    if not now_days or not before_days or before == 0:
         return "no prior window" if now == 0 else "no prior window to compare"
-    return "%+d%%" % round((now - before) / before * 100)
+    now_rate = now / now_days
+    before_rate = before / before_days
+    return "%+d%%" % round((now_rate - before_rate) / before_rate * 100)
 
 
 def latest(rows, field) -> str:
@@ -92,12 +100,29 @@ def latest(rows, field) -> str:
     return "unknown"
 
 
+def last_day(rows):
+    """The newest row that carries a real date, or None if no row does.
+
+    `windows()` already skips a row it cannot parse; the default reporting date
+    has to survive the same hand-edited file rather than raise on it.
+    """
+    for row in reversed(rows):
+        try:
+            return date.fromisoformat(row["date"])
+        except ValueError:
+            continue
+    return None
+
+
 def sources(directory: Path, today: date, limit=3):
-    """The newest referrer snapshot inside the reporting window.
+    """The newest referrer snapshot, and whether it falls inside the window.
 
     They are photographs, so the newest is the only one worth reading — but a
     photograph from outside the window is of a different month, and printing it
     beside a 28-day trend reads as part of it. Named and not counted.
+
+    A snapshot inside the window with no rows is a quiet week that GitHub did
+    report, which is a different sentence from having no snapshot at all.
     """
     window_from = today - timedelta(days=WINDOW_DAYS)
     inside, outside = None, None
@@ -111,15 +136,22 @@ def sources(directory: Path, today: date, limit=3):
         else:
             outside = snapshot
     if inside is None:
-        return (outside.name if outside else None), []
+        return (outside.name if outside else None), [], False
     with inside.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     rows.sort(key=lambda row: _number(row, "uniques"), reverse=True)
-    return inside.name, rows[:limit]
+    return inside.name, rows[:limit], True
+
+
+def _excluded(flagged, label) -> str:
+    if not flagged:
+        return "0 days in the %s 28" % label
+    return "%d day(s) in the %s 28 (%s)" % (
+        len(flagged), label, ", ".join(row["date"] for row in flagged))
 
 
 def report(rows, directory: Path, today: date):
-    recent, prior, flagged = windows(rows, today)
+    recent, prior, flagged_recent, flagged_prior = windows(rows, today)
     raw_recent, raw_prior = raw_windows(rows, today)
     lines = []
 
@@ -127,24 +159,23 @@ def report(rows, directory: Path, today: date):
     before = total(prior, "clones_uniques")
     lines.append(
         "Unique cloners, last 28d: %d (previous 28d: %d, %s). Machines that "
-        "cloned the repo, never called users." % (now, before, delta(now, before))
+        "cloned the repo, never called users."
+        % (now, before, delta(now, before, len(recent), len(prior)))
     )
 
     now = total(recent, "views_uniques")
     before = total(prior, "views_uniques")
     lines.append(
         "Unique viewers, last 28d: %d (previous 28d: %d, %s)."
-        % (now, before, delta(now, before))
+        % (now, before, delta(now, before, len(recent), len(prior)))
     )
 
-    if flagged:
-        lines.append(
-            "Excluded as automation: %d day(s) — %s. Clones with no unique "
-            "viewer are CI and marketplace refreshes."
-            % (len(flagged), ", ".join(row["date"] for row in flagged))
-        )
-    else:
-        lines.append("Excluded as automation: 0 days in the last 28.")
+    lines.append(
+        "Excluded as automation: %s, %s. Clones with no unique viewer are CI "
+        "and marketplace refreshes; each window is compared per measured day."
+        % (_excluded(flagged_recent, "last"),
+           _excluded(flagged_prior, "previous"))
+    )
 
     # Issues are counted over the raw window, automation days included. A day
     # whose clone numbers were CI is still a day on which a person could open an
@@ -152,23 +183,18 @@ def report(rows, directory: Path, today: date):
     # unambiguously a human.
     now = total(raw_recent, "issues_opened")
     before = total(raw_prior, "issues_opened")
-    measured = any(row.get("issues_opened") for row in raw_recent)
+    measured_now = any(row.get("issues_opened") for row in raw_recent)
+    measured_before = any(row.get("issues_opened") for row in raw_prior)
     lines.append(
         "New issues, last 28d: %s (previous 28d: %s). Stars %s | forks %s, as "
         "of the last snapshot."
-        % (now if measured else "not recorded", before,
+        % (now if measured_now else "not recorded",
+           before if measured_before else "not recorded",
            latest(rows, "stars"), latest(rows, "forks"))
     )
 
-    name, top = sources(directory, today)
-    if not top and name:
-        lines.append(
-            "Traffic sources: no referrer snapshot in the last %dd — the "
-            "newest is %s, from before the window." % (WINDOW_DAYS, name)
-        )
-    elif not top:
-        lines.append("Traffic sources: no referrer snapshot in %s." % directory)
-    else:
+    name, top, in_window = sources(directory, today)
+    if top:
         lines.append(
             "Traffic sources (%s): %s."
             % (name, ", ".join(
@@ -176,6 +202,18 @@ def report(rows, directory: Path, today: date):
                                    row.get("uniques", "0"))
                 for row in top))
         )
+    elif in_window:
+        lines.append(
+            "Traffic sources: %s falls inside the window and lists none — "
+            "GitHub reported no referrers." % name
+        )
+    elif name:
+        lines.append(
+            "Traffic sources: no referrer snapshot in the last %dd — the "
+            "newest is %s, from before the window." % (WINDOW_DAYS, name)
+        )
+    else:
+        lines.append("Traffic sources: no referrer snapshot in %s." % directory)
 
     return lines
 
@@ -199,8 +237,20 @@ def main(argv=None) -> int:
         print("%s has a header and no days" % args.csv, file=sys.stderr)
         return 1
 
-    today = date.fromisoformat(args.today) if args.today \
-        else date.fromisoformat(rows[-1]["date"])
+    if args.today:
+        try:
+            today = date.fromisoformat(args.today)
+        except ValueError:
+            print("--today wants YYYY-MM-DD, got %r" % args.today,
+                  file=sys.stderr)
+            return 1
+    else:
+        today = last_day(rows)
+        if today is None:
+            print("%s has no row with a YYYY-MM-DD date" % args.csv,
+                  file=sys.stderr)
+            return 1
+
     for line in report(rows, args.csv.parent, today):
         print(line)
     return 0

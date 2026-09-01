@@ -36,8 +36,10 @@ Read first — house rule 1, and note how little of it there is:
 
 - The session itself: which workflow ran, what the founder expected, what
   happened.
-- `.codex-plugin/plugin.json` — the `version` field. From the package, never
-  from memory; a version quoted from memory is the version at training time.
+- `.codex-plugin/plugin.json` — the `version` field, through
+  `read_reference`, which allows both host manifests for exactly this. From the
+  package, never from memory; a version quoted from memory is the version at
+  training time.
 - Which host is running — Claude Code or Codex.
 
 **No workspace file is read.** Not `metrics.md`, not `pipeline.md`, not the file
@@ -72,8 +74,9 @@ opens none of them, and the next section is why.
    them to Discussions and stop, because a question filed as an issue gets
    answered once and helps one person.
 2. **Fill in what the machine knows.** The workflow slug, the version read out
-   of `.codex-plugin/plugin.json`, and the host. Do not ask the founder for any
-   of the three.
+   of `.codex-plugin/plugin.json` with `read_reference`, and the host. Do not
+   ask the founder for any of the three. If that read fails, say the version is
+   unknown and ask for it — do not supply one from memory.
 3. **Ask for the two the machine does not know**, in this order and no others:
    what did you expect it to do, and what did it do instead. Take them in the
    founder's words; do not tidy the expectation into something the outcome makes

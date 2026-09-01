@@ -108,11 +108,16 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
                 "direct_file",
                 "wrong_role",
                 "elevation",
+                "claimed_main_thread",
                 "main_thread",
+                "recorded_main_thread",
                 "recorded_turns",
             },
         )
-        self.assertEqual(outcomes["recorded_turns"], {"cfo", "strategist"})
+        self.assertEqual(
+            outcomes["recorded_turns"],
+            {"cfo", "strategist", "__founder_os_main__"},
+        )
         for key in (
             "direct_file",
             "fallback_direct_denied",
@@ -120,6 +125,7 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
             "claude_namespaced_elevation",
             "wrong_role",
             "elevation",
+            "claimed_main_thread",
         ):
             denied = outcomes[key]["hookSpecificOutput"]
             self.assertEqual(denied["permissionDecision"], "deny")
