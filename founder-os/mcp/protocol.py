@@ -13,7 +13,7 @@ JSON_RPC_VERSION = "2.0"
 MCP_PROTOCOL_VERSION = "2025-11-25"
 MCP_PROTOCOL_VERSIONS = frozenset({"2025-11-25", "2025-06-18"})
 SERVER_NAME = "founder-os-state"
-SERVER_VERSION = "2.6.0"
+SERVER_VERSION = "2.7.0"
 
 
 def _response(request_id: Any, result: Dict[str, Any]) -> Dict[str, Any]:

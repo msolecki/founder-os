@@ -68,6 +68,19 @@ class TestBumpRoundTrip(unittest.TestCase):
                                           "node_modules", ".venv"),
         )
 
+    def seed_unreleased(self, text="**Something.** It shipped.\n"):
+        """A bump needs an entry to rename. Right after a release there is
+        none, which is correct — and which is why these tests write one."""
+        changelog = self.repo / "CHANGELOG.md"
+        head, tail = changelog.read_text(encoding="utf-8").split(
+            "## Unreleased", 1
+        )
+        changelog.write_text(
+            head + "## Unreleased\n\n" + text + "\n## " +
+            tail.split("\n## ", 1)[1],
+            encoding="utf-8",
+        )
+
     def run_bump(self, *argv):
         original = bump.REPO_ROOT
         bump.REPO_ROOT = self.repo
@@ -79,7 +92,15 @@ class TestBumpRoundTrip(unittest.TestCase):
             bump.REPO_ROOT = original
 
     def test_a_bump_moves_every_site_and_leaves_the_records_alone(self):
-        was = bump.current_version(self.repo)
+        self.seed_unreleased()
+        # A record holds whatever release it names — not necessarily the one
+        # the package is on. The property is that the bump does not touch it.
+        before = {
+            relative: re.findall(
+                pattern, (self.repo / relative).read_text(encoding="utf-8")
+            )
+            for relative, pattern, _ in bump.RECORDS
+        }
         self.run_bump("9.9.9", "--date", "2026-12-01")
 
         self.assertEqual("9.9.9", bump.current_version(self.repo))
@@ -95,12 +116,14 @@ class TestBumpRoundTrip(unittest.TestCase):
                     pattern, (self.repo / relative).read_text(encoding="utf-8")
                 )
                 self.assertEqual(
-                    [was], found,
+                    before[relative], found,
                     "%s names a release that already shipped and must not "
                     "move" % description,
                 )
+                self.assertNotIn("9.9.9", found)
 
     def test_the_unreleased_entry_becomes_the_release_and_a_fresh_one_opens(self):
+        self.seed_unreleased()
         changelog = self.repo / "CHANGELOG.md"
         before = changelog.read_text(encoding="utf-8")
         body = before.split("## Unreleased", 1)[1].split("\n## ", 1)[0].strip()
@@ -136,6 +159,7 @@ class TestBumpRoundTrip(unittest.TestCase):
         self.assertIn("written from memory", str(raised.exception))
 
     def test_a_dry_run_writes_nothing(self):
+        self.seed_unreleased()
         before = (self.repo / "CHANGELOG.md").read_text(encoding="utf-8")
         was = bump.current_version(self.repo)
 
@@ -148,6 +172,7 @@ class TestBumpRoundTrip(unittest.TestCase):
 
     def test_the_bumped_repository_still_passes_its_own_validator(self):
         """The point of the script: after it runs, nothing disagrees."""
+        self.seed_unreleased()
         self.run_bump("9.9.9", "--date", "2026-12-01")
 
         errs = validator.check_version_sites(

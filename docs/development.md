@@ -216,8 +216,8 @@ that heading, so whatever is written there on the day is what the release says
 forever — and an entry composed after the tag is composed from memory.
 
 ```bash
-python3 scripts/bump_version.py 2.7.0 --dry-run   # every site, nothing written
-python3 scripts/bump_version.py 2.7.0
+python3 scripts/bump_version.py X.Y.Z --dry-run   # every site, nothing written
+python3 scripts/bump_version.py X.Y.Z
 ```
 
 1. `scripts/bump_version.py` moves the version through all eleven places that

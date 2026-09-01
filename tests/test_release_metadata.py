@@ -36,7 +36,7 @@ DOCTOR_PATH = (
     REPO_ROOT / "founder-os" / "skills" / "founder-os-doctor" / "SKILL.md"
 )
 FEATURE_LIST_PATH = REPO_ROOT / "feature_list.json"
-RELEASE_VERSION = "2.6.0"
+RELEASE_VERSION = "2.7.0"
 # The most recent published tag, and a record rather than a site: it names an
 # entry that already shipped, so a bump moves RELEASE_VERSION above and leaves
 # this alone until the release after next freezes a new one.
@@ -157,17 +157,21 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertRegex(release, rf"(?i){re.escape(marker)}")
 
-    def test_the_unreleased_entry_carries_the_counts_the_package_has_now(self):
-        """The one section that must track the package, because it becomes the
-        next release. `scripts/bump_version.py` renames this heading, so what is
-        true here on the day of the bump is what the release says forever."""
-        unreleased = self.changelog.split("## Unreleased", 1)[1].split(
-            "\n## ", 1
-        )[0]
-        self.assertTrue(
-            unreleased.strip(),
-            "unreleased work has to be described before it is released — "
-            "writing the entry after the tag writes it from memory",
+    def test_the_topmost_written_entry_carries_the_counts_we_ship_now(self):
+        """Whichever section currently describes the package must match it.
+
+        Mid-development that is `## Unreleased`; on the day of a release
+        `bump_version.py` renames that heading and opens an empty one, so the
+        section describing what ships is the release just cut. Following the
+        topmost *written* section means this holds on both sides of a bump
+        without anyone editing the assertion — and, unlike the version of this
+        test it replaces, it never asks a section that already shipped to carry
+        a count the package moved past.
+        """
+        sections = re.split(r"^## ", self.changelog, flags=re.M)[1:]
+        current = next(
+            body for body in sections
+            if body.split("\n", 1)[1].strip()
         )
         for marker in (
             "%d workflows" % len(list(
@@ -175,8 +179,8 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             )),
             "%d build-time checks" % _validator_check_count(),
         ):
-            with self.subTest(marker=marker):
-                self.assertRegex(unreleased, rf"(?i){re.escape(marker)}")
+            with self.subTest(marker=marker, section=current.split("\n", 1)[0]):
+                self.assertRegex(current, rf"(?i){re.escape(marker)}")
 
     def test_source_derived_counts_are_published_without_drift(self):
         agent_count = len(list((REPO_ROOT / "founder-os" / "agents").glob("*.md")))
