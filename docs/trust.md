@@ -53,8 +53,10 @@ rests on.
 The site is static files served by GitHub Pages. Founder OS runs **no analytics
 script on it** — no page-view counter, no cookies, no fingerprinting, no
 third-party tag. Its `Content-Security-Policy` allows scripts only from the
-site's own origin, so a third-party tag could not load even if one were added by
-accident.
+site's own origin and the pages' own inline blocks, so a third-party tag could
+not load even if one were added by accident. The inline allowance is what the
+two small blocks on the landing page need; it grants nothing to another origin,
+which is the claim this section is making.
 
 What does exist is what exists for any hosted page: GitHub serves the request
 and keeps its own server-side logs, and the repository's owner can see the
@@ -103,7 +105,7 @@ package does with data, where state lives, what reaches the model host: read the
 [enforcement guide](enforcement.md) and the
 [getting-started guide](getting-started.md), then ask in
 [Discussions](https://github.com/msolecki/founder-os/discussions) or open a
-[bug report](https://github.com/msolecki/founder-os/issues/new?template=bug.yml).
+[problem report](https://github.com/msolecki/founder-os/issues/new?template=report.yml).
 
 Either way, never paste credentials, private business state, client names,
 entity slugs, amounts, or absolute paths. A private advisory becomes public when

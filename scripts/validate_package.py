@@ -824,6 +824,34 @@ def check_hooks(root, agents):
     return errs
 
 
+# Published counts are written both ways — `56 workflows` in a table, "fifty-six
+# workflows" in a sentence — and only the digits were ever checked. So the three
+# pages that spell it out drifted through a release that moved the number, two
+# lines under a paragraph telling the reader that a count which drifts is a
+# second map.
+NUMBER_WORDS = {
+    "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+    "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
+    "eighteen": 18, "nineteen": 19, "twenty": 20,
+}
+for _tens, _tens_value in (("thirty", 30), ("forty", 40), ("fifty", 50),
+                           ("sixty", 60), ("seventy", 70), ("eighty", 80),
+                           ("ninety", 90)):
+    NUMBER_WORDS[_tens] = _tens_value
+    for _unit, _unit_value in (("one", 1), ("two", 2), ("three", 3),
+                               ("four", 4), ("five", 5), ("six", 6),
+                               ("seven", 7), ("eight", 8), ("nine", 9)):
+        NUMBER_WORDS["%s-%s" % (_tens, _unit)] = _tens_value + _unit_value
+
+
+def _as_number(value):
+    """A published count, however it was written."""
+    text = str(value).strip().casefold()
+    if text.isdigit():
+        return int(text)
+    return NUMBER_WORDS.get(text)
+
+
 def check_readme_counts(root, agents):
     """README's counts must match the package, or the README is a second map.
 
@@ -881,22 +909,35 @@ def check_readme_counts(root, agents):
     site = root.parent / "docs"
     docs = [site / "README.md", site / "getting-started.md",
             site / "commands.md", site / "cadences.md",
+            site / "troubleshooting.md", site / "og-image.svg",
+            site / "concepts.md", site / "agents.md",
+            root / "README.md", root / "CLAUDE.md", root / "COMMANDS.md",
+            root / "references" / "extensibility.md",
+            root / "skills" / "skill-forge" / "SKILL.md",
+            root.parent / ".github" / "ISSUE_TEMPLATE" / "idea.yml",
             root / ".codex-plugin" / "plugin.json"]
+    counted = r"(\d+|%s)" % "|".join(sorted(NUMBER_WORDS, key=len, reverse=True))
     patterns = {
-        "Agents": r"(\d+)\s+(?:specialized\s+business\s+roles|decision-owning executive agents|agents)",
-        "Skills": r"(\d+)\s+(?:skills|workflows)",
-        "Cadences": r"(\d+)\s+(?:optional\s+)?(?:operating\s+)?cadences",
+        "Agents": counted + r"\s+(?:specialized\s+business\s+roles|decision-owning executive agents|agents)",
+        "Skills": counted + r"\s+(?:skills|workflows)",
+        "Cadences": counted + r"\s+(?:optional\s+)?(?:operating\s+)?cadences",
     }
     for path in docs:
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
         for label, pattern in patterns.items():
-            values = [int(value) for value in re.findall(pattern, text, re.I)]
-            if values and any(value != actual.get(label) for value in values):
-                errs.append("%s: %s count drifts from package value %d" %
-                            (path.relative_to(root.parent), label.lower(),
-                             actual.get(label, 0)))
+            values = [_as_number(value)
+                      for value in re.findall(pattern, text, re.I)]
+            drifted = [value for value in values if value != actual.get(label)]
+            if drifted:
+                errs.append(
+                    "%s: says %s %s, the package has %d — a count that drifts "
+                    "is a second map"
+                    % (path.relative_to(root.parent),
+                       ", ".join(str(value) for value in sorted(set(drifted))),
+                       label.lower(), actual.get(label, 0))
+                )
     return errs
 
 

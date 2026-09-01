@@ -26,7 +26,8 @@ useful — `metrics.md`, `drafts/proposals/`. Client names, revenue figures,
 rates, entity slugs and absolute paths are not, and a private advisory becomes a
 public one when it is published.
 
-Include the plugin version (`founder-os/.codex-plugin/plugin.json`), the host
+Include the plugin version (the first line of `/founder-os-doctor`, or
+`founder-os/.claude-plugin/plugin.json`), the host
 (Claude Code or Codex), and what you expected the boundary to be.
 
 ## What is in scope
@@ -52,6 +53,6 @@ The package: the state gateway (`founder-os/mcp/`), the hooks
 Anything about what the package does with data, where state lives, or what
 reaches the model host is public and belongs in
 [Discussions](https://github.com/msolecki/founder-os/discussions) or a
-[bug report](https://github.com/msolecki/founder-os/issues/new?template=bug.yml).
+[problem report](https://github.com/msolecki/founder-os/issues/new?template=report.yml).
 The [trust center](https://msolecki.github.io/founder-os/trust.html) answers most
 of them first.

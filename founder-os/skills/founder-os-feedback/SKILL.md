@@ -36,10 +36,12 @@ Read first — house rule 1, and note how little of it there is:
 
 - The session itself: which workflow ran, what the founder expected, what
   happened.
-- `.codex-plugin/plugin.json` — the `version` field, through
-  `read_reference`, which allows both host manifests for exactly this. From the
-  package, never from memory; a version quoted from memory is the version at
-  training time.
+- `.claude-plugin/plugin.json` — the `version` field, through `read_reference`,
+  which allows both host manifests for exactly this; read the `.codex-plugin`
+  one instead when the host is Codex. The validator pins the two equal, so
+  either answers — but the founder checking your work looks in the one their own
+  host installed. From the package, never from memory; a version quoted from
+  memory is the version at training time.
 - Which host is running — Claude Code or Codex.
 
 **No workspace file is read.** Not `metrics.md`, not `pipeline.md`, not the file
@@ -68,24 +70,30 @@ opens none of them, and the next section is why.
 
 ## Steps
 
-1. **Sort it first, in one question.** Broken → `bug.yml`. Ran but wrong or
-   useless → `workflow-feedback.yml`. Something should exist and does not →
-   `idea.yml`. **A question about how to use Founder OS is none of these** — send
-   them to Discussions and stop, because a question filed as an issue gets
-   answered once and helps one person.
+1. **Sort it first, in one question.** Something went wrong → `report.yml`.
+   Something should exist and does not → `idea.yml`. **A question about how to
+   use Founder OS is none of these** — send them to Discussions and stop,
+   because a question filed as an issue gets answered once and helps one person.
+
+   `report.yml` opens with the split that used to be two forms, and it is
+   mechanical rather than a judgement: did the workflow finish? Answer its
+   `kind` field from the run, not from the founder — you watched it.
 2. **Fill in what the machine knows.** The workflow slug, the version read out
-   of `.codex-plugin/plugin.json` with `read_reference`, and the host. Do not
+   of the running host's manifest with `read_reference`, and the host. Do not
    ask the founder for any of the three. If that read fails, say the version is
    unknown and ask for it — do not supply one from memory.
 3. **Ask for the two the machine does not know**, in this order and no others:
    what did you expect it to do, and what did it do instead. Take them in the
    founder's words; do not tidy the expectation into something the outcome makes
    look reasonable.
-4. **For a bug, ask them to run `/founder-os-doctor` and paste the report.**
-   Doctor output names paths and structural findings, never file contents, which
-   is why it is the one artifact this skill will carry. Say that out loud when
-   you ask — a founder who does not know what is in it will either paste it
-   blind or refuse, and both are the wrong reason.
+4. **Offer `/founder-os-doctor` and carry its report if it runs.** Doctor
+   output names paths and structural findings, never file contents, which is why
+   it is the one artifact this skill will carry. Say that out loud when you ask —
+   a founder who does not know what is in it will either paste it blind or
+   refuse, and both are the wrong reason. **Do not block the report on it.** An
+   install broken enough to be worth reporting is an install that may not be
+   able to run doctor, and a report that requires it turns the worst bugs into
+   no report at all.
 5. **For an idea, ask the one question the form requires: which decision does
    this improve?** If the answer is that it would be useful, say plainly that
    this is not a decision and offer `/skill-forge` instead — a workflow only one
@@ -118,13 +126,19 @@ else.
 Print the assembled body, then the link — one parameter per form field, all
 percent-encoded:
 
-    https://github.com/msolecki/founder-os/issues/new?template=workflow-feedback.yml
-      &title=<title>
-      &workflow=<slug>&host=<Claude%20Code|Codex|Both>&version=<x.y.z>
+    https://github.com/msolecki/founder-os/issues/new?template=report.yml
+      &title=%5Breport%5D%20<summary>
+      &kind=<option label>&workflow=<slug>
+      &host=<Claude%20Code|Codex|Both>&version=<x.y.z>
       &expected=<what they expected>&actual=<what happened>
+      &doctor=<report, when it ran>
 
-`template=bug.yml` takes the same parameters plus `&doctor=<report>`.
 `template=idea.yml` takes `&decision=`, `&today=` and `&existing=`.
+
+**Keep the template's title prefix.** `report.yml` opens the title with
+`[report] ` and `idea.yml` with `[idea] `; a supplied `&title=` replaces the
+default outright rather than extending it, so a link that omits the prefix
+quietly drops the convention every other issue follows.
 
 **There is no `body` parameter here and adding one does nothing.** A YAML issue
 form is prefilled by field `id`; `body=` belongs to the old Markdown templates

@@ -264,23 +264,68 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertIn("## The website", trust_md)
         self.assertIn('id="website"', trust_html)
 
-        sources = re.findall(r'<script[^>]*\bsrc="([^"]+)"', HTML)
-        self.assertTrue(sources, "the page loads no script at all")
-        for source in sources:
-            with self.subTest(script=source):
-                self.assertNotRegex(
-                    source,
-                    r"^(?:[a-z]+:)?//",
-                    "docs/trust.html claims no third-party tag runs on the "
-                    "site; %s is one. Change the claim in the same commit or "
-                    "drop the script." % source,
+        # The claim says "these pages", plural, and this checked one of them.
+        # trust.html — the page carrying the claim — was never scanned, and its
+        # own policy has no `script-src` at all, so it would have failed the
+        # assertion below had it ever been pointed at itself.
+        pages = {
+            "docs/index.html": HTML,
+            "docs/trust.html": trust_html,
+        }
+        scripted = False
+        for name, markup in pages.items():
+            for source in re.findall(r'<script[^>]*\bsrc="([^"]+)"', markup):
+                scripted = True
+                with self.subTest(page=name, script=source):
+                    self.assertNotRegex(
+                        source,
+                        r"^(?:[a-z]+:)?//",
+                        "docs/trust.html claims no third-party tag runs on the "
+                        "site; %s in %s is one. Change the claim in the same "
+                        "commit or drop the script." % (source, name),
+                    )
+        self.assertTrue(scripted, "no page loads a script at all")
+
+        for name, markup in pages.items():
+            with self.subTest(page=name):
+                policy = re.search(
+                    r'http-equiv="Content-Security-Policy" content="([^"]+)"',
+                    markup,
+                )
+                self.assertIsNotNone(policy, "%s declares no CSP" % name)
+                directives = {
+                    part.strip().split(" ")[0]: part.strip()
+                    for part in policy.group(1).split(";") if part.strip()
+                }
+                # `script-src` if the page names one, `default-src` if it lets
+                # that cover scripts — either is the claim, neither is absent.
+                governing = directives.get(
+                    "script-src", directives.get("default-src", "")
+                )
+                self.assertIn("'self'", governing)
+                self.assertNotIn("http", governing)
+                # The prose says which relaxations exist. `'unsafe-inline'` is
+                # named there because the landing page has two inline blocks;
+                # anything else would make the section untrue.
+                self.assertEqual(
+                    set(),
+                    {token for token in governing.split()[1:]
+                     if token not in {"'self'", "'unsafe-inline'"}},
+                    "%s allows a script source the trust center does not "
+                    "describe" % name,
                 )
 
-        policy = re.search(
-            r'http-equiv="Content-Security-Policy" content="([^"]+)"', HTML
-        )
-        self.assertIsNotNone(policy)
-        self.assertIn("script-src 'self'", policy.group(1))
+    def test_the_trust_page_names_the_inline_allowance_it_grants(self):
+        """"only from this origin" was not what the policy said.
+
+        A trust page is worth what its most precise sentence is worth, and the
+        policy has always carried `'unsafe-inline'` for the landing page's two
+        blocks. Naming it costs a clause; not naming it costs the page.
+        """
+        for path in ("trust.html", "trust.md"):
+            text = (REPO_ROOT / "docs" / path).read_text(encoding="utf-8")
+            with self.subTest(page=path):
+                self.assertIn("inline", text)
 
     def test_launch_page_declares_favicon_and_apple_touch_icon(self):
         self.assertIn('rel="icon" type="image/svg+xml"', HTML)
