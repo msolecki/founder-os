@@ -930,8 +930,13 @@ def check_version_sites(root, agents):
             errs.append("scripts/bump_version.py: records %s in %s, which does "
                         "not exist" % (description, relative))
             continue
-        declared[relative] = declared.get(relative, 0) + len(
-            re.findall(pattern, path.read_text(encoding="utf-8"))
+        # Only a record holding *this* version consumes an allowance. One that
+        # names an older release is invisible to the scan below anyway, and
+        # counting it would license an unregistered literal beside it.
+        declared[relative] = declared.get(relative, 0) + sum(
+            1 for found in re.findall(pattern,
+                                      path.read_text(encoding="utf-8"))
+            if (found if isinstance(found, str) else found[0]) == version
         )
 
     # The other half: a version literal in a scanned file that no site claims.

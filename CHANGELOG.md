@@ -5,6 +5,8 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+## 2.7.0 — 2026-09-01
+
 **Experiments, signals, and a way to report a bad run.** `/experiment` opens a
 test with a threshold written before any result exists and closes it on a
 judgment date that cannot be renewed; `assumption-audit` now hands over one
