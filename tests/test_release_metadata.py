@@ -37,6 +37,11 @@ DOCTOR_PATH = (
 )
 FEATURE_LIST_PATH = REPO_ROOT / "feature_list.json"
 RELEASE_VERSION = "2.6.0"
+# The most recent published tag, and a record rather than a site: it names an
+# entry that already shipped, so a bump moves RELEASE_VERSION above and leaves
+# this alone until the release after next freezes a new one.
+PUBLISHED_RELEASE = "2.6.0"
+PUBLISHED_RELEASE_DATE = "2026-08-01"
 ACTIVATION_DESCRIPTION = (
     "Know what matters today with one source-linked daily decision from your "
     "goals, cash, pipeline, and commitments."
@@ -120,19 +125,23 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         historical = self.changelog.split("## 2.4.0 — 2026-07-22", 1)[1]
         self.assertIn("Codex remains beta/manual", historical)
 
-    def test_changelog_records_the_decision_first_2_6_candidate(self):
-        """Derived where the package can move, literal where the story cannot.
+    def test_a_published_release_entry_is_never_rewritten(self):
+        """A tagged entry is a record, not a draft.
 
-        The workflow and check counts are the same growing sets every other
-        published number is derived from; typing them here again would make
-        this test the thing that certifies the drift.
+        This used to assert that the published section carried the *current*
+        skill and check counts, so every workflow added after the tag forced
+        that released entry to be edited — and it had been, to describe three
+        workflows the tag does not contain. A test that pins a shipped section
+        to the moving package is the thing certifying the drift it exists to
+        prevent.
+
+        Frozen literals here, on purpose. The moving counts belong to
+        `## Unreleased`, and the test below is where they are derived.
         """
-        release_heading = "## 2.6.0 — 2026-08-01"
+        release_heading = "## %s — %s" % (
+            PUBLISHED_RELEASE, PUBLISHED_RELEASE_DATE
+        )
         self.assertIn(release_heading, self.changelog)
-        unreleased = self.changelog.split("## Unreleased", 1)[1].split(
-            release_heading, 1
-        )[0]
-        self.assertEqual(unreleased.strip(), "")
         release = self.changelog.split(release_heading, 1)[1].split(
             "\n## 2.5.0", 1
         )[0]
@@ -141,14 +150,33 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "activation intent",
             "workflow receipt",
             "/capture",
-            "%d workflows" % len(list(
-                (REPO_ROOT / "founder-os" / "skills").glob("*/SKILL.md")
-            )),
+            "53 workflows",
             "Continue",
-            "%d build-time checks" % _validator_check_count(),
+            "17 build-time checks",
         ):
             with self.subTest(marker=marker):
                 self.assertRegex(release, rf"(?i){re.escape(marker)}")
+
+    def test_the_unreleased_entry_carries_the_counts_the_package_has_now(self):
+        """The one section that must track the package, because it becomes the
+        next release. `scripts/bump_version.py` renames this heading, so what is
+        true here on the day of the bump is what the release says forever."""
+        unreleased = self.changelog.split("## Unreleased", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        self.assertTrue(
+            unreleased.strip(),
+            "unreleased work has to be described before it is released — "
+            "writing the entry after the tag writes it from memory",
+        )
+        for marker in (
+            "%d workflows" % len(list(
+                (REPO_ROOT / "founder-os" / "skills").glob("*/SKILL.md")
+            )),
+            "%d build-time checks" % _validator_check_count(),
+        ):
+            with self.subTest(marker=marker):
+                self.assertRegex(unreleased, rf"(?i){re.escape(marker)}")
 
     def test_source_derived_counts_are_published_without_drift(self):
         agent_count = len(list((REPO_ROOT / "founder-os" / "agents").glob("*.md")))
@@ -180,7 +208,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "agents": 13,
             "skills": 56,
             "cadences": 11,
-            "validator": 18,
+            "validator": 19,
             "doctor": 20,
         })
 

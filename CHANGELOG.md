@@ -5,6 +5,56 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+**Experiments, signals, and a way to report a bad run.** `/experiment` opens a
+test with a threshold written before any result exists and closes it on a
+judgment date that cannot be renewed; `assumption-audit` now hands over one
+assumption instead of a ranked list. `/signal-check` runs Friday 15:30 and
+records at most three lead measures in `metrics.md` `## Signals`, derived only
+from state another cadence already keeps; `weekly-review` reads them rather than
+recounting them. `/founder-os-feedback` composes a report locally and hands the
+founder a prefilled link to send themselves. Three workflows and one cadence,
+bringing the package to **56 workflows** and eleven cadences.
+
+**Upgrading from 2.6.x.** This release declares state the founder's workspace
+does not have: `metrics.md` gains `## Signals` and the Strategist gains
+`experiments/`. Neither needs a manual step. The gateway creates a declared
+directory on its owner's first write, and every read reports `missing_sections`
+— the declared headings the file does not carry in position — so the owner adds
+the new heading rather than discovering it as a refused write at the monthly
+close. That field answers the question the write will ask, which it did not at
+first: it reported nothing for a file carrying every heading in the wrong order,
+and the refusal then told the owner to carry headings they already had.
+`INVALID_DOCUMENT_STRUCTURE` names the map, and both halves of it. Run
+`/founder-os-doctor` after any update for the rest of the inventory; "Founder OS
+updated" is now one of its triggers.
+
+**Repository traffic and the security route.** A weekly Traffic API snapshot
+accumulates into a series on an orphan `metrics` branch, which shares no history
+with `main` because this repository is also the marketplace and every commit on
+the default branch reaches every installed copy. `scripts/traffic_report.py`
+reports unique cloners, never clone counts, drops days flagged as automation
+rather than zeroing them, and prints every comparison with the measured-day
+denominators it was computed from — a percentage standing bare beside two
+28-day totals read a sevenfold rise as a decline. One `report.yml` replaces
+blank issues and the two overlapping report forms, asking first the only
+question that ever separated them: did the workflow finish? `SECURITY.md` gives
+a security report a private route before a public one.
+
+**Counts, and the checks that hold them.** Published counts written as words
+were invisible to `check_readme_counts`, which reads digits — so the social
+card, the troubleshooting page and the overlay reference drifted through a
+release that moved the number, and `/skill-forge` had said *fifty workflows*
+since six workflows ago. The patterns read both forms now, across every file
+that publishes one. `scripts/bump_version.py` moves the version through all
+eleven places that carry it and renames `## Unreleased` to the dated heading;
+`check_version_sites` fails the build when a twelfth appears that the script was
+never told about, and refuses to let a published entry be rewritten.
+
+**Verification.** The package now runs **19 build-time checks**, including a
+reference-page parity check that reads the package rather than a count, and a
+version-site check that fails when a hardcoded version appears somewhere
+`scripts/bump_version.py` does not know to rewrite.
+
 ## 2.6.0 — 2026-08-01
 
 **Decision-first activation.** The public path now starts with one Studio North
@@ -21,11 +71,11 @@ Decision, Evidence, Changed, Gaps, Returns, and Your move; `Changed` comes only
 from verified persistence. Freshness uses threshold-backed `current`, `stale`,
 or `unknown`, and all seven gateway errors add a five-fact recovery wrapper.
 `/situation-review` previews one route and waits for **Continue** or **Stop**.
-The new `/capture` safely appends one unchanged line to `inbox.md`.
+The new `/capture` safely appends one unchanged line to `inbox.md`, bringing the
+package to **53 workflows**.
 
-**Verification.** The package now runs **18 build-time checks**, including the
-mutation-tested capture contract and a reference-page parity check that reads
-the package rather than a count. The release gate covers package validation,
+**Verification.** The package now runs **17 build-time checks**, including the
+mutation-tested capture contract. The release gate covers package validation,
 generated commands, Python and Node behavior tests, local links, and the clean
 installed-copy lifecycle.
 
@@ -110,36 +160,6 @@ against the unfixed guard.
   checked the property that actually matters. It now pins that nothing under
   that path is tracked, which is what "not shipped" means for a directory
   published from tracked files.
-
-**Experiments, signals, and a way to report a bad run.** `/experiment` opens a
-test with a threshold written before any result exists and closes it on a
-judgment date that cannot be renewed; `assumption-audit` now hands over one
-assumption instead of a ranked list. `/signal-check` runs Friday 15:30 and
-records at most three lead measures in `metrics.md` `## Signals`, derived only
-from state another cadence already keeps; `weekly-review` reads them rather than
-recounting them. `/founder-os-feedback` composes a bug report or workflow
-complaint locally and hands the founder a prefilled link to send themselves.
-Three workflows and one cadence, bringing the package to **56 workflows** and
-eleven cadences.
-
-**Upgrading from 2.5.x.** This release declares state the founder's workspace
-does not have: `metrics.md` gains `## Signals` and the Strategist gains
-`experiments/`. Neither needs a manual step. The gateway creates a declared
-directory on its owner's first write, and every read now reports
-`missing_sections` — the headings the ownership map declares for that path and
-the file does not carry — so the owner writes the new heading in rather than
-discovering it as a refused write at the monthly close. `INVALID_DOCUMENT_STRUCTURE`
-names the map instead of saying "correct the document". Run
-`/founder-os-doctor` after any update for the rest of the inventory; "Founder OS
-updated" is now one of its triggers.
-
-**Repository traffic and the security route.** A weekly Traffic API snapshot
-accumulates into a series on an orphan `metrics` branch, which shares no history
-with `main` because this repository is also the marketplace and every commit on
-the default branch reaches every installed copy. `scripts/traffic_report.py`
-reports unique cloners, never clone counts, and drops days flagged as automation
-rather than zeroing them. Four issue templates replace blank issues, and
-`SECURITY.md` gives a security report a private route before a public one.
 
 **Verification.** The guard's runtime shapes are pinned by unit tests and by the
 installed-copy smoke, including the self-elevation deny — a subagent opening its
