@@ -13,7 +13,7 @@ import io
 import json
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -30,6 +30,7 @@ def load(name):
 
 snapshot = load("traffic_snapshot")
 report = load("traffic_report")
+prune = load("prune_snapshots")
 
 
 def clones(*entries):
@@ -429,6 +430,214 @@ class TestReport(unittest.TestCase):
         self.assertIn("no series at", captured.getvalue())
 
 
+class TestReportHonesty(unittest.TestCase):
+    """Every sentence this prints has to survive being read beside its numbers."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.addCleanup(self.temporary.cleanup)
+
+    def series(self, rows):
+        path = self.root / "traffic.csv"
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=snapshot.FIELDS,
+                                    lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(rows)
+        return path
+
+    @staticmethod
+    def day(stamp, clones_uniques, views_uniques, flagged="false"):
+        base = {field: "" for field in snapshot.FIELDS}
+        base.update(date=stamp.isoformat(),
+                    clones_uniques=str(clones_uniques),
+                    clones_count=str(clones_uniques),
+                    views_uniques=str(views_uniques),
+                    views_count=str(views_uniques),
+                    automation_suspected=flagged)
+        return base
+
+    def first_line(self, rows, today):
+        self.series(rows)
+        return report.report(report.load(self.root / "traffic.csv"),
+                             self.root, today)[0]
+
+    def test_a_percentage_never_stands_bare_beside_two_unequal_windows(self):
+        """15 against 112 is a sevenfold rise and the honest rate is -20%.
+
+        Both are true; printing the second beside the first two numbers with no
+        denominators was not. This is the ordinary shape of the first two months
+        of the series, because the API backfills fourteen days per run.
+        """
+        today = date(2026, 8, 31)
+        rows = [self.day(today - timedelta(days=28 + offset), 5, 3)
+                for offset in range(1, 4)]
+        rows += [self.day(today - timedelta(days=offset), 4, 3)
+                 for offset in range(0, 28)]
+
+        line = self.first_line(rows, today)
+
+        self.assertIn("last 28d: 112", line)
+        self.assertIn("previous 28d: 15", line)
+        self.assertIn("-20% per measured day, 28 vs 3 of them", line)
+
+    def test_an_empty_current_window_does_not_deny_the_prior_one(self):
+        """"no prior window" printed beside a prior total of 108."""
+        today = date(2026, 8, 31)
+        rows = [self.day(today - timedelta(days=28 + offset), 4, 3)
+                for offset in range(1, 29)]
+        rows += [self.day(today - timedelta(days=offset), 4, 0, flagged="true")
+                 for offset in range(0, 28)]
+
+        line = self.first_line(rows, today)
+
+        # 27, not 28: the prior window is open at its older end, so the day
+        # exactly 56 back falls outside it.
+        self.assertIn("previous 28d: 108", line)
+        self.assertIn("no measured day in the last 28", line)
+        self.assertNotIn("no prior window", line)
+
+    def test_a_prior_window_that_measured_zero_says_so(self):
+        today = date(2026, 8, 31)
+        rows = [self.day(today - timedelta(days=28 + offset), 0, 0)
+                for offset in range(1, 29)]
+        rows += [self.day(today - timedelta(days=offset), 4, 3)
+                 for offset in range(0, 28)]
+
+        line = self.first_line(rows, today)
+
+        self.assertIn("up from nothing over 27 measured day(s)", line)
+
+    def test_a_row_after_the_reporting_date_belongs_to_neither_window(self):
+        """`--today` names a past date; a later row must not inflate it."""
+        today = date(2026, 8, 15)
+        rows = [self.day(today - timedelta(days=offset), 1, 1)
+                for offset in range(0, 5)]
+        rows += [self.day(today + timedelta(days=offset), 100, 100)
+                 for offset in range(1, 6)]
+
+        line = self.first_line(rows, today)
+
+        self.assertIn("last 28d: 5", line)
+
+
+class TestSnapshotWriterRefusesBadInput(unittest.TestCase):
+    """The reader validates its date; a bad one here is a permanent row."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.addCleanup(self.temporary.cleanup)
+        for name, payload in (("clones", {"clones": []}),
+                              ("views", {"views": []}),
+                              ("repository", REPOSITORY),
+                              ("issues", [])):
+            (self.root / ("%s.json" % name)).write_text(
+                json.dumps(payload), encoding="utf-8"
+            )
+
+    def run_snapshot(self, *extra):
+        argv = ["--clones", str(self.root / "clones.json"),
+                "--views", str(self.root / "views.json"),
+                "--repository", str(self.root / "repository.json"),
+                "--out", str(self.root / "traffic.csv")]
+        argv.extend(extra)
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            with self.assertRaises(SystemExit) as raised:
+                snapshot.main(argv)
+        return raised.exception.code, stderr.getvalue()
+
+    def test_a_malformed_date_is_refused_rather_than_written(self):
+        """`--date notaday` wrote `notaday` as a row key, forever."""
+        code, message = self.run_snapshot("--date", "notaday")
+
+        self.assertEqual(2, code)
+        self.assertIn("--date wants YYYY-MM-DD", message)
+        self.assertFalse((self.root / "traffic.csv").exists())
+
+    def test_a_malformed_issues_since_is_refused_rather_than_traced(self):
+        code, message = self.run_snapshot(
+            "--date", "2026-08-31",
+            "--issues", str(self.root / "issues.json"),
+            "--issues-since", "notaday",
+        )
+
+        self.assertEqual(2, code)
+        self.assertIn("--issues-since wants YYYY-MM-DD", message)
+
+
+class TestAutomationFloor(unittest.TestCase):
+    def test_the_floor_is_the_number_the_comment_names(self):
+        """A floor is inclusive. `>` put the stated and applied rules a day apart."""
+        self.assertTrue(snapshot.suspect_automation(
+            {"views_uniques": "0", "clones_count": "10"}
+        ))
+        self.assertFalse(snapshot.suspect_automation(
+            {"views_uniques": "0", "clones_count": "9"}
+        ))
+
+    def test_a_cell_that_cannot_be_read_does_not_take_the_weekly_run_down(self):
+        """`merge` recomputes this over the whole series on every run.
+
+        One hand-edited cell anywhere in the file failed the job and lost that
+        week's reading, for a value the reporter has always tolerated.
+        """
+        rows = snapshot.merge(
+            {"2026-08-01": {"date": "2026-08-01", "clones_count": "oops",
+                            "views_uniques": ""}},
+            clones(("2026-08-31", 2, 1)), views(("2026-08-31", 5, 2)),
+            REPOSITORY, "2026-08-31",
+        )
+
+        self.assertEqual("false", rows[0]["automation_suspected"])
+
+
+class TestSnapshotPruning(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.addCleanup(self.temporary.cleanup)
+
+    def test_only_the_newest_snapshots_of_each_family_survive(self):
+        for day in range(1, 13):
+            for family in ("referrers", "paths"):
+                (self.root / ("%s-2026-08-%02d.csv" % (family, day))).write_text(
+                    "x", encoding="utf-8"
+                )
+        with contextlib.redirect_stdout(io.StringIO()):
+            prune.main([str(self.root), "--keep", "8"])
+
+        for family in ("referrers", "paths"):
+            with self.subTest(family=family):
+                survivors = sorted(
+                    path.name for path in self.root.glob("%s-*.csv" % family)
+                )
+                self.assertEqual(8, len(survivors))
+                self.assertEqual("%s-2026-08-12.csv" % family, survivors[-1])
+
+    def test_a_name_without_a_readable_date_is_left_alone(self):
+        """Sorting is on the parsed date, so a bad name is never ordered into
+        the middle of the real ones and deleted as if it were old."""
+        (self.root / "referrers-draft.csv").write_text("x", encoding="utf-8")
+        for day in range(1, 13):
+            (self.root / ("referrers-2026-08-%02d.csv" % day)).write_text(
+                "x", encoding="utf-8"
+            )
+        with contextlib.redirect_stdout(io.StringIO()):
+            prune.main([str(self.root), "--keep", "8"])
+
+        self.assertTrue((self.root / "referrers-draft.csv").is_file())
+
+    def test_keeping_nothing_is_refused(self):
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            with self.assertRaises(SystemExit):
+                prune.main([str(self.root), "--keep", "0"])
+        self.assertIn("at least 1", stderr.getvalue())
+
+
 class TestWorkflowContract(unittest.TestCase):
     """The parts of the workflow that are load-bearing rather than incidental."""
 
@@ -456,6 +665,33 @@ class TestWorkflowContract(unittest.TestCase):
 
     def test_it_asks_for_no_more_permission_than_it_needs(self):
         self.assertEqual(self.workflow["permissions"], {"contents": "write"})
+
+    def test_the_issue_search_is_paginated(self):
+        """A single page truncates silently, and this is the one column in the
+        file that is unambiguously a person. An undercount reads as a quiet
+        fortnight, which is the opposite of what happened."""
+        body = " ".join(
+            step.get("run", "")
+            for step in self.workflow["jobs"]["snapshot"]["steps"]
+        )
+        self.assertIn("search/issues --paginate", body)
+
+    def test_the_script_checkout_keeps_no_credential_it_never_uses(self):
+        """The series is pushed from the second checkout, which sets its own
+        remote URL."""
+        checkouts = [
+            step for step in self.workflow["jobs"]["snapshot"]["steps"]
+            if str(step.get("uses", "")).startswith("actions/checkout")
+        ]
+        self.assertTrue(checkouts)
+        for step in checkouts:
+            with self.subTest(step=step.get("name")):
+                self.assertIs(False, step["with"]["persist-credentials"])
+
+    def test_old_photographs_are_pruned_before_the_series_is_pushed(self):
+        steps = self.workflow["jobs"]["snapshot"]["steps"]
+        body = " ".join(step.get("run", "") for step in steps)
+        self.assertIn("prune_snapshots.py metrics --keep", body)
 
 
 if __name__ == "__main__":

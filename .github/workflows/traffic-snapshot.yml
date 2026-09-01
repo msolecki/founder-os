@@ -31,6 +31,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: source
+          # The series is pushed from the second checkout below, which sets its
+          # own remote URL. Leaving the token in this one's git config is a
+          # credential nothing reads.
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -53,10 +57,15 @@ jobs:
           # the two backfill together.
           since="$(date -u -d '13 days ago' +%F)"
           echo "ISSUES_SINCE=${since}" >> "$GITHUB_ENV"
-          gh api -X GET search/issues \
+          # --paginate, because a single page silently truncates and this is
+          # the one column in the file that is unambiguously a person. An
+          # undercount here is worse than a gap: it reads as a quiet fortnight.
+          gh api -X GET search/issues --paginate \
             -f q="repo:${GITHUB_REPOSITORY} type:issue created:>=${since}" \
             -f per_page=100 \
-            --jq '[.items[].created_at]' > api/issues.json
+            --jq '[.items[].created_at]' \
+            | python3 -c 'import json,sys; print(json.dumps([t for page in sys.stdin.read().split("\n") if page.strip() for t in json.loads(page)]))' \
+            > api/issues.json
 
       - name: Check out the series, creating the orphan branch on first run
         env:
@@ -97,6 +106,10 @@ jobs:
         run: |
           set -euo pipefail
           cd series
+          # Referrer and path snapshots are photographs and accumulate at two a
+          # week. A year of them is noise in the directory and in the glob the
+          # report walks, and nothing reads one older than the report window.
+          python3 ../source/scripts/prune_snapshots.py metrics --keep 8
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add metrics

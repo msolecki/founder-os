@@ -37,14 +37,30 @@ FIELDS = [
 # A day this busy with nobody looking is not people. The threshold is low on
 # purpose: ten clones in a day with zero unique views has never once been a
 # human on this repository, and a false positive costs one excluded day while a
-# false negative costs a number quoted in a decision.
+# false negative costs a number quoted in a decision. A floor is inclusive —
+# `>` here meant the stated rule and the applied rule disagreed at exactly the
+# number the comment names, with no test between them.
 AUTOMATION_CLONE_FLOOR = 10
+
+
+def _count(row, field) -> int:
+    """A cell this cannot read is a zero, not a crash.
+
+    `merge` recomputes this for the whole series on every run, so one bad cell
+    anywhere in the file — a hand edit, a partial write — failed the weekly job
+    and lost that week's reading. The reporter has always been this tolerant of
+    the same value; the writer has to be, or the archive takes the file down.
+    """
+    try:
+        return int(row.get(field) or 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def suspect_automation(row) -> bool:
     """A day with no unique viewer and a pile of clones is CI, not adoption."""
-    return int(row["views_uniques"] or 0) == 0 and \
-        int(row["clones_count"] or 0) > AUTOMATION_CLONE_FLOOR
+    return (_count(row, "views_uniques") == 0
+            and _count(row, "clones_count") >= AUTOMATION_CLONE_FLOOR)
 
 
 def _day_key(timestamp: str) -> str:
@@ -176,7 +192,22 @@ def main(argv=None) -> int:
             "unmeasured"
         )
 
-    load = lambda path: json.loads(path.read_text(encoding="utf-8"))
+    # The reader validates `--today`; the writer has to be stricter, because a
+    # bad date here is not a bad run, it is a permanent row. `--date notaday`
+    # wrote a row keyed by the literal string, which `read_series` then reloaded
+    # forever and the report silently skipped.
+    for flag, value in (("--date", args.date),
+                        ("--issues-since", args.issues_since)):
+        if value is None:
+            continue
+        try:
+            date.fromisoformat(value)
+        except ValueError:
+            parser.error("%s wants YYYY-MM-DD, got %r" % (flag, value))
+
+    def load(path):
+        return json.loads(path.read_text(encoding="utf-8"))
+
     rows = merge(read_series(args.out), load(args.clones), load(args.views),
                  load(args.repository), args.date,
                  issues=load(args.issues) if args.issues else None,

@@ -33,33 +33,13 @@ def _number(row, field) -> int:
         return 0
 
 
-def windows(rows, today):
-    """Split into the last 28 days and the 28 before them, automation excluded.
+def _split(rows, today):
+    """The two 28-day windows, newest first, with nothing excluded yet.
 
-    A flagged day is dropped rather than zeroed. Zeroing it would say the repo
-    had a quiet Tuesday; dropping it says we do not know, which is true.
-
-    Both windows lose their flagged days and both report them. Dropping from
-    one and disclosing the other is how a flat month prints as growth.
+    Bounded at the top as well as the bottom: `--today` can name a past date,
+    and a row after it belongs to neither window rather than silently inflating
+    the recent one.
     """
-    recent_from = today - timedelta(days=WINDOW_DAYS)
-    prior_from = today - timedelta(days=WINDOW_DAYS * 2)
-    recent, prior, flagged_recent, flagged_prior = [], [], [], []
-    for row in rows:
-        try:
-            stamp = date.fromisoformat(row["date"])
-        except ValueError:
-            continue
-        flagged = row.get("automation_suspected") == "true"
-        if stamp > recent_from:
-            (flagged_recent if flagged else recent).append(row)
-        elif stamp > prior_from:
-            (flagged_prior if flagged else prior).append(row)
-    return recent, prior, flagged_recent, flagged_prior
-
-
-def raw_windows(rows, today):
-    """The same two windows with nothing excluded, for counts that are not traffic."""
     recent_from = today - timedelta(days=WINDOW_DAYS)
     prior_from = today - timedelta(days=WINDOW_DAYS * 2)
     recent, prior = [], []
@@ -68,6 +48,8 @@ def raw_windows(rows, today):
             stamp = date.fromisoformat(row["date"])
         except ValueError:
             continue
+        if stamp > today:
+            continue
         if stamp > recent_from:
             recent.append(row)
         elif stamp > prior_from:
@@ -75,22 +57,67 @@ def raw_windows(rows, today):
     return recent, prior
 
 
+def windows(rows, today):
+    """The same two windows with automation days partitioned out.
+
+    A flagged day is dropped rather than zeroed. Zeroing it would say the repo
+    had a quiet Tuesday; dropping it says we do not know, which is true.
+
+    Both windows lose their flagged days and both report them. Dropping from
+    one and disclosing the other is how a flat month prints as growth.
+    """
+    def flagged(window):
+        keep, drop = [], []
+        for row in window:
+            (drop if row.get("automation_suspected") == "true"
+             else keep).append(row)
+        return keep, drop
+
+    raw_recent, raw_prior = _split(rows, today)
+    recent, flagged_recent = flagged(raw_recent)
+    prior, flagged_prior = flagged(raw_prior)
+    return recent, prior, flagged_recent, flagged_prior
+
+
+def raw_windows(rows, today):
+    """The same two windows with nothing excluded, for counts that are not traffic."""
+    return _split(rows, today)
+
+
 def total(rows, field) -> int:
     return sum(_number(row, field) for row in rows)
 
 
 def delta(now: int, before: int, now_days: int, before_days: int) -> str:
-    """Compare per measured day rather than sum against sum.
+    """Compare per measured day rather than sum against sum, and say so.
 
     The windows rarely hold the same number of measured days: automation days
     are dropped from both, and a day nobody recorded is in neither. Twenty-eight
     days of traffic set against twenty-three invents the difference.
+
+    Which is exactly why the percentage cannot be printed bare beside two
+    totals. Three prior days at five a day against twenty-eight recent days at
+    four a day is `15` and `112` — a sevenfold rise — and the honest per-day
+    comparison is `-20%`. Both numbers are right and the sentence was a lie, so
+    the denominators travel with the figure that was computed from them.
+
+    The three ways this has nothing to say are three different sentences,
+    because "no prior window" printed beside a prior total of 108 denies the
+    number next to it.
     """
-    if not now_days or not before_days or before == 0:
-        return "no prior window" if now == 0 else "no prior window to compare"
+    if not now_days:
+        return "no measured day in the last 28"
+    if not before_days:
+        return "no measured day in the previous 28 to compare"
+    if before == 0:
+        return "up from nothing over %d measured day(s)" % before_days
     now_rate = now / now_days
     before_rate = before / before_days
-    return "%+d%%" % round((now_rate - before_rate) / before_rate * 100)
+    return "%+d%% per measured day, %d vs %d of them" % (
+        round((now_rate - before_rate) / before_rate * 100),
+        now_days,
+        before_days,
+    )
 
 
 def latest(rows, field) -> str:
