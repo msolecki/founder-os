@@ -79,6 +79,19 @@ class TestCollect(unittest.TestCase):
         self.assertEqual(newest.path, "reviews/daily/2026-07-20.md")
         self.assertIn("q-0720a", newest.sections["## The one thing"])
 
+    def test_a_declared_directory_records_whether_it_exists(self):
+        """An empty directory and one that was never created are not the same.
+
+        Both carry an empty members tuple, so without this the reader cannot
+        tell an honest zero from a path nobody has created yet.
+        """
+        (self.home / "drafts" / "proposals").mkdir(parents=True)
+        sources = collect.collect(self.home, self.view, slug="studio-north")
+        self.assertTrue(sources.directories["decisions/"])
+        self.assertTrue(sources.directories["drafts/proposals/"])
+        self.assertFalse(sources.directories["drafts/outreach/"])
+        self.assertEqual(sources.members["drafts/proposals/"], ())
+
     def test_a_new_map_entry_surfaces_with_no_code_change(self):
         view = replace(
             self.view,
@@ -90,6 +103,74 @@ class TestCollect(unittest.TestCase):
             "# Licences\n\n## Renewals\n\nFigma renews 2026-11-01.\n", encoding="utf-8")
         sources = collect.collect(self.home, view, slug="studio-north")
         self.assertIn("Figma", sources.section("licences.md", "## Renewals"))
+
+    def test_a_dated_heading_keeps_its_suffix_beside_the_section_name(self):
+        sources = collect.collect(self.home, self.view, slug="studio-north")
+        self.assertIsNotNone(sources.section("metrics.md", "## Close"))
+        self.assertEqual(sources.heading("metrics.md", "## Close"),
+                         "## Close — 2026-06")
+
+    def test_an_undated_heading_reads_back_exactly_as_written(self):
+        sources = collect.collect(self.home, self.view, slug="studio-north")
+        self.assertEqual(sources.heading("metrics.md", "## Runway"), "## Runway")
+        self.assertIsNone(sources.heading("metrics.md", "## Nothing here"))
+
+
+class TestDeclaredForTheRoot(unittest.TestCase):
+    """A business workspace holds workspace_files; the portfolio holds its own.
+
+    Reading the union against a business root reports `portfolio.md` absent on
+    every run of every install, which is a defect the page states as a fact
+    about the founder's company.
+    """
+
+    def setUp(self):
+        self.view = contracts.load_ownership()
+        self.home = Path(tempfile.mkdtemp()) / "founder-os"
+        shutil.copytree(EXAMPLE, self.home)
+
+    def test_a_business_workspace_is_not_asked_for_portfolio_files(self):
+        sources = collect.collect(self.home, self.view, slug="studio-north")
+        for path in self.view.portfolio_files:
+            self.assertNotIn(path, sources.files, path)
+        self.assertIn("charter.md", sources.files)
+
+    def test_the_portfolio_root_is_asked_for_exactly_its_own_files(self):
+        root = Path(tempfile.mkdtemp()) / "portfolio"
+        root.mkdir()
+        (root / "portfolio.md").write_text(
+            "# Portfolio\n\n## Allocation\n\nacme 60%\n", encoding="utf-8")
+        sources = collect.collect(root, self.view, portfolio=True)
+        self.assertIn("acme 60%", sources.section("portfolio.md", "## Allocation"))
+        for path in self.view.workspace_files:
+            self.assertNotIn(path, sources.files, path)
+
+
+class TestWorkspaceName(unittest.TestCase):
+    def _workspace(self, *parts):
+        root = Path(tempfile.mkdtemp()).joinpath(*parts)
+        root.mkdir(parents=True)
+        (root / "charter.md").write_text(
+            "# Charter\n\n## Focus\n\nOne thing.\n", encoding="utf-8")
+        return root
+
+    def test_a_workspace_is_named_after_itself_not_its_container(self):
+        root = self._workspace("founder-os", "why-consulting")
+        sources = collect.collect(root, contracts.load_ownership())
+        self.assertEqual(sources.name, "why-consulting")
+
+    def test_the_conventional_wrapper_still_names_the_project(self):
+        root = self._workspace("studio-north", "founder-os")
+        sources = collect.collect(root, contracts.load_ownership())
+        self.assertEqual(sources.name, "studio-north")
+
+    def test_the_charter_still_wins_over_the_directory(self):
+        root = self._workspace("founder-os", "why-consulting")
+        (root / "charter.md").write_text(
+            "# Charter\n\n## Business\n\nWhy Consulting is a studio.\n",
+            encoding="utf-8")
+        sources = collect.collect(root, contracts.load_ownership())
+        self.assertEqual(sources.name, "Why Consulting")
 
 
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ They enforce *structure*; they cannot decide whether business advice is good.
 | `check_agent_headings` | An agent is missing one of the four mandated headings or has them out of order (`## What triggers you` → `## What you do` → `## What you produce` → `## Who you hand off to`). |
 | `check_ownership` | `ownership.yaml` names a non-agent owner, a file owned twice, or a `workspace_files:`/`portfolio_files:` entry nobody owns. |
 | `check_derived_files` | A path in `derived_files:` is owned by an agent, declares `sections:`, or is named by a skill's `metadata.writes` — any of which turns a generated file into state. |
-| `check_thresholds` | `references/thresholds.yaml` is absent while a skill states a limit against it, a skill enforces a cap without citing it, or it declares a group nothing reads. |
+| `check_thresholds` | `references/thresholds.yaml` is absent while a skill states a limit against it, one of the two skills it names as citers enforces a cap without naming the file, a key it declares is restated by no sentence `_THRESHOLD_RESTATEMENTS` registers, or a registered sentence prints a number that disagrees with the file. |
 | `check_workspace_files_complete` | A path in `owns:` is not in `workspace_files:`/`portfolio_files:` — so `founder-os-init` would never scaffold it. |
 | `check_skill_writes` | A skill's `metadata.writes` names a path no agent owns, or a path owned by an agent other than the one holding the skill. |
 | `check_sections` | `sections:` declares a path nobody owns, or a skill writes a path `ownership.yaml` declares no sections for. |

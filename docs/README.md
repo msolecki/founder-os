@@ -40,6 +40,8 @@ built to prevent.
   runs them, the system commands, and the cadence schedule.
 - **[`cadences.md`](cadences.md)** — how `setup-cadences` safely previews and
   installs local cron, launchd, or persistent user-systemd jobs.
+- **[`dashboard.md`](dashboard.md)** — what `/dashboard` renders, every flag it
+  takes, what `_dashboard/` holds, and why nothing on the page is evidence.
 - **[`multi-business.md`](multi-business.md)** — running more than one company of
   one from one machine.
 - **[`house-rules.md`](house-rules.md)** — the seven rules every agent obeys,

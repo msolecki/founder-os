@@ -12,6 +12,9 @@ accent so "attention" never doubles as "series two".
 """
 from __future__ import annotations
 
+import base64
+import hashlib
+
 TOKENS = {
     "light": {
         "--paper": "#f2eee4",
@@ -19,7 +22,7 @@ TOKENS = {
         "--sunk": "#e9e3d6",
         "--ink": "#122127",
         "--ink-soft": "#4a575b",
-        "--ink-faint": "#79868a",
+        "--ink-faint": "#5c696d",
         "--line": "rgba(18, 33, 39, 0.14)",
         "--line-strong": "rgba(18, 33, 39, 0.32)",
         "--accent": "#f15a35",
@@ -47,7 +50,7 @@ TOKENS = {
         "--sunk": "#0f2229",
         "--ink": "#ebe5d7",
         "--ink-soft": "#a3b3b7",
-        "--ink-faint": "#74868b",
+        "--ink-faint": "#8a9ca1",
         "--line": "rgba(235, 229, 215, 0.14)",
         "--line-strong": "rgba(235, 229, 215, 0.34)",
         "--accent": "#ff7a56",
@@ -71,10 +74,45 @@ TOKENS = {
     },
 }
 
+# The page's only script. It is a constant rather than a template so the policy
+# below can name it by hash: `script-src 'unsafe-inline'` would permit any script
+# an attacker got into the markup, and the whole reason this page is worth
+# hardening is that it is generated from files a founder pastes text into.
+#
+# Without JavaScript every view renders (`.view { display: block }` beats the UA
+# `[hidden]` rule), so the businesses stack instead of disappearing. The script
+# is what turns that stack into a switcher.
+SCRIPT = (
+    "document.body.classList.add('js');"
+    "document.addEventListener('click',function(event){"
+    "var node=event.target;"
+    "var button=node&&node.closest?node.closest('[data-business]'):null;"
+    "if(!button){return;}"
+    "var slug=button.getAttribute('data-business');"
+    "var views=document.querySelectorAll('.view');"
+    "for(var i=0;i<views.length;i++){"
+    "views[i].hidden=views[i].id!==('business-'+slug);}"
+    "var buttons=document.querySelectorAll('[data-business]');"
+    "for(var j=0;j<buttons.length;j++){"
+    "buttons[j].setAttribute('aria-selected',"
+    "buttons[j].getAttribute('data-business')===slug?'true':'false');}"
+    # The masthead and the tab title name the business the reader is looking at.
+    # Leaving them on the one rendered first put another company's figures under
+    # this company's name — the failure the command refuses on every other path.
+    "var name=button.getAttribute('data-name');"
+    "if(name){"
+    "var heading=document.getElementById('business-name');"
+    "if(heading){heading.textContent=name;}"
+    "document.title=name+' \u2014 Founder OS';}"
+    "});")
+
+SCRIPT_HASH = "sha256-" + base64.b64encode(
+    hashlib.sha256(SCRIPT.encode("utf-8")).digest()).decode("ascii")
+
 CSP = ('<meta http-equiv="Content-Security-Policy" content="default-src '
-       "'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+       "'self'; script-src '%s'; style-src 'unsafe-inline'; "
        "img-src 'self' data:; connect-src 'none'; base-uri 'none'; "
-       "form-action 'none'\">")
+       "form-action 'none'\">" % SCRIPT_HASH)
 
 _FONTS = (
     '  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", '
@@ -143,9 +181,15 @@ body {
         font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint);
         display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .track { position: relative; height: 9px; border-radius: 4px; background: var(--sunk);
-         overflow: hidden; display: flex; gap: 2px; }
+         overflow: hidden; display: flex; }
 .track.tall { height: 22px; border-radius: 5px; }
-.fill { height: 100%; border-radius: 4px; }
+/* Segments are sized as percentages of the track and do not shrink, so a week
+   that fills the hours available comes to exactly 100%. A flex `gap` would add
+   its width on top of that and `overflow: hidden` would clip the tail, drawing
+   a full week as one that falls short — the separator is painted inside the
+   segment instead of taking any width of its own. */
+.fill { height: 100%; border-radius: 4px; flex-shrink: 0; }
+.fill + .fill { box-shadow: inset 2px 0 0 var(--sunk); }
 .fill.hatch { background-image: repeating-linear-gradient(135deg, currentColor 0 2px,
               transparent 2px 6px);
               background-color: color-mix(in srgb, currentColor 13%, transparent); }
@@ -161,6 +205,7 @@ svg.spark { width: 100%; height: auto; display: block; overflow: visible; }
 .chip-bet-1 { background: var(--bet-1-wash); color: var(--bet-1); }
 .chip-bet-2 { background: var(--bet-2-wash); color: var(--bet-2); }
 .unknown { color: var(--ink-faint); font-style: italic; }
+.over { font-size: 12px; color: var(--crit); }
 .contested { border-left: 3px solid var(--warn); padding-left: 10px; }
 .contested ul { margin: 6px 0; padding-left: 18px; }
 .table-scroll { overflow-x: auto; }
@@ -170,6 +215,8 @@ th, td { text-align: right; padding: 4px 10px 4px 0; vertical-align: top; }
 th { white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; white-space: nowrap; }
 th { color: var(--ink-faint); font-weight: 500; border-bottom: 1px solid var(--line); }
+.switch { display: flex; gap: 4px; flex-wrap: wrap; padding-top: 20px; }
+.switch .tab { border-bottom: 1px solid var(--line); border-radius: 7px; }
 .view { display: block; }
 body.js .view[hidden] { display: none; }
 @media (max-width: 1080px) { .layout { grid-template-columns: minmax(0, 1fr); } }

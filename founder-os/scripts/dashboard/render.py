@@ -20,7 +20,8 @@ _SIGNAL_COLOUR = {"below": "var(--crit)", "above": "var(--warn)",
 
 def escape(text) -> str:
     return (str(text).replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
+            .replace(">", "&gt;").replace('"', "&quot;")
+            .replace("'", "&#39;"))
 
 
 def _find(panel, key):
@@ -38,6 +39,17 @@ def fact_html(fact) -> str:
     if not fact.known:
         return '<span class="unknown">%s</span>' % escape(fact.display)
     return escape(fact.display)
+
+
+class Markup(str):
+    """A table cell that is already HTML, so `_numbers` must not escape it.
+
+    `_numbers` escapes every cell it is handed, which is right for the raw
+    strings the other panels give it. The cash table needs the
+    `<span class="unknown">` that marks a value the workspace does not record:
+    escaped again it prints as angle brackets, dropped altogether it makes
+    "not calculated this month" look like a figure.
+    """
 
 
 def _cite(panel) -> str:
@@ -59,7 +71,9 @@ def _panel(title, note, body, panel, wide=False) -> str:
 def _numbers(caption, headers, rows) -> str:
     head = "".join("<th>%s</th>" % escape(item) for item in headers)
     body = "".join(
-        "<tr>%s</tr>" % "".join("<td>%s</td>" % escape(cell) for cell in row)
+        "<tr>%s</tr>" % "".join(
+            "<td>%s</td>" % (cell if isinstance(cell, Markup) else escape(cell))
+            for cell in row)
         for row in rows)
     return ('<details class="numbers"><summary>%s</summary>'
             '<div class="table-scroll"><table><thead><tr>%s</tr></thead>'
@@ -115,21 +129,43 @@ def _bets(facts) -> str:
                   "%d%% of the window spent" % round(bet.elapsed * 100), False)])
         elif bet.elapsed_assumed:
             elapsed = ('<p class="unknown">window not recorded — goals.md carries '
-                       "no Opened: date for this bet</p>")
+                       "no Start date: for this bet</p>")
+        # A judged bet says so. `kill-or-continue` leaves the block in place, so
+        # without the verdict a dead bet keeps its threshold, its meter and its
+        # judgment date and reads exactly like one still running — and a killed
+        # bet has no countdown left, so the card fell through to "Judged in not
+        # recorded" about a bet whose date and verdict goals.md both carry.
+        verdict = ""
+        if bet.verdict:
+            verdict = "<p><b>%s</b> — %s</p>" % (
+                escape(bet.verdict.title()), escape(bet.verdict_line or ""))
+        countdown = ("" if bet.verdict == "killed"
+                     else "<p>Judged in %s</p>" % fact_html(days))
         blocks.append(
             '<article class="bet"><div><span class="chip chip-bet-%d">%s</span> '
-            "<b>%s</b></div><p>%s</p>%s%s<p>%s</p></article>"
+            "<b>%s</b></div><p>%s</p>%s%s%s%s</article>"
             % (index % 2 + 1, escape(bet.key), escape(bet.name),
                escape(bet.threshold or "no threshold recorded"), meter, elapsed,
-               "Judged in %s" % fact_html(days)))
+               verdict, countdown))
+    # A target the workspace records as 0 is a number. Only `None` is the
+    # unread target, which is why this cell tests for it and the meter above
+    # keeps its truthiness test — a meter against a target of nothing has no
+    # fraction to draw.
+    #
+    # "open" is the absence of a verdict line, which is the same reading
+    # `bets_open` is counted from: `kill-or-continue` may not delete the block,
+    # so a bet with no verdict under `## Bets` has not been judged.
     rows = [[bet.key, bet.threshold or "", "%g" % bet.progress
              if bet.progress is not None else "not recorded",
-             bet.judgment.isoformat() if bet.judgment else "not recorded"]
+             "%g" % bet.target if bet.target is not None else "not recorded",
+             bet.judgment.isoformat() if bet.judgment else "not recorded",
+             bet.verdict or "open"]
             for bet in bets]
     return _panel("Bets against their thresholds", "judgment dates from goals.md",
                   "".join(blocks) + _numbers(
-                      "Show the numbers", ("Bet", "Threshold", "Now", "Judgment"),
-                      rows),
+                      "Show the numbers",
+                      ("Bet", "Threshold", "Now", "Target", "Judgment",
+                       "Verdict"), rows),
                   panel, wide=True)
 
 
@@ -141,7 +177,21 @@ def _pipeline(facts) -> str:
             % (fact_html(amount), fact_html(_find(panel, "live_count")),
                fact_html(_find(panel, "overdue_count")),
                fact_html(_find(panel, "coverage")), _contested(panel)))
-    return _panel("Pipeline", "", body, panel)
+    tier = _find(panel, "live_unvalidated")
+    return _panel("Pipeline", tier.display if tier is not None else "", body,
+                  panel)
+
+
+def _band(signal) -> str:
+    """The normal band as written, or the words for a signal that has none.
+
+    `signal-check` rule 5 forbids inventing a range under four readings and
+    mandates `range: not yet`, so a band of None is a signal too young to have
+    one — not a signal read wrong, and not a band of zero.
+    """
+    if signal.low is None or signal.high is None:
+        return ""
+    return "%g–%g" % (signal.low, signal.high)
 
 
 def _signals(facts) -> str:
@@ -150,19 +200,37 @@ def _signals(facts) -> str:
     cards = []
     for signal in signals:
         colour = _SIGNAL_COLOUR.get(signal.state, "var(--neutral-mark)")
+        band = _band(signal)
         cards.append(
             '<div class="signal"><div>%s</div>%s'
             '<div><span class="stat-value" style="color:%s">%g</span> '
-            '<span class="chip">normal %g–%g</span></div></div>'
+            '<span class="chip">normal %s</span></div></div>'
             % (escape(signal.name),
                charts.sparkline(list(signal.series), signal.low, signal.high,
                                 colour, signal.name),
-               colour, signal.value, signal.low, signal.high))
-    rows = [[s.name] + ["%g" % v for v in s.series] +
-            ["%g–%g" % (s.low, s.high), s.source] for s in signals]
-    return _panel("Signals", "", "".join(cards) + _numbers(
-        "Show the numbers", ("Signal", "1", "2", "3", "4", "Normal", "Source"),
-        rows), panel)
+               colour, signal.value,
+               escape(band) if band
+               else '<span class="unknown">not recorded</span>'))
+    # `last four:` is a rolling window of four by convention, not by parse: the
+    # regex accepts any count and metrics.md is hand-edited. A fixed seven-column
+    # header shifts every later cell under the wrong heading the moment one
+    # signal carries a different number of readings, so the header follows the
+    # widest series and short rows are padded out to it.
+    width = max((len(s.series) for s in signals), default=0)
+    headers = (("Signal",) + tuple(str(index + 1) for index in range(width))
+               + ("Normal", "Source"))
+    rows = [[s.name] + ["%g" % v for v in s.series]
+            + [""] * (width - len(s.series))
+            + [_band(s) or "not recorded", s.source] for s in signals]
+    # A line outside the signal grammar produces no card and no row, so without
+    # this the measure simply vanishes: the founder sees two signals where
+    # metrics.md records three, and nothing on the page says a line was dropped.
+    # The analyzer already refuses to count them and says how many; the panel's
+    # note is where that reaches the reader.
+    count = _find(panel, "signal_count")
+    note = "" if count is None or count.known else count.display
+    return _panel("Signals", note, "".join(cards) + _numbers(
+        "Show the numbers", headers, rows), panel)
 
 
 def _week(facts) -> str:
@@ -170,15 +238,21 @@ def _week(facts) -> str:
     blocks = facts.details.get("blocks") or ()
     available = _find(panel, "available_hours")
     segments = []
+    booked = []
+    total = 0.0
     if available is not None and available.known and available.number:
         total = available.number
         delivery = _find(panel, "delivery_hours")
         if delivery is not None and delivery.known:
+            booked.append(("%gh delivery" % delivery.number, delivery.number))
             segments.append((delivery.number / total, "var(--neutral-mark)",
                              "delivery %gh" % delivery.number, False))
         planned = sorted((item for item in panel.facts
                           if item.key.startswith("planned.")),
                          key=lambda item: item.key)
+        planned_hours = sum(item.number for item in planned)
+        if planned:
+            booked.append(("%gh in blocks" % planned_hours, planned_hours))
         for index, item in enumerate(planned):
             segments.append((item.number / total,
                              "var(--bet-%d)" % (index % 2 + 1),
@@ -186,6 +260,22 @@ def _week(facts) -> str:
                              False))
     body = (charts.track(segments, tall=True) if segments else
             '<p class="unknown">not recorded</p>')
+    # The bar can only draw a hundred per cent of the week. Committing more than
+    # the week holds is exactly the thing a founder needs to see, and a clipped
+    # bar looks identical to a week that fits, so the overflow is stated in
+    # words as well.
+    #
+    # In hours, and by its parts. Adding the segments' fractions instead pushes
+    # a week that lands exactly on the available hours past 1.0 by float error
+    # (15.5/30 + 7.75/30 + 6.75/30 is 1.0000000000000002) and warns about a week
+    # that fits. Block hours are rounded to a hundredth, so half of that is the
+    # widest gap that can only be arithmetic noise. And the total of delivery
+    # plus blocks is written in no file — week.md ## Arithmetic records its own,
+    # different "Planned" figure — so the sentence states the two hours the
+    # workspace does record rather than a sum the founder cannot look up.
+    if booked and sum(hours for _label, hours in booked) - total > 0.005:
+        body += ('<p class="over">Over-committed: %s against %gh available.</p>'
+                 % (" plus ".join(label for label, _hours in booked), total))
     rows = [[b.day, "%g" % (b.hours or 0), b.title, b.serves] for b in blocks]
     return _panel("This week", "", body + _numbers(
         "Show the numbers", ("Day", "Hours", "Block", "Serves"), rows), panel)
@@ -222,7 +312,7 @@ def _cash(facts) -> str:
     body = "".join(
         "<p>%s: <b>%s</b></p>" % (escape(label), fact_html(_find(panel, key)))
         for key, label in keys)
-    rows = [[label, fact_html(_find(panel, key))] for key, label in keys]
+    rows = [[label, Markup(fact_html(_find(panel, key)))] for key, label in keys]
     return _panel("Cash and rate", "", body + _numbers(
         "Show the numbers", ("Measure", "Value"), rows), panel)
 
@@ -243,24 +333,58 @@ def _tabs() -> str:
         for _key, label, active in TABS)
 
 
+def _name_of(business, facts) -> str:
+    return str(facts.business.get("name") or business.slug or "this business")
+
+
+def _switcher(pages, active: int) -> str:
+    """One button per business, or nothing at all when there is only one.
+
+    Without this the page holds every business but can reach only the first: the
+    others are emitted `hidden` and no control in the document can clear it.
+    """
+    if len(pages) < 2:
+        return ""
+    buttons = []
+    for index, (business, facts) in enumerate(pages):
+        slug = escape(business.slug or "single")
+        buttons.append(
+            '<button class="tab" type="button" role="tab" data-business="%s" '
+            'data-name="%s" aria-selected="%s" aria-controls="business-%s">'
+            "%s</button>"
+            % (slug, escape(_name_of(business, facts)),
+               "true" if index == active else "false", slug,
+               escape(_name_of(business, facts))))
+    return ('<nav class="switch" role="tablist" aria-label="Business">%s</nav>'
+            % "".join(buttons))
+
+
 def render(pages: Sequence[Tuple[object, object]], generated: str,
            active_slug: str = "", paused: int = 0) -> str:
-    first = pages[0][1]
-    title = escape(first.business.get("name") or "Founder OS")
-    excluded = (" · %d paused business excluded" % paused) if paused else ""
+    # A slug naming no active business falls back to the first rather than
+    # raising: the caller decides whether an unresolvable slug is an error, and
+    # a page that renders nothing is worse than a page that renders the default.
+    active = next((index for index, (business, _facts) in enumerate(pages)
+                   if business.slug == active_slug), 0)
+    current = pages[active][1]
+    title = escape(current.business.get("name") or "Founder OS")
+    excluded = (" · %d paused business%s excluded"
+                % (paused, "es" if paused > 1 else "")) if paused else ""
     views = "".join(
         '<section class="view" id="business-%s"%s>%s</section>'
         % (escape(business.slug or "single"),
-           "" if index == 0 else " hidden", _view(business, facts))
+           "" if index == active else " hidden", _view(business, facts))
         for index, (business, facts) in enumerate(pages))
     return (
         '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         "%s\n<title>%s — Founder OS</title>\n<style>%s</style>\n</head>\n<body>\n"
-        '<header class="masthead"><div class="wrap"><b>Founder OS</b> · %s'
+        '<header class="masthead"><div class="wrap"><b>Founder OS</b> · '
+        '<span id="business-name">%s</span>'
         '<span class="chip">generated %s%s</span></div>%s</header>\n'
-        '<div class="wrap">%s</div>\n'
-        "<script>document.body.classList.add('js');</script>\n"
+        '<div class="wrap">%s%s</div>\n'
+        "<script>%s</script>\n"
         "</body>\n</html>\n"
         % (theme.CSP, title, theme.STYLESHEET, title, escape(generated),
-           escape(excluded), _tabs(), views))
+           escape(excluded), _tabs(), _switcher(pages, active), views,
+           theme.SCRIPT))

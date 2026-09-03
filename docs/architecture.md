@@ -110,8 +110,10 @@ founder os/                     ← repo root (marketplace + source)
 │   │                             ownership-guard.py, hooks.json
 │   ├── mcp/                    ← eight-tool local state gateway
 │   ├── scripts/cadence_manager.py ← safe local scheduler manager
-│   ├── references/             ← house-rules, ownership.yaml, linking,
-│   │                             orchestration, multi-business, skill-template
+│   ├── scripts/dashboard/      ← the `/dashboard` renderer (package)
+│   ├── references/             ← house-rules, ownership.yaml, thresholds.yaml,
+│   │                             linking, orchestration, multi-business,
+│   │                             skill-template
 │   └── images/                 ← org chart, etc.
 ├── scripts/
 │   ├── validate_package.py     ← build-time validator (the bar for structure)
