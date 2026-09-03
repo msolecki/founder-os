@@ -5,6 +5,8 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+## 2.8.0 — 2026-09-03
+
 **The workspace as one page that cites its own sources.** `/dashboard` renders
 bets, pipeline, signals, the week, the queue and the close as one local page,
 every number printed beside the file and section it came from. A run that

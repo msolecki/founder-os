@@ -36,7 +36,7 @@ DOCTOR_PATH = (
     REPO_ROOT / "founder-os" / "skills" / "founder-os-doctor" / "SKILL.md"
 )
 FEATURE_LIST_PATH = REPO_ROOT / "feature_list.json"
-RELEASE_VERSION = "2.7.0"
+RELEASE_VERSION = "2.8.0"
 # The most recent published tag, and a record rather than a site: it names an
 # entry that already shipped, so a bump moves RELEASE_VERSION above and leaves
 # this alone until the release after next freezes a new one.
