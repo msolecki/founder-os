@@ -242,8 +242,13 @@ class TestMergeReadsWhatIsAlreadyThere(unittest.TestCase):
         self.assertEqual(path.read_bytes(), before)
 
     def test_a_csv_error_is_refused_and_left_untouched(self):
+        # An over-long field rather than an embedded NUL: CPython dropped the
+        # "line contains NUL" error in 3.11, so that byte raises on 3.9 and
+        # parses cleanly on the version CI runs. The field limit is the one
+        # csv.Error every supported interpreter still agrees on.
         path = self._series()
-        path.write_bytes(path.read_bytes() + b"2026-07-21,studio-\x00north\n")
+        path.write_bytes(path.read_bytes()
+                         + b"2026-07-21," + b"x" * 200000 + b"\n")
         before = path.read_bytes()
         with self.assertRaises(OSError):
             snapshots.merge(path, dict(snapshots.row_from(example_facts()),
@@ -284,9 +289,10 @@ class TestMergeReadsWhatIsAlreadyThere(unittest.TestCase):
         """
         undecodable = self._series()
         undecodable.write_bytes(undecodable.read_bytes().replace(b"$", b"\xa3"))
-        nul = self._series()
-        nul.write_bytes(nul.read_bytes() + b"2026-07-21,studio-\x00north\n")
-        for path in (undecodable, nul):
+        unparsable = self._series()
+        unparsable.write_bytes(unparsable.read_bytes()
+                               + b"2026-07-21," + b"x" * 200000 + b"\n")
+        for path in (undecodable, unparsable):
             with self.assertRaises(OSError) as caught:
                 snapshots.merge(path, dict(snapshots.row_from(example_facts()),
                                            date="2026-07-21"))
