@@ -9,9 +9,17 @@ Twenty files hold the company. Each is legible on its own and the joins between
 them are not, which is why a weekly review tends to run on what the founder
 remembers rather than on what the workspace says. This renders the joins.
 
-It reads. It writes one directory, `_dashboard/`, which no agent owns and no
-agent may cite. **Nothing on the page is evidence.** If a number matters, it
-matters in the file it came from, and the page prints that file beside it.
+It reads. A run that writes at all — not `--json`, and not refused — writes
+three files into every readable active business's own `_dashboard/`:
+`facts.json`, the day's row of `snapshots.csv`, and a `.gitignore` only when
+that directory has none. It writes one more file, the page, and `--out` moves
+that one alone; the flag is refused when the path it names is one the
+ownership map gives an agent, or one of the three the run maintains itself.
+`_dashboard/` is a `derived_files:` path: no agent owns it, the ownership
+guard denies every agent a write under it through the file tools it inspects
+— it does not read shell commands — and no agent may cite it. **Nothing on the
+page is evidence.** If a number matters, it matters in the file it came from,
+and the page prints that file beside it.
 
 ## When to use
 

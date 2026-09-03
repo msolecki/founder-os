@@ -14,6 +14,7 @@ Two rules this file follows, both learned the hard way:
    an agent lost its skills, and four tests failed for one reason while the
    fixture looked fine on screen. A dict cannot hold a duplicate key.
 """
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -1097,6 +1098,125 @@ class TestDerivedFiles(unittest.TestCase):
         self.assertTrue(any("derived but owned by" in e for e in errs), errs)
         self.assertTrue(any("declares sections" in e for e in errs), errs)
 
+    def test_check_derived_files_rejects_a_path_inside_a_derived_directory(self):
+        """`_dashboard/` is a directory, so everything under it is derived too.
+
+        The three joins compared with string equality, which read the trailing
+        slash as part of a filename: `_dashboard/` was caught and
+        `_dashboard/snapshots/` walked through all three.
+        """
+        root = Path(tempfile.mkdtemp()) / "founder-os"
+        write(root / "references" / "ownership.yaml", yaml.safe_dump({
+            "workspace_files": ["charter.md"],
+            "portfolio_files": ["portfolio.md"],
+            "derived_files": ["_dashboard/"],
+            "owns": {"chief-of-staff": ["charter.md", "_dashboard/snapshots/"],
+                     "portfolio-manager": ["portfolio.md"]},
+            "sections": {"charter.md": ["## Business"],
+                         "portfolio.md": ["## Businesses"],
+                         "_dashboard/snapshots/": ["## Anything"]},
+        }))
+        errs = V.check_derived_files(root, {})
+        self.assertTrue(any(
+            "'_dashboard/snapshots/' is derived but owned by" in e
+            for e in errs), errs)
+        self.assertTrue(any(
+            "'_dashboard/snapshots/' is derived but declares sections" in e
+            for e in errs), errs)
+
+    def test_check_derived_files_rejects_a_declared_write_to_a_derived_path(self):
+        """The third join, which no fixture reached: skill -> derived path."""
+        root = Path(tempfile.mkdtemp()) / "founder-os"
+        write(root / "references" / "ownership.yaml", yaml.safe_dump({
+            "workspace_files": ["charter.md"],
+            "portfolio_files": ["portfolio.md"],
+            "derived_files": ["_dashboard/"],
+            "owns": {"chief-of-staff": ["charter.md"],
+                     "portfolio-manager": ["portfolio.md"]},
+            "sections": {"charter.md": ["## Business"],
+                         "portfolio.md": ["## Businesses"]},
+        }))
+        write(root / "skills" / "dashboard" / "SKILL.md",
+              skill_md("dashboard", writes=["_dashboard/today.html"]))
+        self.assertEqual(V.check_derived_files(root, {}), [
+            "skills/dashboard: declares a write to the derived path "
+            "'_dashboard/today.html'"])
+
+        write(root / "skills" / "dashboard" / "SKILL.md",
+              skill_md("dashboard", writes=["_dashboard/"]))
+        self.assertEqual(V.check_derived_files(root, {}), [
+            "skills/dashboard: declares a write to the derived path "
+            "'_dashboard/'"])
+
+    def test_a_sibling_of_a_derived_directory_is_not_derived(self):
+        """Segments, not string prefixes: `_dashboardx/` is a different path."""
+        root = Path(tempfile.mkdtemp()) / "founder-os"
+        write(root / "references" / "ownership.yaml", yaml.safe_dump({
+            "workspace_files": ["charter.md", "_dashboardx/notes.md"],
+            "portfolio_files": ["portfolio.md"],
+            "derived_files": ["_dashboard/"],
+            "owns": {"chief-of-staff": ["charter.md", "_dashboardx/notes.md"],
+                     "portfolio-manager": ["portfolio.md"]},
+            "sections": {"charter.md": ["## Business"],
+                         "portfolio.md": ["## Businesses"]},
+        }))
+        write(root / "skills" / "dashboard" / "SKILL.md",
+              skill_md("dashboard", writes=["_dashboardx/notes.md"]))
+        self.assertEqual(V.check_derived_files(root, {}), [])
+
+    def test_a_case_mismatched_derived_entry_still_covers_the_path(self):
+        """The guard casefolds, so a map that does not is a map it disagrees with.
+
+        `hooks/ownership-guard.py:_derived_entry` reads `_Dashboard/` and
+        `_dashboard/snapshots/x.md` as the same directory and denies the write.
+        Compared case-sensitively here, the same map shipped: the package said
+        the path was owned state and the machine refused every write to it.
+        """
+        root = Path(tempfile.mkdtemp()) / "founder-os"
+        write(root / "references" / "ownership.yaml", yaml.safe_dump({
+            "workspace_files": ["charter.md", "_dashboard/snapshots/"],
+            "portfolio_files": ["portfolio.md"],
+            "derived_files": ["_Dashboard/"],
+            "owns": {"chief-of-staff": ["charter.md", "_dashboard/snapshots/"],
+                     "portfolio-manager": ["portfolio.md"]},
+            "sections": {"charter.md": ["## Business"],
+                         "portfolio.md": ["## Businesses"]},
+        }))
+        self.assertTrue(any(
+            "'_dashboard/snapshots/' is derived but owned by" in e
+            for e in V.check_derived_files(root, {})),
+            V.check_derived_files(root, {}))
+        self.assertIn(
+            "ownership.yaml: '_dashboard/snapshots/' is declared derived and "
+            "also owned", V.check_ownership(root, {"chief-of-staff": None,
+                                                   "portfolio-manager": None}))
+
+    def test_a_derived_entry_that_lost_its_slash_still_covers_the_directory(self):
+        """The guard reads `_dashboard` as the directory; so must the package.
+
+        A trailing slash dropped from the map is a typo, and the guard's reading
+        of a typo in a deny list is the broad one. Read narrowly here, the typo
+        turned the whole join off: `_dashboard/today.html` was owned, sectioned
+        and written by a skill with the validator green.
+        """
+        root = Path(tempfile.mkdtemp()) / "founder-os"
+        write(root / "references" / "ownership.yaml", yaml.safe_dump({
+            "workspace_files": ["charter.md", "_dashboard/today.html"],
+            "portfolio_files": ["portfolio.md"],
+            "derived_files": ["_dashboard"],
+            "owns": {"chief-of-staff": ["charter.md", "_dashboard/today.html"],
+                     "portfolio-manager": ["portfolio.md"]},
+            "sections": {"charter.md": ["## Business"],
+                         "portfolio.md": ["## Businesses"],
+                         "_dashboard/today.html": ["## Anything"]},
+        }))
+        errs = V.check_derived_files(root, {})
+        self.assertTrue(any("'_dashboard/today.html' is derived but owned by" in e
+                            for e in errs), errs)
+        self.assertTrue(any(
+            "'_dashboard/today.html' is derived but declares sections" in e
+            for e in errs), errs)
+
     def test_check_derived_files_is_registered(self):
         names = [check.__name__ for check in V.CHECKS]
         self.assertIn("check_derived_files", names)
@@ -1106,6 +1226,25 @@ class TestDerivedFiles(unittest.TestCase):
 class TestThresholdsCheck(unittest.TestCase):
     def setUp(self):
         self.agents = V.load_agents(REAL_PLUGIN)
+
+    def mutated_package(self) -> Path:
+        """A throwaway copy of the shipped package, to break on purpose.
+
+        The check's whole subject is the distance between two files that both
+        ship, so a synthetic two-file root would prove nothing about the package
+        the release installs.
+        """
+        parent = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, parent, ignore_errors=True)
+        root = parent / "founder-os"
+        shutil.copytree(REAL_PLUGIN, root)
+        return root
+
+    def retune(self, root: Path, old: str, new: str) -> None:
+        path = root / "references" / "thresholds.yaml"
+        text = path.read_text(encoding="utf-8")
+        self.assertIn(old, text)
+        path.write_text(text.replace(old, new), encoding="utf-8")
 
     def test_no_errors_against_the_package(self):
         self.assertEqual(V.check_thresholds(REAL_PLUGIN, self.agents), [])
@@ -1120,18 +1259,230 @@ class TestThresholdsCheck(unittest.TestCase):
         errs = V.check_thresholds(citing, {})
         self.assertTrue(any("skills/queue" in e for e in errs), errs)
 
-    def test_a_group_nothing_cites_is_an_error(self):
-        root = Path(tempfile.mkdtemp()) / "founder-os"
-        write(root / "references" / "thresholds.yaml",
-              "queue:\n  doing_cap: 3\nnobodycitesthis:\n  cap: 1\n")
+    def test_every_packaged_value_is_pinned_to_a_sentence(self):
+        text = (REAL_PLUGIN / "references" / "thresholds.yaml").read_text(
+            encoding="utf-8")
+        groups, values, declared, errs = V._parse_thresholds(text)
+        self.assertEqual(errs, [])
+        self.assertEqual(sorted(values), sorted(V._THRESHOLD_RESTATEMENTS))
+
+    def test_a_cap_raised_only_in_the_yaml_fails(self):
+        root = self.mutated_package()
+        self.retune(root, "doing_days: 5", "doing_days: 55")
         errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("skills/queue/SKILL.md", errs[0])
+        self.assertIn("restates queue.doing_days as 5", errs[0])
+        self.assertIn("says 55", errs[0])
+
+    def test_a_number_no_python_reads_is_pinned_too(self):
+        """`briefs` is prose on both ends — no code reads it, no unit test can.
+
+        Every other group is consumed by the dashboard, so a mutation there also
+        turns some assertion red by accident. These two numbers have only this
+        check between them and silent drift.
+        """
+        root = self.mutated_package()
+        self.retune(root, "window: 10", "window: 20")
+        self.retune(root, "acted_one_in: 5", "acted_one_in: 9")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 2, errs)
+        self.assertTrue(any("restates briefs.window as 10" in e for e in errs),
+                        errs)
         self.assertTrue(
-            any("nothing cites the 'nobodycitesthis' group" in e for e in errs),
-            errs)
+            any("restates briefs.acted_one_in as 5" in e for e in errs), errs)
+
+    def test_a_cap_spelled_out_in_prose_is_still_compared(self):
+        root = self.mutated_package()
+        self.retune(root, "\n  cap: 3", "\n  cap: 8")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 2, errs)
+        self.assertTrue(all("restates signals.cap" in e for e in errs), errs)
+
+    def test_a_restatement_reworded_away_fails_rather_than_passing(self):
+        """Losing the sentence loses the guard, so losing it is the error."""
+        root = self.mutated_package()
+        skill = root / "skills" / "queue" / "SKILL.md"
+        text = skill.read_text(encoding="utf-8")
+        self.assertIn("5 working days from `started`", text)
+        skill.write_text(
+            text.replace("5 working days from `started`",
+                         "a working week from `started`"), encoding="utf-8")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("no longer restates queue.doing_days", errs[0])
+
+    def test_a_group_no_sentence_restates_is_an_error(self):
+        """The group name is `pipeline` on purpose.
+
+        This arm used to search the prose corpus for the bare group name, and
+        every plausible group name — pipeline, cash, offer, content, network —
+        is already a word that corpus contains. The only input it could fail on
+        was an invented token no prose would ever hold, which is what the test
+        here used to pass.
+        """
+        root = self.mutated_package()
+        path = root / "references" / "thresholds.yaml"
+        path.write_text(path.read_text(encoding="utf-8")
+                        + "pipeline:\n  stale_days: 90\n", encoding="utf-8")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("nothing restates 'pipeline.stale_days'", errs[0])
+
+    def test_a_key_dropped_from_the_yaml_takes_its_sentence_with_it(self):
+        """The registry read backwards, which is the half that was missing.
+
+        `_restatement_errors` walks the keys the file declares, so deleting a
+        key skipped its row entirely: `briefs:` gone from the yaml left
+        founder-os-doctor still printing "10+ files in `reviews/daily/`, and
+        fewer than 1 in 5" with nothing behind either number and the validator
+        exiting 0.
+        """
+        root = self.mutated_package()
+        path = root / "references" / "thresholds.yaml"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "briefs:\n  window: 10\n  acted_one_in: 5\n", ""),
+            encoding="utf-8")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 2, errs)
+        self.assertTrue(all("skills/founder-os-doctor/SKILL.md" in e
+                            for e in errs), errs)
+        self.assertTrue(any("declares no 'briefs.window'" in e for e in errs),
+                        errs)
+        self.assertTrue(
+            any("declares no 'briefs.acted_one_in'" in e for e in errs), errs)
+
+    def test_a_skill_that_only_restates_still_needs_the_file(self):
+        """Who states a limit is read off the table, not off a second list.
+
+        `_THRESHOLD_CITERS` named queue and founder-os-doctor and nothing
+        derived it from anything, so a root shipping signal-check — which states
+        signals.cap twice — and no references/thresholds.yaml was reported as
+        having no number to keep in one place.
+        """
+        bare = Path(tempfile.mkdtemp()) / "founder-os"
+        write(bare / "skills" / "signal-check" / "SKILL.md",
+              "---\nname: signal-check\n---\nThree is the cap.\n")
+        errs = V.check_thresholds(bare, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("skills/signal-check", errs[0])
+        self.assertIn("missing", errs[0])
+
+    def test_a_registered_file_that_is_gone_is_an_error(self):
+        """A moved skill fails the build; it does not turn its own guard off.
+
+        A reworded sentence already fails. A missing file used to `continue`, so
+        a typo in the table or a renamed directory left that number unguarded
+        with the whole validator green — the same fail-open the value comparison
+        replaced, one level up.
+        """
+        root = self.mutated_package()
+        (root / "skills" / "signal-check" / "SKILL.md").unlink()
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 2, errs)
+        self.assertTrue(all("skills/signal-check/SKILL.md" in e for e in errs),
+                        errs)
+        self.assertTrue(all("signals.cap" in e for e in errs), errs)
+
+    def test_a_value_the_runtime_reader_rejects_is_an_error_here(self):
+        """The yaml is read the way `contracts.load_thresholds` reads it.
+
+        That reader is a bare `float(value)`. Prose spells small numbers out and
+        the restatement side reads the words back, but the file itself is not
+        prose: `doing_cap: three` parsed to 3.0 here, agreed with the table's
+        `3`, and shipped green — the dashboard is the one that crashes on the
+        line, on a founder's machine.
+        """
+        root = self.mutated_package()
+        self.retune(root, "doing_cap: 3", "doing_cap: three")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("queue.doing_cap is 'three', not a number", errs[0])
+
+    def test_a_group_with_no_keys_is_an_error(self):
+        """Every arm past the parser is per key, so an empty group had none."""
+        root = self.mutated_package()
+        path = root / "references" / "thresholds.yaml"
+        path.write_text(path.read_text(encoding="utf-8") + "pipeline:\n",
+                        encoding="utf-8")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("'pipeline' declares no keys", errs[0])
 
     def test_check_is_registered(self):
         names = [check.__name__ for check in V.CHECKS]
         self.assertIn("check_thresholds", names)
+
+
+class TestGatewaySchemaDerivedPaths(unittest.TestCase):
+    """The gateway holds the second copy of the derived join.
+
+    `check_derived_files` keeps a derived path out of the ownership map at
+    package time; `OwnershipSchema.load` refuses the same map at run time, and
+    it is the run-time reader that hands an agent a writable path. Both compared
+    strings, so `_dashboard/snapshots/` walked through both and
+    `owner_for("_dashboard/snapshots/x.md")` answered with a role. The test
+    lives here because the fix ships from this partition; its natural home is
+    tests/test_ownership_derived_files.py.
+    """
+
+    MAP = """\
+workspace_files:
+  - charter.md
+  - _dashboard/snapshots/
+portfolio_files:
+  - portfolio.md
+owns:
+  chief-of-staff:
+    - charter.md
+    - _dashboard/snapshots/
+  portfolio-manager:
+    - portfolio.md
+sections:
+  charter.md:
+    - "## Business"
+  portfolio.md:
+    - "## Businesses"
+  _dashboard/snapshots/:
+    - "## Anything"
+derived_files:
+  - _dashboard/
+"""
+
+    def written(self, text):
+        spec = importlib.util.spec_from_file_location(
+            "fos_ownership_for_validator", REAL_PLUGIN / "mcp" / "ownership.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        path = Path(tempfile.mkdtemp()) / "ownership.yaml"
+        path.write_text(text, encoding="utf-8")
+        return module, path
+
+    def test_a_path_inside_a_derived_directory_cannot_be_owned(self):
+        module, path = self.written(self.MAP)
+        with self.assertRaises(module.OwnershipError):
+            module.OwnershipSchema.load(path)
+
+    def test_a_case_mismatched_derived_entry_is_refused(self):
+        """`_Dashboard/` and `_dashboard/` are one directory to the guard.
+
+        Compared case-sensitively, the map loaded and
+        `owner_for("_dashboard/snapshots/x.md")` answered with a role for a path
+        `hooks/ownership-guard.py` denies every write to.
+        """
+        module, path = self.written(
+            self.MAP.replace("derived_files:\n  - _dashboard/",
+                             "derived_files:\n  - _Dashboard/"))
+        with self.assertRaises(module.OwnershipError):
+            module.OwnershipSchema.load(path)
+
+    def test_a_sibling_of_a_derived_directory_still_loads(self):
+        module, path = self.written(
+            self.MAP.replace("_dashboard/snapshots/", "_dashboardx/snapshots/"))
+        schema = module.OwnershipSchema.load(path)
+        self.assertEqual(schema.owner_for("_dashboardx/snapshots/x.md"),
+                         "chief-of-staff")
 
 
 

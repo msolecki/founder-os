@@ -105,6 +105,34 @@ class TestTrack(unittest.TestCase):
         self.assertNotIn("<b>", html)
         self.assertIn("&lt;b&gt;", html)
 
+    def test_a_single_quote_from_state_cannot_close_an_attribute(self):
+        html = charts.track([(0.5, "var(--good)", "it's 3 of 4", False)])
+        self.assertNotIn("it's", html)
+        self.assertIn("it&#39;s", html)
+
+    def test_the_segment_label_is_readable_without_javascript(self):
+        # `data-tip` is a hook nothing in the page reads: no stylesheet rule and
+        # no script consumes it, and a data-* attribute contributes no
+        # accessible name. The number the segment stands for has to reach the
+        # reader some other way, or the chart is a bar with no legend.
+        html = charts.track([(0.6, "var(--neutral-mark)", "delivery 24h", False)])
+        self.assertIn('title="delivery 24h"', html)
+
+    def test_the_segment_label_reaches_assistive_technology(self):
+        # A `title` on a bare div is a mouse-hover tooltip and nothing more: a
+        # generic div takes no accessible name from it and cannot be focused,
+        # so the number the segment stands for reaches a screen reader only
+        # through the pattern `sparkline` already uses one function above.
+        html = charts.track([(0.6, "var(--neutral-mark)", "delivery 24h", False)])
+        self.assertIn('role="img"', html)
+        self.assertIn('aria-label="delivery 24h"', html)
+
+    def test_every_segment_carries_its_own_label(self):
+        html = charts.track([(0.5, "var(--bet-1)", "B1 11h", False),
+                             (0.4, "var(--bet-2)", "B2 11.5h", False)])
+        self.assertEqual(re.findall(r'title="([^"]+)"', html),
+                         ["B1 11h", "B2 11.5h"])
+
 
 if __name__ == "__main__":
     unittest.main()

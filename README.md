@@ -225,9 +225,11 @@ founder-os/                       # the plugin (what gets installed)
   skills/           (57)
   mcp/                            # one eight-tool local state gateway
   scripts/cadence_manager.py      # safe scheduler preview/snapshot/apply
+  scripts/dashboard/              # the /dashboard renderer (reads state, writes _dashboard/)
   hooks/                          # hooks.json + ownership-guard.py
   references/                     # ownership.yaml, house-rules, skill-template,
-                                  # ingestion-gate, linking, multi-business
+                                  # thresholds.yaml, ingestion-gate, linking,
+                                  # multi-business
   images/                         # org chart (mermaid + png)
 scripts/validate_package.py       # build-time validator (21 checks)
 scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it

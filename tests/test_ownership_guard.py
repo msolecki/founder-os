@@ -9,6 +9,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -560,9 +561,10 @@ class TestDirectFileBoundary(unittest.TestCase):
         self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
 
-    def test_derived_dashboard_directory_is_denied_to_every_role(self):
-        # `_dashboard/` appears in derived_files:, never in owns:. The denial is
-        # the unowned-path baseline, so it must name no owner to hand off to.
+    def test_role_write_to_the_derived_directory_is_the_direct_file_deny(self):
+        # A role never reaches the ownership map at all, so this pins the
+        # mechanism that actually denies it rather than implying the map did.
+        # What `derived_files:` denies is in TestDerivedFilesAreNotWritable.
         for role in ("cfo", "chief-of-staff", "ops-engineer"):
             p = run_hook({"agent_type": role, "tool_name": "Write",
                           "cwd": str(REPO_ROOT),
@@ -570,7 +572,7 @@ class TestDirectFileBoundary(unittest.TestCase):
                               "file_path": str(PLUGIN_ROOT / "_dashboard"
                                                / "notes.md")}})
             self.assertIn("deny", p.stdout, role)
-            self.assertNotIn("handoff to", p.stdout, role)
+            self.assertIn("Direct local file access", p.stdout, role)
 
     def test_path_outside_workspace_is_denied(self):
         p = run_hook({"agent_type": "cfo", "tool_name": "Write",
@@ -578,6 +580,318 @@ class TestDirectFileBoundary(unittest.TestCase):
                       "tool_input": {"file_path": "/tmp/elsewhere.md"}})
         self.assertIn("deny", p.stdout)
         self.assertEqual(p.returncode, 0)
+
+
+class TestDerivedEntryMatching(unittest.TestCase):
+    """`derived_files:` entries match by path segment, not by string prefix."""
+
+    ENTRIES = ("_dashboard/",)
+
+    def setUp(self):
+        self.guard = load_guard()
+
+    def _entry(self, rel):
+        return self.guard._derived_entry(rel, self.ENTRIES)
+
+    def test_a_file_under_the_directory_matches(self):
+        self.assertEqual(self._entry("_dashboard/notes.md"), "_dashboard/")
+        self.assertEqual(self._entry("_dashboard/a/b/snapshots.csv"),
+                         "_dashboard/")
+
+    def test_the_directory_itself_matches(self):
+        self.assertEqual(self._entry("_dashboard"), "_dashboard/")
+
+    def test_a_longer_name_sharing_the_prefix_does_not_match(self):
+        self.assertIsNone(self._entry("_dashboard_secrets.md"))
+        self.assertIsNone(self._entry("_dashboardish/x.md"))
+        self.assertIsNone(self._entry("_dashboard.md"))
+
+    def test_a_name_containing_the_entry_does_not_match(self):
+        self.assertIsNone(self._entry("archive/_dashboard/notes.md"))
+        self.assertIsNone(self._entry("my_dashboard/notes.md"))
+
+    def test_matching_is_casefolded_like_owner_of(self):
+        self.assertEqual(self._entry("_DASHBOARD/Notes.md"), "_dashboard/")
+
+    def test_an_entry_written_without_its_slash_still_covers_the_tree(self):
+        self.assertEqual(
+            self.guard._derived_entry("_dashboard/notes.md", ("_dashboard",)),
+            "_dashboard")
+        self.assertIsNone(
+            self.guard._derived_entry("_dashboardish/x.md", ("_dashboard",)))
+
+    def test_no_entries_means_no_match(self):
+        self.assertIsNone(self.guard._derived_entry("_dashboard/notes.md", ()))
+
+
+class TestDerivedFilesAreParsedWithoutPyYAML(unittest.TestCase):
+    """The no-PyYAML machines must run the same derived policy, not most of it."""
+
+    def setUp(self):
+        self.guard = load_guard()
+        self.text = (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
+            encoding="utf-8")
+
+    def test_fallback_parser_agrees_with_pyyaml_on_the_real_map(self):
+        import yaml
+        expected = tuple(yaml.safe_load(self.text)["derived_files"])
+        self.assertEqual(self.guard._parse_derived_without_yaml(self.text),
+                         expected)
+
+    def test_load_derived_without_pyyaml_matches_the_pyyaml_answer(self):
+        with mock.patch.object(self.guard, "yaml", None):
+            without = self.guard.load_derived()
+        self.assertEqual(without, self.guard.load_derived())
+        self.assertIn("_dashboard/", without)
+
+    def test_an_absent_key_is_no_derived_paths_rather_than_an_error(self):
+        self.assertEqual(
+            self.guard._parse_derived_without_yaml("owns:\n  cfo:\n    - m.md\n"),
+            ())
+        self.assertEqual(self.guard._derived_from_text("owns: {}\n", "x"), ())
+
+    def test_a_shape_it_does_not_understand_yields_no_deny(self):
+        self.assertEqual(
+            self.guard._parse_derived_without_yaml(
+                "derived_files:\n  nested:\n    - x\n"),
+            ())
+
+    def test_a_flow_sequence_is_read_the_way_pyyaml_reads_it(self):
+        import yaml
+        for text in ("derived_files: [_dashboard/]\n",
+                     'derived_files: ["_dashboard/"]\n',
+                     "derived_files: [_dashboard/, _cache/]\n",
+                     "derived_files: !!seq [_dashboard/]\n",
+                     "derived_files: [\n  _dashboard/,\n]\n",
+                     "owns:\n  cfo:\n    - m.md\nderived_files: [_dashboard/]\n"):
+            with self.subTest(text=text):
+                expected = tuple(yaml.safe_load(text)["derived_files"])
+                self.assertEqual(
+                    self.guard._parse_derived_without_yaml(text), expected)
+
+    def test_an_inline_shape_that_is_not_a_list_of_names_yields_no_deny(self):
+        # The other half of agreeing with PyYAML: a shape it turns into no
+        # strings must turn into no entries here either, or the machine without
+        # PyYAML denies paths the map never named.
+        for text in ("derived_files: _dashboard/\n",
+                     "derived_files: {a: b}\n",
+                     "derived_files: [[_dashboard/]]\n",
+                     "derived_files: ['unterminated\n",
+                     "derived_files: [\n"):
+            with self.subTest(text=text):
+                self.assertEqual(self.guard._parse_derived_without_yaml(text), ())
+
+    def test_a_column_zero_sequence_is_read_too(self):
+        self.assertEqual(
+            self.guard._parse_derived_without_yaml(
+                "derived_files:\n- _dashboard/\nowns:\n  cfo:\n    - m.md\n"),
+            ("_dashboard/",))
+
+
+class TestDerivedFilesAreNotWritable(unittest.TestCase):
+    """A derived path is denied to the agents that reach the ownership map.
+
+    The thirteen roles never reach it — `main` denies them every direct file
+    tool first — so a role payload can say nothing about `derived_files:`. The
+    branch that consults the map is the non-role one: a reviewer, an Explore
+    pass, another plugin's agent. Every test here drives that branch against a
+    map it can mutate, so that deleting the key, or granting the path an owner,
+    changes the answer.
+    """
+
+    MAP = (
+        "workspace_files:\n"
+        "  - goals.md\n"
+        "derived_files:\n"
+        "  - _dashboard/\n"
+        "owns:\n"
+        "  strategist:\n"
+        "    - goals.md\n"
+    )
+    WITHOUT_KEY = MAP.replace("derived_files:\n  - _dashboard/\n", "", 1)
+    BROKEN_OWNS = MAP.replace("owns:\n  strategist:\n    - goals.md\n",
+                              "owns:\n  - a list where the agents should be\n", 1)
+
+    def _run(self, map_text, payload_path, agent_type="explore",
+             tool_name="Write", cwd=None, tool_input=None, prepare=None):
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, str(tmp), True)
+        plugin = tmp / "plugin"
+        (plugin / "hooks").mkdir(parents=True)
+        (plugin / "references").mkdir()
+        guard = plugin / "hooks" / "ownership-guard.py"
+        shutil.copy(GUARD_PATH, guard)
+        (plugin / "references" / "ownership.yaml").write_text(
+            map_text, encoding="utf-8")
+        ws = tmp / "ws"
+        ws.mkdir()
+        if prepare is not None:
+            prepare(ws)
+        if tool_input is None:
+            tool_input = {"file_path": "%s/%s" % (ws, payload_path)}
+        env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(plugin),
+               "FOUNDER_OS_HOME": str(ws)}
+        return subprocess.run(
+            [sys.executable, str(guard)],
+            input=json.dumps({"agent_type": agent_type,
+                              "tool_name": tool_name,
+                              "cwd": str(ws if cwd is None else cwd),
+                              "tool_input": tool_input}),
+            capture_output=True, text=True, env=env, cwd=str(tmp))
+
+    def test_a_non_role_agent_may_not_write_a_derived_path(self):
+        p = self._run(self.MAP, "_dashboard/notes.md")
+        self.assertIn("deny", p.stdout, p.stderr)
+        self.assertIn("derived_files", p.stdout)
+        self.assertEqual(p.returncode, 0)
+
+    def test_the_deny_names_no_owner_to_hand_off_to(self):
+        # Nobody owns a derived path, so there is nobody to route the edit to.
+        # The deny has to be asserted alongside the absent handoff: an allow
+        # prints nothing, and nothing contains no handoff either.
+        p = self._run(self.MAP, "_dashboard/notes.md")
+        self.assertIn("deny", p.stdout, p.stderr)
+        self.assertNotIn("Hand off to", p.stdout)
+
+    def test_the_deny_claims_only_the_boundary_the_hook_enforces(self):
+        # The hook sees tools that name a path. A shell command names none, so
+        # the message says which writes it is speaking about instead of
+        # promising an absolute the mechanism does not deliver. "A file tool"
+        # was still a class wider than the mechanism: it reads four tools and
+        # hands every other one — MultiEdit on a host that ships it — no path
+        # at all, so the four are named.
+        p = self._run(self.MAP, "_dashboard/notes.md")
+        for tool in ("Write", "Edit", "NotebookEdit", "apply_patch"):
+            self.assertIn("`%s`" % tool, p.stdout, tool)
+        self.assertNotIn("with a file tool", p.stdout)
+
+    def test_the_deny_names_a_tool_exactly_when_the_guard_reads_its_paths(self):
+        # Both directions, so the sentence cannot drift from the mechanism:
+        # adding a tool to `_tool_paths` without the deny text understates the
+        # rule, and naming one it cannot read overstates it.
+        guard = load_guard()
+        p = self._run(self.MAP, "_dashboard/notes.md")
+        payload = {"file_path": "/tmp/ws/_dashboard/x.md",
+                   "command": "*** Begin Patch\n"
+                              "*** Update File: _dashboard/x.md\n"
+                              "*** End Patch\n"}
+        for tool in ("Write", "Edit", "NotebookEdit", "apply_patch",
+                     "MultiEdit", "Bash", "Read", "Glob", "Task"):
+            with self.subTest(tool=tool):
+                self.assertEqual(bool(guard._tool_paths(tool, payload)),
+                                 ("`%s`" % tool) in p.stdout)
+
+    def test_a_symlinked_derived_directory_is_still_denied(self):
+        # `resolve_in_workspace` answers with the realpath, which is right for
+        # ownership and wrong here: `_dashboard/` pointed at a sibling inside
+        # the same workspace used to be judged under the sibling's name, so an
+        # agent that can create a symlink could write the rendered tree and be
+        # told only that the target has no owner.
+        def prepare(ws):
+            (ws / "real").mkdir()
+            os.symlink(str(ws / "real"), str(ws / "_dashboard"))
+
+        p = self._run(self.MAP, "_dashboard/notes.md", prepare=prepare)
+        self.assertIn("deny", p.stdout, p.stderr)
+        self.assertIn("derived_files", p.stdout)
+        self.assertEqual(p.returncode, 0)
+
+    def test_a_symlink_pointing_at_a_neighbour_is_not_denied_by_its_target(self):
+        # The other direction of the same change: checking both names must not
+        # start denying a path neither name is derived.
+        def prepare(ws):
+            (ws / "real").mkdir()
+            os.symlink(str(ws / "real"), str(ws / "scratch"))
+
+        p = self._run(self.MAP, "scratch/notes.md", prepare=prepare)
+        self.assertEqual(p.stdout.strip(), "", p.stdout)
+        self.assertEqual(p.returncode, 0)
+
+    def test_an_unusable_owns_key_does_not_switch_the_derived_deny_off(self):
+        # `check_ownership` fails open when `owns:` will not parse, and the
+        # derived check runs before that allow. The deny text says the rule
+        # cannot be granted by a map edit; this is the map edit that used to
+        # grant it anyway.
+        p = self._run(self.BROKEN_OWNS, "_dashboard/notes.md")
+        self.assertIn("deny", p.stdout, p.stderr)
+        self.assertIn("derived_files", p.stdout)
+        self.assertEqual(p.returncode, 0)
+
+    def test_an_unusable_owns_key_still_fails_open_everywhere_else(self):
+        # The derived check moved above the bail; nothing else did. A map this
+        # guard cannot read is still not evidence that an ordinary write, or a
+        # write to the founder's own overlay, is wrong.
+        for rel in ("goals.md", "_local/ownership.yaml", "scratch.md"):
+            with self.subTest(rel=rel):
+                p = self._run(self.BROKEN_OWNS, rel)
+                self.assertEqual(p.stdout.strip(), "", p.stdout)
+                self.assertEqual(p.returncode, 0)
+
+    def test_deleting_the_key_from_the_map_restores_the_allow(self):
+        # The falsifiability pin: without this, every assertion above would
+        # still pass against a guard that had never heard of `derived_files:`
+        # and was denying `_dashboard/` for some other reason.
+        p = self._run(self.WITHOUT_KEY, "_dashboard/notes.md")
+        self.assertEqual(p.stdout.strip(), "", p.stdout)
+        self.assertEqual(p.returncode, 0)
+
+    def test_giving_the_derived_path_an_owner_does_not_grant_it(self):
+        # The deny must not be reachable through the ownership map, including
+        # by an entry naming the writing agent itself.
+        granted = self.MAP.replace(
+            "  strategist:\n    - goals.md\n",
+            "  strategist:\n    - goals.md\n  explore:\n    - _dashboard/\n", 1)
+        p = self._run(granted, "_dashboard/notes.md")
+        self.assertIn("deny", p.stdout, p.stderr)
+        self.assertIn("derived_files", p.stdout)
+
+    def test_a_neighbouring_name_that_shares_the_prefix_is_still_allowed(self):
+        for rel in ("_dashboard_secrets.md", "_dashboardish/x.md"):
+            p = self._run(self.MAP, rel)
+            self.assertEqual(p.stdout.strip(), "", rel)
+            self.assertEqual(p.returncode, 0, rel)
+
+    def test_a_dot_dot_walk_cannot_escape_or_enter_unnoticed(self):
+        out = self._run(self.MAP, "_dashboard/../scratch.md")
+        self.assertEqual(out.stdout.strip(), "", out.stdout)
+        into = self._run(self.MAP, "notes/../_dashboard/x.md")
+        self.assertIn("deny", into.stdout, into.stderr)
+
+    def test_nested_files_are_covered_not_just_the_top_level(self):
+        p = self._run(self.MAP, "_dashboard/history/snapshots.csv")
+        self.assertIn("deny", p.stdout, p.stderr)
+
+    def test_edit_is_bound_as_well_as_write(self):
+        p = self._run(self.MAP, "_dashboard/index.html", tool_name="Edit")
+        self.assertIn("deny", p.stdout, p.stderr)
+
+    def test_apply_patch_is_bound_and_resolves_against_the_session_cwd(self):
+        p = self._run(
+            self.MAP, None, tool_name="apply_patch",
+            tool_input={"command": "*** Begin Patch\n"
+                                   "*** Update File: _dashboard/notes.md\n"
+                                   "*** End Patch\n"})
+        self.assertIn("deny", p.stdout, p.stderr)
+
+    def test_an_owned_path_still_denies_with_the_ownership_reason(self):
+        # The new check must not swallow the deny it sits in front of.
+        p = self._run(self.MAP, "goals.md")
+        self.assertIn("deny", p.stdout, p.stderr)
+        self.assertIn("Hand off to", p.stdout)
+
+    def test_an_ordinary_unowned_path_is_still_allowed(self):
+        p = self._run(self.MAP, "scratch.md")
+        self.assertEqual(p.stdout.strip(), "", p.stdout)
+        self.assertEqual(p.returncode, 0)
+
+    def test_the_packaged_map_denies_the_dashboard_directory(self):
+        p = run_hook({"agent_type": "explore", "tool_name": "Write",
+                      "cwd": str(REPO_ROOT),
+                      "tool_input": {
+                          "file_path": str(PLUGIN_ROOT / "_dashboard"
+                                           / "snapshots.csv")}})
+        self.assertIn("deny", p.stdout, p.stderr)
+        self.assertIn("derived_files", p.stdout)
 
 
 class TestFailOpen(unittest.TestCase):
@@ -667,6 +981,27 @@ class TestOwnershipHotPath(unittest.TestCase):
                             "*** Update File: b.md\n"
                             "*** End Patch\n"}, "/tmp/workspace")
         roots.assert_called_once_with("/tmp/workspace")
+
+    def test_the_packaged_map_is_read_once_per_invocation(self):
+        # PERF-002's discipline with a second consumer on it: `owns:` and
+        # `derived_files:` are two reads of one document, and the property that
+        # matters is not the saved stat but that they cannot answer from
+        # different versions of the file. Rewriting the map between the two
+        # calls is how that is stated in a test.
+        guard = load_guard()
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, str(tmp), True)
+        (tmp / "references").mkdir()
+        map_path = tmp / "references" / "ownership.yaml"
+        map_path.write_text(
+            "derived_files:\n  - _dashboard/\n"
+            "owns:\n  strategist:\n    - goals.md\n", encoding="utf-8")
+        with mock.patch.dict(os.environ, {"PLUGIN_ROOT": str(tmp),
+                                          "CLAUDE_PLUGIN_ROOT": str(tmp)}):
+            self.assertEqual(guard.load_ownership(), {"goals.md": "strategist"})
+            map_path.write_text("owns:\n  strategist:\n    - goals.md\n",
+                                encoding="utf-8")
+            self.assertEqual(guard.load_derived(), ("_dashboard/",))
 
 
 class TestWorkspaceRoots(unittest.TestCase):

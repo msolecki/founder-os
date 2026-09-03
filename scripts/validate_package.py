@@ -541,7 +541,7 @@ def check_ownership(root, agents):
         if f not in seen:
             errs.append("ownership.yaml: portfolio file '%s' has no owner" % f)
     derived = set(data["derived_files"])
-    for f in sorted(derived & set(seen)):
+    for f in sorted(f for f in seen if _under_derived(derived, f)):
         errs.append("ownership.yaml: '%s' is declared derived and also owned" % f)
     return errs
 
@@ -575,6 +575,37 @@ def check_workspace_files_complete(root, agents):
     return errs
 
 
+def _derived_segments(value):
+    return tuple(part.casefold() for part in PurePosixPath(str(value)).parts)
+
+
+def _under_derived(derived, path):
+    """Is `path` the derived entry, or inside it?
+
+    A `derived_files:` entry ending in `/` names a directory, and exact string
+    equality reads it as a file with a slash in its name: `_dashboard/` matched,
+    `_dashboard/snapshots/` did not, so a path one segment down walked through
+    all three joins below. Compare segments instead, the rule `_owner_for`
+    already applies to an ownership prefix — `_dashboard/` covers
+    `_dashboard/today.html` and does not cover `_dashboardx/today.html`.
+
+    Casefolded, and the trailing slash is read as decoration rather than
+    required, because `hooks/ownership-guard.py:_derived_entry` is the rule that
+    decides at write time and that is what it does. Three matchers for one map
+    meant a map this check accepted could be a map the guard denies: with
+    `_Dashboard/` declared derived, `_dashboard/snapshots/` passed here and was
+    refused on the founder's machine. The deny list is the place to be broad —
+    an entry that lost its slash is a typo, and the safe reading of a typo in a
+    deny list is the one that still covers the directory.
+    """
+    candidate = _derived_segments(path)
+    for entry in derived:
+        prefix = _derived_segments(entry)
+        if prefix and candidate[:len(prefix)] == prefix:
+            return True
+    return False
+
+
 def check_derived_files(root, agents):
     """Derived paths stay out of every ownership join.
 
@@ -593,11 +624,11 @@ def check_derived_files(root, agents):
         return errs
     for agent, files in data["owns"].items():
         for f in files:
-            if f in derived:
+            if _under_derived(derived, f):
                 errs.append("ownership.yaml: '%s' is derived but owned by '%s'"
                             % (f, agent))
     for f in data["sections"]:
-        if f in derived:
+        if _under_derived(derived, f):
             errs.append("ownership.yaml: '%s' is derived but declares sections" % f)
     sdir = root / "skills"
     if sdir.is_dir():
@@ -609,51 +640,260 @@ def check_derived_files(root, agents):
             if isinstance(writes, str):
                 writes = [writes]
             for w in writes:
-                if w in derived:
+                if _under_derived(derived, w):
                     errs.append("skills/%s: declares a write to the derived path "
                                 "'%s'" % (d.name, w))
     return errs
 
 
+# The skills that must name references/thresholds.yaml in their prose, so a
+# reader who meets the number in the skill can find the file it comes from.
+#
+# It is deliberately not the same list as the skills `_THRESHOLD_RESTATEMENTS`
+# names: signal-check states signals.cap twice and cites nothing, and adding it
+# here would fail the build on a file this check cannot edit. What the two lists
+# must agree on is who states a limit at all, and `_threshold_staters` answers
+# that from the table rather than from this tuple — see check_thresholds.
 _THRESHOLD_CITERS = ("queue", "founder-os-doctor")
+
+# Where every number in references/thresholds.yaml is restated in prose, and the
+# pattern that reads it back out.
+#
+# This table holds the *location* of each restatement and never the value: the
+# number is read from the skill and compared with the number parsed from
+# thresholds.yaml, so the validator cannot itself become a third copy that goes
+# stale. Before this existed the check was a substring test — a skill "cited" the
+# file by naming it once, no arm ever compared a number, and four of the eight
+# values (queue.doing_days, queue.blocked_days, briefs.window,
+# briefs.acted_one_in) could be changed here and left stale in the prose with the
+# whole build green. The other four only went red through dashboard unit tests
+# that happen to pin the same literals, which is coverage by accident.
+#
+# A key with no entry here is an error. That is the second direction the
+# docstring below promises: adding a limit obliges you to say which sentence
+# states it, and a limit no sentence states is a limit nothing enforces. An
+# entry here whose key is not in the file is the same error read backwards, and
+# fails the same way.
+_THRESHOLD_RESTATEMENTS = {
+    "queue.doing_cap": (
+        ("skills/queue/SKILL.md", r"^\|\s*`## Doing`\s*\|\s*(\S+)\s*\|"),
+    ),
+    "queue.queued_cap": (
+        ("skills/queue/SKILL.md", r"^\|\s*`## Queued`\s*\|\s*(\S+)\s*\|"),
+    ),
+    "queue.doing_days": (
+        ("skills/queue/SKILL.md", r"(\S+) working days from `started`"),
+    ),
+    "queue.queued_days": (
+        ("skills/queue/SKILL.md", r"(\S+) days from the id date"),
+    ),
+    "queue.blocked_days": (
+        ("skills/queue/SKILL.md", r"(\S+) days from `blocked`"),
+    ),
+    "signals.cap": (
+        ("skills/signal-check/SKILL.md", r"(\w+) is the cap"),
+        ("skills/signal-check/SKILL.md", r"Cap at ([a-z]+)"),
+    ),
+    "briefs.window": (
+        ("skills/founder-os-doctor/SKILL.md",
+         r"(\S+)\+ files in `reviews/daily/`"),
+    ),
+    "briefs.acted_one_in": (
+        ("skills/founder-os-doctor/SKILL.md", r"fewer than 1 in (\S+)"),
+    ),
+}
+
+# Prose spells small numbers out — "Three is the cap" — and the cap is still the
+# cap. `NUMBER_WORDS` starts at nine because no published count is smaller; a
+# threshold routinely is, so the words below are the ones it omits.
+_SMALL_NUMBER_WORDS = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+                       "five": 5, "six": 6, "seven": 7, "eight": 8}
+
+
+def _restated_number(token):
+    text = str(token).strip().casefold()
+    try:
+        return float(text)
+    except ValueError:
+        return _SMALL_NUMBER_WORDS.get(text, NUMBER_WORDS.get(text))
+
+
+def _parse_thresholds(text):
+    """(groups, {'group.key': number}, every declared name, errors).
+
+    The third element is every `group.key` the file spells out, parseable or
+    not. A key whose value the reader rejects is still a key the file declares,
+    and reading the restatement registry against `values` alone reported such a
+    key as absent on top of the error it had already earned.
+
+    Parsed by hand rather than with PyYAML so that this reads the file exactly
+    the way the dashboard's own `contracts.load_thresholds` does — a value the
+    validator accepts and the reader rejects would be the same drift one level
+    down. That reader is a bare `float(value)`, so this one is too: the words
+    `_restated_number` understands belong to the prose side, where "Three is the
+    cap" is a sentence, and not to the file, where `cap: three` is a line the
+    dashboard crashes on.
+    """
+    groups, values, declared, errs = [], {}, [], []
+    keyed = set()
+    current = None
+    for raw_line in text.splitlines():
+        line = raw_line.split("#", 1)[0].rstrip()
+        if not line.strip():
+            continue
+        match = re.match(r"^( *)([a-z_]+):\s*(.*)$", line)
+        if match is None:
+            errs.append("references/thresholds.yaml: cannot parse %r" % raw_line)
+            continue
+        indent, key, value = match.groups()
+        if not indent:
+            current = key
+            groups.append(key)
+            if value:
+                errs.append("references/thresholds.yaml: '%s' holds a value, not "
+                            "a group" % key)
+            continue
+        if current is None:
+            errs.append("references/thresholds.yaml: %r has no group" % raw_line)
+            continue
+        keyed.add(current)
+        declared.append("%s.%s" % (current, key))
+        try:
+            number = float(value)
+        except ValueError:
+            errs.append("references/thresholds.yaml: %s.%s is %r, not a number"
+                        % (current, key, value))
+            continue
+        values["%s.%s" % (current, key)] = number
+    # Every arm below this parser is per key, so a group declared with nothing
+    # under it was read by none of them: `pipeline:` alone passed the whole
+    # check. An empty group is a heading with no limit in it either way.
+    for group in groups:
+        if group not in keyed:
+            errs.append("references/thresholds.yaml: '%s' declares no keys — "
+                        "there is no limit under it to state or to enforce"
+                        % group)
+    return groups, values, declared, errs
+
+
+def _threshold_staters():
+    """The skill slugs `_THRESHOLD_RESTATEMENTS` says state a limit.
+
+    Read off the table instead of listed a second time, because the hardcoded
+    list was the answer to the same question and had gone stale: it named queue
+    and founder-os-doctor, the table also names signal-check, and a root that
+    ships signal-check without references/thresholds.yaml was reported as having
+    nothing to keep in one place.
+    """
+    slugs = []
+    for rules in _THRESHOLD_RESTATEMENTS.values():
+        for rel, _pattern in rules:
+            parts = PurePosixPath(rel).parts
+            if len(parts) > 1 and parts[0] == "skills" and parts[1] not in slugs:
+                slugs.append(parts[1])
+    return slugs
+
+
+def _restatement_errors(root, name, value):
+    rules = _THRESHOLD_RESTATEMENTS.get(name)
+    if not rules:
+        return ["references/thresholds.yaml: nothing restates '%s' — a limit no "
+                "skill states is a limit nothing enforces; name the sentence in "
+                "_THRESHOLD_RESTATEMENTS or drop the key" % name]
+    errs = []
+    for rel, pattern in rules:
+        target = root / rel
+        if not target.exists():
+            # Not "the package ships no second copy, so there is nothing to
+            # compare": the table says this file states the number, and a table
+            # entry that resolves to nothing turns the guard off while the
+            # validator stays green. A renamed skill or a typo here has to fail
+            # the same way a reworded sentence does.
+            errs.append("%s: registered as restating %s, but the file is not in "
+                        "the package — a moved or misspelled path here leaves "
+                        "the number unguarded" % (rel, name))
+            continue
+        found = re.findall(pattern, target.read_text(encoding="utf-8"), re.M)
+        if not found:
+            errs.append("%s: no longer restates %s — the sentence "
+                        "_THRESHOLD_RESTATEMENTS reads it out of is gone, so the "
+                        "number is unguarded again" % (rel, name))
+            continue
+        for token in found:
+            number = _restated_number(token)
+            if number is None:
+                errs.append("%s: restates %s as %r, which is not a number"
+                            % (rel, name, token))
+            elif number != value:
+                errs.append("%s: restates %s as %s, references/thresholds.yaml "
+                            "says %g" % (rel, name, token, value))
+    return errs
 
 
 def check_thresholds(root, agents):
     """A limit is stated once and cited everywhere else.
 
-    Both directions. A skill that enforces a cap without pointing at the file has
-    made a private copy of the number; a key in the file that nothing cites is a
-    limit nothing enforces. Either way the package holds two answers to one
-    question, which is how `ownership.yaml`'s comment block describes a bug.
+    Both directions, and both by value. A skill that enforces a cap without
+    pointing at the file has made a private copy of the number; a key in the file
+    that no sentence restates is a limit nothing enforces. Either way the package
+    holds two answers to one question, which is how `ownership.yaml`'s comment
+    block describes a bug.
+
+    The third arm reads every value back out of the sentences
+    `_THRESHOLD_RESTATEMENTS` registers for it and compares them with the parsed
+    value, so raising a cap here and leaving the registered sentence alone fails
+    the build rather than shipping two numbers. The table is walked from both
+    ends: a key the file declares and the table does not name is an error, and a
+    key the table names and the file no longer declares is the same error read
+    backwards — a registry checked in one direction is half a registry.
+
+    Its reach is exactly those sentences and no further. Prose restates a limit
+    in more places than a table can name — `queue/SKILL.md` argues the 21-day
+    clock four more times after the row that states it, and `signal-check`
+    writes "three" a dozen times for the same cap — so a registered sentence
+    updated with the yaml leaves the arguments around it stale and the build
+    green. Registering all of them would only move the line; the honest reading
+    is that this check pins one statement of each number and changing a limit
+    still means reading the skill.
     """
     errs = []
-    citers = [slug for slug in _THRESHOLD_CITERS
-              if (root / "skills" / slug / "SKILL.md").exists()]
+    stating = [slug for slug in sorted(set(_threshold_staters())
+                                       | set(_THRESHOLD_CITERS))
+               if (root / "skills" / slug / "SKILL.md").exists()]
     path = root / "references" / "thresholds.yaml"
     if not path.exists():
         # Absent is only wrong once something enforces a limit. A package that
-        # ships neither citer has no number to keep in one place.
+        # ships no skill stating one has no number to keep in one place.
         return ["references/thresholds.yaml: missing, but skills/%s state limits "
-                "against it" % ", skills/".join(citers)] if citers else errs
+                "against it" % ", skills/".join(stating)] if stating else errs
     text = path.read_text(encoding="utf-8")
-    groups = re.findall(r"^([a-z_]+):\s*$", text, re.M)
+    groups, values, declared, parse_errs = _parse_thresholds(text)
+    errs += parse_errs
     if not groups:
         errs.append("references/thresholds.yaml: no groups")
-    for slug in citers:
+    for slug in _THRESHOLD_CITERS:
         skill = root / "skills" / slug / "SKILL.md"
+        if not skill.exists():
+            continue
         if "references/thresholds.yaml" not in skill.read_text(encoding="utf-8"):
             errs.append("skills/%s: states a limit without citing "
                         "references/thresholds.yaml" % slug)
-    corpus = "\n".join(
-        p.read_text(encoding="utf-8")
-        for p in sorted((root / "skills").glob("*/SKILL.md")))
-    corpus += "\n" + "\n".join(
-        p.read_text(encoding="utf-8")
-        for p in sorted((root / "references").glob("*.md")))
-    for group in groups:
-        if group not in corpus:
-            errs.append("references/thresholds.yaml: nothing cites the '%s' "
-                        "group" % group)
+    for name in sorted(values):
+        errs += _restatement_errors(root, name, values[name])
+    # The registry read the other way round. A key deleted from the yaml left
+    # its row here registering a sentence about a limit the file no longer
+    # holds: the prose kept printing the number, `_restatement_errors` never ran
+    # for it because it walks the parsed keys, and the build stayed green — the
+    # same fail-open a registered path that resolves to nothing has, one level
+    # up. Dropping a limit means dropping the sentence that states it.
+    for name in sorted(_THRESHOLD_RESTATEMENTS):
+        if name in declared:
+            continue
+        errs.append("references/thresholds.yaml: declares no '%s', but %s is "
+                    "registered as restating it — the sentence still states a "
+                    "number the file no longer holds"
+                    % (name, ", ".join(rel for rel, _pattern
+                                       in _THRESHOLD_RESTATEMENTS[name])))
     return errs
 
 

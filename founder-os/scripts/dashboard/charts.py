@@ -17,7 +17,8 @@ PLOT_HEIGHT = PLOT_BOTTOM - PLOT_TOP
 
 def _escape(text: str) -> str:
     return (str(text).replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
+            .replace(">", "&gt;").replace('"', "&quot;")
+            .replace("'", "&#39;"))
 
 
 def domain_max(values: Sequence[float], high: Optional[float]) -> float:
@@ -81,9 +82,16 @@ def track(segments: Sequence[Tuple[float, str, str, bool]],
         percent = round(max(0.0, min(1.0, fraction)) * 100, 2)
         classes = "fill hatch" if hatched else "fill"
         style = ("color:%s" % colour) if hatched else ("background:%s" % colour)
+        # `data-tip` is the machine-readable hook; `title` is what a mouse
+        # gets. Neither reaches assistive technology — nothing in the page
+        # styles or scripts `data-*`, and a bare div takes no accessible name
+        # from `title` — so the segment is named the way `sparkline` names
+        # itself, with a role and a label.
+        label = _escape(tooltip)
         pieces.append(
-            '<div class="%s" style="width:%g%%;%s" data-tip="%s"></div>'
-            % (classes, percent, style, _escape(tooltip)))
+            '<div class="%s" style="width:%g%%;%s" role="img" aria-label="%s" '
+            'title="%s" data-tip="%s"></div>'
+            % (classes, percent, style, label, label, label))
     body = '<div class="track%s">%s</div>' % (
         " tall" if tall else "", "".join(pieces))
     if marker is None:

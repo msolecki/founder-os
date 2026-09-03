@@ -7,9 +7,14 @@ key as optional in both directions — an old document without it still loads, a
 a document with it does not leak the derived path into owners or sections.
 """
 import importlib.util
+import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -86,6 +91,62 @@ class TestDerivedFiles(unittest.TestCase):
         self.assertIsInstance(schema.derived_paths(), tuple)
         self.assertIn("metrics.md", document["workspace_files"])
 
+
+
+class TestTheWriteGuardReadsTheSameKey(unittest.TestCase):
+    """Two readers, one key, and they must not disagree.
+
+    `derived_files:` is parsed twice by design: the gateway reads it through
+    `OwnershipSchema` and the PreToolUse hook reads it with its own stdlib
+    parser, because a hook that has to import the gateway is a hook that stops
+    running the moment the gateway moves. The cost of the second reader is that
+    the write boundary could come to depend on which channel an agent used, so
+    the two answers are pinned equal here rather than left to agree by habit.
+    """
+
+    def _guard(self):
+        return load_module("fos_ownership_guard", "hooks/ownership-guard.py")
+
+    def _run_hook(self, rel):
+        """The real hook, as the runtime runs it: JSON in, deny on stdout.
+
+        A non-role `agent_type` on purpose — the thirteen roles are denied
+        every direct file tool before the map is consulted, so a role payload
+        would pass whether `derived_files:` were wired in or not.
+        """
+        env = {**os.environ,
+               "FOUNDER_OS_HOME": str(PLUGIN_ROOT),
+               "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}
+        payload = {"agent_type": "explore", "tool_name": "Write",
+                   "cwd": str(REPO_ROOT),
+                   "tool_input": {"file_path": str(PLUGIN_ROOT / rel)}}
+        return subprocess.run(
+            [sys.executable, str(PLUGIN_ROOT / "hooks" / "ownership-guard.py")],
+            input=json.dumps(payload), capture_output=True, text=True,
+            env=env, cwd=str(REPO_ROOT))
+
+    def test_hook_and_schema_derive_the_same_paths_from_the_packaged_map(self):
+        guard = self._guard()
+        schema = ownership.OwnershipSchema.load(
+            PLUGIN_ROOT / "references" / "ownership.yaml")
+        entries = schema.derived_paths()
+        # Two readers agreeing on nothing is not agreement: without this, the
+        # equality below survives deleting `derived_files:` from the map.
+        self.assertTrue(entries, "the packaged map declares no derived path")
+        with mock.patch.dict(os.environ,
+                             {"PLUGIN_ROOT": str(PLUGIN_ROOT),
+                              "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}):
+            self.assertEqual(guard.load_derived(), entries)
+
+    def test_the_hook_denies_what_the_schema_calls_derived(self):
+        entries = ownership.OwnershipSchema.load(
+            PLUGIN_ROOT / "references" / "ownership.yaml").derived_paths()
+        self.assertTrue(entries, "the packaged map declares no derived path")
+        for entry in entries:
+            rel = entry + "anything.txt" if entry.endswith("/") else entry
+            p = self._run_hook(rel)
+            self.assertIn("deny", p.stdout, "%s: %s" % (entry, p.stderr))
+            self.assertIn(entry, p.stdout, entry)
 
 
 class TestNoAgentOwnsTheDerivedDirectory(unittest.TestCase):

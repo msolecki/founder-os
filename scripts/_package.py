@@ -11,8 +11,10 @@ UNIVERSAL_SKILLS = {"guardrails", "state-integrity", "ingestion-gate"}
 # is denied by construction. setup-cadences edits the founder's crontab;
 # skill-forge writes `_local/` and installs outside the workspace, and the
 # ownership guard denies every subagent that directory (extensibility.md);
-# dashboard writes `_dashboard/`, which appears in no `owns:` list and is
-# therefore denied to every agent by the same baseline.
+# dashboard writes `_dashboard/`, a `derived_files:` path the guard denies by a
+# rule of its own. Not by the ownership baseline: an unowned path is *allowed*
+# there, which is why the deny has to be written down the way `_local/`'s is.
+# It covers the file-writing tools the guard inspects, never a shell command.
 STANDALONE_SKILLS = {"setup-cadences", "skill-forge", "dashboard"}
 
 

@@ -7,19 +7,51 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 **The workspace as one page that cites its own sources.** `/dashboard` renders
 bets, pipeline, signals, the week, the queue and the close as one local page,
-every number printed beside the file and section it came from. It writes one
-directory, `_dashboard/`, declared in the ownership map under a new
-`derived_files:` key that gives it no owner and no sections, so no agent may
-write it and nothing on the page counts as evidence. A value it could not read
-renders as "not recorded" and its snapshot cell is written empty; where two
-files disagree it shows both readings and names the field that would settle
-them. It repairs nothing: a missing section is reported, never filled in. One
-workflow, bringing the package to **57 workflows**.
+every number printed beside the file and section it came from. A run that
+writes at all — not `--json`, and not refused — writes three files into every
+readable active business's own `_dashboard/`: `facts.json` rewritten, the
+day's row merged into `snapshots.csv`, and a `.gitignore` created only when
+that directory has none. It writes one more file, the page, and `--out` moves
+that one alone; the flag is refused, with nothing written at all, when the
+path it names is one the ownership map gives an agent, or one of the three the
+run maintains itself. `_dashboard/` is declared in that map under a new
+`derived_files:` key that gives it no owner and no sections, and the ownership
+guard denies every agent a write under it by a rule of its own — an unowned
+path is otherwise allowed, so the deny has to be written down. The guarantee
+covers the file-writing tools the guard inspects; it does not read shell
+commands, here or anywhere else. Nothing on the page counts as evidence. A
+value it could not read renders as "not recorded" and its snapshot cell is
+written empty; where two files disagree it shows both readings and names the
+field that would settle them. It repairs nothing: a missing section is
+reported, never filled in. A section written as prose where a list was
+expected is one of those unreadable values, not an empty one: it reports "not
+recorded" rather than counting the deals, bets or queue items it names as
+zero. An amount stamped `[VALIDATE]` by the ingestion gate is counted, and the
+panel says how many of the amounts in the total carry that stamp — a tiered
+figure may be published, but only carrying its tier. One workflow, bringing
+the package to **57 workflows**.
 
-**The queue caps are written down once.** `references/thresholds.yaml` is the
-one place those numbers live now, and `queue`, `founder-os-doctor` and the
-dashboard all read it rather than restating it. `check_thresholds` fails the
-build when a skill states a limit without citing that file.
+**More than one business.** The page holds every readable active business and
+opens on the one the slug names, falling back to `FOUNDER_OS_HOME` when it
+matches exactly one registered home and then to the registry's `default:`; a
+slug that names nothing is refused rather than answered about somebody else.
+A switcher reaches the rest, and moving between them renames the masthead and
+the browser tab, so a figure is never shown under another company's name.
+`--json` answers about that same business and writes nothing at all.
+
+**The queue caps are settled in one file.** `references/thresholds.yaml` is
+where those numbers live now: the row in `founder-os-doctor` that printed five
+queue digits names the five keys instead, the dashboard loads the file, and
+`queue` still prints the caps in a table for the reader but names the file as
+the one that settles them. The doctor's two brief thresholds are still
+numerals in its prose; what changed for those is that `check_thresholds` now
+reads the numeral back out of the sentence and compares it. That check fails
+the build when `queue` or `founder-os-doctor` — the two it names as citers —
+states a limit without naming the file, and when a number one of the
+sentences it has registered prints disagrees with the value the file declares.
+Every file it compares is under `skills/`: `signal-check` states the same cap
+and cites nothing, and that is not a build failure. Two pages under `docs/`
+restate a cap in prose and are outside it too.
 
 **Verification.** The package now runs **21 build-time checks**, adding the
 thresholds check and the derived-files ownership check.

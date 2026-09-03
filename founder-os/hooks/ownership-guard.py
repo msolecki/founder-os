@@ -13,16 +13,17 @@ role agrees with a native role identity.
 
 A subagent that is *not* one of the thirteen roles — a reviewer, an Explore
 pass, another plugin's agent — is not governed by the gateway lockdown. It is
-bound by two checks: no write under ``_local/``, and no write to a file the
-ownership map gives someone else. Everything else it does is between it and the
-normal permission system.
+bound by three checks: no write under ``_local/``, no write under a path the
+map lists in ``derived_files:``, and no write to a file the ownership map gives
+someone else. Everything else it does is between it and the normal permission
+system.
 
-Those two bind **tools that name a path** — ``Write``, ``Edit``,
+Those three bind **tools that name a path** — ``Write``, ``Edit``,
 ``NotebookEdit``, ``apply_patch``. They do not inspect a shell command, so a
 non-role subagent holding ``Bash`` can write anything its own permissions allow,
 and this hook will not be what stops it. That is the deliberate trade: the
 alternative, denying every unrecognized subagent every tool, locked reviewers
-and Explore passes out of unrelated repositories machine-wide. Read the two
+and Explore passes out of unrelated repositories machine-wide. Read the three
 checks as protection against an honest agent editing the wrong file, not as a
 boundary around a hostile one. A *role* is different — it holds no shell at all.
 
@@ -65,6 +66,13 @@ NESTED_AGENT_TOOLS = frozenset({"Task", "Agent"})
 DIRECT_FILE_TOOLS = frozenset({
     "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep", "apply_patch",
 })
+# The tools `_tool_paths` can read a target path out of, in the order a deny
+# names them. Narrower than DIRECT_FILE_TOOLS, which is about a role touching
+# the filesystem at all: this is the set every ownership and derived deny is
+# actually speaking about. A path-naming tool missing from here — MultiEdit on
+# a host that ships it — hands the guard no path and is allowed, which is why
+# the derived deny names these four rather than claiming "a file tool".
+PATH_NAMING_TOOLS = ("Write", "Edit", "NotebookEdit", "apply_patch")
 MCP_TOOL = re.compile(r"^mcp__")
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 # Agent identities may carry a host namespace — `founder-os:cfo` on Claude
@@ -101,6 +109,9 @@ LOCAL_MAP = "_local/ownership.yaml"
 # workspace_roots, for the same reason: a multi-path apply_patch must not
 # re-read the same file once per path.
 _LOCAL_CACHE = {}
+# The packaged map, keyed by the plugin root the search started from, under the
+# same discipline: `owns:` and `derived_files:` are two readers of one document.
+_PACKAGED_CACHE = {}
 
 
 def _get_yaml():
@@ -192,6 +203,115 @@ def _parse_owns_without_yaml(text):
         else:
             return None  # something we don't understand — don't pretend we do
     return owns or None
+
+
+def _flow_entries(first, lines):
+    """A `derived_files: [a, b]` flow sequence as a tuple, or ().
+
+    PyYAML accepts flow style and the packaged map does not use it, so a
+    fallback that read block style only would enforce less than the PyYAML path
+    on the very same document — the divergence `_parse_derived_without_yaml`
+    exists to prevent. `lines` is the shared iterator so a sequence written
+    across several lines is read whole; a tag (`!!seq [...]`) is dropped
+    because it says nothing about the shape.
+    """
+    value = first.strip()
+    if value.startswith("!"):
+        value = value.split(None, 1)[1].strip() if " " in value else ""
+    if not value.startswith("["):
+        return ()
+    while "]" not in value:
+        nxt = next(lines, None)
+        if nxt is None:
+            return ()  # unterminated — a shape we don't understand
+        value += " " + nxt.strip()
+    items, buf, quote = [], [], None
+    for char in value[1:value.index("]")]:
+        if quote:
+            if char == quote:
+                quote = None
+            else:
+                buf.append(char)
+        elif char in "'\"":
+            quote = char
+        elif char == ",":
+            items.append("".join(buf).strip())
+            buf = []
+        else:
+            buf.append(char)
+    if quote:
+        return ()
+    items.append("".join(buf).strip())
+    if any(set("[]{}") & set(item) for item in items):
+        return ()  # nested or mapping — PyYAML would hand us no strings here
+    return tuple(item for item in items if item)
+
+
+def _parse_derived_without_yaml(text):
+    """Minimal parser for the top-level `derived_files:` sequence, or ().
+
+    Exists for the same reason `_parse_owns_without_yaml` does: without it, a
+    machine whose python3 lacks PyYAML would keep the ownership deny and
+    silently lose the derived one, which is the worst of the two states — a
+    guard that enforces most of its map is harder to notice than one that
+    enforces none of it.
+
+    Returns () for anything it does not recognize, including the key being
+    absent. That is an allow, and an allow is what a parser that is guessing
+    should produce.
+    """
+    entries, in_block = [], False
+    lines = iter(text.split("\n"))
+    for raw in lines:
+        line = raw.split("#", 1)[0].rstrip() if not raw.lstrip().startswith("#") else ""
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip())
+        if indent == 0:
+            if in_block:
+                # A block sequence may sit at column 0 under its own key.
+                if line.startswith("- "):
+                    entries.append(line[2:].strip().strip("'\""))
+                    continue
+                break  # next top-level key ends the block
+            key, sep, value = line.partition(":")
+            if not sep or key.strip() != "derived_files":
+                continue
+            if value.strip():
+                return _flow_entries(value, lines)
+            in_block = True
+            continue
+        if not in_block:
+            continue
+        body = line.strip()
+        if not body.startswith("- "):
+            return ()  # a shape we don't understand — don't pretend we do
+        entries.append(body[2:].strip().strip("'\""))
+    return tuple(entry for entry in entries if entry)
+
+
+def _derived_from_text(text, source):
+    """Return the `derived_files:` entries from ownership YAML text, or ().
+
+    One-way fail-open, deliberately unlike `_owns_from_text`: that one
+    distinguishes "no map" from "empty map" because a broken map must not be
+    read as "nobody owns anything". Here there is nothing to protect by
+    guessing — an entry this function does not return is a path the guard
+    treats as ordinary, which is exactly what it did before the key existed.
+    """
+    yaml_module = _get_yaml()
+    if yaml_module is None:
+        return _parse_derived_without_yaml(text)
+    try:
+        data = _yaml_load(yaml_module, text)
+    except yaml_module.YAMLError as e:
+        log("%s is not valid YAML (%s)" % (source, e))
+        return ()
+    entries = data.get("derived_files") if isinstance(data, dict) else None
+    if not isinstance(entries, list):
+        return ()
+    return tuple(entry.strip().strip("'\"") for entry in entries
+                 if isinstance(entry, str) and entry.strip())
 
 
 def _owns_from_text(text, source):
@@ -287,14 +407,20 @@ def merged_ownership(by_path, root):
     return merged
 
 
-def load_ownership():
-    """Return {entry: owner} from the plugin's ownership.yaml, or None.
+def _read_packaged_map():
+    """`(path, text)` for the plugin's ownership.yaml, or `(None, None)`.
 
-    None means "I could not read my own map" and every caller turns that into an
-    allow.
+    Two readers now want the same document — `owns:` and `derived_files:` — and
+    the one thing they must never disagree about is *which* document they read.
+    Memoised for that reason first and the saved stat second: without the cache
+    the two searches are independent, so a map edited between them would hand
+    one reader an owner list the other's derived list never saw. Per invocation,
+    the same discipline `_LOCAL_CACHE` holds for the overlay (PERF-002).
     """
-    roots = []
     env_root = os.environ.get("PLUGIN_ROOT") or os.environ.get("CLAUDE_PLUGIN_ROOT")
+    if env_root in _PACKAGED_CACHE:
+        return _PACKAGED_CACHE[env_root]
+    roots = []
     if env_root:
         roots.append(env_root)
     # CLAUDE_PLUGIN_ROOT is the documented way to find ourselves, but this file
@@ -312,13 +438,52 @@ def load_ownership():
         except OSError as e:
             log("could not read %s (%s)" % (path, e))
             continue
-        owns = _owns_from_text(text, path)
-        if owns is None:
-            return None
-        return _by_path(owns) or None
+        _PACKAGED_CACHE[env_root] = (path, text)
+        return path, text
 
     log("ownership.yaml not found (looked in: %s)" % ", ".join(roots))
-    return None
+    _PACKAGED_CACHE[env_root] = (None, None)
+    return None, None
+
+
+def load_ownership():
+    """Return {entry: owner} from the plugin's ownership.yaml, or None.
+
+    None means "I could not read my own map" and every caller turns that into an
+    allow.
+    """
+    path, text = _read_packaged_map()
+    if text is None:
+        return None
+    owns = _owns_from_text(text, path)
+    if owns is None:
+        return None
+    return _by_path(owns) or None
+
+
+def load_derived():
+    """Return the `derived_files:` entries from the packaged map, or ().
+
+    Never None: an absent key, an unreadable map and a shape we don't recognize
+    all mean "this guard knows of no derived directory", which is an allow, not
+    a deny. The key is optional by contract — a map written before the dashboard
+    existed has none — so a missing one cannot be an error.
+
+    Reading the key is independent of `owns:`, and so is enforcing it. The only
+    caller, `check_ownership`, still allows and exits when `load_ownership`
+    returns None — an unreadable map is not evidence that a write is wrong —
+    but it runs the derived check first, so a document that keeps
+    `derived_files:` and loses `owns:` denies the rendered tree with the
+    ownership deny off rather than neither. `check_local_map` does sit behind
+    that bail, deliberately: it governs the founder's own overlay, where the
+    fail-open posture costs a stale map and not a fabricated number. Pinned by
+    tests/test_ownership_guard.py::TestDerivedFilesAreNotWritable::
+    test_an_unusable_owns_key_does_not_switch_the_derived_deny_off.
+    """
+    path, text = _read_packaged_map()
+    if text is None:
+        return ()
+    return _derived_from_text(text, path)
 
 
 def _registry_roots():
@@ -480,6 +645,33 @@ def owner_of(rel, by_path):
         if best is None or len(entry) > len(best):
             best, best_owner = entry, agent
     return best_owner
+
+
+def _derived_entry(rel, derived):
+    """The `derived_files:` entry covering a workspace-relative path, or None.
+
+    Matched by path *segment*, never by string prefix: `_dashboard/` covers
+    `_dashboard` and everything under `_dashboard/`, and covers neither
+    `_dashboard_secrets.md` nor `_dashboardish/x.md`. A prefix test would deny
+    both of those, and a deny the founder cannot explain from the map is how a
+    guard stops being read as a map.
+
+    The trailing slash is stripped rather than required, because an entry that
+    lost it is a typo in the map and the safe reading of a typo in a deny list
+    is the broader one. Casefolded to agree with `owner_of` — a map dodged by a
+    shift key is not a map.
+
+    `rel` arrives from `resolve_in_workspace`, which has already realpath'd and
+    normalized it, so there is no `..` left here to walk out of the directory.
+    """
+    rel_cmp = rel.casefold()
+    for entry in derived:
+        entry_cmp = entry.casefold().rstrip("/")
+        if not entry_cmp:
+            continue
+        if rel_cmp == entry_cmp or rel_cmp.startswith(entry_cmp + "/"):
+            return entry
+    return None
 
 
 def _deny_tool(agent_type, tool_name, reason):
@@ -690,7 +882,7 @@ def _tool_paths(tool_name, tool_input):
                 return paths
         log("allow: apply_patch payload contained no recognizable file paths")
         return []
-    if tool_name in ("Write", "Edit", "NotebookEdit"):
+    if tool_name in PATH_NAMING_TOOLS:
         path = tool_input.get("file_path") or tool_input.get("notebook_path")
         return [path] if isinstance(path, str) and path else []
     return []
@@ -720,20 +912,118 @@ def check_local_map(agent_type, rel):
     )
 
 
+def _path_naming_tools():
+    """`PATH_NAMING_TOOLS` as the prose of a deny, so the two cannot drift."""
+    names = ["`%s`" % name for name in PATH_NAMING_TOOLS]
+    return "%s or %s" % (", ".join(names[:-1]), names[-1])
+
+
+def _workspace_rels(file_path, hook_cwd, roots):
+    """Every workspace-relative name `file_path` has, the resolved one first.
+
+    `resolve_in_workspace` answers with the first of its two resolutions that
+    lands inside a root, and that is the realpath. Right for ownership — the
+    map governs the real file, and an owner reached through a symlink is still
+    that owner — and not enough for `derived_files:`, which is not a claim
+    about a file but about a *location*: `_dashboard/` is where the renderer
+    writes. A `_dashboard/` symlinked at a sibling directory inside the same
+    workspace resolved to the sibling's name, and the derived deny then judged
+    a name the write never used. Both names are checked, so neither spelling of
+    the same write is the one that gets through.
+    """
+    rels = []
+    _, resolved = resolve_in_workspace(file_path, hook_cwd, roots)
+    if resolved is not None:
+        rels.append(resolved)
+    if not os.path.isabs(file_path):
+        if not isinstance(hook_cwd, str) or not os.path.isabs(hook_cwd):
+            return rels
+        file_path = os.path.join(hook_cwd, file_path)
+    literal = os.path.normpath(os.path.abspath(file_path))
+    for root in roots:
+        if literal == root:
+            continue
+        prefix = root.rstrip(os.sep) + os.sep
+        if literal.startswith(prefix):
+            rel = literal[len(prefix):].replace(os.sep, "/")
+            if rel not in rels:
+                rels.append(rel)
+            break
+    return rels
+
+
+def check_derived(agent_type, rel, derived):
+    """No agent writes a generated file — including one nobody owns.
+
+    `derived_files:` names output, not state, and is excluded from every
+    ownership join on purpose. That exclusion is exactly why the unowned-path
+    allow below would otherwise wave it through: nobody owns it, so there is no
+    owner to steal from. That reasoning is right for a founder's scratch note
+    and wrong here. A derived file is what the dashboard renders *from*, so an
+    agent that can write one can put a number on the page that no workspace
+    file ever contained — `evidence over vibes` failing silently, which is the
+    one failure mode the key was added to prevent.
+
+    So this deny does not consult ownership and cannot be granted by adding an
+    entry — the same shape as `check_local_map`, for the same reason: a rule
+    that a map edit can switch off is advice. No map edit switches it off:
+    `check_ownership` runs this check on both sides of the `owns:` bail, so a
+    document that keeps `derived_files:` and loses `owns:` still denies here.
+
+    The thirteen roles never reach here; they are denied every direct file tool
+    earlier, in `main`. This closes the branch that governs everyone else.
+
+    It closes it exactly as far as the hook can see, which is a path a tool
+    names — under either of its names, since `_workspace_rels` hands over the
+    symlinked spelling as well as the resolved one. A shell command names no
+    path at all and is outside this rule by design (module docstring), which is
+    why the deny text names the tools it reads rather than claiming the
+    absolute. `check_local_map` still judges the resolved name only.
+    """
+    entry = _derived_entry(rel, derived)
+    if entry is None:
+        return
+    deny(
+        "`%s` is generated, not authored. `%s` is a derived path "
+        "(references/ownership.yaml, `derived_files:`) and no agent writes it "
+        "with %s — including `%s`.\n\n"
+        "Nothing under `%s` is evidence: it is rendered from the workspace "
+        "files that own the numbers, and it is owned by nobody so that it can "
+        "never be cited back as state. This deny does not depend on ownership "
+        "and cannot be granted by adding an entry to the map.\n\n"
+        "If something here is wrong, the fix is in the file it was rendered "
+        "from — change that, and render again.\n\n"
+        "(The founder can always make this edit themselves — this rule is "
+        "about agents.)" % (rel, entry, _path_naming_tools(), agent_type, entry)
+    )
+
+
 def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
     paths = _tool_paths(tool_name, tool_input)
     if not paths:
         return
+    derived = load_derived()
+    roots = workspace_roots(hook_cwd)
     by_path = load_ownership()
     if by_path is None:
+        # `derived_files:` has its own reader, and an `owns:` block this guard
+        # cannot parse says nothing about it. Everything else here still fails
+        # open — an unreadable map is not evidence that a write is wrong — but
+        # it is not evidence that a write into the rendered tree is right
+        # either, and that is the one write whose damage is a number on the
+        # page with no workspace file behind it.
+        for file_path in paths:
+            for rel in _workspace_rels(file_path, hook_cwd, roots):
+                check_derived(agent_type, rel, derived)
         allow("no ownership map — the guard is off, not strict")
-    roots = workspace_roots(hook_cwd)
     for file_path in paths:
         root, rel = resolve_in_workspace(file_path, hook_cwd, roots)
         if rel is None:
             log("allow: %s is outside the workspace" % file_path)
             continue
         check_local_map(agent_type, rel)
+        for derived_rel in _workspace_rels(file_path, hook_cwd, roots):
+            check_derived(agent_type, derived_rel, derived)
         owner = owner_of(rel, merged_ownership(by_path, root))
         if owner is None:
             log("allow: %s has no owner in the map" % rel)

@@ -196,6 +196,36 @@ def _validate_requested_path(value: str) -> str:
     return value
 
 
+def _derived_segments(value: str) -> Tuple[str, ...]:
+    return tuple(part.casefold() for part in value.split("/") if part)
+
+
+def _is_derived(derived_files: List[str], value: str) -> bool:
+    """Is `value` a derived path, or a path inside a derived directory?
+
+    A `derived_files:` entry ending in `/` names a directory, and comparing the
+    two lists as sets read that slash as part of a filename: `_dashboard/` was
+    refused as owned state and `_dashboard/snapshots/` was accepted one segment
+    down, with `owner_for("_dashboard/snapshots/x.md")` then answering with a
+    role.
+
+    Matched by segment, casefolded, and with the trailing slash optional rather
+    than required, because `hooks/ownership-guard.py:_derived_entry` is what
+    decides at write time and that is the rule it applies. A map this loader
+    accepts and the guard reads as derived hands an agent an owner for a path it
+    will then be refused: with `_Dashboard/` declared derived,
+    `_dashboard/snapshots/` was owned here and denied there. Broad is the safe
+    direction for a deny list, and `_dashboardx/` is a different first segment,
+    so it stays outside.
+    """
+    parts = _derived_segments(value)
+    for entry in derived_files:
+        prefix = _derived_segments(entry)
+        if prefix and parts[:len(prefix)] == prefix:
+            return True
+    return False
+
+
 def load_document(path: Path) -> Dict[str, object]:
     """The whole parsed map, for readers that need more than an owner lookup.
 
@@ -266,7 +296,7 @@ class OwnershipSchema:
             _validate_owned_path(derived_path)
         if len(set(derived_files)) != len(derived_files):
             raise _schema_error()
-        if set(derived_files) & set(all_files):
+        if any(_is_derived(derived_files, owned_path) for owned_path in all_files):
             raise _schema_error()
 
         owners: Dict[str, str] = {}
