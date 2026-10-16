@@ -204,7 +204,21 @@ class StdioGatewayContractTests(unittest.TestCase):
         responses = [json.loads(line) for line in completed.stdout.splitlines()]
         error = responses[-1]["error"]
         self.assertEqual(responses[-1]["id"], 2)
-        self.assertEqual(error["code"], -32601)
+        # The method exists, so an unknown tool name is Invalid params.
+        self.assertEqual(error["code"], -32602)
+
+    def test_ping_is_answered_before_initialize_and_null_ids_are_rejected(self) -> None:
+        completed = _run_gateway(
+            _request(1, "ping"),
+            {"jsonrpc": "2.0", "id": None, "method": "ping"},
+            _initialize(2),
+            _request(3, "ping"),
+        )
+        responses = [json.loads(line) for line in completed.stdout.splitlines()]
+        self.assertEqual({"jsonrpc": "2.0", "id": 1, "result": {}}, responses[0])
+        self.assertEqual(-32600, responses[1]["error"]["code"])
+        self.assertIn("result", responses[2])
+        self.assertEqual({"jsonrpc": "2.0", "id": 3, "result": {}}, responses[3])
 
     def test_malformed_json_returns_parse_error_and_diagnostic_stays_on_stderr(self) -> None:
         completed = _run_gateway('{"jsonrpc":"2.0","id":1,"method":')

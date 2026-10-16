@@ -165,7 +165,10 @@ class Gateway:
         schema["name"]: frozenset(schema["inputSchema"]["properties"])
         for schema in _TOOL_SCHEMAS
     }
-    DEFAULT_SESSION_TTL_SECONDS = 300
+    # Long enough to read, draft and write one heavy workflow (a quarterly
+    # review) without the write landing on an expired session and losing the
+    # draft; nothing renews it.
+    DEFAULT_SESSION_TTL_SECONDS = 1800
 
     def __init__(
         self,
@@ -433,12 +436,14 @@ class Gateway:
                     )
                 )
                 valid_create = create_only is True
-                if valid_create == valid_expected:
-                    raise OwnershipError("STALE_WRITE")
-                if "create_only" in arguments and not valid_create:
-                    raise OwnershipError("STALE_WRITE")
-                if "expected_sha256" in arguments and not valid_expected:
-                    raise OwnershipError("STALE_WRITE")
+                # A malformed mode is a bad argument, not a stale file:
+                # STALE_WRITE says re-read and retry, which cannot fix it.
+                if (
+                    valid_create == valid_expected
+                    or ("create_only" in arguments and not valid_create)
+                    or ("expected_sha256" in arguments and not valid_expected)
+                ):
+                    raise OwnershipError("STATE_IO_ERROR")
 
                 schema = self._ownership_schema()
                 owner = schema.owner_for(raw_path)

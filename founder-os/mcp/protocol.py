@@ -103,17 +103,18 @@ class ProtocolServer:
                 },
             )
 
-        if self._lifecycle != "ready":
-            if is_notification:
-                return None
-            return _error(request_id, -32002, "Server not initialized")
-
+        # Either side may ping at any time, startup included.
         if method == "ping":
             if is_notification:
                 return None
             if not self._valid_meta_only_params(message.get("params", {})):
                 return _error(request_id, -32602, "Invalid params")
             return _response(request_id, {})
+
+        if self._lifecycle != "ready":
+            if is_notification:
+                return None
+            return _error(request_id, -32002, "Server not initialized")
 
         if method == "notifications/cancelled":
             return (
@@ -142,7 +143,8 @@ class ProtocolServer:
             try:
                 result = self._gateway.call(name, arguments)
             except UnknownToolError:
-                return _error(request_id, -32601, "Method not found")
+                # The method exists; the tool name is a bad parameter.
+                return _error(request_id, -32602, "Unknown tool")
             return _response(request_id, result)
 
         return (
@@ -153,9 +155,9 @@ class ProtocolServer:
 
     @staticmethod
     def _valid_id(value: object) -> bool:
+        # MCP request ids are never null.
         return (
-            value is None
-            or isinstance(value, str)
+            isinstance(value, str)
             or (
                 not isinstance(value, bool)
                 and isinstance(value, (int, float))
