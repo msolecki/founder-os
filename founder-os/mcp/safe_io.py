@@ -296,7 +296,7 @@ class SafeStateIO:
         """
         relative = self._validate_file_path(path)
         allowed = {
-            "CLAUDE.md",
+            "references/guidance.md",
             "agents/" + self._authority_segment(role) + ".md",
             "references/ownership.yaml",
             "references/house-rules.md",

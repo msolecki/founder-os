@@ -5,6 +5,8 @@
   "author": {
     "name": "Mateusz Solecki"
   },
+  "homepage": "https://msolecki.github.io/founder-os/",
+  "repository": "https://github.com/msolecki/founder-os",
   "license": "MIT",
   "keywords": [
     "founder",
@@ -13,5 +15,8 @@
     "strategy",
     "revenue",
     "focus"
-  ]
+  ],
+  "documentationUrl": "https://msolecki.github.io/founder-os/",
+  "supportUrl": "https://github.com/msolecki/founder-os/issues",
+  "privacyPolicyUrl": "https://msolecki.github.io/founder-os/trust.html"
 }

@@ -69,7 +69,7 @@ these disagree, the file wins.
 
 | Source | What it is |
 |---|---|
-| [`founder-os/CLAUDE.md`](../founder-os/CLAUDE.md) | The guidance loaded into every session. |
+| [`founder-os/references/guidance.md`](../founder-os/references/guidance.md) | The guidance loaded into every session. |
 | [`founder-os/README.md`](../founder-os/README.md) | Product philosophy and what the package refuses to do. |
 | [`founder-os/COMMANDS.md`](../founder-os/COMMANDS.md) | The generated command catalogue (never hand-edited). |
 | [`founder-os/references/house-rules.md`](../founder-os/references/house-rules.md) | The seven house rules, in full. |

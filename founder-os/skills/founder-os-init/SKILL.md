@@ -46,7 +46,7 @@ and generic execution both use the byte-identical packaged role under
 
 Stage 0 is read-only. Finish every check before the first workspace write:
 
-1. Confirm the plugin manifest, `CLAUDE.md`, `references/house-rules.md`,
+1. Confirm the plugin manifest, `references/guidance.md`, `references/house-rules.md`,
    `references/ownership.yaml`, `references/multi-business.md` and every
    downstream skill named below exist in the installed package.
 2. Before normal target resolution, read an **explicit resume tuple** from the
@@ -60,7 +60,7 @@ Stage 0 is read-only. Finish every check before the first workspace write:
    follows `references/multi-business.md`; an ambiguous or invalid slug stops.
 5. Check from filesystem metadata that the target or its nearest existing
    parent is writable. Do not create a probe file.
-6. Confirm the canonical context is present and carries `CLAUDE.md`, the house
+6. Confirm the canonical context is present and carries `references/guidance.md`, the house
    rules, ownership map and resolved workspace.
 7. Apply the **daily-review validity invariant**: in this resolved workspace,
    a candidate `reviews/daily/YYYY-MM-DD.md` is valid only when it contains the

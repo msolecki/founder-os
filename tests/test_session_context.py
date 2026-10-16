@@ -231,7 +231,8 @@ class TestSessionContextFailureVisibility(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             plugin_root = Path(temp_dir) / "installed" / "founder-os"
             plugin_root.mkdir(parents=True)
-            setup(plugin_root / "CLAUDE.md")
+            (plugin_root / "references").mkdir()
+            setup(plugin_root / "references" / "guidance.md")
             env = os.environ.copy()
             env["PLUGIN_ROOT"] = str(plugin_root)
             result = subprocess.run(

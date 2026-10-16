@@ -1,6 +1,6 @@
 # Founder OS workspace
 
-Read and follow `founder-os/CLAUDE.md` as the canonical project guidance. It is
+Read and follow `founder-os/references/guidance.md` as the canonical project guidance. It is
 shared by Claude Code and Codex; do not duplicate or weaken its house rules in
 this file.
 

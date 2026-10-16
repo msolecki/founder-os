@@ -218,7 +218,6 @@ docs/getting-started.md           # external-user requirements and first run
 examples/studio-north/            # fictional, contract-shaped workspace tour
 founder-os/                       # the plugin (what gets installed)
   .claude-plugin/plugin.json
-  CLAUDE.md                       # loaded into every session; the never-miss rules
   README.md                       # the product: org, philosophy, refusals
   COMMANDS.md                     # generated catalogue: every command, owner, schedule
   agents/           (13)
@@ -227,7 +226,9 @@ founder-os/                       # the plugin (what gets installed)
   scripts/cadence_manager.py      # safe scheduler preview/snapshot/apply
   scripts/dashboard/              # the /dashboard renderer (reads state, writes _dashboard/)
   hooks/                          # hooks.json + ownership-guard.py
-  references/                     # ownership.yaml, house-rules, skill-template,
+  references/                     # guidance.md (injected into every session;
+                                  # the never-miss rules), ownership.yaml,
+                                  # house-rules, skill-template,
                                   # thresholds.yaml, ingestion-gate, linking,
                                   # multi-business
   images/                         # org chart (mermaid + png)

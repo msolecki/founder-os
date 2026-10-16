@@ -5,6 +5,15 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+**Ready for the Claude plugin directory.** The canonical guidance moved from
+`founder-os/CLAUDE.md` to `founder-os/references/guidance.md`: a plugin root's
+`CLAUDE.md` is never loaded as context, and the directory validator flags one.
+The `SessionStart` hook still injects the same text into every session, and
+`read_reference` serves it at the new path. `plugin.json` now carries
+`homepage`, `repository`, `documentationUrl`, `supportUrl` and
+`privacyPolicyUrl` for the directory listing. `claude plugin validate
+founder-os` passes with no warnings.
+
 ## 2.8.0 — 2026-09-03
 
 **The workspace as one page that cites its own sources.** `/dashboard` renders

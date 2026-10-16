@@ -429,12 +429,11 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         for marker in (
             "claude plugin validate .",
             "claude plugin validate founder-os",
-            "The package currently emits one addressed warning for "
-            "`founder-os/CLAUDE.md`",
+            "Both must pass without warnings; any warning blocks the release.",
+            "`founder-os/references/guidance.md`, not a root `CLAUDE.md`",
             "the `SessionStart` hook injects that canonical guidance",
             "tests/test_session_context.py",
-            "Any new or different warning blocks the release.",
-            "explicit founder approval",
+                        "explicit founder approval",
             "a release gate, not CI coverage",
         ):
             with self.subTest(marker=marker):
