@@ -15,7 +15,7 @@ PLOT_INSET = 8.0
 PLOT_HEIGHT = PLOT_BOTTOM - PLOT_TOP
 
 
-def _escape(text: str) -> str:
+def escape(text) -> str:
     return (str(text).replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;")
             .replace("'", "&#39;"))
@@ -48,7 +48,7 @@ def sparkline(values: Sequence[float], low: Optional[float],
               for index, value in enumerate(values)]
     parts = [
         '<svg class="spark" viewBox="0 0 %d %d" role="img" aria-label="%s">'
-        % (width, height, _escape("%s: %s" % (
+        % (width, height, escape("%s: %s" % (
             label, ", ".join("%g" % value for value in values))))]
     if low is not None and high is not None:
         top = PLOT_BOTTOM - (high / ceiling) * PLOT_HEIGHT
@@ -87,7 +87,7 @@ def track(segments: Sequence[Tuple[float, str, str, bool]],
         # styles or scripts `data-*`, and a bare div takes no accessible name
         # from `title` — so the segment is named the way `sparkline` names
         # itself, with a role and a label.
-        label = _escape(tooltip)
+        label = escape(tooltip)
         pieces.append(
             '<div class="%s" style="width:%g%%;%s" role="img" aria-label="%s" '
             'title="%s" data-tip="%s"></div>'

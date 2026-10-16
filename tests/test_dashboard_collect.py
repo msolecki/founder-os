@@ -79,6 +79,13 @@ class TestCollect(unittest.TestCase):
         self.assertEqual(newest.path, "reviews/daily/2026-07-20.md")
         self.assertIn("q-0720a", newest.sections["## The one thing"])
 
+    def test_an_undated_member_is_not_the_newest_brief(self):
+        (self.home / "reviews" / "daily" / "notes.md").write_text(
+            "# Notes\n", encoding="utf-8")
+        sources = collect.collect(self.home, self.view, slug="studio-north")
+        self.assertEqual(sources.newest_member("reviews/daily/").path,
+                         "reviews/daily/2026-07-20.md")
+
     def test_a_declared_directory_records_whether_it_exists(self):
         """An empty directory and one that was never created are not the same.
 
