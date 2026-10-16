@@ -1038,6 +1038,9 @@ class SafeStateIOTests(unittest.TestCase):
             "house-rules.md",
             "multi-business.md",
             "orchestration.md",
+            "ingestion-gate.md",
+            "linking.md",
+            "thresholds.yaml",
         ):
             (references / name).write_text(name + "\n", encoding="utf-8")
         (self.workspace / "state.md").write_bytes(b"state bytes\n")
@@ -1274,8 +1277,9 @@ class SafeStateIOTests(unittest.TestCase):
         (self.workspace / "binary.md").write_bytes(b"\xff")
         (self.workspace / "large.md").write_bytes(b"0123456789")
 
+        # An absent file is no longer an error: it comes back as
+        # `exists: false` (test_a_batch_read_reports_an_absent_file...).
         for paths, limits in (
-            (["missing.md"], {}),
             (["nested"], {}),
             (["binary.md"], {}),
             (["large.md"], {"max_file_bytes": 5}),
@@ -1325,6 +1329,10 @@ class SafeStateIOTests(unittest.TestCase):
             "references/house-rules.md",
             "references/multi-business.md",
             "references/orchestration.md",
+            # House rules and the ingestion gate tell every role to read these.
+            "references/ingestion-gate.md",
+            "references/linking.md",
+            "references/thresholds.yaml",
             ".claude-plugin/plugin.json",
             ".codex-plugin/plugin.json",
         )
@@ -1449,6 +1457,39 @@ class SafeStateIOTests(unittest.TestCase):
         self.assertNotIn("FAKE", serialized)
         self.assertNotIn("SECRET", serialized)
         self.assertNotIn("HIDDEN", serialized)
+
+    def test_fixed_sections_find_a_heading_under_its_dated_suffix(self) -> None:
+        """revenue-review always writes `## Close — YYYY-MM`; the write accepts
+        it, so the portfolio read must not report it missing."""
+        (self.workspace / "goals.md").write_text(
+            "# Goals\n## Bets — 2026-Q3\nAlpha\n", encoding="utf-8"
+        )
+        (self.workspace / "metrics.md").write_text(
+            "# M\n## Close — 2026-07\nBooked: 10\n## Runway — \nEmpty suffix\n"
+            "## Closed deals\nNot Close\n",
+            encoding="utf-8",
+        )
+        payload = self.io().read_fixed_sections(
+            {"goals.md": ("Bets",), "metrics.md": ("Close", "Runway")}
+        )
+        self.assertEqual(["metrics.md#Runway"], payload["missing"])
+        self.assertEqual(
+            [("Bets", "Alpha\n"), ("Close", "Booked: 10\n")],
+            [(item["heading"], item["content"]) for item in payload["sections"]],
+        )
+
+    def test_a_batch_read_reports_an_absent_file_instead_of_failing(self) -> None:
+        files = self.io().read_many(["state.md", "absent.md", "no-dir/x.md"])
+        self.assertEqual(
+            ["state.md", "absent.md", "no-dir/x.md"],
+            [entry["path"] for entry in files],
+        )
+        self.assertEqual("state bytes\n", files[0]["content"])
+        self.assertEqual(
+            [{"path": "absent.md", "exists": False},
+             {"path": "no-dir/x.md", "exists": False}],
+            files[1:],
+        )
 
 
     def test_ancestor_swap_cannot_escape_trusted_workspace_descriptor(self) -> None:
@@ -1792,6 +1833,20 @@ class GatewayReadSurfaceTests(unittest.TestCase):
         self.assertEqual(
             ["state.md", "notes.txt"],
             [entry["path"] for entry in read["files"]],
+        )
+
+    def test_read_state_names_the_headings_an_absent_file_needs(self):
+        capability = self.open_capability()
+        (self.workspace / "metrics.md").unlink(missing_ok=True)
+        read = self.payload(self.gateway.call(
+            "read_state",
+            {"capability": capability, "paths": ["state.md", "metrics.md"]},
+        ))
+        self.assertEqual("state.md", read["files"][0]["path"])
+        self.assertEqual(
+            {"path": "metrics.md", "exists": False,
+             "missing_sections": ["## Close", "## Signals"]},
+            read["files"][1],
         )
 
     def test_missing_sections_answers_the_question_the_write_will_ask(self):

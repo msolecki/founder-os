@@ -16,6 +16,8 @@ import stat
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Optional, Tuple
 
+from .ownership import heading_matches
+
 
 class SafeStateError(Exception):
     _ACTIONS = {
@@ -275,7 +277,13 @@ class SafeStateIO:
                 relative,
                 self._workspace_fd,
                 relative.as_posix(),
+                missing_ok=True,
             )
+            if entry is None:
+                # Absent is an answer, not an I/O fault: the role can create
+                # it, and the files beside it in the batch still come back.
+                result.append({"path": relative.as_posix(), "exists": False})
+                continue
             total += int(entry["size"])
             if total > self.max_total_bytes:
                 raise SafeStateError("STATE_IO_ERROR")
@@ -302,6 +310,11 @@ class SafeStateIO:
             "references/house-rules.md",
             "references/multi-business.md",
             "references/orchestration.md",
+            # House rules 5 and 6 and the ingestion gate send every role to
+            # these; a role has no other way to read them.
+            "references/ingestion-gate.md",
+            "references/linking.md",
+            "references/thresholds.yaml",
             ".claude-plugin/plugin.json",
             ".codex-plugin/plugin.json",
         }
@@ -381,7 +394,6 @@ class SafeStateIO:
         content: str,
         headings: Tuple[str, ...],
     ) -> Dict[str, str]:
-        wanted = set(headings)
         found: Dict[str, str] = {}
         current: Optional[str] = None
         body: List[str] = []
@@ -415,8 +427,17 @@ class SafeStateIO:
                 match = re.fullmatch(r"## ([^\r\n]+)", stripped)
                 if match is not None:
                     finish()
-                    heading = match.group(1)
-                    current = heading if heading in wanted else None
+                    # `## Close — 2026-07` is `## Close`, by the rule the
+                    # write path applies, so it is found under its name.
+                    current = next(
+                        (
+                            wanted for wanted in headings
+                            if heading_matches(
+                                stripped.rstrip(), "## " + wanted
+                            )
+                        ),
+                        None,
+                    )
                     continue
 
             if current is not None:

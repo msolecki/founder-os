@@ -76,7 +76,7 @@ class Gateway:
         },
         {
             "name": "read_state",
-            "description": "Read one or more state records through a capability. Each record carries missing_sections: headings the ownership map declares for that path and the file does not have.",
+            "description": "Read one or more state records through a capability. Each record carries missing_sections: headings the ownership map declares for that path and the file does not have. A path that does not exist comes back as {path, exists: false} with the headings a new file needs.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -349,7 +349,7 @@ class Gateway:
         for entry in files:
             entry["missing_sections"] = list(schema.missing_sections(
                 str(entry.get("path") or ""),
-                entry.get("content"),
+                entry.get("content", ""),
             ))
         return {"files": files}
 
