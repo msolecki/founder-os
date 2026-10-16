@@ -67,11 +67,15 @@ On the complete path, write one `### Bet` under `goals.md` `## Bets`:
     Proposed: <first move> — bet: B1
     ### Bet B1: <name>
     Status: first-run 90-day bet opened mid-quarter
-    Start date: YYYY-MM-DD
-    Judgment date: <the supplied 90-day horizon; exactly 90 days after start>
+    Opened: YYYY-MM-DD
+    Judgment date: YYYY-MM-DD
     Outcome: <metric> reaches <numeric value> by <date>
     Cost: <supplied hours> h + <supplied cash cap>
     Kill if: <metric> is below <numeric threshold> on <date>
+
+`Opened:` is the run date. `Judgment date:` is the supplied 90-day horizon —
+exactly 90 days after `Opened:` — and each line carries the bare date and
+nothing else, because the dashboard and the morning brief read it as a date.
 
 If any required field is unknown or invalid, write the same dated `## Bets`
 section with `Activation status: blocked`, `Status: blocked — <field>:
@@ -157,11 +161,27 @@ Read first, in order — house rule 1:
    Written now, while the bet is cheap to abandon and nobody has spent anything
    on it. This is the single hardest sentence to write later, and
    `kill-or-continue` is worthless without it.
-6. **Size each bet before committing it.** Hand to `bet-sizing`. An unsized bet
-   does not enter `goals.md`.
+6. **Size each bet before committing it.** Run `bet-sizing`'s arithmetic on each
+   bet and carry its three lines — `Cost:`, `Cap:` and `If wrong:` — into the
+   step-8 template yourself. The bet's block does not exist until step 8 writes
+   it, so there is nothing for `bet-sizing` to append to yet, and a size that
+   lives only in this session is lost the moment step 8 replaces `goals.md`. An
+   unsized bet does not enter `goals.md`.
 7. **Send the plan to the Board Member.** `red-team` before you write. You pick
    the direction; they tell you if it holds. If you find yourself defending the
    plan instead of forwarding it, that is the signal to forward it.
+
+   **Steps 3 to 7 need the founder in the room.** Choosing the bets, cutting to
+   three and forwarding the plan to `red-team` are decisions, and the scheduled
+   run on the 1st at 11:00 has nobody to make them. Unattended, do steps 1 and 2
+   — they are arithmetic over files — and then stop: **do not replace
+   `goals.md`'s bets.** Write `reviews/quarterly/YYYY-Qn.md` with
+   `## Last quarter's verdicts` and `## Never measured` filled and exactly
+   `blocked — needs founder input: this quarter's bets, their kill conditions and the red-team pass`
+   as the body of `## This quarter's bets`, and add one line under `goals.md`
+   `## Bets`, above the bet blocks:
+   `Proposed: run /quarterly-planning with the founder — the Q<n> plan is blocked — bet: none`.
+   The brief drains it; the plan is made when the founder is there to make it.
 8. **Write `goals.md`, then `reviews/quarterly/`.** `goals.md` is the live plan;
    the review is the record of what was decided and what last quarter returned.
 9. **Propose the first move on each bet to the Chief of Staff — and almost nothing
@@ -194,9 +214,17 @@ Replace `goals.md` with this quarter's bets:
     ## Bets
     Proposed: <first move> — bet: B<n> | none
     ### Bet <n>: <name>
+    Opened: YYYY-MM-DD
+    Judgment date: YYYY-MM-DD
     Outcome: <metric that exists in metrics.md> reaches <value> by <date>
-    Cost: <hours> h + <cash>   (from bet-sizing)
+    Cost: <hours> h @ <rate from metrics.md, dated> + <cash>   (step 6)
+    Cap: stop at <hours> h or <cash>, or <date> — whichever comes first
+    If wrong: <what is lost, concretely> — reversible in <time>
     Kill if: <metric> is below <value> on <date>
+
+Carry every open `Experiment:` line forward under the bet it serves, or under
+`## Bets` when its bet was closed — the experiment is still open, and its
+judgment date is still due.
 
 **`Proposed:` is how step 9's handoff survives the 1st at 11:00 with nobody in
 the room.** One line per bet's first move, three maximum, under `## Bets` and
@@ -205,11 +233,13 @@ the cadence where losing the handoff costs most: a quarter whose three first
 moves never reached the queue is a quarter that was planned and not started, and
 nothing will notice until the verdicts in October.
 
-`## Bets` is the section `ownership.yaml` pins for `goals.md` and it is the one
-`founder-os-init` scaffolds; the bets are `###` blocks under it. `bet-sizing`
-appends `Cost:` and `Cap:` to a bet's block and `kill-or-continue` writes its
-verdict line there — both need to find the block, and they find it under this
-heading.
+`## Bets` is the section `ownership.yaml` pins for `goals.md`; the bets are `###`
+blocks under it. `Opened:` is the day the plan was written and `Judgment date:` is the day the bet is judged —
+the `Kill if:` date, written as its own line because `bet-sizing` refuses a bet
+without one, `kill-or-continue` fires on it, and the daily brief rots on it.
+`bet-sizing` re-sizes a live bet mid-quarter by replacing its `Cost:`, `Cap:`
+and `If wrong:` lines, and `kill-or-continue` writes its verdict line there —
+both need to find the block, and they find it under this heading.
 
 Append to `reviews/quarterly/YYYY-Qn.md`:
 

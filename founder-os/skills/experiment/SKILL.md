@@ -4,6 +4,7 @@ description: Open a test with a threshold written before the result exists, and 
 metadata:
   writes:
     - experiments/
+    - goals.md
 ---
 
 # Experiment
@@ -183,6 +184,16 @@ day it opened:
     <empty until the judgment date>
     ## Verdict
     <empty until the judgment date>
+
+**Then put the judgment date where a cadence will see it.** No scheduled cadence
+reads `experiments/`, so a date that lives only there waits for the founder to
+remember — the outcome step 6 forbids. Add one line to `goals.md`, under the
+served bet's `###` block, or directly under `## Bets` when it serves none:
+
+    Experiment: [[YYYY-MM-DD-<slug>]] — Judgment date: YYYY-MM-DD
+
+`daily-brief` reads `goals.md` whole every weekday and rots this line the day
+its date passes. Remove the line in the same pass that closes the file.
 
 At close, append to `## Result` and `## Verdict` and flip `Status:` to `closed`.
 Change nothing above:

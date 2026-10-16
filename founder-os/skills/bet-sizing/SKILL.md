@@ -87,7 +87,10 @@ Read first — house rule 1:
 
 ## Output
 
-Append to the bet's block in `goals.md`:
+Write into the bet's block in `goals.md`, replacing the block's existing
+`Cost:`, `Cap:` and `If wrong:` lines when it has them — `quarterly-planning`
+writes all three when it commits the bet, and a second `Cap:` under the first is
+two caps, one of which nobody enforces:
 
     Cost: <hours> h @ <rate from metrics.md, dated> + <cash>
     Cap: stop at <hours> h or <cash>, or <date> — whichever comes first
