@@ -747,6 +747,11 @@ def _parse_thresholds(text):
             continue
         indent, key, value = match.groups()
         if not indent:
+            # The reader resets a group it meets again, so a second `queue:`
+            # silently drops every key above it there while passing here.
+            if key in groups:
+                errs.append("references/thresholds.yaml: '%s' is declared twice "
+                            "— the dashboard keeps only the last one" % key)
             current = key
             groups.append(key)
             if value:
@@ -1287,6 +1292,25 @@ def check_version_sites(root, agents):
     return errs
 
 
+def _counted_docs(root):
+    """Every page `check_readme_counts` reads counts from.
+
+    A missing entry is skipped there, because fixtures carry only some of them;
+    tests/test_validate_package.py holds the shipped repo to having every one,
+    so a renamed page fails instead of going unchecked.
+    """
+    site = root.parent / "docs"
+    return [site / "README.md", site / "getting-started.md",
+            site / "commands.md", site / "cadences.md",
+            site / "troubleshooting.md", site / "og-image.svg",
+            site / "concepts.md", site / "agents.md",
+            root / "README.md", root / "references" / "guidance.md", root / "COMMANDS.md",
+            root / "references" / "extensibility.md",
+            root / "skills" / "skill-forge" / "SKILL.md",
+            root.parent / ".github" / "ISSUE_TEMPLATE" / "idea.yml",
+            root / ".codex-plugin" / "plugin.json"]
+
+
 def check_readme_counts(root, agents):
     """README's counts must match the package, or the README is a second map.
 
@@ -1341,16 +1365,7 @@ def check_readme_counts(root, agents):
     # category "9 workflows" on every group heading, which these patterns cannot
     # tell from a package count. tests/test_docs_workflows.py is what holds
     # that page.
-    site = root.parent / "docs"
-    docs = [site / "README.md", site / "getting-started.md",
-            site / "commands.md", site / "cadences.md",
-            site / "troubleshooting.md", site / "og-image.svg",
-            site / "concepts.md", site / "agents.md",
-            root / "README.md", root / "references" / "guidance.md", root / "COMMANDS.md",
-            root / "references" / "extensibility.md",
-            root / "skills" / "skill-forge" / "SKILL.md",
-            root.parent / ".github" / "ISSUE_TEMPLATE" / "idea.yml",
-            root / ".codex-plugin" / "plugin.json"]
+    docs = _counted_docs(root)
     counted = r"(\d+|%s)" % "|".join(sorted(NUMBER_WORDS, key=len, reverse=True))
     patterns = {
         "Agents": counted + r"\s+(?:specialized\s+business\s+roles|decision-owning executive agents|agents)",
