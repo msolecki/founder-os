@@ -271,6 +271,18 @@ class TestWeekPanel(unittest.TestCase):
         panel, _ = analyze.build_week(example_sources(strip))
         self.assertFalse(fact(panel, "available_hours").known)
 
+    def test_an_overcommitted_week_reads_its_negative_free_hours(self):
+        panel, _ = analyze.build_week(example_sources(edit(
+            "week.md", "Committed delivery 24h · Free 16h",
+            "Committed delivery 45h · Free -5h")))
+        self.assertEqual(fact(panel, "available_hours").number, 40.0)
+        self.assertEqual(fact(panel, "free_hours").number, -5.0)
+
+    def test_a_malformed_hour_is_unknown_not_a_crash(self):
+        panel, _ = analyze.build_week(example_sources(edit(
+            "week.md", "Available 40h", "Available 4..0h")))
+        self.assertFalse(fact(panel, "available_hours").known)
+
 
 class TestCashPanel(unittest.TestCase):
     def test_close_figures(self):
