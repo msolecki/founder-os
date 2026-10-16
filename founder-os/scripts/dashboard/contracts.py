@@ -92,6 +92,9 @@ def load_thresholds(path: Optional[Path] = None):
         value = match.group("value").split("#", 1)[0].strip()
         if not match.group("indent"):
             current = match.group("key")
+            if current in groups:
+                # A second `queue:` would silently drop the first one's limits.
+                raise ValueError("thresholds.yaml: group %r repeated" % current)
             groups[current] = {}
             continue
         if current is None:

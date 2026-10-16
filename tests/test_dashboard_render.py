@@ -229,6 +229,15 @@ class TestPageStructure(unittest.TestCase):
         self.assertIn("not recorded", html)
         self.assertIn('class="unknown"', html)
 
+    def test_a_future_dated_brief_or_week_is_not_a_negative_age(self):
+        render = load_dashboard("render")
+        analyze = load_dashboard("analyze")
+        future = analyze.number_fact("brief_age_days", -5, "-5 days", "c")
+        self.assertEqual("0 days ago", render._ago(future))
+        self.assertEqual("0 days", render._age(future))
+        past = analyze.number_fact("week_age_days", 3, "3 days", "c")
+        self.assertEqual("3 days ago", render._ago(past))
+
     def test_escapes_markup_found_in_state(self):
         render = load_dashboard("render")
         self.assertEqual(render.escape("<b>&"), "&lt;b&gt;&amp;")

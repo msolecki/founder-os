@@ -129,6 +129,15 @@ class TestThresholds(unittest.TestCase):
         self.assertEqual(thresholds["queue"]["queued_days"], 21)
         self.assertEqual(thresholds["signals"]["cap"], 3)
 
+    def test_a_repeated_group_is_refused_not_merged_away(self):
+        contracts = load_dashboard("contracts")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "thresholds.yaml"
+            path.write_text("queue:\n  doing_cap: 3\nsignals:\n  cap: 3\n"
+                            "queue:\n  queued_cap: 15\n", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                contracts.load_thresholds(path)
+
 
 if __name__ == "__main__":
     unittest.main()

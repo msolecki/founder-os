@@ -12,7 +12,6 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_PLUGIN = REPO_ROOT / "founder-os"
 SESSION_SOURCES = ("startup", "resume", "clear", "compact")
 CONTEXT_PREFIX = "Founder OS canonical guidance (shared with Claude Code):\n\n"
 

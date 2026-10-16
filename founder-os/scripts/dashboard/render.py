@@ -91,11 +91,18 @@ def _contested(panel) -> str:
             % (rows, escape(panel.settle_with or "")))
 
 
+def _age(fact) -> str:
+    """The age as written; a date in the future is today, not `-5 days`."""
+    if fact.number is not None and fact.number < 0:
+        return "0 days"
+    return fact.display
+
+
 def _ago(fact) -> str:
     """`3 days ago`, or the words for an age nobody can read."""
     if fact is None or not fact.known:
         return fact_html(fact)
-    return "%s ago" % escape(fact.display)
+    return "%s ago" % escape(_age(fact))
 
 
 def _brief(facts) -> str:
@@ -292,7 +299,7 @@ def _week(facts) -> str:
                  % (" plus ".join(label for label, _hours in booked), total))
     rows = [[b.day, "%g" % (b.hours or 0), b.title, b.serves] for b in blocks]
     age = _find(panel, "week_age_days")
-    note = ("week began %s ago" % age.display if age is not None and age.known
+    note = ("week began %s ago" % _age(age) if age is not None and age.known
             else "week not dated" if age is not None else "")
     return _panel("This week", note, body + _numbers(
         "Show the numbers", ("Day", "Hours", "Block", "Serves"), rows), panel)
