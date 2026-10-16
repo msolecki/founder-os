@@ -234,6 +234,13 @@ class TestEntries(unittest.TestCase):
         self.assertFalse(parse.is_declared_empty("Pending Friday review."))
         self.assertFalse(parse.is_declared_empty(""))
 
+    def test_a_none_with_its_reason_is_declared_empty(self):
+        """daily-brief's first run writes this under `## Rotting`."""
+        self.assertTrue(parse.is_declared_empty(
+            "none \u2014 first run; no historical clock\n"))
+        self.assertFalse(parse.is_declared_empty("None of the deals closed."))
+        self.assertFalse(parse.is_declared_empty("none \u2014 except\n- Acme\n"))
+
     def test_declared_empty_yields_no_entries(self):
         self.assertEqual(parse.split_entries("None.\n"), ())
 

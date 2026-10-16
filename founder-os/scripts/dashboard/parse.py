@@ -39,7 +39,11 @@ _SIGNS = "-\u2212"
 _ISO = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
 _H3 = re.compile(r"^###\s+", re.M)
 _BULLET = re.compile(r"^\s*[-*]\s+")
-_DECLARED_EMPTY = {"none", "none."}
+# `None.`, or `none — <why>`: daily-brief's first run writes
+# `none — first run; no historical clock` under `## Rotting`, and the reason
+# after the dash is still a declared zero. One line only, so "None of the deals
+# closed" followed by a list is not read as nothing.
+_DECLARED_EMPTY = re.compile(r"none(?:\.|\s+[\u2014\u2013-]\s+.*)?", re.I)
 
 
 @dataclass(frozen=True)
@@ -304,7 +308,7 @@ def parse_field(body: Optional[str], label: str) -> Optional[str]:
 
 
 def is_declared_empty(body: Optional[str]) -> bool:
-    return (body or "").strip().lower() in _DECLARED_EMPTY
+    return _DECLARED_EMPTY.fullmatch((body or "").strip()) is not None
 
 
 def split_entries(body: Optional[str]) -> Optional[Tuple[Entry, ...]]:
