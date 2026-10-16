@@ -1589,7 +1589,8 @@ class WrittenTemplateContract(unittest.TestCase):
 
     def test_unattended_cadences_block_instead_of_inventing_inputs(self):
         for skill in (
-            "calendar-audit", "week-plan", "revenue-review", "quarterly-planning"
+            "calendar-audit", "week-plan", "revenue-review", "quarterly-planning",
+            "pipeline-review",
         ):
             with self.subTest(skill=skill):
                 self.assertIn(

@@ -34,6 +34,8 @@ Read first, in order — house rule 1:
 - `goals.md` — this quarter's revenue bet. The gap is what the pipeline is
   measured against.
 - `metrics.md` — cash and burn, for what the gap actually means
+- `clients/` — only whether each `## Won` client's file exists yet, for its
+  `Proposed:` line (Output)
 - `ingestion-gate` — every line in `## Live` is something a prospect said, and a
   prospect is the counterparty. Run the gate on each before it goes in the file:
   it decides the tier and the stamp, this skill decides whether the deal
@@ -66,6 +68,17 @@ Read first, in order — house rule 1:
    in three consecutive reviews, the deal is dead and is being kept for morale.
    Kill it out loud. The date moved because nothing happened, and nothing
    happened because the prospect is not buying.
+   **Unattended, run only the steps the file can answer.** The Thursday 10:00
+   scheduled run has nobody to ask. Do steps 1, 3 and 7 — the deal definition,
+   the re-dating rule and coverage — with 8 and 9, which are arithmetic over the
+   same file, and never guess what only the founder knows. Write exactly
+   `Founder input: blocked — needs founder input: would-you-be-surprised on each live deal, and the cause of death for <each prospect killed today | none>`
+   in `## Last review`. A deal step 3 kills still moves to `## Dead`, with
+   `re-dated <n>× — blocked — needs founder input: the last thing that happened and who went quiet first`
+   as its cause; the next attended review asks and replaces that cause, and
+   nothing else in the entry. A next action step 2 rejects keeps its deal in
+   `## Live` with `Next action: blocked — needs founder input: what the founder does next, and when`.
+   Move a deal to `## Won` only when the file already records it signed.
 4. **Ask the question that ends the argument: if this prospect said no
    tomorrow, would you be surprised?** If the founder would not be surprised, it
    is already a no and the only thing missing is the writing down.
@@ -165,6 +178,7 @@ brief can take it.
     Median call→proposal: <n> days
     Win/loss pending: <n> (oldest <n> days) | none
     Proposed: <the item, concrete enough to close> — bet: <B<n> | none> | none
+    Founder input: none | blocked — needs founder input: <what>
 
 **`Proposed:` is how step 9's handoff survives a Thursday 10:00 with nobody in the
 room.** This cadence fires on a schedule; the Chief of Staff is not there to hand
@@ -181,8 +195,9 @@ that works when they are not.
 The one `Proposed:` slot in `## Last review` belongs to step 7's coverage
 finding; a second would start the queue-bloat this file's own intake rule
 refuses. The won deal's line is not a second slot in that section — it lives
-under the deal, is written once, on the day it moves to `## Won`, and closes when
-the client file exists. The brief reads the
+under the deal, is written once, on the day it moves to `## Won`, and is dropped
+by the first review that finds `clients/<client-slug>.md` exists — the one line
+`## Won` ever loses. The brief reads the
 counter in its rotting scan — a pending older than five days is past
 `win-loss-analysis`'s own window and gets named there, which is where the
 founder actually looks.
@@ -219,8 +234,9 @@ review that wrote it. The entries look dead to a pipeline review because the
 selling is over, and deleting one does not tidy the file — it silently removes
 the only written boundary on an engagement that is still running, and nobody
 finds out until a client asks for something in week five and `scope-guard` has
-nothing to rule against. Mark an engagement `closed` when it ends. Leave it
-there.
+nothing to rule against. Mark an engagement `closed` when it ends, and drop its
+`Proposed: open clients/…` line once the client file exists. Leave everything
+else there.
 
 Do not write `clients/` when a deal closes — hand the won deal to the **Delivery
 Lead**. Do not write `network.md` — hand relationships to the **Network
