@@ -65,7 +65,9 @@ Read first, in order — house rule 1:
   in review voice, and reissuing it a third time teaches the founder that this
   file's output is optional.
 - Drift is not automatically wrong; an undeclared drift is. There are exactly two
-  honest responses to the gap — rewrite the charter, or change the month. "This
+  honest responses to the gap — rewrite the charter (a `decision-log` entry,
+  which is the only workflow that writes `charter.md` after activation), or
+  change the month. "This
   month was atypical" is not a third one, though the founder will offer it, and
   they offered it last month too.
 

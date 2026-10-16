@@ -29,7 +29,7 @@ Whenever a session or a cadence produces an obligation that no other owner's fil
 will hold: a `triage` keep, the brief's one thing, the next item emitted by closing
 the last one.
 
-And every Friday, from `weekly-review` step 5 — the sweep, which is step 7 below.
+And every Friday, from `weekly-review` step 6 — the sweep, which is step 7 below.
 The sweep is the only thing standing between this file and the graveyard every
 queue eventually becomes.
 
