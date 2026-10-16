@@ -733,7 +733,7 @@ def _range_hours(text: str) -> Optional[float]:
     return round((end - start) / 60.0, 2) if end > start else None
 
 
-def build_week(sources):
+def build_week(sources, today: date):
     arithmetic_cite = "week.md ## Arithmetic"
     blocks_cite = "week.md ## Blocks"
     arithmetic = sources.section("week.md", "## Arithmetic")
@@ -768,6 +768,15 @@ def build_week(sources):
                                  "%gh" % round(per_bet[key], 2), blocks_cite))
     facts.append(number_fact("block_count", len(blocks), str(len(blocks)),
                              blocks_cite))
+    # A plan left over from a past week reads exactly like this week's, so its
+    # age is a fact beside it, measured from the `# Week of` date it names.
+    week_of = parse.parse_iso_date(sources.title("week.md"))
+    if week_of is not None:
+        age = (today - week_of).days
+        facts.append(number_fact("week_age_days", age, "%d days" % age,
+                                 "week.md # Week of"))
+    else:
+        facts.append(unknown("week_age_days", "week.md # Week of"))
     return (Panel(id="week", title="This week",
                   status=panel_status(tuple(facts)), facts=tuple(facts),
                   citations=(arithmetic_cite, blocks_cite)), tuple(blocks))
@@ -886,7 +895,7 @@ def build_queue(sources, thresholds) -> Panel:
 def build_facts(sources, today: date, generated: str, thresholds) -> Facts:
     bets_panel, bets, bet_findings = build_bets(sources, today)
     signals_panel, signals, signal_findings = build_signals(sources)
-    week_panel, blocks = build_week(sources)
+    week_panel, blocks = build_week(sources, today)
     panels = {
         "brief": build_brief(sources, today),
         "bets": bets_panel,

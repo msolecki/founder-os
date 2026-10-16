@@ -672,6 +672,26 @@ def exact_fit(home):
     (home / "week.md").write_text(text, encoding="utf-8")
 
 
+class TestStaleness(unittest.TestCase):
+    """A two-week-old brief and plan must not read as today's."""
+
+    def test_the_brief_and_the_week_carry_their_age(self):
+        render = load_dashboard("render")
+        business, facts = build_payload()
+        analyze = load_dashboard("analyze")
+        facts = analyze.build_facts(
+            load_dashboard("collect").collect(
+                business.home, load_dashboard("contracts").load_ownership(),
+                slug="studio-north"),
+            date(2026, 8, 3), "g", load_dashboard("contracts").load_thresholds())
+        html = render.render([(business, facts)], generated="g",
+                             active_slug="studio-north")
+        self.assertIn('<div class="panel-title">Written</div><p>14 days ago</p>',
+                      html)
+        self.assertIn('<span class="panel-note">week began 14 days ago</span>',
+                      html)
+
+
 class TestQueueOverCap(unittest.TestCase):
     """A clamped bar draws 6 of 3 exactly like 3 of 3, so it has to say so."""
 
