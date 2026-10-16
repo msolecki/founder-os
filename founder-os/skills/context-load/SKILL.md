@@ -56,8 +56,8 @@ Then, and only then, the one file your decision owns.
 
    **The metrics date is the close, not the file.** Take it from the first of
    these that `metrics.md` carries: a `Closed: YYYY-MM-DD` line in `## Close`;
-   else the newest `## Close — YYYY-MM` heading, as of the first day after the
-   month it names (`## Close — 2026-07` is as of 2026-08-01); else the
+   else the newest `## Close — YYYY-MM` heading, as of the last day of the
+   month it names (`## Close — 2026-07` is as of 2026-07-31); else the
    `## Runway — as of YYYY-MM-DD` date. The file's last-modified date counts
    only when none of the three is written — `signal-check` rewrites
    `## Signals` every Friday, so the file is never more than a week old while
