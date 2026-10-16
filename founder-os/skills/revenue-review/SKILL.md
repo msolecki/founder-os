@@ -146,6 +146,23 @@ Read first, in order — house rule 1:
    money. Propose; do not append. And do not close one: a chase is a send, the
    founder sends, and this skill cannot know whether it went.
 
+## Blocked — no bank or invoice evidence
+
+`Collected`, `Cash on hand` and the receivable lines come from the bank and the
+invoices, and neither is a workspace file: no tool you hold can read them. They
+reach you only when the founder supplies them in the session, and the 09:00
+scheduled run on the 1st has nobody to supply them. Then **do not replace the
+close.** The last real close stays exactly as it is — replacing it with a
+half-month of guesses would erase true numbers and reset every staleness clock
+that reads its date — and you add two lines at the end of the `## Close` block:
+
+    Next close: blocked — needs founder input: <YYYY-MM> bank statement and invoices issued (collected, cash on hand, receivables)
+    Proposed: supply the <YYYY-MM> bank statement and invoices for the close — bet: none
+
+The brief drains the `Proposed:` line like any other; the close runs when the
+founder brings the evidence. Never compute `Collected` from `Booked`, and never
+carry last month's cash forward as this month's.
+
 ## Output
 
 Replace the `## Close — YYYY-MM` block in `metrics.md`:
@@ -211,8 +228,8 @@ confident wrong answer here costs real money.
 The close is a natural place for this to arrive, because the founder is staring
 at a revenue figure and wondering what they actually keep. That is a question for
 an accountant. Say so plainly, hand them the booked figure, the collected figure
-and the receivables ageing, tell them to ask what is owed and when — and log it
-in `decisions/` if it is material.
+and the receivables ageing, tell them to ask what is owed and when — and if it is
+material, return a `/decision-log` request to the **Chief of Staff**, who owns `decisions/`.
 
 Do not write `reviews/monthly/`. It belongs to the **Chief of Staff**. Your job is
 that the number is true, not that it is narrated.
