@@ -546,11 +546,13 @@ def _run(
     runner: Callable[..., object],
     argv: Sequence[str],
 ) -> object:
+    # C locale: _read_crontab matches crontab's English "no crontab" message.
     return runner(
         list(argv),
         capture_output=True,
         text=True,
         check=False,
+        env={**os.environ, "LC_ALL": "C"},
     )
 
 

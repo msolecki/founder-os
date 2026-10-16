@@ -330,6 +330,18 @@ class CadenceManagerTests(unittest.TestCase):
                 runner("You (founder) are not allowed to use this program\n")
             )
 
+    def test_crontab_is_read_in_the_c_locale(self):
+        # The "no crontab" match is English; a localized cron must not
+        # turn a fresh account's empty crontab into a refusal.
+        seen = {}
+
+        def runner(argv, **kwargs):
+            seen.update(kwargs.get("env") or {})
+            return Result(returncode=1, stderr="crontab: no crontab for founder\n")
+
+        self.manager._read_crontab(runner)
+        self.assertEqual("C", seen.get("LC_ALL"))
+
     def test_smoke_does_not_require_a_scheduler(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
