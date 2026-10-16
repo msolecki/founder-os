@@ -724,5 +724,19 @@ class ThresholdConsolidationClaim(unittest.TestCase):
         self.assertNotRegex(note, r"corpus[^.;]{0,120}references/")
 
 
+class MetricsAgeClaim(unittest.TestCase):
+    def test_skills_age_metrics_from_the_written_close_date_not_mtime(self):
+        """The weekly `signal-check` rewrites `metrics.md`, so its mtime is
+        always fresh; the dashboard ages the close from the dated heading and
+        the skills that guard house rule 2 must measure the same thing."""
+        for slug in ("founder-os-doctor", "context-load"):
+            skill = " ".join((PLUGIN_ROOT / "skills" / slug / "SKILL.md")
+                             .read_text(encoding="utf-8").split())
+            with self.subTest(skill=slug):
+                self.assertNotRegex(skill, r"`metrics\.md` unmodified > \d+")
+                self.assertIn("`## Close — YYYY-MM`", skill)
+                self.assertIn("`## Runway — as of YYYY-MM-DD`", skill)
+
+
 if __name__ == "__main__":
     unittest.main()
