@@ -18,14 +18,14 @@ from pathlib import Path
 from typing import Iterable, List, Mapping, Optional, Tuple
 
 # `python3 <plugin>/scripts/dashboard` runs this file as a top-level module with
-# no parent, which makes every relative import below raise. Naming the package
-# and putting its parent on the path is what lets the directory stay runnable as
-# both a command and an import.
+# no parent, where a relative import raises. Putting the package's parent on the
+# path and importing it by name keeps the directory runnable as a command;
+# assigning `__package__` instead does the same and warns on Python 3.14.
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    __package__ = "dashboard"
-
-from . import analyze, collect, contracts, render, snapshots
+    from dashboard import analyze, collect, contracts, render, snapshots
+else:
+    from . import analyze, collect, contracts, render, snapshots
 
 EXIT_OK = 0
 EXIT_UNRESOLVED = 2
