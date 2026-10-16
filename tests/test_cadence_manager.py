@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import argparse
 import base64
 import importlib.util
 import json
 import os
 import plistlib
+import re
 from pathlib import Path
 import shlex
 import sys
@@ -93,6 +95,8 @@ class CadenceManagerTests(unittest.TestCase):
                 "/opt/Codex App/bin/codex",
                 "-a",
                 "never",
+                "-c",
+                "sandbox_workspace_write.network_access=false",
                 "exec",
                 "--sandbox",
                 "workspace-write",
@@ -205,8 +209,14 @@ class CadenceManagerTests(unittest.TestCase):
             'Environment="PATH=/opt/Codex App/bin:/usr/bin:/bin"',
             service,
         )
+        # systemd does not unquote WorkingDirectory= or StandardOutput=.
         self.assertIn(
-            'WorkingDirectory="/Users/Test Founder/work $;(tree)"',
+            "WorkingDirectory=/Users/Test Founder/work $;(tree)\n",
+            service,
+        )
+        self.assertIn(
+            "StandardOutput=append:/Users/Test Founder/.founder-os/logs/"
+            "'quoted'/a/quarterly-planning.log\n",
             service,
         )
         self.assertIn(
@@ -238,6 +248,103 @@ class CadenceManagerTests(unittest.TestCase):
                     weekday,
                     self.manager._launchd_calendar(workflow)["Weekday"],
                 )
+
+    def test_every_scheduler_derives_from_the_one_cron_table(self):
+        # The derived calendars equal what was hand-written before.
+        self.assertEqual(
+            "Mon..Fri *-*-* 08:00:00",
+            self.manager._systemd_calendar("daily-brief"),
+        )
+        self.assertEqual(
+            "*-01,04,07,10-01 11:00:00",
+            self.manager._systemd_calendar("quarterly-planning"),
+        )
+        self.assertEqual(
+            {"Day": 1, "Hour": 9, "Minute": 0},
+            self.manager._launchd_calendar("revenue-review"),
+        )
+        moved = (self.manager.Cadence("week-plan", "45 7 * * 2"),)
+        with mock.patch.object(self.manager, "BUSINESS_CADENCES", moved):
+            self.assertEqual(
+                {"Weekday": 2, "Hour": 7, "Minute": 45},
+                self.manager._launchd_calendar("week-plan"),
+            )
+            self.assertEqual(
+                "Tue *-*-* 07:45:00",
+                self.manager._systemd_calendar("week-plan"),
+            )
+        skill = (
+            REPO_ROOT / "founder-os" / "skills" / "setup-cadences" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        documented = dict(
+            re.findall(r"^\|\s*`/([a-z0-9-]+)`\s*\|[^|]*\|\s*`([^`]+)`\s*\|$",
+                       skill, re.M)
+        )
+        self.assertEqual(
+            documented,
+            {
+                cadence.workflow: cadence.cron
+                for cadence in self.manager.BUSINESS_CADENCES
+                + self.manager.PORTFOLIO_CADENCES
+            },
+        )
+
+    def test_binary_symlink_is_scheduled_unresolved_but_validated(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target = root / "versions" / "1.0" / "claude"
+            target.parent.mkdir(parents=True)
+            target.write_text("#!/bin/sh\n")
+            target.chmod(0o755)
+            link = root / "bin" / "claude"
+            link.parent.mkdir()
+            link.symlink_to(target)
+            args = argparse.Namespace(
+                host="claude",
+                binary=link,
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug=None,
+            )
+            config = self.manager._config_from_args(args)
+            self.assertEqual(link, config.binary)
+            self.assertTrue(
+                self.manager._host_path(config).startswith(str(link.parent) + ":")
+            )
+            target.chmod(0o644)
+            with self.assertRaises(self.manager.CadenceError):
+                self.manager._config_from_args(args)
+            self.manager._config_from_args(args, require_binary=False)
+
+    def test_crontab_exit_one_is_empty_only_for_no_crontab(self):
+        def runner(stderr):
+            return lambda argv, **kwargs: Result(returncode=1, stderr=stderr)
+
+        self.assertEqual(
+            b"",
+            self.manager._read_crontab(runner("crontab: no crontab for founder\n")),
+        )
+        with self.assertRaises(self.manager.CadenceError):
+            self.manager._read_crontab(
+                runner("You (founder) are not allowed to use this program\n")
+            )
+
+    def test_smoke_does_not_require_a_scheduler(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary = root / "claude"
+            binary.write_text("#!/bin/sh\n")
+            binary.chmod(0o755)
+            with mock.patch.object(self.manager, "smoke") as smoke:
+                self.manager.main([
+                    "smoke", "--host", "claude", "--binary", str(binary),
+                    "--workspace", str(root / "work" / "founder-os"),
+                    "--workdir", str(root / "work"),
+                    "--log-root", str(root / "logs"),
+                    "--workflow", "daily-brief",
+                ])
+            self.assertEqual("daily-brief", smoke.call_args[0][1])
 
     def test_log_directories_are_private(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -432,7 +539,13 @@ class CadenceManagerTests(unittest.TestCase):
             "# BEGIN founder-os:a — old\nold\n# END founder-os:a\n"
         ).encode()
         runner = CronRunner(current)
-        self.manager.remove(self.config(slug="a"), "cron", "a", runner=runner)
+        with tempfile.TemporaryDirectory() as temporary:
+            backup = self.manager.remove(
+                self.config(slug="a"), "cron", "a", Path(temporary),
+                runner=runner, timestamp="20260801-120000",
+            )
+            # Removal discloses a create-only copy of the crontab it replaced.
+            self.assertEqual(current, backup.read_bytes())
         installs = [
             call
             for call in runner.calls
@@ -471,9 +584,46 @@ class CadenceManagerTests(unittest.TestCase):
             ):
                 with self.assertRaises(self.manager.CadenceError):
                     self.manager.remove(
-                        config, "systemd", "a", runner=runner
+                        config, "systemd", "a", root / "backups", runner=runner
                     )
             self.assertTrue(all((directory / name).exists() for name in names))
+
+    def test_systemd_remove_skips_units_that_are_not_installed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / "systemd"
+            directory.mkdir()
+            config = self.manager.CadenceConfig(
+                host="claude",
+                binary=root / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug="a",
+            )
+            present = "com.founder-os.a.daily-brief.timer"
+            (directory / present).write_text("unit")
+            calls = []
+
+            def runner(argv, **kwargs):
+                calls.append(tuple(argv))
+                return Result(returncode=1 if "disable" in argv and argv[-1] != present else 0)
+
+            with mock.patch.object(
+                self.manager, "_scheduler_directory", return_value=directory
+            ):
+                backup = self.manager.remove(
+                    config, "systemd", "a", root / "backups", runner=runner,
+                    timestamp="20260801-120000",
+                )
+                self.manager.remove(
+                    config, "systemd", "a", root / "backups", runner=runner,
+                    timestamp="20260801-120001",
+                )
+            disables = [call for call in calls if "disable" in call]
+            self.assertEqual([("systemctl", "--user", "disable", "--now", present)], disables)
+            self.assertFalse((directory / present).exists())
+            self.assertIn(present, json.loads(backup.read_text())["files"])
 
     def test_malformed_manifest_seals_fail_as_cadence_errors(self):
         with self.assertRaises(self.manager.CadenceError):
