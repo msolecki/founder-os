@@ -30,7 +30,8 @@ one decision, which is the whole argument of this package.
 ## How to run it
 
 ```
-python3 <plugin>/scripts/dashboard [slug] [--open] [--out PATH] [--now YYYY-MM-DD]
+python3 <plugin>/scripts/dashboard [slug] [--home PATH] [--json] [--open] [--out PATH]
+    [--now YYYY-MM-DD] [--max-bytes N]
 ```
 
 Then tell the founder the path it printed. Never construct the HTML yourself and

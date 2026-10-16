@@ -18,6 +18,7 @@ _H1 = re.compile(r"^#\s+(.+?)\s*$")
 _H2 = re.compile(r"^(##\s+.+?)\s*$", re.M)
 _FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 _HEADING_SUFFIX = re.compile(r"\s+[—–-]\s+")
+_DATED_MEMBER = re.compile(r"\d{4}-\d{2}-\d{2}\.md$")
 
 # The workspace directory itself is conventionally `<project>/founder-os`, so
 # there the project is the business and the directory name is boilerplate.
@@ -59,8 +60,16 @@ class Sources:
         return entry.sections.get(heading)
 
     def newest_member(self, path: str) -> Optional[SourceFile]:
+        """The latest `YYYY-MM-DD.md` member, or the last by name if none is dated.
+
+        By name alone, `notes.md` sorts after every dated brief and becomes the
+        newest one, whose age then reads as unknown.
+        """
         members = self.members.get(path) or ()
-        return members[-1] if members else None
+        dated = [member for member in members
+                 if _DATED_MEMBER.match(member.path.rsplit("/", 1)[-1])]
+        pool = dated or members
+        return pool[-1] if pool else None
 
     def heading(self, path: str, heading: str) -> Optional[str]:
         """The heading line as written, suffix and all.

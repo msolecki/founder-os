@@ -18,10 +18,7 @@ _SIGNAL_COLOUR = {"below": "var(--crit)", "above": "var(--warn)",
                   "in": "var(--good)", "unknown": "var(--neutral-mark)"}
 
 
-def escape(text) -> str:
-    return (str(text).replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;")
-            .replace("'", "&#39;"))
+escape = charts.escape
 
 
 def _find(panel, key):
@@ -347,7 +344,7 @@ def _cash(facts) -> str:
         "Show the numbers", ("Measure", "Value"), rows), panel)
 
 
-def _view(business, facts) -> str:
+def _view(facts) -> str:
     return ('<div class="layout"><aside class="rail">%s</aside>'
             '<main class="panels">%s%s%s%s%s%s</main></div>'
             % (_brief(facts), _bets(facts), _pipeline(facts), _signals(facts),
@@ -403,7 +400,7 @@ def render(pages: Sequence[Tuple[object, object]], generated: str,
     views = "".join(
         '<section class="view" id="business-%s"%s>%s</section>'
         % (escape(business.slug or "single"),
-           "" if index == active else " hidden", _view(business, facts))
+           "" if index == active else " hidden", _view(facts))
         for index, (business, facts) in enumerate(pages))
     return (
         '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
