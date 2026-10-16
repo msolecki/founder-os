@@ -1788,6 +1788,47 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
                 self._deny_payload(mismatch)
                 self.assertIn("different role", mismatch.stdout)
 
+    def test_a_role_keeps_the_harmless_host_tools_and_nothing_else(self):
+        # A role on Claude Code loads its deferred gateway tools through
+        # ToolSearch; denying it strands the role. The exact names only.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for tool_name in ("ToolSearch", "TodoWrite"):
+                result = run_codex_hook(
+                    {"agent_type": "founder-os:cfo", "cwd": str(REPO_ROOT),
+                     "tool_name": tool_name, "tool_input": {}}, temp_dir)
+                self.assertEqual(result.stdout, "", tool_name)
+            for tool_name in ("Bash", "WebFetch", "WebSearch", "Read",
+                              "Write", "Task", "Agent", "toolsearch",
+                              "ToolSearchX", "mcp__other__ToolSearch"):
+                self._deny_payload(run_codex_hook(
+                    {"agent_type": "founder-os:cfo", "cwd": str(REPO_ROOT),
+                     "tool_name": tool_name, "tool_input": {}}, temp_dir))
+
+    def test_a_generic_gateway_call_never_rebinds_the_codex_main_turn(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir, role="cfo")
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            record = mapping / "codex-main-turn.json"
+            record.write_text(json.dumps(
+                {"agent_type": "__founder_os_main__",
+                 "recorded_at": time.time()}), encoding="utf-8")
+            spent = run_codex_hook(
+                {"agent_type": "default", "turn_id": "codex-main-turn",
+                 "cwd": str(REPO_ROOT),
+                 "tool_name": "mcp__founder-os-state__read_state",
+                 "tool_input": {"capability": capability,
+                                "paths": ["metrics.md"]}}, temp_dir)
+            self.assertEqual(spent.stdout, "", spent.stderr)
+            self.assertEqual(
+                "__founder_os_main__",
+                json.loads(record.read_text(encoding="utf-8"))["agent_type"])
+            main = run_codex_hook(
+                {"turn_id": "codex-main-turn", "cwd": str(REPO_ROOT),
+                 "tool_name": "Bash", "tool_input": {"command": "ls"}},
+                temp_dir)
+            self.assertEqual(main.stdout, "", main.stderr)
+
     def test_another_generic_agent_is_not_locked_by_a_sibling_binding(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             capability = self._issue_capability(temp_dir, role="cfo")
