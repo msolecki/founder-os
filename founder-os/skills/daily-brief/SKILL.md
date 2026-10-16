@@ -69,8 +69,10 @@ Read whole:
 - `queue.md` — `## Doing` first: what the founder already has in flight, and how
   long it has been in flight. Yesterday's commitment is an item here, not a
   memory, and whether it closed is a fact rather than a conversation.
-- `reviews/daily/` — yesterday's brief: what did they commit to? Its `## Triage`
-  also carries the list of proposals already answered, which step 0 needs.
+- `reviews/daily/` — the most recent brief before today (the newest dated
+  file, not literally yesterday's: Monday's predecessor is Friday's): what did
+  they commit to? Its `## Triage` also carries the list of proposals already
+  answered, which step 0 needs.
 
 Read for one named section only:
 
@@ -168,7 +170,7 @@ Read for one named section only:
    line lives in `goals.md` for the whole quarter, and a refused proposal never
    reaches the queue at all. So every answer — taken or refused — is also a line
    under `Proposals answered:` in today's `## Triage`, keyed by the proposal's
-   source and its verbatim text. Carry yesterday's list forward, and drop an entry
+   source and its verbatim text. Carry the most recent brief's list forward, and drop an entry
    only when its source line is gone from the section you read it in — you read
    every one of those sections this morning, so you know. A `Proposed:` line whose
    key is on the list has been answered: leave it alone, whatever the queue

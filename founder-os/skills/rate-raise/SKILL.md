@@ -145,8 +145,9 @@ over the current rate, the new rate and the projected annual delta from
 
 Legal, likewise. Whether the contract permits a mid-term increase, what notice the
 agreement requires, whether a client can hold the founder to the old rate: a
-lawyer reads the contract. Name the clause, say a lawyer should read it, log the
-concern in `decisions/`. Reviewing it "just for the obvious stuff" is exactly the
+lawyer reads the contract. Name the clause, say a lawyer should read it, and
+return a `/decision-log` request to the **Chief of Staff**, who owns
+`decisions/`, carrying the concern. Reviewing it "just for the obvious stuff" is exactly the
 failure mode — the obvious stuff is not what hurts.
 
 Do not decide what the offer is worth. That is the **Positioning Advisor** and
