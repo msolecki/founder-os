@@ -469,12 +469,14 @@ class RoleSessionStore:
                 text = path.read_text(encoding="utf-8")
                 parsed_role = self._parse_agent_frontmatter(text)
                 if parsed_role is None or parsed_role[0] != path.stem:
-                    # Only this role is refused. Discarding the whole map
-                    # turned one malformed file into every role session failing
-                    # with nothing saying which file did it.
+                    # Only this role loses its session; the ownership map then
+                    # refuses an owner it cannot name, so writes stop too. The
+                    # line below says which file did it.
                     sys.stderr.write(
                         "founder-os-state: agents/%s has no readable name and "
-                        "skills frontmatter; that role cannot open a session\n"
+                        "skills frontmatter; that role cannot open a session "
+                        "and the ownership map naming it is refused, so no "
+                        "role can write until the file is fixed\n"
                         % path.name
                     )
                     continue
