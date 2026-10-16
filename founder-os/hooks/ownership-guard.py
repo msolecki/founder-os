@@ -891,10 +891,14 @@ def _bind_generic_role(agent_type, tool_name, data, role):
     bound = _mapped_agent_type(stem)
     if bound == role:
         return
-    if bound == MAIN_AGENT_TYPE:
-        # A Codex turn the recorder mapped to the founder's own thread. That
-        # thread holds sessions by design, and overwriting its mapping with a
-        # role would lock the founder out of their own turn.
+    record = _read_small_regular_json(
+        os.path.join(_data_root(), "agent-types", stem + ".json"))
+    if bound == MAIN_AGENT_TYPE or (
+            isinstance(record, dict)
+            and record.get("agent_type") == MAIN_AGENT_TYPE):
+        # A Codex turn the recorder mapped to the founder's own thread, live
+        # or lapsed. That thread holds sessions by design, and overwriting its
+        # mapping with a role would lock the founder out of their own turn.
         log("allow: gateway call on the recorded main-thread turn — "
             "the main-thread mapping is never rebound")
         return
@@ -1279,9 +1283,9 @@ def main():
             tool_name,
             "Direct local file access bypasses capability and ownership checks.",
         )
-    # A role holds the gateway and nothing else, so a tool this guard does not
-    # recognize — a file tool a host adds later, a loosened allowlist — is
-    # denied, not waved through.
+    # A role holds the gateway and the harmless host tools above and nothing
+    # else, so a tool this guard does not recognize — a file tool a host adds
+    # later, a loosened allowlist — is denied, not waved through.
     _deny_tool(agent_type, tool_name, "A role holds only the gateway tools.")
 
 

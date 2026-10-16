@@ -1805,6 +1805,11 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
                      "tool_name": tool_name, "tool_input": {}}, temp_dir))
 
     def test_a_generic_gateway_call_never_rebinds_the_codex_main_turn(self):
+        for age in (0, 86401):
+            with self.subTest(age=age):
+                self._assert_main_turn_kept(age)
+
+    def _assert_main_turn_kept(self, age):
         with tempfile.TemporaryDirectory() as temp_dir:
             capability = self._issue_capability(temp_dir, role="cfo")
             mapping = Path(temp_dir) / "agent-types"
@@ -1812,7 +1817,7 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             record = mapping / "codex-main-turn.json"
             record.write_text(json.dumps(
                 {"agent_type": "__founder_os_main__",
-                 "recorded_at": time.time()}), encoding="utf-8")
+                 "recorded_at": time.time() - age}), encoding="utf-8")
             spent = run_codex_hook(
                 {"agent_type": "default", "turn_id": "codex-main-turn",
                  "cwd": str(REPO_ROOT),
@@ -1823,11 +1828,12 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             self.assertEqual(
                 "__founder_os_main__",
                 json.loads(record.read_text(encoding="utf-8"))["agent_type"])
-            main = run_codex_hook(
-                {"turn_id": "codex-main-turn", "cwd": str(REPO_ROOT),
-                 "tool_name": "Bash", "tool_input": {"command": "ls"}},
-                temp_dir)
-            self.assertEqual(main.stdout, "", main.stderr)
+            if age == 0:
+                main = run_codex_hook(
+                    {"turn_id": "codex-main-turn", "cwd": str(REPO_ROOT),
+                     "tool_name": "Bash", "tool_input": {"command": "ls"}},
+                    temp_dir)
+                self.assertEqual(main.stdout, "", main.stderr)
 
     def test_another_generic_agent_is_not_locked_by_a_sibling_binding(self):
         with tempfile.TemporaryDirectory() as temp_dir:
