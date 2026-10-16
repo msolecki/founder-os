@@ -56,7 +56,8 @@ Read first, in order — house rule 1:
    the session, and the Monday 08:30 scheduled run has nobody to supply it.
    Without it, available hours are unknown and every number below would be
    invented. Still rewrite `week.md` as the Output says — carry `## Shape` and
-   `## Ledger` forward and prepend last week's ledger line — but write exactly
+   `## Ledger` forward and prepend last week's ledger line (`blocked` when last
+   week's audit was) — but write exactly
    `blocked — needs founder input: this week's calendar, what others have already booked`
    as the body of `## Arithmetic`, leave `## Blocks`, `## Unfunded` and
    `## The trade` empty, and stop. Never guess the hours.

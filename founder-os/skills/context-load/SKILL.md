@@ -74,6 +74,13 @@ Then, and only then, the one file your decision owns.
 4. **Load your own file.** The one your decision writes to — `pipeline.md` for
    the Pipeline Coach, `clients/` for the Delivery Lead. That is the fourth
    file, and for most cadences it is the last.
+
+   **`list_state` before `read_state`.** A declared file stays absent until its
+   owner first writes it — nobody scaffolds another owner's file — and
+   `read_state` refuses a whole batch that names an absent path. Read only what
+   the listing shows, and report every declared file it does not show as the
+   empty input it is: *"no `pipeline.md` yet"*, not an error and not a gap to
+   fill.
 5. **Stop loading.** At most one additional file, and only if the founder's
    question is explicitly about it — so two files beyond the three, counting your
    own. This is a rule with a cost attached: an agent holding every file in the
