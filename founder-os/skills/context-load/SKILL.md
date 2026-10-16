@@ -57,7 +57,12 @@ Then, and only then, the one file your decision owns.
 2. **Stop if `charter.md` is empty.** There is no business described, so there
    is nothing to advise on. Run `founder-os-init`. Do not proceed on the
    assumption that you can infer the business from the other files.
-3. **Apply the staleness rule to `metrics.md`:**
+3. **Apply the staleness rule to `metrics.md`.** Measure its age from the date
+   written inside it — the `Closed:` line or the `## Close — YYYY-MM` heading,
+   with `## Runway — as of YYYY-MM-DD` as the fallback — not from its
+   last-modified date: the weekly `signal-check` rewrites the file, so a fresh
+   mtime can sit on a close from last quarter. Use the mtime only when no date
+   is written.
    - **≤ 30 days** — quote the numbers plainly, with the date.
    - **> 30 days** — quote them, and label every downstream claim a guess, out
      loud, exactly as house rule 2 requires. Not a hedge. A label.

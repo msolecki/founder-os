@@ -36,7 +36,11 @@ Monthly, and immediately after any of these:
 - `references/ownership.yaml` — `workspace_files:` is the expected inventory and
   `sections:` is the expected structure inside each flat file. Both are checks.
 - Every file in `$FOUNDER_OS_HOME`, plus its last-modified date. The dates are
-  half the diagnosis.
+  half the diagnosis — except for `metrics.md`, whose age is the date written
+  inside it: the `Closed:` line or the `## Close — YYYY-MM` heading, with
+  `## Runway — as of YYYY-MM-DD` as the fallback. The weekly `signal-check`
+  rewrites the file, so its mtime says nothing about when the month was
+  closed; use the mtime only when no date is written at all.
 - `$FOUNDER_OS_HOME/_local/`, if it exists — the founder's local overlay, and
   `references/extensibility.md` is its contract. **This is the only validation
   the overlay ever gets.** `scripts/validate_package.py` checks the package in
@@ -70,8 +74,8 @@ a health report that lists a screen of green checks trains the founder to skim i
 |---|---|---|
 | **Missing files** | An entry in `workspace_files:` does not exist | Its owner has nowhere to write. The gap is silent until the agent needs it. |
 | **Section drift** | A flat file is missing a heading `sections:` declares for it, or carries a `##` heading the map does not declare. A dated suffix after the section name (`## Close — 2026-07`, `## Gap — 2026-07-15`) is not drift — the name is pinned, the suffix is free, and flagging it would report `revenue-review` doing its job | Existence was never the contract. `energy-audit` replaces `## Shape` and `revenue-review` replaces `## Close`; told to replace a heading that is not there, a skill writes its own spelling, and now two headings hold one section — one gets read, the other is wallpaper the founder can see and no agent will. An undeclared heading is the same bug caught earlier. |
-| **Stale metrics** | `metrics.md` unmodified > 30 days | House rule 2 collapses. Every agent quotes `metrics.md`; all of them are now confidently quoting a number from last quarter. |
-| **Metrics abandoned** | `metrics.md` unmodified > 60 days | Stop reporting and escalate. Every claim downstream is a guess and must be labelled one until the **CFO** closes the month. |
+| **Stale metrics** | The close date in `metrics.md` (see Inputs) is > 30 days old | House rule 2 collapses. Every agent quotes `metrics.md`; all of them are now confidently quoting a number from last quarter. |
+| **Metrics abandoned** | The close date in `metrics.md` (see Inputs) is > 60 days old | Stop reporting and escalate. Every claim downstream is a guess and must be labelled one until the **CFO** closes the month. |
 | **Goals without bets** | `goals.md` has no bet with a numeric kill condition, and the quarter is > 1/3 gone | A bet without a threshold cannot be killed, so it will not be. `kill-or-continue` has nothing to force. |
 | **Orphan clients** | A `clients/*.md` file names no client that `metrics.md` shows revenue for, and is unmodified > 90 days | Two possibilities and both matter: the engagement ended and nobody closed the file, or work is being delivered and not billed. |
 | **Empty decision log** | `decisions/` is empty after 30 days of use | House rule 3 is not being followed. Six months from now the founder asks why they raised rates and the answer will not exist. `annual-review` has nothing to read. |
