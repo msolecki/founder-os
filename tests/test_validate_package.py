@@ -1030,6 +1030,12 @@ class TestRealPackage(unittest.TestCase):
         self.assertEqual(len(agents), 13)
         self.assertEqual(len(list((real / "skills").glob("*/SKILL.md"))), 57)
 
+    def test_every_counted_page_exists(self):
+        """A moved page would otherwise be skipped by the count check."""
+        real = Path(__file__).resolve().parents[1] / "founder-os"
+        missing = [str(p) for p in V._counted_docs(real) if not p.exists()]
+        self.assertEqual(missing, [])
+
 
 class TestRunChecksContainment(unittest.TestCase):
     def setUp(self):
@@ -1409,6 +1415,15 @@ class TestThresholdsCheck(unittest.TestCase):
         errs = V.check_thresholds(root, {})
         self.assertEqual(len(errs), 1, errs)
         self.assertIn("'pipeline' declares no keys", errs[0])
+
+    def test_a_group_declared_twice_is_an_error(self):
+        """The dashboard's reader resets a repeated group and loses its keys."""
+        root = self.mutated_package()
+        path = root / "references" / "thresholds.yaml"
+        path.write_text(path.read_text(encoding="utf-8")
+                        + "queue:\n  queued_cap: 15\n", encoding="utf-8")
+        errs = V.check_thresholds(root, {})
+        self.assertTrue(any("'queue' is declared twice" in e for e in errs), errs)
 
     def test_check_is_registered(self):
         names = [check.__name__ for check in V.CHECKS]
