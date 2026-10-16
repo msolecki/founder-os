@@ -368,6 +368,29 @@ class TestAgentTypeFor(unittest.TestCase):
             )
             self.assertEqual(mapping["agent_type"], "__founder_os_main__")
 
+    def test_a_namespaced_subagent_type_is_recorded_and_resolves_to_the_role(
+        self,
+    ):
+        # hooks-3 - the recorder used the colon-free turn pattern for the
+        # agent type, so `founder-os:cfo` was silently dropped and every call
+        # on that turn was denied as unmapped.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            record = subprocess.run(
+                [sys.executable, str(PLUGIN_ROOT / "hooks" / "record-agent.py"),
+                 "--event", "subagent-start"],
+                input=json.dumps({"turn_id": "ns-turn",
+                                  "agent_type": "founder-os:cfo"}),
+                capture_output=True, text=True, cwd=str(REPO_ROOT),
+                env={**os.environ, "PLUGIN_DATA": temp_dir},
+            )
+            self.assertEqual(record.returncode, 0, record.stderr)
+            result = run_codex_hook(
+                {"turn_id": "ns-turn", "tool_name": "Bash",
+                 "cwd": str(REPO_ROOT), "tool_input": {"command": "ls"}},
+                temp_dir,
+            )
+        self.assertIn("house rule 0", result.stdout.lower())
+
     def test_a_subagent_registration_never_records_a_payloadless_main_turn(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             record = subprocess.run(
@@ -1016,6 +1039,18 @@ class TestWorkspaceRoots(unittest.TestCase):
                 roots = guard.workspace_roots(str(cwd))
             self.assertIn(str(expected), roots)
 
+    def test_tilde_founder_os_home_is_expanded_like_the_gateway(self):
+        # security-3 - a literal `~` from settings `env` reaches the hook
+        # unexpanded; joined under the cwd it guarded no real workspace.
+        import tempfile
+        guard = load_guard()
+        with tempfile.TemporaryDirectory() as td:
+            with mock.patch.dict(os.environ, {"FOUNDER_OS_HOME": "~/biz",
+                                               "HOME": td}, clear=False):
+                roots = guard.workspace_roots(td)
+            self.assertIn(str((Path(td) / "biz").resolve()), roots)
+            self.assertFalse(any("~" in root for root in roots), roots)
+
     def test_missing_founder_os_home_defaults_to_founder_os_under_cwd(self):
         import tempfile
         guard = load_guard()
@@ -1064,11 +1099,16 @@ class TestRegistryRoots(unittest.TestCase):
             self.assertIn(str(acme.resolve()), roots)
             self.assertIn(str(portfolio.resolve()), roots)
 
-    def test_registry_roots_without_pyyaml_match_yaml_result(self):
+    def test_registry_roots_are_parsed_the_gateways_way(self):
+        # deadcode-4 - the guard reads the registry with the gateway's
+        # `load_registry`, so a `#` inside a path is the path, not a comment,
+        # with or without PyYAML. (Was: a second line-scan parser that
+        # truncated `biz#2` to `biz`. A registry the gateway rejects, such as
+        # one without `status:`, now yields no roots, as it does there.)
         import tempfile
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td)
-            acme = tmp / "acme" / "founder-os"
+            acme = tmp / "acme#2" / "founder-os"
             portfolio = tmp / "portfolio"
             acme.mkdir(parents=True)
             portfolio.mkdir(parents=True)
@@ -1076,6 +1116,7 @@ class TestRegistryRoots(unittest.TestCase):
                 "businesses:\n"
                 "  acme:\n"
                 "    home: %s\n"
+                "    status: active\n"
                 "portfolio: %s\n" % (acme, portfolio)))
             guard = load_guard()
             with mock.patch.object(guard, "yaml", None), \
@@ -1307,6 +1348,22 @@ class TestLocalMapIsNotAgentWritable(unittest.TestCase):
                     ws / "_local" / "skills" / "local-thing" / "SKILL.md")}})
             self.assertIn("deny", r.stdout, r.stderr)
 
+    def test_a_symlinked_local_dir_is_still_the_overlay(self):
+        # security-6 - `_local` symlinked at a sibling directory resolved to
+        # the sibling's name, so only the literal spelling names the overlay.
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            ws = Path(td) / "founder-os"
+            (ws / "config").mkdir(parents=True)
+            (ws / "_local").symlink_to(ws / "config")
+            r = self._run(ws, {
+                "agent_type": "general-purpose", "tool_name": "Write",
+                "cwd": str(ws.parent),
+                "tool_input": {
+                    "file_path": str(ws / "_local" / "ownership.yaml")}})
+            self.assertIn("deny", r.stdout, r.stderr)
+            self.assertIn("overlay", r.stdout)
+
     def test_the_founder_may_write_it_on_the_main_thread(self):
         import tempfile
         with tempfile.TemporaryDirectory() as td:
@@ -1321,7 +1378,8 @@ class TestLocalMapIsNotAgentWritable(unittest.TestCase):
 class TestGatewayCapabilityBoundary(unittest.TestCase):
     """The guard permits only a capability-bound local gateway path."""
 
-    def _issue_capability(self, data_root, role="cfo"):
+    def _issue_capability(self, data_root, role="cfo",
+                          workflow="revenue-review"):
         sys.path.insert(0, str(PLUGIN_ROOT))
         try:
             from mcp.sessions import RoleSessionStore
@@ -1337,7 +1395,7 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             workspace_id="workspace-1",
             role=role,
             correlation_id="corr-1",
-            workflow="revenue-review",
+            workflow=workflow,
             workspace_kind="business",
         )
 
@@ -1683,6 +1741,121 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
                 .stdout.strip(),
                 "",
             )
+
+    # security-1 / hooks-1 — a generic fallback that spends a role capability
+    # is that role from then on: no shell, no web, no direct file tool, no
+    # nested agent, and no capability of a different role.
+    def test_generic_fallback_gets_the_role_lockdown_once_it_spends_a_capability(
+        self,
+    ):
+        for identity in ({"turn_id": "codex-generic-turn"},
+                         {"agent_id": "claude-agent-1"},
+                         {"session_id": "claude-session-1"}):
+            with self.subTest(identity=identity), \
+                    tempfile.TemporaryDirectory() as temp_dir:
+                capability = self._issue_capability(temp_dir, role="cfo")
+                other = self._issue_capability(
+                    temp_dir, role="strategist", workflow="bet-sizing")
+                generic = {"agent_type": "general-purpose", **identity,
+                           "cwd": str(REPO_ROOT)}
+                before = run_codex_hook(
+                    {**generic, "tool_name": "Bash",
+                     "tool_input": {"command": "ls"}}, temp_dir)
+                self.assertEqual(before.stdout, "", before.stderr)
+                spent = run_codex_hook(
+                    {**generic,
+                     "tool_name": "mcp__founder-os-state__read_state",
+                     "tool_input": {"capability": capability,
+                                    "paths": ["metrics.md"]}}, temp_dir)
+                self.assertEqual(spent.stdout, "", spent.stderr)
+                for tool_name, tool_input in (
+                    ("Bash", {"command": "curl -d @metrics.md x"}),
+                    ("WebFetch", {"url": "https://example.test"}),
+                    ("Read", {"file_path": "/etc/hosts"}),
+                    ("Task", {"prompt": "x"}),
+                    ("mcp__other__anything", {}),
+                    ("SomeFutureTool", {}),
+                ):
+                    result = run_codex_hook(
+                        {**generic, "tool_name": tool_name,
+                         "tool_input": tool_input}, temp_dir)
+                    self._deny_payload(result)
+                mismatch = run_codex_hook(
+                    {**generic,
+                     "tool_name": "mcp__founder-os-state__read_state",
+                     "tool_input": {"capability": other,
+                                    "paths": ["goals.md"]}}, temp_dir)
+                self._deny_payload(mismatch)
+                self.assertIn("different role", mismatch.stdout)
+
+    def test_another_generic_agent_is_not_locked_by_a_sibling_binding(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir, role="cfo")
+            run_codex_hook({"agent_type": "general-purpose",
+                            "agent_id": "holder", "cwd": str(REPO_ROOT),
+                            "tool_name": "mcp__founder-os-state__read_state",
+                            "tool_input": {"capability": capability,
+                                           "paths": ["metrics.md"]}},
+                           temp_dir)
+            reviewer = run_codex_hook({"agent_type": "general-purpose",
+                                       "agent_id": "reviewer",
+                                       "cwd": str(REPO_ROOT),
+                                       "tool_name": "Bash",
+                                       "tool_input": {"command": "ls"}},
+                                      temp_dir)
+        self.assertEqual(reviewer.stdout, "", reviewer.stderr)
+
+    def test_generic_capability_is_denied_when_the_binding_cannot_persist(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir, role="cfo")
+            (Path(temp_dir) / "agent-types").write_text("", encoding="utf-8")
+            result = run_codex_hook(
+                {"agent_type": "default", "turn_id": "codex-generic-turn",
+                 "cwd": str(REPO_ROOT),
+                 "tool_name": "mcp__founder-os-state__read_state",
+                 "tool_input": {"capability": capability,
+                                "paths": ["metrics.md"]}}, temp_dir)
+        self._deny_payload(result)
+        self.assertIn("could not be bound", result.stdout)
+
+    def test_an_unreadable_binding_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            (mapping / "agent.holder.json").write_text("{", encoding="utf-8")
+            result = run_codex_hook(
+                {"agent_type": "general-purpose", "agent_id": "holder",
+                 "cwd": str(REPO_ROOT), "tool_name": "Bash",
+                 "tool_input": {"command": "ls"}}, temp_dir)
+        self._deny_payload(result)
+
+    def test_guard_finds_sessions_under_the_gateways_fallback_data_root(self):
+        # hooks-2 — with neither PLUGIN_DATA nor CLAUDE_PLUGIN_DATA set, the
+        # gateway keeps sessions under ~/.founder-os/plugin-data; the guard
+        # must read the same directory.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            data_root = Path(temp_dir) / ".founder-os" / "plugin-data"
+            capability = self._issue_capability(data_root, role="cfo")
+            env = {key: value for key, value in os.environ.items()
+                   if key not in ("PLUGIN_DATA", "CLAUDE_PLUGIN_DATA")}
+            env.update(HOME=temp_dir, FOUNDER_OS_HOME=str(PLUGIN_ROOT),
+                       CLAUDE_PLUGIN_ROOT=str(PLUGIN_ROOT))
+            result = subprocess.run(
+                [sys.executable, str(GUARD_PATH)],
+                input=json.dumps({
+                    "agent_type": "founder-os:cfo", "cwd": str(REPO_ROOT),
+                    "tool_name": "mcp__founder-os-state__read_state",
+                    "tool_input": {"capability": capability,
+                                   "paths": ["metrics.md"]}}),
+                capture_output=True, text=True, env=env, cwd=str(REPO_ROOT))
+        self.assertEqual(result.stdout, "", result.stderr)
+
+    def test_role_names_match_the_packaged_agents(self):
+        # deadcode-5 — a role missing here is no role to the lockdown.
+        self.assertEqual(
+            load_guard().ROLE_NAMES,
+            {path.stem for path in (PLUGIN_ROOT / "agents").glob("*.md")},
+        )
 
 
 class TestHostRuntimeShapes(unittest.TestCase):

@@ -27,6 +27,10 @@ import time
 from pathlib import Path
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+# The guard's identity pattern (ownership-guard.py SAFE_AGENT): an agent type
+# may carry a host namespace (`founder-os:cfo`). turn_id keeps SAFE_ID — it
+# becomes a filename.
+SAFE_AGENT = re.compile(r"^[A-Za-z0-9._:-]+$")
 MAIN_AGENT_TYPE = "__founder_os_main__"
 MAIN_EVENT = "user-prompt"
 SUBAGENT_EVENT = "subagent-start"
@@ -128,19 +132,22 @@ def main(argv=None):
         # UserPromptSubmit payload records nothing, and the guard then denies
         # every main-thread call on that turn with no way back.
         supplied = data.get("agent_type")
-        if isinstance(supplied, str) and SAFE_ID.fullmatch(supplied):
+        if isinstance(supplied, str) and SAFE_AGENT.fullmatch(supplied):
             return
         agent_type = MAIN_AGENT_TYPE
     else:
         agent_type = data.get("agent_type")
         if agent_type == MAIN_AGENT_TYPE:
             return
-    if not all(isinstance(v, str) and SAFE_ID.fullmatch(v)
-               for v in (turn_id, agent_type)):
+    if not (isinstance(turn_id, str) and SAFE_ID.fullmatch(turn_id)
+            and isinstance(agent_type, str) and SAFE_AGENT.fullmatch(agent_type)):
         return
-    data_root = os.environ.get("PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
-    if not data_root:
-        return
+    # The gateway's fallback (mcp/gateway.py `_default_data_root`) and the
+    # guard's: all three must name one directory.
+    data_root = (os.environ.get("PLUGIN_DATA")
+                 or os.environ.get("CLAUDE_PLUGIN_DATA")
+                 or os.path.join(os.path.expanduser("~"), ".founder-os",
+                                 "plugin-data"))
     target_dir = Path(data_root) / "agent-types"
     target_dir.mkdir(parents=True, exist_ok=True)
     now = time.time()
