@@ -36,11 +36,7 @@ Monthly, and immediately after any of these:
 - `references/ownership.yaml` — `workspace_files:` is the expected inventory and
   `sections:` is the expected structure inside each flat file. Both are checks.
 - Every file in `$FOUNDER_OS_HOME`, plus its last-modified date. The dates are
-  half the diagnosis — except for `metrics.md`, whose age is the date written
-  inside it: the `Closed:` line or the `## Close — YYYY-MM` heading, with
-  `## Runway — as of YYYY-MM-DD` as the fallback. The weekly `signal-check`
-  rewrites the file, so its mtime says nothing about when the month was
-  closed; use the mtime only when no date is written at all.
+  half the diagnosis.
 - `$FOUNDER_OS_HOME/_local/`, if it exists — the founder's local overlay, and
   `references/extensibility.md` is its contract. **This is the only validation
   the overlay ever gets.** `scripts/validate_package.py` checks the package in
@@ -72,10 +68,10 @@ a health report that lists a screen of green checks trains the founder to skim i
 
 | Check | Trips when | Why it matters |
 |---|---|---|
-| **Missing files** | An entry in `workspace_files:` does not exist | Its owner has nowhere to write. The gap is silent until the agent needs it. |
+| **Missing files** | An entry in `workspace_files:` does not exist | Every agent that reads it sees nothing and says so; its owner creates it on its first write. The gap is silent until somebody needs the file. |
 | **Section drift** | A flat file is missing a heading `sections:` declares for it, or carries a `##` heading the map does not declare. A dated suffix after the section name (`## Close — 2026-07`, `## Gap — 2026-07-15`) is not drift — the name is pinned, the suffix is free, and flagging it would report `revenue-review` doing its job | Existence was never the contract. `energy-audit` replaces `## Shape` and `revenue-review` replaces `## Close`; told to replace a heading that is not there, a skill writes its own spelling, and now two headings hold one section — one gets read, the other is wallpaper the founder can see and no agent will. An undeclared heading is the same bug caught earlier. |
-| **Stale metrics** | The close date in `metrics.md` (see Inputs) is > 30 days old | House rule 2 collapses. Every agent quotes `metrics.md`; all of them are now confidently quoting a number from last quarter. |
-| **Metrics abandoned** | The close date in `metrics.md` (see Inputs) is > 60 days old | Stop reporting and escalate. Every claim downstream is a guess and must be labelled one until the **CFO** closes the month. |
+| **Stale metrics** | The newest `## Close — YYYY-MM` in `metrics.md` is > 30 days old, counted from the first day after the month it names (`context-load` step 1) — never from the file's last-modified date, which `signal-check` resets every Friday | House rule 2 collapses. Every agent quotes `metrics.md`; all of them are now confidently quoting a number from last quarter. |
+| **Metrics abandoned** | The newest `## Close — YYYY-MM` is > 60 days old by the same count, or `metrics.md` carries no dated `## Close` heading at all | Stop reporting and escalate. Every claim downstream is a guess and must be labelled one until the **CFO** closes the month. |
 | **Goals without bets** | `goals.md` has no bet with a numeric kill condition, and the quarter is > 1/3 gone | A bet without a threshold cannot be killed, so it will not be. `kill-or-continue` has nothing to force. |
 | **Orphan clients** | A `clients/*.md` file names no client that `metrics.md` shows revenue for, and is unmodified > 90 days | Two possibilities and both matter: the engagement ended and nobody closed the file, or work is being delivered and not billed. |
 | **Empty decision log** | `decisions/` is empty after 30 days of use | House rule 3 is not being followed. Six months from now the founder asks why they raised rates and the answer will not exist. `annual-review` has nothing to read. |
@@ -113,7 +109,10 @@ a health report that lists a screen of green checks trains the founder to skim i
 
 ## What it may repair
 
-Only two things, and both of them are structural:
+Only two things, both structural — and **only in a file the Chief of Staff
+owns** (`ownership.yaml` `owns: chief-of-staff`). The gateway refuses every other
+write from this session with `ROLE_NOT_OWNER`, and it is right to: there is no
+lifecycle exemption, and a repair promised across that line can never succeed.
 
 - **Create a missing file as an empty stub**, carrying its H1 and the headings
   `sections:` declares for it. Nothing under them. For a directory entry, create
@@ -122,6 +121,14 @@ Only two things, and both of them are structural:
 - **Restore a missing section heading, empty**, to a file that already exists —
   only a heading the map declares. A heading the map does not declare is a
   finding for its owner, never a repair: deleting it would destroy content.
+
+**For any other owner's file, the same two repairs go through its owner.** Return
+the shared sibling request (`references/orchestration.md`) for the owner in
+`owns:`, naming one workflow that role holds whose `metadata.writes` declares
+the path, with the path alone in `expected_persistence` and a handoff that asks
+for the empty stub or the empty heading and nothing else — a create-only write
+for a missing file. The main thread opens that role; you re-read the file when
+it returns and re-run the check.
 
 Everything else is a handoff, by name and with the finding attached: stale
 metrics → **CFO**. Goals without kill conditions → **Strategist**. Orphan client
@@ -137,12 +144,13 @@ stopped looking. Say what you saw: the date of the last brief, or that there has
 never been one. Name `/setup-cadences` as what installs and inspects the
 schedule. Stop there.
 
-This skill and `founder-os-init` are the only two that may create a file — or a
-declared heading — across an ownership boundary, and only ever an empty one.
-Creation is lifecycle; content is ownership. A doctor that writes a plausible
+Neither this skill nor `founder-os-init` creates a file — or a declared heading —
+across an ownership boundary. Each owner creates its own, empty, when asked.
+Creation is lifecycle; content is ownership; the write is the owner's either way. A doctor that writes a plausible
 revenue number into an empty `metrics.md` has not repaired the workspace — it has
 poisoned it, in the one file every other agent trusts. The heading is scaffolding
-and yours to restore; the line under it is the CFO's and never yours to write.
+and the CFO's to restore when you ask; the line under it is the CFO's and never
+yours to write.
 
 **No overlay finding is repairable, and that is one rule rather than six.**
 `_local/` is the founder's own map (`references/extensibility.md`), and this
@@ -214,7 +222,7 @@ count, or a ratio. **Nothing the founder wrote enters it.**
 | `activated` | `yes` / `no` — is there a `reviews/daily/` file with the four required headings, `## The one thing` and `## The trade` non-empty | The answer maintainers most need and cannot otherwise get. |
 | `workspace` | `<present>/<declared>` against `workspace_files:`, then the names of any missing entries | Those names come from `ownership.yaml`. The founder did not choose them. |
 | `sections` | Per file, the *declared* headings that are missing, spelled from the map. Undeclared headings by **count only** | An undeclared heading is text the founder wrote. `## Acme renewal` is a client name in a heading. |
-| `metrics` | Days since `metrics.md` was last modified | An age, not a number from inside the file. |
+| `metrics` | Days since the newest `## Close — YYYY-MM`, counted as **Stale metrics** counts them, or `no close` | An age, not a number from inside the file. |
 | `cadence` | `live`, `quiet <N>d`, or `never` | Derived from filenames and dates. |
 | `briefs` | Count, and days since the newest | Counts. |
 | `queue` | Item counts per section | Counts. Never an item's text — a queue line is usually a client obligation. |

@@ -64,7 +64,9 @@ against nothing; that file already exists and it is called `reviews/weekly/`.
 
 1. **Load the registry, then `portfolio.md`.** If the registry lists one active
    business, stop per *When to use*. Stamp what you read and how old it was —
-   `context-load` rules apply across workspaces exactly as within one.
+   `context-load` rules apply across workspaces exactly as within one. No
+   `portfolio.md` yet means this is the first review: you create it, with a
+   create-only write, in this run's Output — nobody scaffolds it for you.
 2. **Read each active business: `goals.md` `## Bets`, `metrics.md` `## Close`
    and `## Runway`.** With dates. A business whose close is more than 60 days
    old gets ranked on a guess, and the review says so in the line that ranks it

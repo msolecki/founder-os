@@ -68,13 +68,17 @@ answer; guessing which company a question is about is not a time saving.
 it — it registers. The flow:
 
 1. Ask for the slug and the new workspace path.
-2. Scaffold the new workspace exactly as ever (from `workspace_files:`).
+2. Scaffold the new workspace exactly as ever: the Chief of Staff's own
+   `workspace_files:` entries, with every other owner creating its own file on
+   its first write (`founder-os-init`, Stage 0).
 3. Create or update `~/.founder-os/businesses.yaml` — adding the *existing*
    workspace under a slug too, if the registry is being created now, and asking
    which is `default:`.
-4. If this is the second **active** business: scaffold the portfolio workspace
-   at `portfolio:` from `portfolio_files:` in `ownership.yaml`, and name
-   `/portfolio-review` as the cadence that now has a reason to exist.
+4. If this is the second **active** business: create the portfolio workspace
+   directory at `portfolio:` and name `/portfolio-review` as the cadence that now
+   has a reason to exist. `portfolio.md` (from `portfolio_files:` in
+   `ownership.yaml`) is the Portfolio Manager's, and its first `portfolio-review`
+   creates it — the Chief of Staff does not write it, not even empty.
 
 The portfolio workspace holds `portfolio.md` and nothing else. It is owned by
 the **portfolio-manager** like any owned file — the ownership hook resolves it
@@ -88,7 +92,7 @@ do not edit fences with `sed` or a prefix regular expression:
 
 ```
 # BEGIN founder-os:acme — cadence-manager YYYY-MM-DD
-…nine lines, each carrying FOUNDER_OS_HOME=<acme's absolute home>…
+…ten lines, each carrying FOUNDER_OS_HOME=<acme's absolute home>…
 # END founder-os:acme
 ```
 

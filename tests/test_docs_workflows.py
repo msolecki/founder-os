@@ -1124,5 +1124,23 @@ class CanonicalGuidanceContractTest(unittest.TestCase):
                 )
 
 
+class MultiBusinessCadenceCountTest(unittest.TestCase):
+    def test_fence_example_counts_the_packaged_business_cadences(self):
+        import sys
+
+        sys.path.insert(0, str(REPO_ROOT / "founder-os" / "scripts"))
+        import cadence_manager
+
+        words = ("zero one two three four five six seven eight nine ten "
+                 "eleven twelve").split()
+        text = (REPO_ROOT / "founder-os" / "references" / "multi-business.md"
+                ).read_text(encoding="utf-8")
+        self.assertIn(
+            "…%s lines, each carrying FOUNDER_OS_HOME"
+            % words[len(cadence_manager.BUSINESS_CADENCES)],
+            text,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
