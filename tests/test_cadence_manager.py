@@ -557,6 +557,39 @@ class CadenceManagerTests(unittest.TestCase):
         ]
         self.assertEqual(1, len(installs))
 
+    def test_cron_remove_with_nothing_to_remove_writes_no_backup(self):
+        runner = CronRunner(b"MAILTO=founder@example.com\n")
+        with tempfile.TemporaryDirectory() as temporary:
+            backup = self.manager.remove(
+                self.config(slug="a"), "cron", "a", Path(temporary),
+                runner=runner, timestamp="20260801-120000",
+            )
+            self.assertIsNone(backup)
+            self.assertEqual([], list(Path(temporary).iterdir()))
+        self.assertFalse([call for call in runner.calls
+                          if call[0][0] == "crontab" and call[0][1:] != ("-l",)])
+
+    def test_systemd_escapes_specifiers_in_environment_and_exec_start(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "100%n"
+            config = self.manager.CadenceConfig(
+                host="claude",
+                binary=root / "bin%h" / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug="a",
+            )
+            services = [body.decode() for name, body
+                        in self.manager.render_systemd(config).items()
+                        if name.endswith(".service")]
+        self.assertTrue(services)
+        for service in services:
+            for line in service.splitlines():
+                if line.startswith(("Environment=", "ExecStart=")):
+                    self.assertNotRegex(line, r"(?<!%)%(?!%)", line)
+                    self.assertIn("%%", line)
+
     def test_systemd_remove_stops_before_deleting_when_disable_fails(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -616,10 +649,13 @@ class CadenceManagerTests(unittest.TestCase):
                     config, "systemd", "a", root / "backups", runner=runner,
                     timestamp="20260801-120000",
                 )
-                self.manager.remove(
+                second = self.manager.remove(
                     config, "systemd", "a", root / "backups", runner=runner,
                     timestamp="20260801-120001",
                 )
+            # Nothing left to remove: no change, so no second backup.
+            self.assertIsNone(second)
+            self.assertEqual([backup], list((root / "backups").iterdir()))
             disables = [call for call in calls if "disable" in call]
             self.assertEqual([("systemctl", "--user", "disable", "--now", present)], disables)
             self.assertFalse((directory / present).exists())

@@ -172,7 +172,8 @@ and only on a yes run:
 Before it changes anything, remove writes a create-only backup of the crontab
 or of the unit files it is about to delete, and prints its `backup_path`; name
 that path to the founder. It touches only artifacts that exist, so a second
-remove or a partly installed set is cleaned without error.
+remove or a partly installed set is cleaned without error; with nothing to
+remove it changes nothing, writes no backup and prints `"backup_path": null`.
 
 One identity never prefix-matches a sibling. The literal `all` is required to
 remove every Founder OS schedule. Uninstalling the plugin does not implicitly

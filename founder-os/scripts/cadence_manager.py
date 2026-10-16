@@ -973,10 +973,11 @@ def remove(
     *,
     runner: Callable[..., object] = subprocess.run,
     timestamp: Optional[str] = None,
-) -> Path:
+) -> Optional[Path]:
     """Remove one exact identity (or ``all``) after a create-only backup.
 
-    Returns the backup path so the caller can disclose it.
+    Returns the backup path so the caller can disclose it, or None when there
+    was nothing to remove: no change, so no backup to disclose.
     """
     if identity != "all":
         expected = config.slug if config.slug is not None else "founder-os"
@@ -986,6 +987,8 @@ def remove(
     if scheduler == "cron":
         current = _read_crontab(runner)
         updated = remove_crontab(current, identity)
+        if updated == current:
+            return None
         backup = _write_backup(
             config, scheduler, backup_root, "removal", backup_identity,
             current, timestamp,
@@ -1005,6 +1008,8 @@ def remove(
     # Only artifacts that exist: a second remove or a partial install has
     # nothing to disable for the missing units.
     names = {name for name in candidates if (directory / name).is_file()}
+    if not names:
+        return None
     backup = _write_backup(
         config,
         scheduler,
@@ -1193,7 +1198,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 args.backup_root.resolve(),
                 timestamp=args.timestamp,
             )
-            print(json.dumps({"backup_path": str(backup)}))
+            print(json.dumps(
+                {"backup_path": str(backup) if backup is not None else None}))
         else:
             smoke(
                 _config_from_args(args),
