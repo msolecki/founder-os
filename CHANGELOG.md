@@ -5,6 +5,79 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+## 2.9.0 — 2026-10-16
+
+**Ready for the Claude plugin directory.** The canonical guidance moved from
+`founder-os/CLAUDE.md` to `founder-os/references/guidance.md`: a plugin root's
+`CLAUDE.md` is never loaded as context, and the directory validator flags one.
+The `SessionStart` hook still injects the same text into every session, and
+`read_reference` serves it at the new path. `plugin.json` now carries
+`homepage`, `repository`, `documentationUrl`, `supportUrl` and
+`privacyPolicyUrl`, and the package ships a listing icon.
+
+**A role capability brings the role's lockdown with it.** A generic agent that
+spends a role capability through the gateway is bound to that role from then
+on: no shell, no web, no direct file tool, no nested agent, and no capability
+of another role. The `PreToolUse` guard now runs on every tool; a role holds
+the gateway tools plus `ToolSearch` and `TodoWrite` and nothing else. A
+main-thread mapping is honoured only where the recorder writes one, so it
+cannot be planted to dodge the bind. `FOUNDER_OS_HOME` written with `~` is
+expanded the way the gateway expands it, a symlinked `_local/` no longer
+escapes the overlay deny, and the recorder and the guard resolve the same data
+root as the gateway. The guard still reads a tool's file arguments and never a
+shell command: a role is kept from the shell by holding none.
+
+**Templates the gateway accepts.** A file inside a declared directory now
+validates as an ordered subset of its directory's headings, each at most once;
+a flat file still carries its exact list. `clients/_capacity.md` has its own
+entry, so `/capacity-check` can write it. Runs that repeat — sweeps, triage,
+hypotheses — write `### <date>` entries under one `##` instead of a second
+pinned heading the gateway refused. Onboarding no longer stops at Stage 3.
+
+**State reads that say what is missing.** `read_state` reports an absent file
+as `exists: false` with the headings it needs, and still returns the files
+beside it. Portfolio inputs read the dated `## Close — YYYY-MM` and
+`## Runway — as of` headings. `read_reference` serves `ingestion-gate.md`,
+`linking.md` and `thresholds.yaml`, the references the roles are sent to. The
+role set comes from `agents/` instead of a hard-coded thirteen. A paused
+`default:` business no longer makes the registry unresolvable: the one active
+business is used, otherwise the founder names one. Role sessions last 30
+minutes.
+
+**Metrics age from the close, not the file.** `context-load`, the doctor and
+the dashboard date `metrics.md` from its `Closed:` line or newest dated close,
+because the weekly `signal-check` rewrite kept the file's mtime fresh over a
+close months old. A workspace with no close yet says so instead of reporting
+the metrics abandoned.
+
+**Unattended runs stop instead of inventing.** A scheduled cadence that needs
+the calendar, the bank or the founder's choice — `calendar-audit`,
+`revenue-review`, `quarterly-planning`, `pipeline-review` and others — writes
+`blocked — needs founder input: <what>` where the number would go. Onboarding
+scaffolds only the Chief of Staff's files; every other owner creates its own on
+its first run. Decisions, won deals and charter edits go through their owners.
+The daily brief no longer deletes inbox lines it hands to triage, and carries
+its answered proposals from the last real brief.
+
+**Dashboard.** A run writes `snapshots.csv` and `facts.json` only when it is
+for today: a `--now` preview for any other day writes neither, where it used to
+overwrite that day's real row.
+Every quarterly bet carries `Judgment date:` and `Opened:`, so its countdown
+renders. A negative free-hours figure, `none — <reason>`, a queue section over
+its cap, and the age of the brief and week plan now read correctly.
+
+**Cadences.** The schedule points at the `--binary` path as given, not its
+resolved target, so an upgrade of a versioned install no longer silently kills
+every cadence. One schedule table drives cron, launchd and systemd; systemd
+values are escaped instead of quoted; `remove` writes a backup to
+`--backup-root` first and does nothing when nothing is installed; Codex runs
+with network access off; the crontab is read in the C locale.
+
+**Verification.** CI pins its actions to commit SHAs and runs with a read-only
+token. The validator rejects a repeated `thresholds.yaml` group and a counted
+page that does not exist. The docs were brought back in line with the code.
+The package still ships **57 workflows** and runs **21 build-time checks**.
+
 ## 2.8.0 — 2026-09-03
 
 **The workspace as one page that cites its own sources.** `/dashboard` renders
