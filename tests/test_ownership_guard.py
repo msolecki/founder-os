@@ -1835,6 +1835,28 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
                     temp_dir)
                 self.assertEqual(main.stdout, "", main.stderr)
 
+    def test_a_forged_main_record_under_an_agent_stem_is_rebound(self):
+        # Only the recorder writes a main mapping, under a bare turn id. A
+        # generic agent that plants one under its own `agent.` stem before
+        # spending a capability must still get the role lockdown.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            capability = self._issue_capability(temp_dir, role="cfo")
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            (mapping / "agent.forger.json").write_text(json.dumps(
+                {"agent_type": "__founder_os_main__",
+                 "recorded_at": time.time()}), encoding="utf-8")
+            generic = {"agent_type": "general-purpose", "agent_id": "forger",
+                       "cwd": str(REPO_ROOT)}
+            spent = run_codex_hook(
+                {**generic, "tool_name": "mcp__founder-os-state__read_state",
+                 "tool_input": {"capability": capability,
+                                "paths": ["metrics.md"]}}, temp_dir)
+            self.assertEqual(spent.stdout, "", spent.stderr)
+            self._deny_payload(run_codex_hook(
+                {**generic, "tool_name": "Bash",
+                 "tool_input": {"command": "ls"}}, temp_dir))
+
     def test_another_generic_agent_is_not_locked_by_a_sibling_binding(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             capability = self._issue_capability(temp_dir, role="cfo")

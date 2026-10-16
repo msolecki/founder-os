@@ -893,9 +893,12 @@ def _bind_generic_role(agent_type, tool_name, data, role):
         return
     record = _read_small_regular_json(
         os.path.join(_data_root(), "agent-types", stem + ".json"))
-    if bound == MAIN_AGENT_TYPE or (
+    # Only the recorder writes a main-thread mapping, and only under a bare
+    # turn id; a main record under a guard-private `agent.`/`session.` stem
+    # is forged and is rebound like any other.
+    if "." not in stem and (bound == MAIN_AGENT_TYPE or (
             isinstance(record, dict)
-            and record.get("agent_type") == MAIN_AGENT_TYPE):
+            and record.get("agent_type") == MAIN_AGENT_TYPE)):
         # A Codex turn the recorder mapped to the founder's own thread, live
         # or lapsed. That thread holds sessions by design, and overwriting its
         # mapping with a role would lock the founder out of their own turn.
