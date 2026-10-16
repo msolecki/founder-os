@@ -33,6 +33,12 @@ Read first, in order — house rule 1:
 - `clients/<client>.md` — what has already been absorbed on this engagement, and
   the running count
 
+**If `clients/<client>.md` does not exist, stop and hand to `client-health`
+first.** It is the only skill that creates that file, with `# <Client>` and the
+`## Health` baseline; a scope ruling written into a file that does not exist yet would
+create it without `## Health`, and the brief and the monthly close would read an
+engagement with no verdict. Run this skill once the baseline is there.
+
 **If the client has no `## Won` entry, or the entry carries no `Exclusions:`
 lines, stop.** That is the finding, and it is worth more than the ruling: this
 engagement has no written boundary, so every ask from here to renewal is a

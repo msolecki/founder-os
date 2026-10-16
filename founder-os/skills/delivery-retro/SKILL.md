@@ -26,6 +26,12 @@ Read first, in order — house rule 1:
 - `pipeline.md` — the proposal: what was quoted, in hours and in money
 - `metrics.md` — the target effective rate to measure against
 
+**If `clients/<client>.md` does not exist, stop and hand to `client-health`
+first.** It is the only skill that creates that file, with `# <Client>` and the
+`## Health` baseline; a retro written into a file that does not exist yet would
+create it without `## Health`, and the brief and the monthly close would read an
+engagement with no verdict. Run this skill once the baseline is there.
+
 ## Beliefs
 
 - **The overrun is never in the phase the founder remembers.** Memory keeps the
