@@ -64,23 +64,42 @@ Failures use one stable code and one recovery action:
 
 ## What the host guard does
 
-`ownership-guard.py` runs for direct file tools, `Bash`, web tools, and all MCP
-tools. Claude supplies `agent_type`; Codex supplies a `turn_id` and
-`record-agent.py` holds what it maps to — the `--event user-prompt`
-registration records the main turn, `--event subagent-start` records a
-subagent's role. A `turn_id` with no mapping is
+`ownership-guard.py` runs for every tool call. Claude supplies `agent_type`;
+Codex supplies a `turn_id` and `record-agent.py` holds what it maps to — the
+`--event user-prompt` registration records the main turn, `--event
+subagent-start` records a subagent's role. A `turn_id` with no mapping is
 denied; the fail-open case below is a call carrying no identity marker at all.
+Both hooks and the gateway keep that state in `PLUGIN_DATA` (or
+`CLAUDE_PLUGIN_DATA`), and all three fall back to `~/.founder-os/plugin-data`.
 
-For a known packaged role or approved generic fallback, the guard:
+For a known packaged role, the guard:
 
-1. denies `Read`, `Write`, `Edit`, `NotebookEdit`, `Glob`, `Grep`, and
-   `apply_patch` so role state cannot bypass the gateway;
-2. denies shell, web, and every non-Founder-OS MCP tool under house rule 0;
-3. permits only the eight known local gateway actions;
+1. denies `Read`, `Write`, `Edit`, `MultiEdit`, `NotebookEdit`,
+   `NotebookRead`, `Glob`, `Grep`, `LS`, and `apply_patch` so role state cannot
+   bypass the gateway;
+2. denies shell, web, nested agents (`Task`, `Agent`), and every
+   non-Founder-OS MCP tool under house rule 0;
+3. permits only the eight known local gateway actions, and denies any other
+   tool it does not recognize;
 4. denies `open_role_session` to subagents so they cannot mint or elevate their
    own authority; and
-5. requires a live capability and, for a named native role, requires the
-   capability-bound role to match that identity.
+5. requires a live capability whose role matches that identity.
+
+A generic fallback (`general-purpose`, `default`) may spend a live capability
+of any role. That gateway call binds the capability's role to the agent's
+identity — Claude's `agent_id`, else Codex's `turn_id`, else the `session_id`,
+which locks every generic agent of that session — and from then on the guard
+treats it as that role, with all five rules above. A binding the guard cannot
+persist denies the gateway call, and a binding it cannot read denies the tool.
+The lockdown starts at the fallback's first gateway call, so the main thread
+dispatches the fallback with the role's gateway-only tool allowlist
+(`references/orchestration.md`); before that call, the allowlist and the
+instructions are what bind it.
+
+Any other subagent — a reviewer, an Explore pass, a `_local/agents/` agent —
+is held only to the ownership, `_local/` and derived-file denies, and only for
+tools that name a path. Its `Bash` and web tools are its own permission
+settings' business, and the gateway refuses it every capability-bound call.
 
 Malformed hook input or a call with no resolvable subagent identity stays out
 of the founder's main-thread permission flow. That narrow fail-open behavior is

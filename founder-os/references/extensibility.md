@@ -107,6 +107,21 @@ The fail-open posture in the guard's docstring extends to this without
 amendment: an overlay the guard cannot read costs coverage of the founder's own
 local files, and coverage is not what a false deny costs.
 
+### The gateway never reads the overlay
+
+The merge above happens in the guard and nowhere else. The `founder-os-state`
+gateway loads only the packaged `references/ownership.yaml`, and it refuses any
+path under `_local/`. So **an overlay path is not writable through the
+gateway** — not by a local agent, which holds no role capability, and not by a
+packaged role either: an overlay entry naming `cfo` as the owner of
+`notes/cash.md` does not let the CFO write it, because the gateway finds no
+owner for the path and answers `PATH_OUTSIDE_WORKSPACE`. Packaged roles hold
+only gateway tools, so they never write overlay paths at all.
+
+The overlay is for local agents and founder-run local workflows that write
+their own files with direct tools. Giving a packaged role a new file is a
+change to the packaged map, not an overlay entry.
+
 ## `_local/` is not writable by agents
 
 The guard denies **any subagent** a write anywhere under `_local/`, whatever
@@ -151,8 +166,9 @@ This is not a regression and not a loophole introduced here — every packaged
 skill has the identical property, and the guard's own docstring says at length
 that it is not a security boundary. What the merged map actually buys:
 
-- the map stays complete when a **packaged agent delegates** to a subagent that
-  touches a local path,
+- a **local agent writing a local path with a direct file tool** (`Write`,
+  `Edit`, `NotebookEdit`, `apply_patch`) is checked against that path's local
+  owner by the guard,
 - `founder-os-doctor` can check the whole thing statically, which is where the
   overlay's real validation lives,
 - and a local path gets an owner, which is what makes handing it off possible.

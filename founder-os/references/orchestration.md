@@ -14,6 +14,15 @@ the one literal path `agents/{role}.md`.
 When the host documents a named native role, the main thread selects it;
 otherwise it selects the generic fallback under the identical envelope below.
 
+The main thread dispatches the generic fallback with the same tool allowlist
+the role's frontmatter carries — the six Founder OS state-gateway tools and
+nothing else: no shell, web, direct file, other MCP, or agent-spawning tool. On
+a host that sets a subagent's tools another way (Codex), it applies the
+equivalent restriction. The fallback holds a live role capability, so it is
+bound exactly as tightly as the role it stands in for; the host guard adds the
+role lockdown from the fallback's first gateway call, and the allowlist is what
+binds it before that call. Prefer a native role wherever the host has one.
+
 If a role returns a delegation request, the main thread validates it, closes or
 retains the current session as appropriate, and performs the next dispatch
 itself. No role-to-role edge is permitted. If a role returns a workflow result,
