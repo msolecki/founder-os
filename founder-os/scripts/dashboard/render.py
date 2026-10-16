@@ -94,6 +94,13 @@ def _contested(panel) -> str:
             % (rows, escape(panel.settle_with or "")))
 
 
+def _ago(fact) -> str:
+    """`3 days ago`, or the words for an age nobody can read."""
+    if fact is None or not fact.known:
+        return fact_html(fact)
+    return "%s ago" % escape(fact.display)
+
+
 def _brief(facts) -> str:
     panel = facts.panels.get("brief")
     return ('<section class="brief">'
@@ -101,11 +108,13 @@ def _brief(facts) -> str:
             '<p class="one-thing">%s</p>'
             '<div class="panel-title">The trade</div><p>%s</p>'
             '<div class="panel-title">Rotting</div><p>%s</p>'
-            '<div class="panel-title">Triage</div><p>%s</p>%s</section>'
+            '<div class="panel-title">Triage</div><p>%s</p>'
+            '<div class="panel-title">Written</div><p>%s</p>%s</section>'
             % (fact_html(_find(panel, "one_thing")),
                fact_html(_find(panel, "trade")),
                fact_html(_find(panel, "rotting_count")),
                fact_html(_find(panel, "triage_count")),
+               _ago(_find(panel, "brief_age_days")),
                _cite(panel)))
 
 
@@ -285,7 +294,10 @@ def _week(facts) -> str:
         body += ('<p class="over">Over-committed: %s against %gh available.</p>'
                  % (" plus ".join(label for label, _hours in booked), total))
     rows = [[b.day, "%g" % (b.hours or 0), b.title, b.serves] for b in blocks]
-    return _panel("This week", "", body + _numbers(
+    age = _find(panel, "week_age_days")
+    note = ("week began %s ago" % age.display if age is not None and age.known
+            else "week not dated" if age is not None else "")
+    return _panel("This week", note, body + _numbers(
         "Show the numbers", ("Day", "Hours", "Block", "Serves"), rows), panel)
 
 

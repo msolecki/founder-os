@@ -251,14 +251,14 @@ class TestSignalsPanel(unittest.TestCase):
 
 class TestWeekPanel(unittest.TestCase):
     def test_arithmetic_and_blocks(self):
-        panel, blocks = analyze.build_week(example_sources())
+        panel, blocks = analyze.build_week(example_sources(), TODAY)
         self.assertEqual(fact(panel, "available_hours").number, 40.0)
         self.assertEqual(fact(panel, "delivery_hours").number, 24.0)
         self.assertEqual(fact(panel, "planned_hours").number, 9.0)
         self.assertEqual(len(blocks), 5)
 
     def test_planned_hours_split_by_bet(self):
-        panel, _ = analyze.build_week(example_sources())
+        panel, _ = analyze.build_week(example_sources(), TODAY)
         self.assertEqual(fact(panel, "planned.B1").number, 4.5)
         self.assertEqual(fact(panel, "planned.B2").number, 4.5)
 
@@ -268,19 +268,26 @@ class TestWeekPanel(unittest.TestCase):
                 "# Week of 2026-07-20\n\n## Arithmetic\n\n"
                 "## Shape\n\nDeep hours 09:00-11:30.\n",
                 encoding="utf-8")
-        panel, _ = analyze.build_week(example_sources(strip))
+        panel, _ = analyze.build_week(example_sources(strip), TODAY)
         self.assertFalse(fact(panel, "available_hours").known)
+
+    def test_the_plan_age_is_read_from_the_week_of_heading(self):
+        panel, _ = analyze.build_week(example_sources(), date(2026, 8, 3))
+        self.assertEqual(fact(panel, "week_age_days").number, 14.0)
+        undated, _ = analyze.build_week(example_sources(edit(
+            "week.md", "# Week of 2026-07-20", "# Week")), TODAY)
+        self.assertFalse(fact(undated, "week_age_days").known)
 
     def test_an_overcommitted_week_reads_its_negative_free_hours(self):
         panel, _ = analyze.build_week(example_sources(edit(
             "week.md", "Committed delivery 24h · Free 16h",
-            "Committed delivery 45h · Free -5h")))
+            "Committed delivery 45h · Free -5h")), TODAY)
         self.assertEqual(fact(panel, "available_hours").number, 40.0)
         self.assertEqual(fact(panel, "free_hours").number, -5.0)
 
     def test_a_malformed_hour_is_unknown_not_a_crash(self):
         panel, _ = analyze.build_week(example_sources(edit(
-            "week.md", "Available 40h", "Available 4..0h")))
+            "week.md", "Available 40h", "Available 4..0h")), TODAY)
         self.assertFalse(fact(panel, "available_hours").known)
 
 
