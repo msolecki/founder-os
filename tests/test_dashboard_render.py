@@ -513,8 +513,15 @@ class TestBetWindow(unittest.TestCase):
     def test_the_missing_window_names_the_field_the_scaffold_writes(self):
         html = build_example_page()
         self.assertIn("window not recorded", html)
+        # quarterly-planning writes `Opened:` and older scaffolds wrote
+        # `Start date:`; the parser accepts both, so the instruction names both.
+        self.assertIn("Opened:", html)
         self.assertIn("Start date:", html)
-        self.assertNotIn("Opened:", html)
+
+    def test_a_running_bet_shows_its_kill_condition_and_days_left(self):
+        html = build_example_page()
+        self.assertIn("Kill condition: fewer than 2 qualified proposals by "
+                      "2026-08-31. (42 days left)", html)
 
 
 class TestBetTargetCell(unittest.TestCase):

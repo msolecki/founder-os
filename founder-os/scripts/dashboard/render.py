@@ -129,7 +129,7 @@ def _bets(facts) -> str:
                   "%d%% of the window spent" % round(bet.elapsed * 100), False)])
         elif bet.elapsed_assumed:
             elapsed = ('<p class="unknown">window not recorded — goals.md carries '
-                       "no Start date: for this bet</p>")
+                       "no Opened: (or Start date:) for this bet</p>")
         # A judged bet says so. `kill-or-continue` leaves the block in place, so
         # without the verdict a dead bet keeps its threshold, its meter and its
         # judgment date and reads exactly like one still running — and a killed
@@ -141,12 +141,20 @@ def _bets(facts) -> str:
                 escape(bet.verdict.title()), escape(bet.verdict_line or ""))
         countdown = ("" if bet.verdict == "killed"
                      else "<p>Judged in %s</p>" % fact_html(days))
+        # The kill condition is the other half of the bet's contract, and the
+        # days left on a dated one are already counted in the panel's facts.
+        kill = ""
+        if bet.kill and bet.verdict != "killed":
+            to_kill = _find(panel, "%s.days_to_kill" % bet.key)
+            kill = "<p>Kill condition: %s%s</p>" % (
+                escape(bet.kill),
+                " (%s left)" % fact_html(to_kill) if to_kill else "")
         blocks.append(
             '<article class="bet"><div><span class="chip chip-bet-%d">%s</span> '
-            "<b>%s</b></div><p>%s</p>%s%s%s%s</article>"
+            "<b>%s</b></div><p>%s</p>%s%s%s%s%s</article>"
             % (index % 2 + 1, escape(bet.key), escape(bet.name),
                escape(bet.threshold or "no threshold recorded"), meter, elapsed,
-               verdict, countdown))
+               verdict, countdown, kill))
     # A target the workspace records as 0 is a number. Only `None` is the
     # unread target, which is why this cell tests for it and the meter above
     # keeps its truthiness test — a meter against a target of nothing has no
