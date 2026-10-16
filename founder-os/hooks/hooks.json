@@ -36,7 +36,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^(Read|Write|Edit|NotebookEdit|Glob|Grep|apply_patch|Bash|WebFetch|WebSearch|Task|Agent|mcp__.*)$",
+        "matcher": ".*",
         "hooks": [
           {
             "type": "command",

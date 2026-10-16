@@ -16,7 +16,9 @@ pass, another plugin's agent — is not governed by the gateway lockdown. It is
 bound by three checks: no write under ``_local/``, no write under a path the
 map lists in ``derived_files:``, and no write to a file the ownership map gives
 someone else. Everything else it does is between it and the normal permission
-system.
+system — until a *generic* agent (`general-purpose`, `default`) spends a role
+capability at the gateway. That binds the role to its identity
+(`_bind_generic_role`), and from that call on it gets the role lockdown.
 
 Those three bind **tools that name a path** — ``Write``, ``Edit``,
 ``NotebookEdit``, ``apply_patch``. They do not inspect a shell command, so a
@@ -40,6 +42,7 @@ import os
 import re
 import stat
 import sys
+import tempfile
 import time
 
 _YAML_UNSET = object()
@@ -64,7 +67,8 @@ OUTBOUND_TOOLS = frozenset({"Bash", "WebFetch", "WebSearch"})
 # escapes its own lockdown through the child, which is bound by far less.
 NESTED_AGENT_TOOLS = frozenset({"Task", "Agent"})
 DIRECT_FILE_TOOLS = frozenset({
-    "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep", "apply_patch",
+    "Read", "Write", "Edit", "MultiEdit", "NotebookEdit", "NotebookRead",
+    "Glob", "Grep", "LS", "apply_patch",
 })
 # The tools `_tool_paths` can read a target path out of, in the order a deny
 # names them. Narrower than DIRECT_FILE_TOOLS, which is about a role touching
@@ -495,52 +499,37 @@ def _registry_roots():
     the portfolio-manager writing `portfolio.md` is the everyday case — and a
     root this function doesn't return is a workspace this guard doesn't guard.
 
-    Fail-open posture applies in full: no registry, unreadable YAML, PyYAML
-    missing, unexpected shape — return [] and let the env/cwd roots carry on.
-    A parse failure here must never cost anyone a write; it costs coverage,
-    which the build-time validator does not depend on.
+    Parsed by the gateway's own `mcp/workspaces.py::load_registry`, loaded by
+    path: a second parser here read `home: /x/biz#2` as `/x/biz`, so the guard
+    guarded a directory the gateway never wrote.
+
+    Fail-open posture applies in full: no registry, a registry the gateway
+    rejects, a loader that will not import — return [] and let the env/cwd
+    roots carry on. A parse failure here must never cost anyone a write; it
+    costs coverage, which the build-time validator does not depend on.
     """
     user_home = os.environ.get("HOME") or os.path.expanduser("~")
-    path = os.path.join(user_home, ".founder-os", "businesses.yaml")
-    if not os.path.isfile(path):
+    if not os.path.isfile(os.path.join(user_home, ".founder-os",
+                                       "businesses.yaml")):
         return []
     try:
-        with open(path, encoding="utf-8") as fh:
-            text = fh.read()
-        yaml_module = _get_yaml()
-        if yaml_module is not None:
-            data = _yaml_load(yaml_module, text)
-        else:
-            # The registry shape is intentionally small. On machines without
-            # PyYAML, collect only absolute `home:` and `portfolio:` values;
-            # anything ambiguous remains uncovered and therefore allowed.
-            roots = []
-            for raw in text.splitlines():
-                line = raw.split("#", 1)[0].strip()
-                if line.startswith("home:") or line.startswith("portfolio:"):
-                    value = line.split(":", 1)[1].strip().strip("'\"")
-                    if os.path.isabs(value):
-                        roots.append(value)
-            return roots
-    except (OSError, ValueError) as e:
-        log("could not read registry %s (%s)" % (path, e))
+        import importlib.util
+        source = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "mcp", "workspaces.py")
+        spec = importlib.util.spec_from_file_location(
+            "_founder_os_guard_workspaces", source)
+        workspaces = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = workspaces  # dataclasses resolve by module
+        spec.loader.exec_module(workspaces)
+        registry = workspaces.load_registry(user_home)
+    except Exception as e:  # noqa: BLE001 - coverage, never a write
+        log("could not read registry under %s (%s)" % (user_home, e))
         return []
-    except Exception as e:  # PyYAML exposes its own exception class
-        log("could not read registry %s (%s)" % (path, e))
+    if registry is None:
         return []
-    if not isinstance(data, dict):
-        return []
-    roots = []
-    businesses = data.get("businesses")
-    if isinstance(businesses, dict):
-        for entry in businesses.values():
-            if isinstance(entry, dict):
-                home = entry.get("home")
-                if isinstance(home, str) and os.path.isabs(home):
-                    roots.append(home)
-    portfolio = data.get("portfolio")
-    if isinstance(portfolio, str) and os.path.isabs(portfolio):
-        roots.append(portfolio)
+    roots = [entry["home"] for entry in registry["businesses"].values()]
+    if registry.get("portfolio") is not None:
+        roots.append(registry["portfolio"])
     return roots
 
 
@@ -560,6 +549,10 @@ def workspace_roots(hook_cwd):
     """
     bases = [os.environ.get("CLAUDE_PROJECT_DIR"), hook_cwd, os.getcwd()]
     home = os.environ.get("FOUNDER_OS_HOME")
+    if home:
+        # A literal `~` from a settings `env` or a plist reaches us unexpanded;
+        # the gateway expands it (mcp/workspaces.py), so the guard must too.
+        home = os.path.expanduser(home)
     roots = []
     if home and os.path.isabs(home):
         roots.append(home)
@@ -575,11 +568,6 @@ def workspace_roots(hook_cwd):
             if v not in out:
                 out.append(v)
     return out
-
-
-def relative_to_workspace(file_path, hook_cwd, roots=None):
-    """Workspace-relative POSIX path for `file_path`, or None if it's outside."""
-    return resolve_in_workspace(file_path, hook_cwd, roots)[1]
 
 
 def resolve_in_workspace(file_path, hook_cwd, roots=None):
@@ -739,6 +727,20 @@ def _valid_text(value):
     return isinstance(value, str) and bool(value.strip()) and "\x00" not in value
 
 
+def _data_root():
+    """The plugin data directory, resolved exactly as the gateway resolves it.
+
+    `mcp/gateway.py::_default_data_root` falls back to
+    `~/.founder-os/plugin-data` when the host sets neither variable. A guard
+    that gave up instead read no session the gateway had opened, and denied
+    every role's gateway call as holding no live capability.
+    """
+    return (os.environ.get("PLUGIN_DATA")
+            or os.environ.get("CLAUDE_PLUGIN_DATA")
+            or os.path.join(os.path.expanduser("~"), ".founder-os",
+                            "plugin-data"))
+
+
 def _read_small_regular_json(path):
     """Read one bounded plugin-data record without following its final link."""
     if not hasattr(os, "O_NOFOLLOW"):
@@ -772,9 +774,7 @@ def _session_role(tool_input):
     capability = tool_input.get("capability")
     if not _valid_text(capability) or len(capability) > 512:
         return None
-    data_root = os.environ.get("PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
-    if not data_root:
-        return None
+    data_root = _data_root()
     try:
         encoded_capability = capability.encode("utf-8")
     except UnicodeEncodeError:
@@ -817,11 +817,13 @@ def _session_role(tool_input):
     return role
 
 
-def check_gateway(agent_type, role, tool_name, tool_input):
+def check_gateway(agent_type, role, tool_name, tool_input, data=None):
     """Authorize only the capability-consistent local gateway surface.
 
     ``role`` is the normalized bare role name (`_role_of`), or None when the
-    caller is not one of the thirteen roles.
+    caller is not one of the thirteen roles. ``data`` is the hook payload: a
+    generic fallback that spends a capability is bound to its role through the
+    identity it carries (`_bind_generic_role`).
     """
     action = _gateway_tool_name(tool_name)
     if action is None:
@@ -840,6 +842,70 @@ def check_gateway(agent_type, role, tool_name, tool_input):
         _deny_tool(agent_type, tool_name, "The capability belongs to a different role.")
     if role is None and agent_type not in GENERIC_AGENT_TYPES:
         _deny_tool(agent_type, tool_name, "The subagent identity is not an approved role fallback.")
+    if role is None:
+        _bind_generic_role(agent_type, tool_name, data or {}, session_role)
+
+
+def _binding_stem(data):
+    """The `agent-types/` record naming this agent instance, or None.
+
+    The most specific identity the host supplies: Claude's per-subagent
+    `agent_id`, then Codex's `turn_id` (whose recorder mapping this rewrites),
+    then the `session_id` every generic agent of the session shares — coarser,
+    so it locks down every generic agent of that session, which is the
+    restricted reading of not knowing which one holds the role.
+    """
+    for field, prefix in (("agent_id", "agent."), ("turn_id", ""),
+                          ("session_id", "session.")):
+        value = data.get(field)
+        if isinstance(value, str) and SAFE_ID.fullmatch(value):
+            return prefix + value
+    return None
+
+
+def _bind_generic_role(agent_type, tool_name, data, role):
+    """Give a generic agent that just spent a role capability the role lockdown.
+
+    A Bash or WebFetch call carries no capability, so the per-call checks
+    cannot tell a `general-purpose` reviewer from a `general-purpose` agent
+    holding the CFO's authority. The gateway call is the one moment the guard
+    knows, so it records the role against the agent's identity; from then on
+    `agent_type_for` answers with the role and `main` applies the role
+    lockdown — no shell, no web, no direct file tool, no nested agent.
+
+    Fails closed: a binding that cannot be persisted denies the gateway call,
+    because a capability spent with no lockdown behind it is exactly the hole.
+    A payload carrying no identity at all is the synthetic fail-open shape the
+    module docstring names and is logged, not bound.
+    """
+    stem = _binding_stem(data)
+    if stem is None:
+        log("allow: generic gateway call carries no agent, turn or session id "
+            "— no identity to bind the role lockdown to")
+        return
+    if _mapped_agent_type(stem) == role:
+        return
+    target_dir = os.path.join(_data_root(), "agent-types")
+    temporary = None
+    try:
+        os.makedirs(target_dir, exist_ok=True)
+        descriptor, temporary = tempfile.mkstemp(
+            prefix="." + stem + ".", suffix=".tmp", dir=target_dir)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump({"agent_type": role, "recorded_at": time.time()},
+                      handle, separators=(",", ":"), sort_keys=True)
+            handle.write("\n")
+        os.replace(temporary, os.path.join(target_dir, stem + ".json"))
+        temporary = None
+    except (OSError, ValueError):
+        _deny_tool(agent_type, tool_name,
+                   "The role lockdown could not be bound to this agent.")
+    finally:
+        if temporary is not None:
+            try:
+                os.unlink(temporary)
+            except OSError:
+                pass
 
 
 def check_outbound(agent_type, tool_name):
@@ -896,19 +962,24 @@ def check_local_map(agent_type, rel):
     runs on the main thread, and no packaged agent has ever had a reason to
     write there — so this costs honest work nothing and closes the one move
     that would make every other check advisory.
+
+    Checked under every name the write has (`_workspace_rels`): a `_local/`
+    symlinked at a sibling directory resolves to the sibling's name, and
+    judging that name alone let an agent rewrite the overlay that governs it.
+    Like `check_derived`, it binds the tools that name a path, not a shell.
     """
     if not rel.casefold().startswith(LOCAL_DIR):
         return
     deny(
-        "`%s` is the founder's local overlay, and no agent writes it — "
-        "including this one.\n\n"
+        "`%s` is the founder's local overlay, and no agent writes it with "
+        "%s — including this one.\n\n"
         "`_local/` holds the map that decides what `%s` is allowed to write "
         "(references/extensibility.md). An agent that can edit that map does "
         "not have one, so this deny does not depend on ownership and cannot be "
         "granted by adding an entry.\n\n"
         "If a local file, skill or agent needs to exist or change, that is "
         "`/skill-forge` with the founder in the room, not an edit to make on "
-        "the way past." % (rel, agent_type)
+        "the way past." % (rel, _path_naming_tools(), agent_type)
     )
 
 
@@ -978,7 +1049,7 @@ def check_derived(agent_type, rel, derived):
     symlinked spelling as well as the resolved one. A shell command names no
     path at all and is outside this rule by design (module docstring), which is
     why the deny text names the tools it reads rather than claiming the
-    absolute. `check_local_map` still judges the resolved name only.
+    absolute. `check_local_map` judges both names the same way.
     """
     entry = _derived_entry(rel, derived)
     if entry is None:
@@ -1021,9 +1092,9 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
         if rel is None:
             log("allow: %s is outside the workspace" % file_path)
             continue
-        check_local_map(agent_type, rel)
-        for derived_rel in _workspace_rels(file_path, hook_cwd, roots):
-            check_derived(agent_type, derived_rel, derived)
+        for spelled_rel in _workspace_rels(file_path, hook_cwd, roots):
+            check_local_map(agent_type, spelled_rel)
+            check_derived(agent_type, spelled_rel, derived)
         owner = owner_of(rel, merged_ownership(by_path, root))
         if owner is None:
             log("allow: %s has no owner in the map" % rel)
@@ -1044,17 +1115,36 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
 
 
 def agent_type_for(data):
-    """Resolve the subagent type from Claude input or Codex turn state."""
+    """Resolve the subagent type from Claude input or Codex turn state.
+
+    A generic agent bound to a role (`_bind_generic_role`) resolves to that
+    role. A binding record that exists but cannot be read is uncertainty about
+    an agent that may hold a role, and denies rather than unlocks.
+    """
     direct = data.get("agent_type")
     if isinstance(direct, str) and SAFE_AGENT.fullmatch(direct):
-        return direct
+        if direct not in GENERIC_AGENT_TYPES:
+            return direct
+        stem = _binding_stem(data)
+        if stem is None:
+            return direct
+        bound = _mapped_agent_type(stem)
+        if bound is None and os.path.lexists(
+                os.path.join(_data_root(), "agent-types", stem + ".json")):
+            tool_name = data.get("tool_name")
+            _deny_tool(direct, tool_name if isinstance(tool_name, str)
+                       else "<invalid tool name>",
+                       "This agent's role binding is unreadable.")
+        return bound if _role_of(bound) else direct
     turn_id = data.get("turn_id")
     if not isinstance(turn_id, str) or not SAFE_ID.fullmatch(turn_id):
         return None
-    data_root = os.environ.get("PLUGIN_DATA") or os.environ.get("CLAUDE_PLUGIN_DATA")
-    if not data_root:
-        return None
-    path = os.path.join(data_root, "agent-types", turn_id + ".json")
+    return _mapped_agent_type(turn_id)
+
+
+def _mapped_agent_type(stem):
+    """The identity recorded in `agent-types/<stem>.json`, or None."""
+    path = os.path.join(_data_root(), "agent-types", stem + ".json")
     payload = _read_small_regular_json(path)
     if not isinstance(payload, dict) or set(payload) != {
         "agent_type", "recorded_at"
@@ -1143,7 +1233,7 @@ def main():
         # the overlay and the ownership map are.
         if MCP_TOOL.match(tool_name):
             if _gateway_tool_name(tool_name) is not None:
-                check_gateway(agent_type, None, tool_name, tool_input)
+                check_gateway(agent_type, None, tool_name, tool_input, data)
             allow("foreign MCP is not this guard's business")
         check_ownership(agent_type, tool_name, tool_input, data.get("cwd"))
         allow()
@@ -1166,7 +1256,10 @@ def main():
             tool_name,
             "Direct local file access bypasses capability and ownership checks.",
         )
-    allow()
+    # A role holds the gateway and nothing else, so a tool this guard does not
+    # recognize — a file tool a host adds later, a loosened allowlist — is
+    # denied, not waved through.
+    _deny_tool(agent_type, tool_name, "A role holds only the gateway tools.")
 
 
 if __name__ == "__main__":
