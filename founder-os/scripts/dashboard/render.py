@@ -297,16 +297,26 @@ def _queue(facts) -> str:
                          ("blocked", None)):
         count = _find(panel, key)
         cap = _find(panel, cap_key) if cap_key else None
-        body.append("<p>%s %s%s</p>" % (
+        # The track clamps at a full bar, so 6 of 3 drew exactly like 3 of 3:
+        # the over-commitment this panel exists to show, shown as a fit.
+        over = (count is not None and count.known and cap is not None
+                and count.number > cap.number)
+        body.append("<p>%s %s%s%s</p>" % (
             escape(key.title()), fact_html(count),
-            " / %s" % fact_html(cap) if cap is not None else ""))
+            " / %s" % fact_html(cap) if cap is not None else "",
+            ' <span class="over">over cap</span>' if over else ""))
         if count is not None and count.known and cap is not None and cap.number:
             body.append(charts.track(
-                [(count.number / cap.number, "var(--good)",
+                [(count.number / cap.number,
+                  "var(--crit)" if over else "var(--good)",
                   "%g of %g" % (count.number, cap.number), False)]))
         rows.append([key, count.display if count else "not recorded",
                      cap.display if cap else ""])
-    return _panel("Queue", "caps from references/thresholds.yaml",
+    over_cap = _find(panel, "over_cap")
+    note = "caps from references/thresholds.yaml"
+    if over_cap is not None and over_cap.number:
+        note += " · %g over cap" % over_cap.number
+    return _panel("Queue", note,
                   "".join(body) + _numbers(
                       "Show the numbers", ("Section", "Count", "Cap"), rows),
                   panel)
