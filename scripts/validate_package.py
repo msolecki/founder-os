@@ -1339,8 +1339,8 @@ def check_readme_counts(root, agents):
     #
     # index.html is deliberately not in this list: its catalogue carries a per-
     # category "9 workflows" on every group heading, which these patterns cannot
-    # tell from a package count. tests/test_docs_workflows.py and the feature
-    # ledger's derived count are what hold that page.
+    # tell from a package count. tests/test_docs_workflows.py is what holds
+    # that page.
     site = root.parent / "docs"
     docs = [site / "README.md", site / "getting-started.md",
             site / "commands.md", site / "cadences.md",
