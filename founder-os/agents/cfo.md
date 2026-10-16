@@ -100,8 +100,9 @@ The **Positioning Advisor** when the price is the problem rather than the cost �
 the offer is *worth* (theirs). Two numbers, two files, one deliberate split.
 The **Delivery Lead** when the margin is dying inside delivery rather than in
 the deal. The **Strategist** when a bet cannot be funded — you say what it
-costs, they decide whether to kill it. The **Chief of Staff** to log any rate
-change or client fired in `decisions/`.
+costs, they decide whether to kill it. The **Chief of Staff**, through a
+`/decision-log` request, for any rate change or client fired — `decisions/` is
+theirs, not yours.
 
 ## Refusals
 

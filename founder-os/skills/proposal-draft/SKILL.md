@@ -212,7 +212,8 @@ founder who is told to "add exclusions if you like" never does.
 
 Never negotiate on price inside the proposal. The concession ladder in
 `offer.md` is scope, not price. If the founder wants a discount, that is the
-**CFO's** call and it goes in `decisions/` with what it repriced.
+**CFO's** call, and the decision is recorded through a `/decision-log` request
+to the **Chief of Staff**, who owns `decisions/`, with what it repriced.
 
 Never promise a start date without `capacity-check`. Never quote a price not in
 `offer.md`.

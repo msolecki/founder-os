@@ -159,6 +159,15 @@ that reads its date — and you add two lines at the end of the `## Close` block
     Next close: blocked — needs founder input: <YYYY-MM> bank statement and invoices issued (collected, cash on hand, receivables)
     Proposed: supply the <YYYY-MM> bank statement and invoices for the close — bet: none
 
+The pair is one per file, not one per blocked month: a month blocked again
+replaces the existing `Next close: blocked` line and the `Proposed: supply …`
+line under it with the newest month's pair, never stacks a second pair below
+the first. A first-ever run with no close on record has no `## Close — YYYY-MM`
+block to add to: write the pair under the bare `## Close` heading — no month
+suffix, because no month was closed and a dated heading would start every
+staleness clock from a close that never happened — creating `metrics.md` with
+every declared heading if it does not exist yet.
+
 The brief drains the `Proposed:` line like any other; the close runs when the
 founder brings the evidence. Never compute `Collected` from `Booked`, and never
 carry last month's cash forward as this month's.

@@ -241,7 +241,11 @@ without one, `kill-or-continue` fires on it, and the daily brief rots on it.
 and `If wrong:` lines, and `kill-or-continue` writes its verdict line there —
 both need to find the block, and they find it under this heading.
 
-Append to `reviews/quarterly/YYYY-Qn.md`:
+Write `reviews/quarterly/YYYY-Qn.md` (create it; if an unattended run already
+wrote a blocked one this quarter, replace the whole file — `## This quarter's
+bets` then holds the plan in place of the `blocked — needs founder input` line,
+never a second copy of the review below it, and the `Proposed: … plan is
+blocked` line leaves `goals.md` with the rest of the old `## Bets`):
 
     # YYYY-Qn
     ## Last quarter's verdicts
