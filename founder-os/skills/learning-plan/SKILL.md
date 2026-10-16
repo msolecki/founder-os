@@ -89,9 +89,11 @@ Read first, in order — house rule 1:
 
 ## Output
 
-Append to `skills.md`:
+Append one dated entry to `skills.md` under its one `## Learning plan` heading —
+a `###` entry, never a second `## Learning plan`:
 
-    ## Learning plan — YYYY-MM-DD
+    ## Learning plan
+    ### YYYY-MM-DD
     Capability: <narrow enough that failure is visible>
     Serves: <bet in goals.md>
     Forcing project: <from clients/> — cannot ship without it because <why>

@@ -5,6 +5,7 @@ metadata:
   writes:
     - reviews/daily/
     - inbox.md
+    - queue.md
 ---
 
 # Daily Brief
@@ -56,8 +57,8 @@ Read first, in order — house rule 1. **This list is longer than `context-load`
 step 5 allows, and the exemption is written in that file as well as this one.**
 Read it there: the brief is the only cadence whose decision is the ranking
 *across* books, so it is the only one that cannot make its decision from two of
-them. The price is that only the first three below are read whole; everything
-else is one named section, read for one question.
+them. The price is that only the four below are read whole; everything else is
+one named section, read for one question.
 
 Read whole:
 
@@ -68,7 +69,8 @@ Read whole:
 - `queue.md` — `## Doing` first: what the founder already has in flight, and how
   long it has been in flight. Yesterday's commitment is an item here, not a
   memory, and whether it closed is a fact rather than a conversation.
-- `reviews/daily/` — yesterday's brief: what did they commit to?
+- `reviews/daily/` — yesterday's brief: what did they commit to? Its `## Triage`
+  also carries the list of proposals already answered, which step 0 needs.
 
 Read for one named section only:
 
@@ -118,11 +120,17 @@ Read for one named section only:
    **Drain `inbox.md` first, before the `Proposed:` lines.** The founder wrote those
    lines themselves, which makes them the only input to this brief that is not an
    agent talking to another agent. Empty the file to zero: every line becomes a
-   queue item under the `queue` intake rule, or it is named in the brief as refused
-   with the owner whose file already holds it. Nothing stays.
+   queue item under the `queue` intake rule, or it is written into the brief's
+   `## Triage` — refused, with the owner whose file already holds it, or handed to
+   `triage`. Nothing stays, and nothing is lost.
 
    If the inbox holds more than the brief can rank, that is `triage`'s pile and this
-   is not the cadence for it — say so, hand to `triage`, and still empty the file.
+   is not the cadence for it — say so and hand to `triage`. **Copy every line you
+   do not turn into a queue item into `## Triage` verbatim, byte for byte, before
+   you empty the file**, and empty it only after today's review has been written
+   and re-read. A count is not a handoff: `+7 items handed to triage` with the
+   inbox emptied is seven of the founder's own sentences that now exist in no
+   file, and `triage` reads them from here because the inbox no longer holds them.
 
    Eight cadences produce obligations and none of them may write `queue.md` —
    `pipeline-review`,
@@ -155,6 +163,17 @@ Read for one named section only:
    leave it alone. Without it the Thursday pipeline proposal enters the queue
    again on Friday, and again on Monday, under three ids.
 
+   **The queue item is not the only record, because the queue forgets.** `## Done`
+   is reaped after 30 days and `## Dropped` after 90, while a quarterly `Proposed:`
+   line lives in `goals.md` for the whole quarter, and a refused proposal never
+   reaches the queue at all. So every answer — taken or refused — is also a line
+   under `Proposals answered:` in today's `## Triage`, keyed by the proposal's
+   source and its verbatim text. Carry yesterday's list forward, and drop an entry
+   only when its source line is gone from the section you read it in — you read
+   every one of those sections this morning, so you know. A `Proposed:` line whose
+   key is on the list has been answered: leave it alone, whatever the queue
+   says.
+
    **Then stop.** The proposals are an intake, not the brief. If draining them
    fills `## Doing` to its cap of three, that is step 2's finding arriving early —
    say it there, not here.
@@ -181,7 +200,10 @@ Read for one named section only:
    terms, a client whose latest `Verdict:` is older than 45 days (`client-health`
    overdue — an unexamined client is not a healthy one, it is an unexamined
    one), a `## Dead` deal whose `win/loss: pending` is older than 5 business days (the
-   lesson is expiring — `win-loss-analysis`'s own window is five business days), **a client
+   lesson is expiring — `win-loss-analysis`'s own window is five business days), a
+   `goals.md` bet or `Experiment:` line whose `Judgment date:` has passed with no
+   verdict written (the **Strategist**'s `kill-or-continue` or `experiment` is
+   overdue — the judgment does not wait for the founder to remember), **a client
    on the books that `offer.md` `### Not this` excludes**. One line each with
    the number of days attached, no editorializing.
 
@@ -222,7 +244,8 @@ Read for one named section only:
 
 ## Output
 
-Append to `reviews/daily/YYYY-MM-DD.md`:
+Write `reviews/daily/YYYY-MM-DD.md`. If `triage` already wrote today's file, its
+`### HH:MM — triage` entries stay under your `## Triage`, below your lines:
 
     # YYYY-MM-DD
     ## The one thing
@@ -235,6 +258,17 @@ Append to `reviews/daily/YYYY-MM-DD.md`:
     <what doesn't happen today>
     ## Triage
     none | <+n items handed to triage>
+    Handed to triage — verbatim from inbox.md:
+    - <the founder's line, byte for byte>
+    Refused — verbatim:
+    - <the inbox line or Proposed: line> → <owner whose file already holds it>
+    Proposals answered:
+    - from: <file> <date> — "<the Proposed: line>" → <q-MMDDx | refused>
+
+Omit any of the three lists that is empty. The three
+lists are the only place the founder's handed-over lines and the morning's
+refusals survive the emptied inbox, and `triage` and tomorrow's brief read them
+here.
 
 ## Guardrails
 

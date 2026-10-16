@@ -134,6 +134,31 @@ class CaptureSkillContract(unittest.TestCase):
         self.assertRegex(interface["default_prompt"], r"(?i)one.*line.*inbox")
 
 
+class CaptureDrainKeepsFounderLinesContract(unittest.TestCase):
+    """A drain may empty the inbox only after every unqueued line is on disk."""
+
+    def test_daily_brief_writes_unqueued_lines_verbatim_before_emptying(self):
+        _, body = parse_frontmatter(
+            PLUGIN_ROOT / "skills" / "daily-brief" / "SKILL.md"
+        )
+        flat = " ".join(body.split())
+        self.assertIn("verbatim, byte for byte, before you empty the file", flat)
+        self.assertIn("after today's review has been written and re-read", flat)
+        self.assertNotIn("and still empty the file", flat)
+        output = body.split("## Output", 1)[1].split("## Guardrails", 1)[0]
+        triage = output.split("    ## Triage", 1)[1]
+        self.assertIn("Handed to triage — verbatim from inbox.md:", triage)
+        self.assertIn("Refused — verbatim:", triage)
+
+    def test_triage_reads_the_handed_lines_back_from_the_brief(self):
+        _, body = parse_frontmatter(
+            PLUGIN_ROOT / "skills" / "triage" / "SKILL.md"
+        )
+        inputs = body.split("## Inputs", 1)[1].split("## Beliefs", 1)[0]
+        self.assertIn("`Handed to triage`", inputs)
+        self.assertIn("part of this pile", " ".join(inputs.split()))
+
+
 class CaptureValidatorContract(unittest.TestCase):
     def test_real_capture_contract_passes_build_validator(self):
         agents = validator.load_agents(PLUGIN_ROOT)
