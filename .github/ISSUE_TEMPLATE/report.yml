@@ -125,10 +125,11 @@ body:
   - type: textarea
     id: doctor
     attributes:
-      label: /founder-os-doctor output
+      label: /founder-os-doctor shareable report
       description: >-
-        Run `/founder-os-doctor` and paste the report. It names paths and
-        structural findings, never file contents. Optional on purpose — an
+        Run `/founder-os-doctor`, ask for the shareable report, and paste that.
+        Never paste the full doctor report — it carries client names, runway
+        and pipeline. Optional on purpose — an
         install broken enough to need reporting is an install that may not be
         able to run it, and a required field there would have turned the worst
         bugs into no report at all.

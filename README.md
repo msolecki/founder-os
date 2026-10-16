@@ -114,7 +114,7 @@ you want the requirements, data boundary, and first-week workflow in one place.
 
 To see the output first, open the fictional but contract-shaped
 [`daily brief`](examples/studio-north/reviews/daily/2026-07-20.md), then follow
-`q-0720a` through the complete
+`q-0720a` through the example
 [`examples/studio-north/`](examples/studio-north/README.md) workspace into the
 queue, quarterly bet, week, and review.
 

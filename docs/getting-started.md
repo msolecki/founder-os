@@ -22,7 +22,7 @@ Start with the fictional but contract-shaped Studio North
 [`reviews/daily/2026-07-20.md`](../examples/studio-north/reviews/daily/2026-07-20.md).
 It selects one queue item tied to a quarterly bet, names the work that will not
 happen, and cites the dates and files behind the decision. Follow `q-0720a` and
-`B1` through the complete [`examples/studio-north/`](../examples/studio-north/)
+`B1` through the example [`examples/studio-north/`](../examples/studio-north/)
 workspace before installing.
 
 ## Before you install

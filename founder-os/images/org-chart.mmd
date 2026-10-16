@@ -1,19 +1,22 @@
-%% Solid edges are the manager→report lines (the Agent(...) graph, minus the
-%% Chief of Staff's skip-level reach: COS may summon every agent, not only its
-%% five solid reports). The Portfolio Manager exists on multi-business
-%% installs and ranks between businesses; everyone else lives inside one.
+%% Routing, not a call graph. The main thread is the only dispatcher: it opens
+%% one role session at a time (solid edges). A role never invokes another role;
+%% the Chief of Staff routes by returning a delegation request the main thread
+%% validates and dispatches itself (dashed edge). See
+%% founder-os/references/orchestration.md. The Portfolio Manager exists on
+%% multi-business installs and ranks between businesses.
 graph TD
-    F[YOU — Founder]
-    F --> COS[Chief of Staff]
-    F --> BM[Board Member]
-    COS --> PM[Portfolio Manager]
-    COS --> ST[Strategist]
-    COS --> PA[Positioning Advisor]
-    COS --> DL[Delivery Lead]
-    COS --> FC[Focus Coach]
-    PA --> PC[Pipeline Coach]
-    PA --> BE[Brand Editor]
-    PA --> NM[Network Manager]
-    DL --> CFO[CFO]
-    DL --> OE[Ops Engineer]
-    FC --> SM[Skills Mentor]
+    F[YOU — Founder] --> MT[Main thread]
+    MT --> COS[Chief of Staff]
+    COS -. delegation request .-> MT
+    MT --> BM[Board Member]
+    MT --> PM[Portfolio Manager]
+    MT --> ST[Strategist]
+    MT --> PA[Positioning Advisor]
+    MT --> PC[Pipeline Coach]
+    MT --> BE[Brand Editor]
+    MT --> NM[Network Manager]
+    MT --> DL[Delivery Lead]
+    MT --> CFO[CFO]
+    MT --> OE[Ops Engineer]
+    MT --> FC[Focus Coach]
+    MT --> SM[Skills Mentor]

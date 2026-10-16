@@ -8,7 +8,7 @@ contribution guide. This file is the short version.
 ## Reporting something without opening a PR
 
 Most useful feedback is not a pull request, and until now this file did not say
-where it goes. It goes to one of three forms in
+where it goes. It goes to one of two forms in
 [`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE), and each exists because the
 reports it collects are different:
 
@@ -18,9 +18,10 @@ reports it collects are different:
   a defect. *It completed and the result was wrong* is the report almost nobody
   sends, because nothing was broken enough to feel worth the form — and it is
   the one that says the product is wrong rather than merely broken. Bring the
-  `/founder-os-doctor` output if you can run it; it reports structure, never
-  file contents, and it is optional because a broken enough install cannot
-  produce it.
+  doctor's *shareable report* if you can run it (`/founder-os-doctor`, then ask
+  for the shareable report). Never paste the full doctor report: it carries your
+  client names, runway and pipeline. It is optional because a broken enough
+  install cannot produce it.
 - **[Idea](https://github.com/msolecki/founder-os/issues/new?template=idea.yml)**
   — one field is required and it is *which decision does this improve*. Without
   it the backlog fills with features that have no decision behind them, which is
@@ -30,14 +31,14 @@ Anything else — a question, a workspace worth showing, an idea that is not a
 proposal yet — starts in
 [Discussions](https://github.com/msolecki/founder-os/discussions).
 
-**A security issue uses none of the three.** A hook that allows what it should
+**A security issue uses neither form.** A hook that allows what it should
 deny, an outbound path that should not exist, or anything touching the
 no-telemetry promise goes to
 [Security → Report a vulnerability](https://github.com/msolecki/founder-os/security/advisories/new),
 privately, before it is public. [`SECURITY.md`](SECURITY.md) has the scope and
 the boundaries that are documented rather than broken.
 
-`/founder-os-feedback` fills any of the three in from the session that went
+`/founder-os-feedback` fills either form in from the session that went
 wrong and hands you a prefilled link. It sends nothing: you read what it wrote
 and post it from your own account. It also never quotes your workspace —
 **neither should you.** Paths are useful in a public issue; your revenue, your
