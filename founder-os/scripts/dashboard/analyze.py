@@ -335,7 +335,6 @@ class Bet:
     kill: Optional[str]
     kill_date: Optional[date]
     counted: Optional[CountSpec]
-    kill_counted: Optional[CountSpec]
     progress: Optional[float]
     target: Optional[float]
     elapsed: Optional[float]
@@ -483,14 +482,6 @@ def build_bets(sources, today: date):
                 "goals.md %s carries a Counted from: line outside the grammar "
                 "(%s), so the bet is not being measured" % (key, raw_counted),
                 cite))
-        raw_kill_counted = parse.parse_field(entry.body, "Kill counted from")
-        kill_counted = parse_counted_from(raw_kill_counted)
-        if raw_kill_counted is not None and kill_counted is None:
-            findings.append(Finding(
-                "warn", "counted-from-unreadable",
-                "goals.md %s carries a Kill counted from: line outside the "
-                "grammar (%s), so the kill condition is not being measured"
-                % (key, raw_kill_counted), cite))
 
         progress = _count_against(sources, counted) if counted else None
         target = counted.target if counted else None
@@ -509,7 +500,7 @@ def build_bets(sources, today: date):
             threshold=_first_field(entry.body, _THRESHOLD_LABELS),
             opened=opened, judgment=judgment, kill=kill,
             kill_date=parse.parse_iso_date(kill), counted=counted,
-            kill_counted=kill_counted, progress=progress, target=target,
+            progress=progress, target=target,
             elapsed=elapsed, elapsed_assumed=elapsed_assumed,
             verdict=verdict, verdict_line=verdict_line))
 

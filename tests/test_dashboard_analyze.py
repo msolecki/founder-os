@@ -484,14 +484,18 @@ class TestCountedFromCountsOnlyWhatIsWritten(unittest.TestCase):
         _, bets, _ = analyze.build_bets(example_sources(mutate), TODAY)
         self.assertEqual(bets[0].progress, 0.0)
 
-    def test_an_unreadable_kill_counted_from_is_reported_as_a_finding(self):
+    def test_a_kill_counted_from_line_is_not_a_field_the_reader_measures(self):
+        """No skill writes `Kill counted from:` and nothing ever measured it.
+
+        It used to be parsed and its grammar warned about, which told a founder
+        who wrote a valid one that the kill condition was being tracked.
+        """
         found = findings_about(
             example_sources(edit("goals.md", "Downside cap: 40 founder hours",
                                  "Kill counted from: the dead deals\n\n"
                                  "Downside cap: 40 founder hours")),
             "counted-from-unreadable")
-        self.assertEqual(len(found), 1)
-        self.assertIn("Kill counted from", found[0].detail)
+        self.assertEqual(found, [])
 
     def test_a_filtered_directory_count_does_not_read_money_out_of_prose(self):
         def mutate(home):
