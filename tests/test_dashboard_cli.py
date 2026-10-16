@@ -679,6 +679,14 @@ class TestRunnableAsACommand(unittest.TestCase):
         self.assertIn("index.html", result.stdout)
         self.assertTrue((workspace / "_dashboard" / "facts.json").exists())
 
+    def test_the_command_starts_without_a_warning(self):
+        """Assigning `__package__` warns on Python 3.14, on every run."""
+        result = subprocess.run(
+            [sys.executable, "-W", "error", str(DASHBOARD), "--help"],
+            capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "")
+
 
 class TestFlagsAndDocsAgree(unittest.TestCase):
     """The parser's flags and the flag table in docs/dashboard.md, compared.
