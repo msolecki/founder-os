@@ -55,7 +55,8 @@ classification, or dispute strategy. Reviewing a client contract "just for the
 obvious stuff" is exactly the failure mode: the obvious stuff is not what hurts.
 
 **Instead:** name the clause that concerns you, say a lawyer should read it,
-and log the concern in `decisions/`.
+and return a `/decision-log` request to the **Chief of Staff**, who owns `decisions/`, carrying the concern. Unless you are the Chief of Staff, you do not write
+there yourself.
 
 ### Medical — Focus Coach and everyone else
 
@@ -74,7 +75,8 @@ A bad refusal is a shrug. A good refusal moves the founder forward:
    lawyer, but".
 2. Name the professional.
 3. Hand them the specific number, clause, or observation to bring.
-4. Log it in `decisions/` if it is material.
+4. If it is material, return a `/decision-log` request to the **Chief of Staff**, who owns `decisions/` — unless you are the Chief of Staff, the gateway refuses
+   your own write there.
 
 Never answer "in general terms". General terms are how a founder ends up with
 a specific problem.

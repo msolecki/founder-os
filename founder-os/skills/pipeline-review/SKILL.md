@@ -79,8 +79,14 @@ Read first, in order — house rule 1:
    leave `pipeline.md`, because the exclusions `proposal-draft` wrote are the
    only written boundary on the engagement that just started. Copy the
    `Exclusions:` lines across exactly as they are. Do not summarise them, do not
-   count them, do not decide three of them no longer apply. Then tell the
-   **Delivery Lead** the engagement is live and where its baseline is.
+   count them, do not decide three of them no longer apply. Then hand the
+   engagement to the **Delivery Lead** through the file, not the room: this
+   cadence runs at 10:00 on a Thursday with nobody in it, so the won entry
+   carries its own `Proposed:` line — open the client file with a
+   `client-health` baseline — and the next `daily-brief` drains it, exactly as it
+   drains `outreach-draft`'s per-deal line. Never write that the Delivery Lead
+   was notified; a notification nobody received is a false line in the file the
+   engagement's boundary lives in.
 7. **Compute coverage and say it plainly.** Total value of surviving live deals
    against the revenue gap in `goals.md`. Below 3× coverage, the finding is not
    "follow up harder" — it is that there are not enough deals, and no amount of
@@ -124,6 +130,14 @@ Read first, in order — house rule 1:
 Write to `pipeline.md`. Rewrite `## Live`; **append** to `## Won` and `## Dead`;
 replace `## Last review`.
 
+**Rewriting `## Live` carries every surviving deal's other lines forward
+verbatim.** `outreach-draft` and `proposal-draft` keep their own lines under the
+same `### <Prospect>` block — `Outreach:`, `Touch:`, `Last reply:`, and any
+`Proposed:` the brief has not drained yet. The template below is the lines this
+skill owns, not the whole block: drop one of theirs and the fourth-touch rule
+never fires, or a draft made at 08:00 loses its send obligation before Friday's
+brief can take it.
+
     ## Live
     ### <Prospect> — <offer> — <amount> — <stage>
     Decision-maker: <name, role> (per <speaker>, <channel>, <date>)
@@ -131,10 +145,12 @@ replace `## Last review`.
     Next action: <what the FOUNDER does> — YYYY-MM-DD
     Stage basis: <what they did that puts it here> (per <speaker>, <channel>, <date>)
     Last contact: YYYY-MM-DD | In pipeline since: YYYY-MM-DD | Re-dated: <n>×
+    <every Outreach: / Touch: / Last reply: / Proposed: line already under this deal, unchanged>
 
     ## Won
     ### <Client> — won YYYY-MM-DD — <amount> — <offer>
-    Proposal sent: YYYY-MM-DD | Delivery Lead notified: YYYY-MM-DD
+    Proposal sent: YYYY-MM-DD
+    Proposed: open clients/<client-slug>.md with a client-health baseline — bet: <B<n> | none>
     Exclusions — verbatim from the signed proposal, scope-guard's baseline:
     - <exclusion> → if requested: <change order at <rate> | separate engagement>
     Engagement: <live | closed YYYY-MM-DD>
@@ -162,8 +178,11 @@ You still hand off by name if the founder is in the room. The line is the path
 that works when they are not.
 
 **`Win/loss pending:` is a counter, not a proposal, and that is deliberate.**
-The one `Proposed:` slot belongs to step 7's coverage finding; a second would
-start the queue-bloat this file's own intake rule refuses. The brief reads the
+The one `Proposed:` slot in `## Last review` belongs to step 7's coverage
+finding; a second would start the queue-bloat this file's own intake rule
+refuses. The won deal's line is not a second slot in that section — it lives
+under the deal, is written once, on the day it moves to `## Won`, and closes when
+the client file exists. The brief reads the
 counter in its rotting scan — a pending older than five days is past
 `win-loss-analysis`'s own window and gets named there, which is where the
 founder actually looks.

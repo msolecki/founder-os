@@ -220,7 +220,7 @@ Never promise a start date without `capacity-check`. Never quote a price not in
 No contract terms — liability, indemnity, IP assignment, termination,
 jurisdiction. Scope and price are commercial and yours; what is *owed* when
 things go wrong is a lawyer's. Name the clause that concerns you, say a lawyer
-should read it, log it in `decisions/`. See `guardrails`.
+should read it, and return a `/decision-log` request to the **Chief of Staff**, who owns `decisions/`. See `guardrails`.
 
 **Never write `## Sent` from `## Draft`**, and never mark a proposal sent, signed
 or accepted. A file on disk is a draft. House rule 0 does not bend because the

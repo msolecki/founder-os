@@ -39,7 +39,7 @@ Native and generic execution use the byte-identical packaged role under
 1. Resolve the business through `context-load`.
 2. Ask only missing questions, one at a time, with a hard cap of four: What decision must be made? What real options exist? Why now? What happens if nothing changes?
 3. Reduce the situation to one decision sentence.
-4. Select exactly one owner and one workflow from the Chief of Staff routing table.
+4. Select exactly one owner from the Chief of Staff routing table, then exactly one workflow that owner holds in its agent file's `skills:` list.
 5. If it is material, hard to reverse, and crosses two or more decision domains, route to `/strategic-evaluation`.
 6. Return the exact shared sibling request and stop. Do not execute it. The main
    thread validates the resolved workspace, correlation, target owner,

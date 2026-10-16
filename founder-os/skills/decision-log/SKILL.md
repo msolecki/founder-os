@@ -4,6 +4,7 @@ description: Record an irreversible decision with the falsifier that would rever
 metadata:
   writes:
     - decisions/
+    - charter.md
 ---
 
 # Decision Log
@@ -74,6 +75,12 @@ Read first — house rule 1:
    an honest entry and a useful one to reread.
 6. **Record who decided: the founder.** Agents advise. If an agent decided, that
    is the entry's most important line and it needs to be visible.
+7. **If the decision rewrites the charter, write `charter.md` in the same pass.**
+   This is the only path by which `charter.md` changes after activation —
+   `monthly-review`'s "rewrite the charter" and a corrected timezone both land
+   here. Replace only the sections the founder decided (`## Business`,
+   `## North star`, `## Timezone`), and quote the replaced text verbatim under
+   `## Context` so the old charter survives the edit.
 
 ## Output
 
