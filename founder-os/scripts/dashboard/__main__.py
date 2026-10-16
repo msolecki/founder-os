@@ -186,9 +186,14 @@ def configured_business(live: Iterable):
     return None
 
 
+def _real_today() -> date:
+    """The machine's date. Its own function so a test can say which day it is."""
+    return datetime.now().date()
+
+
 def _today(raw: Optional[str]) -> date:
     if raw is None:
-        return datetime.now().date()
+        return _real_today()
     try:
         return date.fromisoformat(raw)
     except ValueError:
@@ -354,9 +359,17 @@ def main(argv: Optional[List[str]] = None) -> int:
             % (size, args.max_bytes))
         return EXIT_WRITE
 
+    # `--now` previews another day. The series is keyed by date and merge
+    # replaces that date's row, so persisting a preview overwrites the real
+    # history of a past day, or plants a future one, with today's readings —
+    # in the one file a rerun cannot rebuild. The page is regenerable; the
+    # series and the envelope beside it are kept to days that happened.
+    real = _real_today()
+    preview = today != real
+
     updated = []
     try:
-        for business, facts in payloads:
+        for business, facts in ([] if preview else payloads):
             derived = business.home / "_dashboard"
             ensure_gitignore(derived)
             write_atomic(derived / "facts.json", json.dumps(
@@ -390,6 +403,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     except OSError as error:
         sys.stderr.write("Could not write %s: %s\n" % (destination, error))
         return EXIT_WRITE
+    if preview:
+        sys.stderr.write(
+            "--now %s is not today (%s): this was a preview, so only the page "
+            "was written and no facts.json or snapshots.csv was changed.\n"
+            % (today.isoformat(), real.isoformat()))
     if args.open_page:
         import webbrowser
         webbrowser.open(destination.as_uri())
