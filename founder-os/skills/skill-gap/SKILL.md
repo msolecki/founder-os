@@ -109,9 +109,12 @@ Read first, in order — house rule 1:
 
 ## Output
 
-Write to `skills.md`, replacing any open gap that this supersedes:
+Write to `skills.md` under its one `## Gap` heading, as a dated `###` entry,
+replacing any open gap entry that this supersedes. `## Hypotheses` is replaced
+whole on every run; neither heading is ever written twice:
 
-    ## Gap — YYYY-MM-DD
+    ## Gap
+    ### YYYY-MM-DD
     Offer today: <one line from offer.md>
     Offer the bets require: <one line from goals.md>
     The gap: <capability, named narrowly enough to be learnable>
@@ -120,7 +123,8 @@ Write to `skills.md`, replacing any open gap that this supersedes:
     Cost: <h>/quarter × <rate> = <amount>/quarter
     Alternatives rejected: contractor <why> · tool <why> · automation <why>
     Verdict: learn | contract | buy | automate | not this quarter
-    ## Hypotheses (no instance in 90 days)
+    ## Hypotheses
+    No instance in the last 90 days:
     - <candidate> — would be confirmed by <the field in ## Retro that would have to say it>
 
 ## Guardrails

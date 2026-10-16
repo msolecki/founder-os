@@ -173,9 +173,12 @@ least evidence for and the one they will most reliably rewrite by hand. Five
 diffs a week beats three drafts a quarter. Ask for all five, not the interesting
 one.
 
-Append to `network.md` under `## Sweep`:
+Append one dated entry to `network.md` under its one `## Sweep` heading — a
+`###` entry, newest last, never a second `## Sweep` — and carry the earlier
+entries forward unchanged:
 
-    ## Sweep — YYYY-MM-DD
+    ## Sweep
+    ### YYYY-MM-DD
     Due: <n> | Sent: <n>/5 | Deferred to <date>: <n> | Excluded (live deal): <n>
     Proposed: <the giving the founder committed to> — bet: <B<n> | none> | none
 

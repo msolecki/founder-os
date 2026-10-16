@@ -4,6 +4,7 @@ description: Score the week's commitments against what actually happened and nam
 metadata:
   writes:
     - reviews/weekly/
+    - queue.md
 ---
 
 # Weekly Review

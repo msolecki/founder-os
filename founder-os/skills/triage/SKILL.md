@@ -5,6 +5,7 @@ metadata:
   writes:
     - reviews/daily/
     - inbox.md
+    - queue.md
 ---
 
 # Triage
@@ -37,6 +38,10 @@ Read first — house rule 1:
   was never in the room. This file is where that thought waits.
 - `goals.md` — the only ranking authority. Urgency is not one.
 - `reviews/daily/` — the last three briefs: has this pile already been triaged?
+  And their `## Triage` `Handed to triage` lines: the inbox lines a brief could
+  not rank, copied there verbatim before it emptied the inbox. **They are part of
+  this pile**, in the founder's own words, and a handed line that no later
+  `### — triage` entry has kept or dropped is still waiting for you.
 - `queue.md` — `## Doing`, because a keep that cannot be started is not a keep;
   and `## Dropped`, because an item you are about to triage for the third time is
   sitting there with the date it was killed and the reason, which is a lookup
@@ -89,11 +94,13 @@ averaging failure `context-load` warns about:
    the founder's own order and say plainly that the rest were cut without
    examination, which is what was going to happen to them anyway.
 
-   **Empty it even for the items you cut.** An inbox that keeps what triage did not
-   reach is a queue with no clock and no cap — the graveyard, arriving through the
-   one door built to have neither. A cut item is not deleted: it is a `Dropped:`
-   row in today's brief under `## Triage`, with its cost, where the next triage will
-   see it arrive again. The inbox is a door. Nothing lives in a door.
+   **Empty it even for the items you cut** — but only after today's entry, with
+   every cut line in it verbatim, has been written and re-read. An inbox that keeps
+   what triage did not reach is a queue with no clock and no cap — the graveyard,
+   arriving through the one door built to have neither. A cut item is not deleted:
+   it is a `Dropped:` row in today's `## Triage` entry, with its cost, where the
+   next triage will see it arrive again. The inbox is a door. Nothing lives in a
+   door.
 2. **Give each item an owner and a next action with a date.** No next action
    means it is not a thing, it is a worry. Worries do not get triaged. Name it
    as a worry and drop it — this alone usually clears two of the five.
@@ -117,21 +124,11 @@ averaging failure `context-load` warns about:
    finding is that the founder's list is theatre, and the pile is not a
    prioritisation problem.
 6. **Route the real ones by name.** Dropping is not deleting. Each dropped item
-   goes to the agent who owns that decision, with its next action attached:
-
-   | the item is about | it goes to |
-   |---|---|
-   | Direction, bets, what to kill | **Strategist** |
-   | Is this plan actually sound | **Board Member** |
-   | Who we serve, what we sell | **Positioning Advisor** |
-   | What happens next with a prospect | **Pipeline Coach** |
-   | Can we take this on, is it good enough | **Delivery Lead** |
-   | Can we afford it, does it make money | **CFO** |
-   | What goes in the calendar | **Focus Coach** |
-   | What capability to build next | **Skills Mentor** |
-   | What to publish | **Brand Editor** |
-   | Who to talk to, when to follow up | **Network Manager** |
-   | What to automate vs tolerate | **Ops Engineer** |
+   goes to the agent who owns that decision, with its next action attached. The
+   routing table is the Chief of Staff's own, in `agents/chief-of-staff.md` — you
+   are the Chief of Staff, and a second copy here is a second map that drifts:
+   this one dropped the **Portfolio Manager** and declared *which business gets
+   next week* not the company's work. Route by that list.
 
    If an item matches two rows, it is two items. If it matches none, it is not
    the company's work — say so rather than inventing an owner.
@@ -146,9 +143,15 @@ averaging failure `context-load` warns about:
 
 ## Output
 
-Append to today's `reviews/daily/YYYY-MM-DD.md`:
+Write into today's `reviews/daily/YYYY-MM-DD.md`, under its one `## Triage`
+heading — never a second `## Triage`. Add one `###` entry per run, below what
+is already there; the brief's own lines stay above it. If today's brief has not
+run yet, create the file with `# YYYY-MM-DD` and `## Triage` alone — a daily
+review carries an ordered subset of its headings, and the brief adds the rest
+above yours when it runs:
 
     ## Triage
+    ### HH:MM — triage
     Kept: [q-MMDDx] <item> — <the bet in goals.md it serves>
     Dropped:
     - <item> → <Agent> — <what it costs to not do this> (<3rd time: permanent>)

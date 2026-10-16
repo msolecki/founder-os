@@ -146,6 +146,14 @@ later, which is not where you want to find out.
 A heading may carry a dated suffix — `## Close — 2026-07`, `## Gap — 2026-07-15`.
 The section *name* is what is pinned; the suffix is free.
 
+**Each declared heading appears at most once, in the declared order.** A flat
+file carries every heading its key declares; a member of a directory key
+(`clients/<client>.md`, `reviews/daily/YYYY-MM-DD.md`) carries an ordered subset
+of that vocabulary. A skill that writes the same section again on every run —
+a weekly sweep, a triage run, a new hypothesis — never appends a second `##`:
+it adds a `### YYYY-MM-DD` entry under the one `## <Heading>`. Two `## Sweep —`
+headings in one file are refused by the gateway, on the second Friday.
+
 The failure this prevents is quiet and it is why the key exists. `founder-os-init`
 scaffolds these headings and nothing else. A skill told to "replace `## Shape`" in
 a file where nobody scaffolded `## Shape` will helpfully create it — and the next
