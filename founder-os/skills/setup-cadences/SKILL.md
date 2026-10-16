@@ -60,7 +60,10 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
   determines the scheduler; operating-system familiarity does not.
 - Unattended permission is a narrow capability, not trust in the whole host.
   Claude receives only the Founder OS MCP tool pattern; Codex runs with no
-  approvals in a workspace-write sandbox.
+  approvals in a workspace-write sandbox whose network access is pinned off on
+  the command line, whatever the founder's `config.toml` says. The run needs
+  only the local `founder-os-state` MCP server, so an offline shell loses
+  nothing and an injected instruction cannot reach the network.
 - Exact identity beats prefix matching. `a`, `acme`, `portfolio`, and the
   legacy unslugged fence are four different schedules.
 
@@ -73,9 +76,14 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 
    For Codex, it is:
 
-       codex -a never exec --sandbox workspace-write --ephemeral -C <workdir> '$founder-os:<workflow>'
+       codex -a never -c sandbox_workspace_write.network_access=false exec --sandbox workspace-write --ephemeral -C <workdir> '$founder-os:<workflow>'
 
-   If the binary is under `/.nvm/`, disclose that a Node upgrade can move it.
+   Pass the path `command -v` printed, not its symlink target: the manager
+   schedules that path unresolved, so a Homebrew, npm, or native-installer
+   link keeps working across upgrades and `PATH` keeps the directory that
+   holds a colocated runtime such as `node`. It resolves the link only to
+   check that it ends at an executable file. If the binary is under `/.nvm/`,
+   disclose that a Node version switch can move it.
 
    Run `<binary> --help` before the preview, but do not treat it as the
    complete flag list. Hosts hide accepted flags from help output: Claude Code
@@ -133,9 +141,17 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
    silently overwrites a change made while the founder was reviewing the
    preview.
 
-7. **Smoke-test the exact host argv.** Run the manager's `smoke` command for
-   `daily-brief` (or `portfolio-review` for the portfolio identity). It uses a
-   cron-like minimal environment and the previewed working directory. A failed
+7. **Smoke-test the exact host argv.** Run:
+
+       python3 <plugin>/scripts/cadence_manager.py smoke \
+         --host <claude|codex> --binary <absolute-binary> \
+         --workspace <absolute-workspace> --workdir <absolute-parent> \
+         --log-root <absolute-home>/.founder-os/logs [--slug <exact-slug>] \
+         --workflow <daily-brief|portfolio-review>
+
+   Use `portfolio-review` for the portfolio identity. Smoke takes no
+   `--scheduler`. It uses a cron-like minimal environment and the previewed
+   working directory. A failed
    auth or flag check is a failed setup, not a warning to discover tomorrow.
 
 8. **Report the installed identity and next run.** Name the scheduler, backup,
@@ -144,12 +160,19 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 
 ## Removal
 
-Removal is exact and explicit:
+Removal is exact and explicit. Show the scheduler and identity, ask once,
+and only on a yes run:
 
     python3 <plugin>/scripts/cadence_manager.py remove \
       --host <host> --binary <binary> --workspace <workspace> \
       --workdir <parent> --log-root <log-root> --scheduler <scheduler> \
-      [--slug <slug>] --identity <exact-slug|founder-os|all>
+      [--slug <slug>] --identity <exact-slug|founder-os|all> \
+      --backup-root <absolute-home>/.founder-os
+
+Before it changes anything, remove writes a create-only backup of the crontab
+or of the unit files it is about to delete, and prints its `backup_path`; name
+that path to the founder. It touches only artifacts that exist, so a second
+remove or a partly installed set is cleaned without error.
 
 One identity never prefix-matches a sibling. The literal `all` is required to
 remove every Founder OS schedule. Uninstalling the plugin does not implicitly

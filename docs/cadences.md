@@ -64,16 +64,25 @@ claude -p /founder-os:<workflow> --permission-mode dontAsk \
 Codex jobs use the documented non-interactive command and dollar skill syntax:
 
 ```text
-codex -a never exec --sandbox workspace-write --ephemeral \
+codex -a never -c sandbox_workspace_write.network_access=false \
+  exec --sandbox workspace-write --ephemeral \
   -C <workspace-parent> '$founder-os:<workflow>'
 ```
 
+The Codex run needs only the local `founder-os-state` MCP server, so its shell
+sandbox is pinned offline on the command line. A `network_access = true` in
+your own `~/.codex/config.toml` does not reach scheduled runs.
+
 The manager passes argument arrays, never `/bin/sh -c`. Cron fields use POSIX
 quoting and escape cron's special percent sign. Launchd uses
-`ProgramArguments`; systemd uses direct `ExecStart` tokens. Each scheduler gets
-a minimal `PATH` beginning with the selected host binary's directory, which
-keeps `/usr/bin/env`-based installations working without loading a shell
-profile.
+`ProgramArguments`; systemd uses direct `ExecStart` tokens and writes
+`WorkingDirectory=` and `StandardOutput=` bare, because systemd does not
+unquote them. Each scheduler gets a minimal `PATH` beginning with the selected
+host binary's directory, which keeps `/usr/bin/env`-based installations
+working without loading a shell profile. The binary is scheduled at the path
+you chose, not its symlink target, so a package-manager upgrade does not
+strand the schedule. Cron, launchd, and systemd times are all derived from one
+cron table in the manager.
 
 Both hosts run scheduled sessions without persisting their conversation
 rollouts. Durable decisions and receipts stay in the Founder OS workspace;
@@ -124,7 +133,8 @@ the host scheduler.
 ## Removal
 
 Use the manager through `setup-cadences` or its `remove` subcommand. Removal
-requires one exact identity. The literal `all` is the only request that removes
+requires one exact identity and a backup root; it writes a create-only backup
+of what it removes and prints the path. The literal `all` is the only request that removes
 every Founder OS schedule. Uninstalling the plugin leaves the Markdown
 workspace and scheduler state untouched until you explicitly remove them.
 

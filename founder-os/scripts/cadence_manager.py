@@ -20,7 +20,6 @@ import re
 import shlex
 import stat
 import subprocess
-import sys
 import tempfile
 from typing import Callable, Dict, Mapping, Optional, Sequence, Tuple
 
@@ -137,6 +136,10 @@ def host_argv(config: CadenceConfig, workflow: str) -> Tuple[str, ...]:
         str(config.binary),
         "-a",
         "never",
+        # Pin the shell sandbox offline whatever the user's config.toml says:
+        # the run needs only the founder-os-state MCP server, which is local.
+        "-c",
+        "sandbox_workspace_write.network_access=false",
         "exec",
         "--sandbox",
         "workspace-write",
@@ -266,29 +269,60 @@ def remove_crontab(current: bytes, identity: str) -> bytes:
     return _filter_crontab(current, {_normalized_identity(identity)})
 
 
+def _cron_fields(workflow: str):
+    """The single schedule table, parsed: (minute, hour, day, month, weekday).
+
+    Each field is None for "*" or a tuple of tokens, where a token is an int
+    or an inclusive (first, last) range.  launchd and systemd both derive from
+    this, so a cadence moved in BUSINESS_CADENCES moves on every scheduler.
+    """
+    cron = next(
+        cadence.cron
+        for cadence in BUSINESS_CADENCES + PORTFOLIO_CADENCES
+        if cadence.workflow == workflow
+    )
+    fields = []
+    for field in cron.split():
+        if field == "*":
+            fields.append(None)
+            continue
+        tokens = []
+        for token in field.split(","):
+            first, _, last = token.partition("-")
+            tokens.append((int(first), int(last)) if last else int(first))
+        fields.append(tuple(tokens))
+    if len(fields) != 5:
+        raise CadenceError("cadence cron must have five fields")
+    minute, hour = fields[0], fields[1]
+    if (
+        minute is None or len(minute) != 1 or not isinstance(minute[0], int)
+        or hour is None or len(hour) != 1 or not isinstance(hour[0], int)
+    ):
+        raise CadenceError("cadence cron must name one minute and one hour")
+    return minute[0], hour[0], fields[2], fields[3], fields[4]
+
+
+def _expand(tokens) -> Tuple[int, ...]:
+    values = []
+    for token in tokens:
+        if isinstance(token, tuple):
+            values.extend(range(token[0], token[1] + 1))
+        else:
+            values.append(token)
+    return tuple(values)
+
+
 def _launchd_calendar(workflow: str):
-    values = {
-        "week-plan": {"Weekday": 1, "Hour": 8, "Minute": 30},
-        "weekly-review": {"Weekday": 5, "Hour": 16, "Minute": 0},
-        "pipeline-review": {"Weekday": 4, "Hour": 10, "Minute": 0},
-        "follow-up-sweep": {"Weekday": 5, "Hour": 14, "Minute": 0},
-        "content-plan": {"Weekday": 3, "Hour": 10, "Minute": 0},
-        "calendar-audit": {"Weekday": 5, "Hour": 15, "Minute": 0},
-        "signal-check": {"Weekday": 5, "Hour": 15, "Minute": 30},
-        "revenue-review": {"Day": 1, "Hour": 9, "Minute": 0},
-        "portfolio-review": {"Weekday": 1, "Hour": 8, "Minute": 15},
-    }
-    if workflow == "daily-brief":
-        return [
-            {"Weekday": weekday, "Hour": 8, "Minute": 0}
-            for weekday in range(1, 6)
-        ]
-    if workflow == "quarterly-planning":
-        return [
-            {"Month": month, "Day": 1, "Hour": 11, "Minute": 0}
-            for month in (1, 4, 7, 10)
-        ]
-    return values[workflow]
+    minute, hour, day, month, weekday = _cron_fields(workflow)
+    entries = [{"Hour": hour, "Minute": minute}]
+    for key, tokens in (("Month", month), ("Day", day), ("Weekday", weekday)):
+        if tokens is not None:
+            entries = [
+                dict(entry, **{key: value})
+                for entry in entries
+                for value in _expand(tokens)
+            ]
+    return entries[0] if len(entries) == 1 else entries
 
 
 def _unit_stem(config: CadenceConfig, workflow: str) -> str:
@@ -321,6 +355,12 @@ def render_launchd(config: CadenceConfig) -> Dict[str, bytes]:
     return artifacts
 
 
+def _systemd_bare(value: str) -> str:
+    # WorkingDirectory= and StandardOutput= take the raw value: systemd does
+    # not unquote them, so only the specifier percent is escaped.
+    return value.replace("%", "%%")
+
+
 def _systemd_quote(value: str, *, command: bool = False) -> str:
     escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     if command:
@@ -329,19 +369,28 @@ def _systemd_quote(value: str, *, command: bool = False) -> str:
 
 
 def _systemd_calendar(workflow: str) -> str:
-    return {
-        "daily-brief": "Mon..Fri *-*-* 08:00:00",
-        "week-plan": "Mon *-*-* 08:30:00",
-        "weekly-review": "Fri *-*-* 16:00:00",
-        "pipeline-review": "Thu *-*-* 10:00:00",
-        "follow-up-sweep": "Fri *-*-* 14:00:00",
-        "content-plan": "Wed *-*-* 10:00:00",
-        "calendar-audit": "Fri *-*-* 15:00:00",
-        "signal-check": "Fri *-*-* 15:30:00",
-        "revenue-review": "*-*-01 09:00:00",
-        "quarterly-planning": "*-01,04,07,10-01 11:00:00",
-        "portfolio-review": "Mon *-*-* 08:15:00",
-    }[workflow]
+    minute, hour, day, month, weekday = _cron_fields(workflow)
+    names = ("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+    def join(tokens, render) -> str:
+        if tokens is None:
+            return "*"
+        return ",".join(
+            render(token[0]) + ".." + render(token[1])
+            if isinstance(token, tuple)
+            else render(token)
+            for token in tokens
+        )
+
+    date = "*-{0}-{1} {2:02d}:{3:02d}:00".format(
+        join(month, "{0:02d}".format),
+        join(day, "{0:02d}".format),
+        hour,
+        minute,
+    )
+    if weekday is None:
+        return date
+    return join(weekday, names.__getitem__) + " " + date
 
 
 def render_systemd(config: CadenceConfig) -> Dict[str, bytes]:
@@ -361,13 +410,13 @@ def render_systemd(config: CadenceConfig) -> Dict[str, bytes]:
             "StandardOutput={log}\nStandardError={log}\n"
         ).format(
             workflow=cadence.workflow,
-            workdir=_systemd_quote(str(config.workdir)),
+            workdir=_systemd_bare(str(config.workdir)),
             environment=_systemd_quote(
                 "FOUNDER_OS_HOME=" + str(config.workspace)
             ),
             path=_systemd_quote("PATH=" + _host_path(config)),
             command=command,
-            log=_systemd_quote(
+            log=_systemd_bare(
                 "append:" + str(_log_path(config, cadence.workflow))
             ),
         )
@@ -508,7 +557,12 @@ def _run(
 def _read_crontab(runner: Callable[..., object]) -> bytes:
     result = _run(runner, ("crontab", "-l"))
     returncode = getattr(result, "returncode", None)
-    if returncode == 1:
+    stderr = getattr(result, "stderr", "")
+    if (
+        returncode == 1
+        and isinstance(stderr, str)
+        and "no crontab" in stderr.lower()
+    ):
         return b""
     if returncode != 0:
         raise CadenceError("could not read user crontab")
@@ -656,6 +710,30 @@ def _atomic_create(path: Path, content: bytes) -> None:
             pass
 
 
+def _write_backup(
+    config: CadenceConfig,
+    scheduler: str,
+    backup_root: Path,
+    kind: str,
+    identity: str,
+    source: bytes,
+    timestamp: Optional[str],
+) -> Path:
+    if not backup_root.is_absolute():
+        raise CadenceError("backup root must be absolute")
+    if _inside(backup_root, config.workspace):
+        raise CadenceError("backup root cannot be inside the workspace")
+    timestamp = timestamp or dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    if re.fullmatch(r"[0-9]{8}-[0-9]{6}", timestamp) is None:
+        raise CadenceError("invalid snapshot timestamp")
+    suffix = ".txt" if scheduler == "cron" else ".json"
+    backup = backup_root / "{0}-{1}-{2}-{3}{4}".format(
+        scheduler, identity, kind, timestamp, suffix
+    )
+    _atomic_create(backup, source)
+    return backup
+
+
 def snapshot(
     config: CadenceConfig,
     scheduler: str,
@@ -664,34 +742,21 @@ def snapshot(
     runner: Callable[..., object] = subprocess.run,
     timestamp: Optional[str] = None,
 ) -> Dict[str, object]:
-    if not backup_root.is_absolute():
-        raise CadenceError("backup root must be absolute")
-    try:
-        backup_root.resolve().relative_to(config.workspace.resolve())
-    except ValueError:
-        pass
-    else:
-        raise CadenceError("backup root cannot be inside the workspace")
-    timestamp = timestamp or dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    if re.fullmatch(r"[0-9]{8}-[0-9]{6}", timestamp) is None:
-        raise CadenceError("invalid snapshot timestamp")
     if scheduler == "cron":
         source = _read_crontab(runner)
-        suffix = ".txt"
     elif scheduler in {"launchd", "systemd"}:
         source = _state_bytes(_read_file_state(config, scheduler))
-        suffix = ".json"
     else:
         raise CadenceError("unsupported scheduler")
-    backup = backup_root / (
-        "{0}-{1}-backup-{2}{3}".format(
-            scheduler,
-            _file_identity(config.slug),
-            timestamp,
-            suffix,
-        )
+    backup = _write_backup(
+        config,
+        scheduler,
+        backup_root,
+        "backup",
+        _file_identity(config.slug),
+        source,
+        timestamp,
     )
-    _atomic_create(backup, source)
     return _seal(
         {
             "version": MANIFEST_VERSION,
@@ -904,28 +969,51 @@ def remove(
     config: CadenceConfig,
     scheduler: str,
     identity: str,
+    backup_root: Path,
     *,
     runner: Callable[..., object] = subprocess.run,
-) -> None:
+    timestamp: Optional[str] = None,
+) -> Path:
+    """Remove one exact identity (or ``all``) after a create-only backup.
+
+    Returns the backup path so the caller can disclose it.
+    """
     if identity != "all":
         expected = config.slug if config.slug is not None else "founder-os"
         if _normalized_identity(identity) != _normalized_identity(expected):
             raise CadenceError("removal identity does not match config")
+    backup_identity = "all" if identity == "all" else _file_identity(config.slug)
     if scheduler == "cron":
         current = _read_crontab(runner)
         updated = remove_crontab(current, identity)
-        with tempfile.TemporaryDirectory() as temporary:
-            _install_crontab(updated, runner, Path(temporary))
-        return
+        backup = _write_backup(
+            config, scheduler, backup_root, "removal", backup_identity,
+            current, timestamp,
+        )
+        _install_crontab(updated, runner, backup.parent)
+        return backup
     directory = _scheduler_directory(scheduler)
-    names = _selected_names(config, scheduler)
     if identity == "all":
         pattern = re.compile(r"com\.founder-os\.[A-Za-z0-9._-]+\..+\.(?:plist|service|timer)")
-        names = {
+        candidates = {
             path.name
             for path in directory.iterdir()
             if pattern.fullmatch(path.name)
         } if directory.is_dir() else set()
+    else:
+        candidates = _selected_names(config, scheduler)
+    # Only artifacts that exist: a second remove or a partial install has
+    # nothing to disable for the missing units.
+    names = {name for name in candidates if (directory / name).is_file()}
+    backup = _write_backup(
+        config,
+        scheduler,
+        backup_root,
+        "removal",
+        backup_identity,
+        _state_bytes({name: (directory / name).read_bytes() for name in names}),
+        timestamp,
+    )
     if scheduler == "systemd":
         for name in sorted(name for name in names if name.endswith(".timer")):
             result = _run(
@@ -936,7 +1024,7 @@ def remove(
                 raise CadenceError("systemd timer disable failed")
     for name in sorted(names):
         path = directory / name
-        if scheduler == "launchd" and path.exists():
+        if scheduler == "launchd":
             _run(
                 runner,
                 ("launchctl", "bootout", "gui/" + str(os.getuid()), str(path)),
@@ -949,6 +1037,7 @@ def remove(
         result = _run(runner, ("systemctl", "--user", "daemon-reload"))
         if getattr(result, "returncode", None) != 0:
             raise CadenceError("systemd daemon-reload failed")
+    return backup
 
 
 def smoke(
@@ -997,22 +1086,36 @@ def _read_json(path: Path) -> Dict[str, object]:
     return document
 
 
-def _add_config_arguments(parser: argparse.ArgumentParser) -> None:
+def _add_config_arguments(
+    parser: argparse.ArgumentParser, *, scheduler: bool = True
+) -> None:
     parser.add_argument("--host", choices=("claude", "codex"), required=True)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("--workdir", type=Path, required=True)
     parser.add_argument("--log-root", type=Path, required=True)
     parser.add_argument("--slug")
-    parser.add_argument(
-        "--scheduler", choices=("cron", "launchd", "systemd"), required=True
-    )
+    if scheduler:
+        parser.add_argument(
+            "--scheduler", choices=("cron", "launchd", "systemd"), required=True
+        )
 
 
-def _config_from_args(args: argparse.Namespace) -> CadenceConfig:
+def _config_from_args(
+    args: argparse.Namespace, *, require_binary: bool = True
+) -> CadenceConfig:
+    # Schedule the path the founder chose, not its symlink target: an npm,
+    # Homebrew, or native-installer link survives upgrades and keeps PATH on
+    # the directory that holds the colocated runtime.  Resolve only to check.
+    binary = Path(os.path.abspath(args.binary))
+    target = binary.resolve()
+    if require_binary and not (
+        target.is_file() and os.access(str(target), os.X_OK)
+    ):
+        raise CadenceError("host binary is not an executable file")
     return CadenceConfig(
         host=args.host,
-        binary=args.binary.resolve(),
+        binary=binary,
         workspace=args.workspace.resolve(),
         workdir=args.workdir.resolve(),
         log_root=args.log_root.resolve(),
@@ -1043,9 +1146,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     remove_parser = commands.add_parser("remove")
     _add_config_arguments(remove_parser)
     remove_parser.add_argument("--identity", required=True)
+    remove_parser.add_argument("--backup-root", type=Path, required=True)
+    remove_parser.add_argument("--timestamp")
 
     smoke_parser = commands.add_parser("smoke")
-    _add_config_arguments(smoke_parser)
+    _add_config_arguments(smoke_parser, scheduler=False)
     smoke_parser.add_argument("--workflow", required=True)
 
     args = parser.parse_args(argv)
@@ -1081,11 +1186,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         elif args.command == "apply":
             apply(_read_json(args.manifest), _read_json(args.snapshot))
         elif args.command == "remove":
-            remove(
-                _config_from_args(args),
+            backup = remove(
+                _config_from_args(args, require_binary=False),
                 args.scheduler,
                 args.identity,
+                args.backup_root.resolve(),
+                timestamp=args.timestamp,
             )
+            print(json.dumps({"backup_path": str(backup)}))
         else:
             smoke(
                 _config_from_args(args),
