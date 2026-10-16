@@ -37,6 +37,24 @@ byte-for-byte `role_instructions`, one `workflow`, one bounded `handoff`, and on
 tools. `open_role_session` remains a main-thread operation and is never exposed
 to a role.
 
+A role session lasts 30 minutes from `open_role_session`; after that every
+call on its capability returns `ROLE_SESSION_INVALID` and the main thread opens
+a new one.
+
+- `read_state` answers per path. A file that does not exist comes back as
+  `{path, exists: false, missing_sections}` — the headings a new file needs —
+  and the other paths in the batch still come back.
+- `write_owned_state` takes exactly one mode: `expected_sha256` of the file it
+  replaces, or `create_only: true` for a new file. Both, neither, or a malformed
+  value returns `STATE_IO_ERROR`, not `STALE_WRITE`: re-reading cannot fix a bad
+  argument.
+- `read_reference` serves the role's own `agents/{role}.md`, the active
+  workflow's `skills/{workflow}/SKILL.md`, `references/guidance.md`,
+  `references/house-rules.md`, `references/ownership.yaml`,
+  `references/multi-business.md`, this file, `references/ingestion-gate.md`,
+  `references/linking.md`, `references/thresholds.yaml`, and the two plugin
+  manifests — nothing else.
+
 ## Workflow result
 
 A completed role returns exactly these structured inputs to the main thread:

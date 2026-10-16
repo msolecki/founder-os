@@ -50,7 +50,10 @@ Precedence, most explicit wins:
    cadence accepts the slug as its first argument.
 2. **`FOUNDER_OS_HOME`** — set in the environment; each scheduled job carries
    its business's absolute home.
-3. **Registry `default:`** — when nothing above says otherwise.
+3. **Registry `default:`** — when nothing above says otherwise, and only while
+   that business is `active`. A paused `default:` is ignored, not refused:
+   with exactly one active business that one is used; with more than one, name
+   the business (1).
 4. **No registry** — the classic single-business resolution: `FOUNDER_OS_HOME`
    or `./founder-os/`. Every install before the registry existed keeps working
    untouched.
@@ -85,13 +88,16 @@ the split is that plan's input.
 it **registers**:
 
 1. Ask for the slug and the new workspace path.
-2. Scaffold the new workspace exactly as ever (from `workspace_files:`).
+2. Scaffold the new workspace exactly as ever: the Chief of Staff's own
+   `workspace_files:` entries; every other owner creates its file on its first
+   write.
 3. Create or update `~/.founder-os/businesses.yaml` — adding the *existing*
    workspace under a slug too if the registry is being created now, and asking
    which is `default:`.
-4. If this is the **second active** business: scaffold the portfolio workspace
-   from `portfolio_files:` and name `/portfolio-review` as the cadence that now
-   has a reason to exist.
+4. If this is the **second active** business: create the portfolio workspace
+   directory and name `/portfolio-review` as the cadence that now has a reason
+   to exist. `portfolio.md` is the Portfolio Manager's, and its first
+   `portfolio-review` creates it.
 
 ## What deliberately does not change
 

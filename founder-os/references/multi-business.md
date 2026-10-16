@@ -51,7 +51,10 @@ Precedence, most explicit wins:
 2. **`FOUNDER_OS_HOME`** — set in the environment; each scheduled job carries
    its business's absolute home. The registry maps the path back to a slug for
    display.
-3. **Registry `default:`** — when nothing above says otherwise.
+3. **Registry `default:`** — when nothing above says otherwise, and only while
+   that business is `active`. A paused `default:` is ignored, not refused:
+   with exactly one active business that one is used; with more than one, name
+   the business (1).
 4. **No registry** — the classic single-business resolution: `FOUNDER_OS_HOME`
    or `./founder-os/`. This is every install before the registry existed, and
    it keeps working untouched.

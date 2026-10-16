@@ -74,10 +74,10 @@ right now*.
 
 | Check | Trips when | Hands to |
 |---|---|---|
-| **Missing files** | An entry in `workspace_files:` doesn't exist — its owner has nowhere to write. | repair (scaffold) |
+| **Missing files** | A Chief of Staff entry in `workspace_files:` doesn't exist. Another owner's file that was never written is reported as `not yet written` — its owner's first run creates it. | repair (scaffold) |
 | **Section drift** | A flat file lost a heading `sections:` declares, or grew one the map doesn't. (A dated suffix like `## Close — 2026-07` is *not* drift.) | repair |
-| **Stale metrics** | `metrics.md` unmodified > 30 days — every agent is quoting last quarter's number. | CFO |
-| **Metrics abandoned** | `metrics.md` unmodified > 60 days — stop reporting, escalate; label everything downstream a guess. | CFO |
+| **Stale metrics** | The close is > 30 days old, dated from the `Closed:` line, else the newest `## Close — YYYY-MM` heading, else the `## Runway — as of` date (the file's mtime only when none is written) — every agent is quoting last quarter's number. A fresh workspace reports `no close yet`. | CFO |
+| **Metrics abandoned** | The close is > 60 days old by the same count — stop reporting, escalate; label everything downstream a guess. | CFO |
 | **Goals without bets** | `goals.md` has no bet with a numeric kill condition and the quarter is > ⅓ gone. | Strategist |
 | **Orphan clients** | A `clients/*.md` names no client `metrics.md` shows revenue for, unmodified > 90 days (ended-and-not-closed, or delivered-and-not-billed). | Delivery Lead |
 | **Empty decision log** | `decisions/` empty after 30 days of use — house rule 3 isn't being followed. | Chief of Staff |

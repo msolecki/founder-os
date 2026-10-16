@@ -175,8 +175,8 @@ Three kinds of skill:
   their `metadata.writes` must be owned by that same agent.
 - **System skills** — `founder-os-init`, `founder-os-doctor`, `context-load`,
   `guardrails`, `state-integrity`, `ingestion-gate`. Cross-cutting; they write no
-  workspace file of their own (init scaffolds the whole workspace regardless of
-  owner). Every agent lists the three *universal* ones: `guardrails`,
+  workspace file of their own (init scaffolds only the Chief of Staff's paths;
+  every other owner creates its file on its first write). Every agent lists the three *universal* ones: `guardrails`,
   `state-integrity`, `ingestion-gate`.
 - **Standalone skills** — `setup-cadences`, `skill-forge` and `dashboard`. The
   founder runs them directly because they modify host schedule state, the
@@ -191,7 +191,7 @@ Three kinds of skill:
 |---|---|---|
 | `SessionStart` (startup/resume/clear/compact) | `session-context.py` | Injects `founder-os/references/guidance.md` into the session as additional context. This is how the house rules and state map are present in every session. |
 | `UserPromptSubmit` and `SubagentStart` | `record-agent.py` | Records `turn_id → agent_type` for Codex (Claude includes `agent_type` directly; Codex identifies later tool calls by `turn_id`). Lets one guard enforce both hosts. The same script is registered under both events and each registration passes `--event`, because a payload field that stops arriving would record nothing for the main turn — and the guard denies every call on a turn it cannot resolve. |
-| `PreToolUse` on direct file, shell, web, and MCP tools | `ownership-guard.py` | Denies known roles direct file/outbound/unknown-MCP access, denies self-elevation, and checks gateway capabilities against native role identity. |
+| `PreToolUse` on every tool | `ownership-guard.py` | Denies known roles every tool but the gateway (and the harmless `ToolSearch` and `TodoWrite`), denies self-elevation, and checks gateway capabilities against native role identity. A generic fallback (`general-purpose`, `default`) gets the same lockdown from its first gateway call that spends a role capability (`docs/enforcement.md`). |
 
 The gateway and guard are covered in full in
 [`enforcement.md`](enforcement.md). The gateway is the authoritative state

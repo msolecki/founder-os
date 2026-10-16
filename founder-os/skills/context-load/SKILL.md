@@ -44,7 +44,7 @@ Then, and only then, the one file your decision owns.
    workspace is `FOUNDER_OS_HOME` or `./founder-os/`, as it always was. If it
    exists, apply the precedence in `references/multi-business.md`: a slug named
    in the invocation or the session wins; else `FOUNDER_OS_HOME` (mapped back
-   to its slug for display); else the registry's `default:`. **With more than
+   to its slug for display); else the registry's `default:` (ignored while it is paused). **With more than
    one active business and no signal, ask** — one question, one word of answer.
    Guessing which company a question is about is not a time saving; it is
    advice filed under the wrong business, quoted back from the wrong
@@ -82,12 +82,11 @@ Then, and only then, the one file your decision owns.
    the Pipeline Coach, `clients/` for the Delivery Lead. That is the fourth
    file, and for most cadences it is the last.
 
-   **`list_state` before `read_state`.** A declared file stays absent until its
+   **An absent file is an answer.** A declared file stays absent until its
    owner first writes it — nobody scaffolds another owner's file — and
-   `read_state` refuses a whole batch that names an absent path. Read only what
-   the listing shows, and report every declared file it does not show as the
-   empty input it is: *"no `pipeline.md` yet"*, not an error and not a gap to
-   fill.
+   `read_state` returns it as `exists: false` beside the files that do exist.
+   Report it as the empty input it is: *"no `pipeline.md` yet"*, not an error
+   and not a gap to fill.
 5. **Stop loading.** At most one additional file, and only if the founder's
    question is explicitly about it — so two files beyond the three, counting your
    own. This is a rule with a cost attached: an agent holding every file in the

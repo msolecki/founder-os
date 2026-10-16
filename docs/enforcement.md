@@ -59,7 +59,7 @@ Failures use one stable code and one recovery action:
 | `PATH_OUTSIDE_WORKSPACE` | Path or symlink escaped the bounded root; refuse without guessing another path. |
 | `ROLE_NOT_OWNER` | The role does not own the target; hand off to the canonical owner. |
 | `STALE_WRITE` | The file changed since read; re-read, reconcile, then retry once. |
-| `INVALID_DOCUMENT_STRUCTURE` | Required headings or lifecycle shape are absent; carry every heading `ownership.yaml` declares for the path, in its order and no others. A read reports `missing_sections` — the declared headings the file does not carry in position — before the write is attempted. |
+| `INVALID_DOCUMENT_STRUCTURE` | Required headings or lifecycle shape are absent; a flat file carries exactly the headings `ownership.yaml` declares for it, in that order and no others; a directory member carries an ordered subset of its directory's declared vocabulary, each heading at most once and none undeclared (a ` — <suffix>` after a declared name is allowed in both). A read reports `missing_sections` — the declared headings the file does not carry in position — before the write is attempted. |
 | `STATE_IO_ERROR` | A bounded filesystem operation failed; preserve the original and surface the error. |
 
 ## What the host guard does
@@ -79,8 +79,10 @@ For a known packaged role, the guard:
    bypass the gateway;
 2. denies shell, web, nested agents (`Task`, `Agent`), and every
    non-Founder-OS MCP tool under house rule 0;
-3. permits only the eight known local gateway actions, and denies any other
-   tool it does not recognize;
+3. permits only the eight known local gateway actions plus the host-internal
+   `ToolSearch` (which a role needs to load its deferred gateway tools on
+   Claude Code) and `TodoWrite`, and denies any other tool it does not
+   recognize;
 4. denies `open_role_session` to subagents so they cannot mint or elevate their
    own authority; and
 5. requires a live capability whose role matches that identity.
@@ -91,7 +93,9 @@ identity — Claude's `agent_id`, else Codex's `turn_id`, else the `session_id`,
 which locks every generic agent of that session — and from then on the guard
 treats it as that role, with all five rules above. A binding the guard cannot
 persist denies the gateway call, and a binding it cannot read denies the tool;
-a binding older than 24 hours lapses. A generic call carrying none of the three
+a binding older than 24 hours lapses. A Codex `turn_id` the recorder mapped to
+the main thread is never rebound: a generic gateway call on that turn leaves the
+mapping as it is. A generic call carrying none of the three
 identifiers has nothing to bind to: the guard logs it and the capability is
 spent unbound, the same fail-open as a call with no identity marker at all.
 The lockdown starts at the fallback's first gateway call, so the main thread

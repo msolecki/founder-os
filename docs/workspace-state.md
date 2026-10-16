@@ -15,8 +15,9 @@ It has two halves that together form one contract:
   too. A heading may carry a dated suffix (`## Close — 2026-07`); the section
   *name* is pinned, the suffix is free.
 
-Both halves are enforced four ways: `founder-os-init` scaffolds exactly these
-headings; the gateway resolves ownership and required structure before a
+Both halves are enforced four ways: a new file is created with exactly these
+headings (by `founder-os-init` for the Chief of Staff's paths, by each other
+owner on its first write); the gateway resolves ownership and required structure before a
 hash-guarded atomic write; `founder-os-doctor` reports a live file that has lost
 or grown a section; and the build validator fails if a skill declares a path the
 map does not own.

@@ -164,7 +164,7 @@ The full recovery branches are in
 |---|---|---|
 | Agents | `founder-os/agents/*.md` | 13 role definitions. Every role exposes the same bounded state-gateway tool surface and four mandated headings. |
 | Skills | `founder-os/skills/*/SKILL.md` | 57 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
-| Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (what init scaffolds), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
+| Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (the expected inventory; init scaffolds the Chief of Staff's entries, each other owner creates its own on first write), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
 | Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Maps Claude `agent_type` or Codex `turn_id`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the local gateway. |
 | Validator | `scripts/validate_package.py` | 21 build-time checks (below). CI runs it on every push. |
@@ -181,7 +181,7 @@ build if a skill writes a path its agent doesn't own. At run time, that owner
 uses a role capability to read through and persist through `founder-os-state`;
 the main thread orchestrates sibling roles but never substitutes its own write.
 What's *inside* a file is pinned too: `sections:` lists the allowed `##`
-headings per path, init scaffolds exactly those, and `founder-os-doctor` reports drift in a live
+headings per path, every new file is created with exactly those, and `founder-os-doctor` reports drift in a live
 workspace. Claims entering the workspace are tiered (FACT / VALIDATE /
 DISREGARD, `references/ingestion-gate.md`) and stamped with provenance inline;
 entities shared across files are `[[slug]]` links (`references/linking.md`),
@@ -264,7 +264,7 @@ CI (`.github/workflows/ci.yml`) runs all six on every push and PR.
    `ownership.yaml` `owns:` — and make sure the agent whose `skills[]` will
    list your skill owns those paths.
 3. New file or heading? Add it to `workspace_files:`/`owns:`/`sections:` in the
-   same change — init scaffolds from the map, and a heading the map doesn't
+   same change — the gateway accepts only what the map declares, and a heading the map doesn't
    declare is drift the doctor will report on someone's real workspace.
 4. Write `## Beliefs`: at least 3 principles a competent generic advisor would
    *not* say. The count and placement are machine-checked; the bar is held by
