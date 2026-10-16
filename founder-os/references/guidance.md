@@ -13,8 +13,8 @@ missed. Everything else is a skill, and skills load when they are needed.
 
 `FOUNDER_OS_HOME`, default `./founder-os/`. Markdown, one owner per file:
 inbox, charter, goals, metrics, offer, pipeline, week, queue, clients/,
-drafts/{outreach,proposals,content}/, network, skills, content, voice, systems,
-decisions/, evaluations/, experiments/,
+clients/_capacity, drafts/{outreach,proposals,content}/, network, skills,
+content, voice, systems, decisions/, evaluations/, experiments/,
 reviews/{daily,weekly,monthly,quarterly}/.
 
 **More than one business?** The registry is `~/.founder-os/businesses.yaml` —

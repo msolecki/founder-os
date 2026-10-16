@@ -19,6 +19,7 @@ workspace_files:
   - week.md
   - queue.md
   - clients/
+  - clients/_capacity.md
   - drafts/outreach/
   - drafts/proposals/
   - drafts/content/
@@ -86,6 +87,7 @@ owns:
     - week.md
   delivery-lead:
     - clients/
+    - clients/_capacity.md
   network-manager:
     - network.md
   skills-mentor:
@@ -123,7 +125,7 @@ owns:
 # headings, in this order, each at most once, and none that is not listed. A
 # repeated dated entry (a sweep, a triage run) is a `### <date>` under its one
 # `## <Heading>`, never a second H2. `clients/_capacity.md` is an aggregate
-# rather than a client file and carries none of the client headings.
+# rather than a client file, so it is its own key below with its own heading.
 sections:
   # The portfolio file. One per install, not per business — it exists to hold
   # the one decision no per-business file can: how the founder's hours and cash
@@ -215,6 +217,10 @@ sections:
     - "## Scope"
     - "## Health"
     - "## Retro"
+  # The capacity-check aggregate: one `## Capacity — <date>` block, replaced
+  # on every run.
+  clients/_capacity.md:
+    - "## Capacity"
   # The three draft directories carry one vocabulary between them, because they
   # hold one kind of thing: a body the founder is about to send, and the record
   # of what they actually sent. `## Sent` is why these files exist at all — it is

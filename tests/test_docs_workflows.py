@@ -1062,7 +1062,8 @@ class CanonicalGuidanceContractTest(unittest.TestCase):
         )
         expanded = []
         for term in re.findall(
-            r"{t}/\{{[a-z0-9,-]+\}}/|{t}/|{t}".format(t=self.TERM),
+            # `clients/_capacity` is a file inside a directory, not a directory.
+            r"{t}/\{{[a-z0-9,-]+\}}/|{t}/_{t}|{t}/|{t}".format(t=self.TERM),
             match.group(1),
         ):
             brace = re.fullmatch(

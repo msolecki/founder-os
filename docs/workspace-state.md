@@ -43,6 +43,7 @@ map does not own.
 | `drafts/proposals/` | pipeline-coach | `## Draft`, `## Provenance`, `## Sent` |
 | `week.md` | focus-coach | `## Arithmetic`, `## Shape`, `## Blocks`, `## Unfunded`, `## The trade`, `## Audit`, `## Ledger` |
 | `clients/` | delivery-lead | `## Scope`, `## Health`, `## Retro` |
+| `clients/_capacity.md` | delivery-lead | `## Capacity` |
 | `network.md` | network-manager | `## Map`, `## Not in the map`, `## Sweep` |
 | `skills.md` | skills-mentor | `## Gap`, `## Hypotheses`, `## Learning plan` |
 | `content.md` | brand-editor | `## Plan`, `## Shipped`, `## Drafts`, `## Audience` |
@@ -55,8 +56,9 @@ Directory paths (`clients/`, `decisions/`, `reviews/*/`, `drafts/*/`) hold one
 file per instance. `founder-os-init` creates the directory, not its members; for
 those paths the sections above are the *vocabulary* each member file uses,
 enforced at write time by the skill that owns the template.
-`clients/_capacity.md` is an aggregate, not a client file, and carries none of
-the client sections.
+`clients/_capacity.md` is an aggregate, not a client file: it is its own entry
+in the map and carries one `## Capacity — <date>` section instead of the client
+sections.
 
 The main thread never substitutes for the owner. It opens a short-lived role
 capability, invokes one sibling role, re-reads the expected persisted path, and

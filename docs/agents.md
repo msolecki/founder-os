@@ -93,7 +93,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 ### Delivery Lead
 - **Decides:** whether the company can take work on, and whether what it ships is
   good enough.
-- **Owns:** `clients/`.
+- **Owns:** `clients/`, `clients/_capacity.md`.
 - **Skills:** `capacity-check`, `scope-guard`, `client-health`, `delivery-retro`.
 - **May request as siblings:** CFO, Ops Engineer.
 
