@@ -672,6 +672,27 @@ def exact_fit(home):
     (home / "week.md").write_text(text, encoding="utf-8")
 
 
+class TestQueueOverCap(unittest.TestCase):
+    """A clamped bar draws 6 of 3 exactly like 3 of 3, so it has to say so."""
+
+    def test_a_section_over_its_cap_is_flagged_in_red(self):
+        def overfill(home):
+            path = home / "queue.md"
+            extra = "".join("- [q-x%d] filler — bet: B1\n" % n for n in range(5))
+            path.write_text(path.read_text(encoding="utf-8").replace(
+                "## Doing\n\n", "## Doing\n\n" + extra, 1), encoding="utf-8")
+        render = load_dashboard("render")
+        html = render.render([build_payload(mutate=overfill)], generated="g",
+                             active_slug="studio-north")
+        self.assertIn('Doing 6 / 3 <span class="over">over cap</span>', html)
+        self.assertIn("background:var(--crit)\" role=\"img\" aria-label=\"6 of 3\"",
+                      html)
+        self.assertIn("1 over cap", html)
+
+    def test_a_section_within_its_cap_is_not_flagged(self):
+        self.assertNotIn("over cap", build_example_page())
+
+
 class TestExactlyFullWeek(unittest.TestCase):
     """The boundary: a week that fills the hours available is not over it."""
 
