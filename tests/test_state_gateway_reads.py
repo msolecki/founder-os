@@ -1394,8 +1394,12 @@ class SafeStateIOTests(unittest.TestCase):
         other_workflow = self.package / "skills" / "other"
         other_workflow.mkdir()
         (other_workflow / "SKILL.md").write_text("# other\n", encoding="utf-8")
+        # The package root's CLAUDE.md moved to references/guidance.md; a file
+        # left at the old path must not be served under the old name.
+        (self.package / "CLAUDE.md").write_text("# old\n", encoding="utf-8")
 
         for path in (
+            "CLAUDE.md",
             "agents/cfo.md",
             "skills/other/SKILL.md",
             "references/not-allowed.md",
