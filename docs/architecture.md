@@ -178,9 +178,10 @@ Three kinds of skill:
   workspace file of their own (init scaffolds the whole workspace regardless of
   owner). Every agent lists the three *universal* ones: `guardrails`,
   `state-integrity`, `ingestion-gate`.
-- **Standalone skills** — `setup-cadences` and `skill-forge`. The founder runs
-  them directly because they modify host schedule state or the founder-owned
-  local overlay; neither operation belongs to a role subagent.
+- **Standalone skills** — `setup-cadences`, `skill-forge` and `dashboard`. The
+  founder runs them directly because they modify host schedule state, the
+  founder-owned local overlay, or (for `dashboard`) only the derived
+  `_dashboard/` directory; none of these belongs to a role subagent.
 
 ### Hooks — the runtime layer
 

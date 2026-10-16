@@ -222,19 +222,25 @@ python3 scripts/bump_version.py X.Y.Z --dry-run   # every site, nothing written
 python3 scripts/bump_version.py X.Y.Z
 ```
 
-1. `scripts/bump_version.py` moves the version through all eleven places that
+1. `scripts/bump_version.py` moves the version through all ten places that
    carry it — the marketplace entry, both package manifests, the gateway's
    `SERVER_VERSION`, the installed-host probe, three test constants, the landing
-   page proof line and the architecture note — then renames `## Unreleased` to
-   the dated heading and opens a fresh empty one above it. It refuses to run
-   against an empty `## Unreleased`.
-2. The list of eleven lives in that script's `SITES`, and `check_version_sites`
-   reads it: a twelfth place that carries the version fails the build rather
+   page proof line and the architecture note — plus the `CHANGELOG.md` heading:
+   it renames `## Unreleased` to the dated heading and opens a fresh empty one
+   above it. It refuses to run against an empty `## Unreleased`.
+2. The list of ten lives in that script's `SITES`, and `check_version_sites`
+   reads it: an eleventh place that carries the version fails the build rather
    than shipping a package that disagrees with itself. Its `RECORDS` table is
    the opposite — versions that name a release which already shipped and must
    *not* move.
 3. Run every command from **Before you open a PR**, then run both official local
-   Claude gates and the Codex plugin validator below.
+   Claude gates and the Codex plugin validator below, and the installed-host
+   probe, which installs the package into isolated Claude and Codex homes and
+   checks native and fallback dispatch are byte-identical:
+
+   ```bash
+   python3 scripts/probe_installed_hosts.py --claude --codex --require-native-and-fallback
+   ```
 4. Tag / publish only after the release plan's remaining gates are complete.
    The repo *is* the marketplace, so a merge to the default branch ships it.
 

@@ -112,6 +112,6 @@ it **registers**:
 
 ## The doctor's multi-business check
 
-`founder-os-doctor` check #14, *Portfolio dark*: two active businesses with a
+`founder-os-doctor` check #13, *Portfolio dark*: two active businesses with a
 missing, drifted, or 21-days-silent `portfolio.md`. See
 [`troubleshooting.md`](troubleshooting.md).
