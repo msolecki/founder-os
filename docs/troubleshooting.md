@@ -91,7 +91,7 @@ right now*.
 | **Overlay unreadable** | `_local/ownership.yaml` exists and doesn't parse, so the overlay owner cannot be resolved. Packaged roles cannot use it as gateway authority; founder-run local workflows remain outside the role gateway. | you (`_local/` is yours) |
 | **Overlay claims a packaged path** | The overlay's `owns:` names a path the packaged map already owns. The guard drops the entry, so nothing is mis-owned — but it reads as active and it isn't. | you |
 | **Overlay incoherent** | A local path with no owner or two owners, or a local skill writing a path its agent doesn't own — the last one denies every time that skill runs. | `/skill-forge` |
-| **Local agent overreaches** | A `_local/agents/*.md` omits `tools:` or names an outbound tool. The guard denies those regardless, so this is early warning, not a breach. | `/skill-forge` |
+| **Local agent overreaches** | A `_local/agents/*.md` omits `tools:` or names an outbound tool. The guard does not deny it: the role lockdown binds the thirteen packaged roles and a generic fallback that has spent a role capability, and a local agent is neither. A granted `Bash` or `WebFetch` is live; only the gateway still refuses it, because it holds no role capability. | `/skill-forge` |
 | **Local skill off template** | A `_local/skills/*/SKILL.md` has no `## Beliefs` (or fewer than 3, or after `## Steps`), or a slug without the `local-` prefix / colliding with a packaged one. | `/skill-forge` |
 | **Installed copy drift** | A local skill is missing from `~/.claude/skills/` or `~/.codex/skills/`, or either installed copy differs from `_local/`. Never synced automatically — the doctor can't tell which side is intended. | `/skill-forge` |
 
@@ -132,9 +132,14 @@ does not change this — the agent hands you the finished text.
 
 **"The guard isn't blocking anything."** First distinguish the host hook from
 the state boundary. The hook can stay silent for main-thread or malformed
-non-role traffic; it is defense in depth, not a security sandbox. A known role,
-however, has no direct file tool and must present a live role capability to the
-local `founder-os-state` gateway. Gateway write uncertainty fails closed. See
+non-role traffic; it is defense in depth, not a security sandbox. A
+subagent that is not a role — a reviewer, an Explore pass, a local agent — is
+held only to the ownership, `_local/` and derived-file denies, and only for
+tools that name a path; its `Bash` is outside the guard. A known role, however,
+has no direct file, shell, web or nested-agent tool and must present a live
+role capability to the local `founder-os-state` gateway. A generic fallback
+(`general-purpose`, `default`) gets the same lockdown from the moment it spends
+a role capability. Gateway write uncertainty fails closed. See
 [`enforcement.md`](enforcement.md).
 
 **"Advice landed against the wrong company."** Multi-business resolution. Name the
