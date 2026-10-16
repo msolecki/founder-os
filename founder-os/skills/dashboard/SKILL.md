@@ -42,7 +42,8 @@ page that disagrees with the workspace.
 founder asks a question the page already answers.
 
 `--now` with a date other than today is a preview: only the page is written,
-and the series in `snapshots.csv` is left alone unless the run is for today.
+and both `facts.json` and the series in `snapshots.csv` are left alone unless
+the run is for today.
 
 ## What it refuses
 
