@@ -878,6 +878,10 @@ class StateGatewayWriteTests(unittest.TestCase):
             document, (workspace / "metrics.md").read_text(encoding="utf-8")
         )
 
+    def test_default_session_outlives_one_heavy_workflow(self):
+        """Five minutes from open to write lost a quarterly review's draft."""
+        self.assertGreaterEqual(Gateway.DEFAULT_SESSION_TTL_SECONDS, 30 * 60)
+
     def test_write_requires_exactly_one_valid_concurrency_mode(self):
         capability = self._open("cfo")
         cases = {
@@ -895,10 +899,12 @@ class StateGatewayWriteTests(unittest.TestCase):
                 response = self._write(
                     capability, "metrics.md", _metrics(), **mode
                 )
+                # A malformed mode is not a stale file: STALE_WRITE told the
+                # role to re-read and retry, which cannot fix an argument.
                 self._assert_error(
                     response,
-                    code="STALE_WRITE",
-                    action="Re-read, reconcile deliberately, then retry once",
+                    code="STATE_IO_ERROR",
+                    action="Preserve the original file and surface the error",
                 )
 
     def test_write_failures_use_only_approved_fail_closed_codes(self):

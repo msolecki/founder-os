@@ -61,6 +61,16 @@ class WorkspaceResolver:
         except (OSError, TypeError, ValueError, KeyError):
             raise WorkspaceResolutionError()
 
+        # One id per workspace: every role resolving the same business reused
+        # nothing, so the in-memory map grew with each call for the server's
+        # whole life.
+        for existing in self._bindings.values():
+            if (
+                existing.root == root
+                and existing.business_slug == slug
+                and existing.workspace_kind == workspace_kind
+            ):
+                return existing
         workspace_id = secrets.token_urlsafe(32)
         binding = WorkspaceBinding(
             workspace_id=workspace_id,
@@ -194,9 +204,12 @@ class WorkspaceResolver:
             )
 
         default = registry.get("default")
-        if default is not None:
-            if default == "portfolio":
-                return Path(portfolio).resolve(), "portfolio", "portfolio"
+        if default == "portfolio":
+            return Path(portfolio).resolve(), "portfolio", "portfolio"
+        # A paused default is no default: pausing is the documented first step
+        # before retiring a business, and it must not strand the others. The
+        # single-active rule below decides instead.
+        if default is not None and businesses[default]["status"] == "active":
             return (
                 Path(businesses[default]["home"]).resolve(),
                 default,
@@ -392,8 +405,7 @@ class WorkspaceResolver:
             return
         if not cls._valid_slug(default):
             raise WorkspaceResolutionError()
-        entry = businesses.get(default)
-        if entry is None or entry["status"] != "active":
+        if default not in businesses:
             raise WorkspaceResolutionError()
 
     @staticmethod

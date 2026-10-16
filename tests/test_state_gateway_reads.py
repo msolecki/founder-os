@@ -6,6 +6,7 @@ import json
 import os
 import stat
 import sys
+import shutil
 import tempfile
 import textwrap
 import unittest
@@ -325,6 +326,8 @@ class WorkspaceResolverReadTests(unittest.TestCase):
             self.assertEqual(first_binding, first.get(first_binding.workspace_id))
             self.assertEqual(second_binding, second.get(second_binding.workspace_id))
             self.assertNotEqual(first_binding.workspace_id, second_binding.workspace_id)
+            # The same resolver hands back the same binding, not a new entry.
+            self.assertIs(first_binding, first.resolve(project))
             for binding in (first_binding, second_binding):
                 self.assertNotIn(str(binding.root), binding.workspace_id)
                 self.assertNotIn(binding.root.name, binding.workspace_id)
@@ -382,8 +385,10 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 resolver = WorkspaceResolver(env={}, home=home)
                 self.assert_unresolved(lambda: resolver.resolve(root))
 
-    def test_registry_rejects_unknown_and_inactive_automatic_defaults(self) -> None:
-        for default in ("missing", "paused"):
+    def test_registry_rejects_unknown_automatic_defaults(self) -> None:
+        # A paused default used to be refused here too; it is now ignored
+        # (test_a_paused_default_falls_back_to_the_one_active_business).
+        for default in ("missing",):
             with self.subTest(default=default), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 home = root / "home"
@@ -409,6 +414,42 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 resolver = WorkspaceResolver(env={}, home=home)
                 self.assert_unresolved(lambda: resolver.resolve(root))
 
+
+    def test_a_paused_default_falls_back_to_the_one_active_business(self) -> None:
+        """Pausing is the documented first step before retiring a business.
+
+        It made the whole registry invalid, so every business, the active one
+        named explicitly included, came back WORKSPACE_UNRESOLVED.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            roots = {name: root / name for name in ("acme", "nordwind", "third")}
+            for path in roots.values():
+                path.mkdir()
+
+            def registry(*active):
+                shutil.rmtree(home, ignore_errors=True)
+                lines = ["businesses:"]
+                for name, path in roots.items():
+                    lines += [
+                        "  %s:" % name,
+                        "    home: %s" % path.as_posix(),
+                        "    status: %s"
+                        % ("active" if name in active else "paused"),
+                    ]
+                write_registry(home, "\n".join(lines + ["default: acme"]))
+                return WorkspaceResolver(env={}, home=home)
+
+            resolver = registry("nordwind")
+            self.assertEqual("nordwind", resolver.resolve(root).business_slug)
+            self.assertEqual(
+                "nordwind", resolver.resolve(root, "nordwind").business_slug
+            )
+
+            resolver = registry("nordwind", "third")
+            self.assert_unresolved(lambda: resolver.resolve(root))
+            self.assertEqual("third", resolver.resolve(root, "third").business_slug)
 
     def test_registry_supports_canonical_inline_comments_and_quoted_hashes(
         self,
