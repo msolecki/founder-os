@@ -4,24 +4,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import AbstractSet, Dict, List, Optional, Tuple
 
 
-_ROLES = {
-    "board-member",
-    "brand-editor",
-    "cfo",
-    "chief-of-staff",
-    "delivery-lead",
-    "focus-coach",
-    "network-manager",
-    "ops-engineer",
-    "pipeline-coach",
-    "portfolio-manager",
-    "positioning-advisor",
-    "skills-mentor",
-    "strategist",
-}
 _REQUIRED_TOP_LEVEL_KEYS = {
     "workspace_files",
     "portfolio_files",
@@ -43,8 +28,9 @@ class OwnershipError(Exception):
         "ROLE_NOT_OWNER": "Request a handoff to the canonical owner",
         "STALE_WRITE": "Re-read, reconcile deliberately, then retry once",
         "INVALID_DOCUMENT_STRUCTURE": (
-            "Carry every heading references/ownership.yaml declares for this "
-            "path, in its order and no others, then retry"
+            "Carry the headings references/ownership.yaml declares for this "
+            "path (every one for a file, a subset for a directory member), "
+            "in its order, each once and no others, then retry"
         ),
         "STATE_IO_ERROR": "Preserve the original file and surface the error",
     }
@@ -60,6 +46,21 @@ class OwnershipError(Exception):
         else:
             self.action = self._ACTIONS[self.code]
         super().__init__(self.code)
+
+
+def heading_matches(actual_heading: str, required_heading: str) -> bool:
+    """`## Close — 2026-07` is `## Close`: the name is pinned, the suffix is not.
+
+    Shared with `safe_io`, so a heading the write accepts is a heading the
+    portfolio read finds.
+    """
+    if actual_heading == required_heading:
+        return True
+    prefix = required_heading + " — "
+    return (
+        actual_heading.startswith(prefix)
+        and bool(actual_heading[len(prefix):].strip())
+    )
 
 
 def _schema_error() -> OwnershipError:
@@ -260,7 +261,17 @@ class OwnershipSchema:
         return self._derived
 
     @classmethod
-    def load(cls, path: Path) -> "OwnershipSchema":
+    def load(
+        cls,
+        path: Path,
+        roles: Optional[AbstractSet[str]] = None,
+    ) -> "OwnershipSchema":
+        """Parse and validate the map; `roles` is the packaged agent set.
+
+        The gateway passes the roles its session store derived from `agents/`,
+        so an owner that is not a packaged agent refuses the map. `None` skips
+        that one check for callers holding a bare map and no package.
+        """
         parsed = load_document(path)
 
         workspace_files = parsed["workspace_files"]
@@ -303,7 +314,7 @@ class OwnershipSchema:
         for role, role_paths in owns.items():
             if (
                 not isinstance(role, str)
-                or role not in _ROLES
+                or (roles is not None and role not in roles)
                 or not isinstance(role_paths, list)
                 or not role_paths
             ):
@@ -376,10 +387,14 @@ class OwnershipSchema:
         and its owner has nowhere to write. The write path uses this to create
         the one directory the map already promised.
         """
-        match = self._matching_key(relative_path)
-        if match is None or not match.endswith("/"):
-            return None
-        return match
+        path = _validate_requested_path(relative_path)
+        directories = [
+            owned_path for owned_path in self._owners
+            if owned_path.endswith("/") and path.startswith(owned_path)
+        ]
+        # The longest directory, not the longest key: `clients/_capacity.md`
+        # is its own key and still lives in `clients/`.
+        return max(directories, key=len) if directories else None
 
     def missing_sections(
         self,
@@ -420,12 +435,17 @@ class OwnershipSchema:
         if not required:
             return ()
         present = self._headings(content)
-        if self._headings_match(present, required):
+        member = self._is_directory_member(relative_path)
+        if self._headings_match(present, required, member):
+            return ()
+        if member:
+            # A directory member needs none of its vocabulary, so nothing is
+            # missing from it; a refusal there is order, a repeat or a stranger.
             return ()
         absent = tuple(
             heading for heading in required
             if not any(
-                self._heading_matches(candidate, heading)
+                heading_matches(candidate, heading)
                 for candidate in present
             )
         )
@@ -439,25 +459,37 @@ class OwnershipSchema:
         return tuple(
             heading for index, heading in enumerate(required)
             if index >= len(present)
-            or not self._heading_matches(present[index], heading)
+            or not heading_matches(present[index], heading)
         )
 
-    @classmethod
-    def _headings_match(cls, actual, required) -> bool:
-        return len(actual) == len(required) and all(
-            cls._heading_matches(actual_heading, required_heading)
-            for actual_heading, required_heading in zip(actual, required)
-        )
+    def _is_directory_member(self, relative_path: str) -> bool:
+        match = self._matching_key(relative_path)
+        return match is not None and match.endswith("/")
 
     @staticmethod
-    def _heading_matches(actual_heading: str, required_heading: str) -> bool:
-        if actual_heading == required_heading:
-            return True
-        prefix = required_heading + " — "
-        return (
-            actual_heading.startswith(prefix)
-            and bool(actual_heading[len(prefix):].strip())
-        )
+    def _headings_match(actual, required, directory_member=False) -> bool:
+        """A flat file carries the whole list; a directory member a subset.
+
+        A directory's list is the vocabulary its member files draw on — a
+        quarterly plan and an annual review are both `reviews/quarterly/` and
+        share no heading — so a member carries at least one of them, in the
+        declared order, each at most once, and nothing undeclared.
+        """
+        if not directory_member:
+            return len(actual) == len(required) and all(
+                heading_matches(actual_heading, required_heading)
+                for actual_heading, required_heading in zip(actual, required)
+            )
+        position = 0
+        for actual_heading in actual:
+            while position < len(required) and not heading_matches(
+                actual_heading, required[position]
+            ):
+                position += 1
+            if position == len(required):
+                return False
+            position += 1
+        return bool(actual)
 
     @staticmethod
     def _headings(content: str) -> List[str]:
@@ -503,5 +535,9 @@ class OwnershipSchema:
         required = self.sections_for(relative_path)
         if not required:
             raise OwnershipError("PATH_OUTSIDE_WORKSPACE")
-        if not self._headings_match(self._headings(content), required):
+        if not self._headings_match(
+            self._headings(content),
+            required,
+            self._is_directory_member(relative_path),
+        ):
             raise OwnershipError("INVALID_DOCUMENT_STRUCTURE")

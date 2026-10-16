@@ -118,9 +118,12 @@ owns:
 #
 # Directory paths hold one file per instance — a client, a decision, a review.
 # Init creates the directory, not its members, so for those paths this list is
-# the section vocabulary their member files use. It is enforced at write time by
-# the skill that owns the template, not at scaffold time. `clients/_capacity.md`
-# is an aggregate rather than a client file and carries none of these.
+# the section vocabulary their member files use. The gateway enforces it at
+# write time as an ordered subset: a member carries at least one of these
+# headings, in this order, each at most once, and none that is not listed. A
+# repeated dated entry (a sweep, a triage run) is a `### <date>` under its one
+# `## <Heading>`, never a second H2. `clients/_capacity.md` is an aggregate
+# rather than a client file and carries none of the client headings.
 sections:
   # The portfolio file. One per install, not per business — it exists to hold
   # the one decision no per-business file can: how the founder's hours and cash

@@ -11,6 +11,7 @@ import os
 import re
 import secrets
 import stat
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -444,7 +445,12 @@ class RoleSessionStore:
                 except OSError:
                     pass
 
-    def _roles(self) -> set[str]:
+    def roles(self) -> Set[str]:
+        """The packaged roles: every `agents/*.md` whose frontmatter parses.
+
+        The one role set in the package runtime. The ownership map is checked
+        against it, so adding an agent is a new file and nothing else.
+        """
         return set(self._role_workflows())
 
     def _role_workflows(self) -> Dict[str, Set[str]]:
@@ -462,18 +468,28 @@ class RoleSessionStore:
             for path in paths:
                 text = path.read_text(encoding="utf-8")
                 parsed_role = self._parse_agent_frontmatter(text)
-                if parsed_role is None:
-                    return {}
-                name, workflows = parsed_role
-                if name != path.stem or name in parsed:
-                    return {}
-                parsed[name] = workflows
+                if parsed_role is None or parsed_role[0] != path.stem:
+                    # Only this role is refused. Discarding the whole map
+                    # turned one malformed file into every role session failing
+                    # with nothing saying which file did it.
+                    sys.stderr.write(
+                        "founder-os-state: agents/%s has no readable name and "
+                        "skills frontmatter; that role cannot open a session\n"
+                        % path.name
+                    )
+                    continue
+                parsed[parsed_role[0]] = parsed_role[1]
         except (OSError, UnicodeError):
-            return {}
-        if len(parsed) != 13:
             return {}
         self._role_workflow_cache = parsed
         return parsed
+
+    @staticmethod
+    def _skill_item(raw: str) -> str:
+        value = raw.split(" #", 1)[0].strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1].strip()
+        return value
 
     def _parse_agent_frontmatter(
         self,
@@ -491,27 +507,37 @@ class RoleSessionStore:
         workflows: Set[str] = set()
         in_skills = False
         skills_seen = False
+        items = []
+        # The block list, a flow list, quoted items and trailing comments: the
+        # shapes the package validator's YAML parser accepts, so an agent that
+        # is green at build time is not refused here.
         for line in lines[1:end]:
             if line.startswith("name:"):
                 if name is not None:
                     return None
-                name = line.partition(":")[2].strip()
+                name = self._skill_item(line.partition(":")[2])
                 in_skills = False
-            elif line == "skills:":
+            elif line.startswith("skills:"):
                 if skills_seen:
                     return None
                 skills_seen = True
-                in_skills = True
-            elif in_skills and line.startswith("  - "):
-                workflow = line[4:].strip()
-                if (
-                    not self._valid_workflow(workflow)
-                    or workflow in workflows
-                ):
-                    return None
-                workflows.add(workflow)
+                rest = line[len("skills:"):].split(" #", 1)[0].strip()
+                in_skills = not rest
+                if rest:
+                    if not (rest.startswith("[") and rest.endswith("]")):
+                        return None
+                    items.extend(
+                        item for item in rest[1:-1].split(",") if item.strip()
+                    )
+            elif in_skills and line.lstrip(" ").startswith("- "):
+                items.append(line.lstrip(" ")[2:])
             elif line and not line[0].isspace():
                 in_skills = False
+        for item in items:
+            workflow = self._skill_item(item)
+            if not self._valid_workflow(workflow) or workflow in workflows:
+                return None
+            workflows.add(workflow)
 
         if (
             name is None
