@@ -46,7 +46,9 @@ and the series in `snapshots.csv` is left alone unless the run is for today.
 
 ## What it refuses
 
-- It does not repair state. A missing section is reported, never filled in.
+- It does not repair state. A missing section is never filled in: its figures
+  render as "not recorded", and the reason is listed under `integrity` in
+  `facts.json`, which the page does not show yet.
 - It does not send, publish, or upload. It writes a local file.
 - It does not invent a figure. A value it could not read renders as
   "not recorded", never as zero.
