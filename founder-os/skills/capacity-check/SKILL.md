@@ -82,7 +82,7 @@ Read first, in order — house rule 1:
 
 Replace the block in `clients/_capacity.md`:
 
-    # Capacity — YYYY-MM-DD
+    ## Capacity — YYYY-MM-DD
     Deliverable h/week: <n>  (40 − sales 6 − admin 3 − switching <n>)
     Committed h/week: <n> across <n> engagements
     Utilisation: <n>%

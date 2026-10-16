@@ -491,6 +491,21 @@ class OwnershipSchemaTests(unittest.TestCase):
         # Still the directory `clients/`, so an old workspace gets it created.
         self.assertEqual("clients/", schema.directory_for(path))
 
+    def test_the_shipped_map_accepts_the_capacity_check_body(self):
+        """The real map, not a patched copy: /capacity-check output persists."""
+        schema = OwnershipSchema.load(
+            PACKAGE_ROOT / "references" / "ownership.yaml"
+        )
+        path = "clients/_capacity.md"
+        self.assertEqual("delivery-lead", schema.owner_for(path))
+        schema.validate_document(
+            path,
+            "## Capacity — 2026-07-27\nDeliverable h/week: 22\n"
+            "Utilisation: 70%\nVerdict: yes-with-slip\n",
+        )
+        with self.assertRaises(OwnershipError):
+            schema.validate_document(path, "## Scope\n")
+
 
 class StateGatewayWriteTests(unittest.TestCase):
     def setUp(self):
