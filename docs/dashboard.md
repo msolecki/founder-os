@@ -83,7 +83,9 @@ drawn over it is a chart of how often the script ran.
 
 ## What it refuses
 
-- **It does not repair state.** A missing section is reported, never filled in.
+- **It does not repair state.** A missing section is never filled in: its
+  figures render as "not recorded", and the reason is listed under `integrity`
+  in `facts.json` — the Integrity view that would show it is not built yet.
   No agent-owned file is created, modified, or reformatted, even when provably
   malformed.
 - **It does not invent a figure.** A value it could not read renders as "not

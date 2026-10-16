@@ -6,6 +6,7 @@ point is to refuse to choose, and to say which field would settle it.
 """
 import importlib
 import importlib.util
+import os
 import shutil
 import sys
 import tempfile
@@ -715,6 +716,16 @@ class TestCashReadsTheLabelsTheCadencesWrite(unittest.TestCase):
                          "20 days from month end")
         performed = analyze.build_cash(example_sources(), TODAY)
         self.assertEqual(fact(performed, "close_age_days").display, "19 days")
+
+    def test_close_age_ignores_when_metrics_md_was_last_touched(self):
+        """signal-check rewrites metrics.md every Friday, so its mtime says
+        nothing about how old the close is; the dated heading does."""
+        def stale(home):
+            edit("metrics.md", "Closed: 2026-07-01\n\n", "")(home)
+            edit("metrics.md", "## Close — 2026-06", "## Close — 2026-04")(home)
+            os.utime(home / "metrics.md")
+        panel = analyze.build_cash(example_sources(stale), TODAY)
+        self.assertEqual(fact(panel, "close_age_days").number, 81.0)
 
     def test_a_close_with_no_date_anywhere_stays_unknown(self):
         def strip(home):
