@@ -1829,6 +1829,21 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
                  "tool_input": {"command": "ls"}}, temp_dir)
         self._deny_payload(result)
 
+    def test_an_expired_binding_unbinds_rather_than_denies(self):
+        # Nothing prunes Claude-side bindings, so an expired one must not
+        # lock the agent (or a whole session) out forever.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            mapping = Path(temp_dir) / "agent-types"
+            mapping.mkdir()
+            (mapping / "agent.old.json").write_text(json.dumps(
+                {"agent_type": "cfo", "recorded_at": time.time() - 86401}),
+                encoding="utf-8")
+            result = run_codex_hook(
+                {"agent_type": "general-purpose", "agent_id": "old",
+                 "cwd": str(REPO_ROOT), "tool_name": "Bash",
+                 "tool_input": {"command": "ls"}}, temp_dir)
+        self.assertEqual(result.stdout, "", result.stderr)
+
     def test_guard_finds_sessions_under_the_gateways_fallback_data_root(self):
         # hooks-2 — with neither PLUGIN_DATA nor CLAUDE_PLUGIN_DATA set, the
         # gateway keeps sessions under ~/.founder-os/plugin-data; the guard

@@ -1129,12 +1129,20 @@ def agent_type_for(data):
         if stem is None:
             return direct
         bound = _mapped_agent_type(stem)
-        if bound is None and os.path.lexists(
-                os.path.join(_data_root(), "agent-types", stem + ".json")):
-            tool_name = data.get("tool_name")
-            _deny_tool(direct, tool_name if isinstance(tool_name, str)
-                       else "<invalid tool name>",
-                       "This agent's role binding is unreadable.")
+        path = os.path.join(_data_root(), "agent-types", stem + ".json")
+        if bound is None and os.path.lexists(path):
+            # Expired is what the TTL means — unbound. Anything else is a
+            # record that may name a role and cannot be read.
+            record = _read_small_regular_json(path)
+            if not (isinstance(record, dict)
+                    and set(record) == {"agent_type", "recorded_at"}
+                    and isinstance(record.get("recorded_at"), (int, float))
+                    and not isinstance(record.get("recorded_at"), bool)):
+                tool_name = data.get("tool_name")
+                _deny_tool(direct, tool_name if isinstance(tool_name, str)
+                           else "<invalid tool name>",
+                           "This agent's role binding `%s` is unreadable."
+                           % path)
         return bound if _role_of(bound) else direct
     turn_id = data.get("turn_id")
     if not isinstance(turn_id, str) or not SAFE_ID.fullmatch(turn_id):

@@ -90,7 +90,10 @@ of any role. That gateway call binds the capability's role to the agent's
 identity — Claude's `agent_id`, else Codex's `turn_id`, else the `session_id`,
 which locks every generic agent of that session — and from then on the guard
 treats it as that role, with all five rules above. A binding the guard cannot
-persist denies the gateway call, and a binding it cannot read denies the tool.
+persist denies the gateway call, and a binding it cannot read denies the tool;
+a binding older than 24 hours lapses. A generic call carrying none of the three
+identifiers has nothing to bind to: the guard logs it and the capability is
+spent unbound, the same fail-open as a call with no identity marker at all.
 The lockdown starts at the fallback's first gateway call, so the main thread
 dispatches the fallback with the role's gateway-only tool allowlist
 (`references/orchestration.md`); before that call, the allowlist and the
