@@ -51,18 +51,20 @@ Then, and only then, the one file your decision owns.
    `metrics.md` for a quarter. The resolved slug opens the context line so the
    founder sees which company is being advised before they read the advice.
 
-1. **Load the three, in order, with their last-modified dates.** The dates are
-   not metadata. They are the confidence interval on everything you are about to
-   say.
+1. **Load the three, in order, with their dates.** The dates are not metadata.
+   They are the confidence interval on everything you are about to say.
+
+   **The metrics date is the close, not the file.** Read it from the newest
+   `## Close — YYYY-MM` heading in `metrics.md`: the close is as of the first day
+   after the month it names, so `## Close — 2026-07` is as of 2026-08-01. Never use
+   the file's last-modified date for it — `signal-check` rewrites `## Signals`
+   every Friday, so the file is never more than a week old while the close in it
+   can be three months old (house rule 5). No dated `## Close` heading means no
+   close on record, which is the > 60-day case below.
 2. **Stop if `charter.md` is empty.** There is no business described, so there
    is nothing to advise on. Run `founder-os-init`. Do not proceed on the
    assumption that you can infer the business from the other files.
-3. **Apply the staleness rule to `metrics.md`.** Measure its age from the date
-   written inside it — the `Closed:` line or the `## Close — YYYY-MM` heading,
-   with `## Runway — as of YYYY-MM-DD` as the fallback — not from its
-   last-modified date: the weekly `signal-check` rewrites the file, so a fresh
-   mtime can sit on a close from last quarter. Use the mtime only when no date
-   is written.
+3. **Apply the staleness rule to `metrics.md`, by the close's age from step 1:**
    - **≤ 30 days** — quote the numbers plainly, with the date.
    - **> 30 days** — quote them, and label every downstream claim a guess, out
      loud, exactly as house rule 2 requires. Not a hedge. A label.
@@ -103,8 +105,8 @@ Then, and only then, the one file your decision owns.
    it a pipeline review that runs at 8am.
 
    The bounds are the price, and they are the same bounds as `triage`'s:
-   **sections, not files.** Only `goals.md`, `queue.md` and yesterday's brief are
-   read whole. Everything else is one named section, read for one question — is
+   **sections, not files.** Only `charter.md`, `goals.md`, `queue.md` and
+   yesterday's brief are read whole. Everything else is one named section, read for one question — is
    anything here rotting, and is anything here proposed. A brief that reads
    `metrics.md` whole and comments on the effective rate has stopped being a brief
    and become the averager this step describes. `daily-brief` states the same
@@ -128,11 +130,11 @@ Then, and only then, the one file your decision owns.
 
 No file. One line, first, before anything else:
 
-    Context: charter <date> | goals <quarter>, <N> bets | metrics <date> (<N>d old)<, STALE if >30d>
+    Context: charter <date> | goals <quarter>, <N> bets | metrics close YYYY-MM (<N>d old)<, STALE if >30d>
 
 On a multi-business install the line opens with the resolved slug:
 
-    Context: [acme] charter <date> | goals <quarter>, <N> bets | metrics <date> (<N>d old)
+    Context: [acme] charter <date> | goals <quarter>, <N> bets | metrics close YYYY-MM (<N>d old)
 
 Then the cadence proceeds.
 

@@ -232,9 +232,9 @@ words:**
     ## Samples
     none — <n> requested YYYY-MM-DD, none supplied
 
-That is not the same state as day one. `founder-os-init` scaffolds `voice.md`
-with its four headings and nothing under them, so a bare `## Samples` means this
-skill has never run — nobody has been asked. The line above means they were
+That is not the same state as day one. `voice.md` does not exist until this skill
+first writes it, and a missing file or a bare `## Samples` means this skill has
+never run — nobody has been asked. The line above means they were
 asked, on a date, and did not supply. Every drafting skill treats both as empty
 and says so, which is why this is a note to the next run of this skill rather
 than a signal to them: it is the difference between a gap and a refusal, and only

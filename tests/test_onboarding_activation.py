@@ -820,9 +820,10 @@ class OnboardingActivationContract(unittest.TestCase):
         declared_paths = re.findall(r"`([^`]+)`", declaration.group("paths"))
         self.assertCountEqual(
             declared_paths,
-            [p for p in self.ownership["owns"]["chief-of-staff"] if p != "evaluations/"],
+            self.ownership["owns"]["chief-of-staff"],
         )
-        self.assertRegex(delegation, r"(?i)empty lifecycle stub")
+        # Cross-owner stubs are created by their owners, never by this session.
+        self.assertRegex(delegation, r"(?i)scaffolds\s+none\s+of\s+the\s+other\s+paths")
 
     def test_target_checkpoint_binds_resume_to_the_original_workspace(self):
         _, preflight, _ = section_matching(
@@ -1487,6 +1488,177 @@ class PersistedSiblingWorkflowContract(unittest.TestCase):
         ):
             self.assertRegex(handoffs, rf"(?i){semantic_pattern(token)}")
         self.assertNotRegex(operative_markdown(body), r"(?i)\bsummon\b|\bcome back\b")
+
+
+def indented_templates(body: str) -> list[list[str]]:
+    """Each 4-space-indented example block, as its lines without the indent."""
+    blocks, current = [], []
+    for line in body.splitlines():
+        if line.startswith("    ") or (current and not line.strip()):
+            current.append(line[4:])
+            continue
+        if current:
+            blocks.append(current)
+        current = []
+    if current:
+        blocks.append(current)
+    return blocks
+
+
+class WrittenTemplateContract(unittest.TestCase):
+    """What a skill writes must be something the gateway will accept."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ownership = yaml.safe_load(
+            (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
+        cls.skills = {}
+        for skill_path in (PLUGIN_ROOT / "skills").glob("*/SKILL.md"):
+            frontmatter, body = parse_frontmatter(skill_path)
+            writes = (frontmatter.get("metadata") or {}).get("writes") or []
+            cls.skills[skill_path.parent.name] = (writes, body)
+
+    def body(self, skill):
+        return self.skills[skill][1]
+
+    def test_every_template_heading_is_declared_once_per_block(self):
+        for skill, (writes, body) in sorted(self.skills.items()):
+            vocabulary = [
+                heading
+                for path in writes
+                for heading in self.ownership["sections"].get(path, [])
+            ]
+            if not vocabulary:
+                continue
+            for block in indented_templates(body):
+                headings = [
+                    line.rstrip() for line in block if line.startswith("## ")
+                ]
+                names = []
+                for heading in headings:
+                    with self.subTest(skill=skill, heading=heading):
+                        matches = [
+                            declared
+                            for declared in vocabulary
+                            if heading == declared
+                            or heading.startswith(declared + " — ")
+                        ]
+                        self.assertTrue(matches, "undeclared heading")
+                        names.append(matches[0])
+                with self.subTest(skill=skill, block=headings):
+                    self.assertEqual(len(names), len(set(names)))
+
+    def test_repeated_runs_add_dated_entries_under_one_heading(self):
+        expected = {
+            "follow-up-sweep": ("## Sweep", "### YYYY-MM-DD"),
+            "learning-plan": ("## Learning plan", "### YYYY-MM-DD"),
+            "skill-gap": ("## Gap", "### YYYY-MM-DD"),
+            "triage": ("## Triage", "### HH:MM — triage"),
+        }
+        for skill, (heading, entry) in expected.items():
+            with self.subTest(skill=skill):
+                lines = [
+                    line.rstrip()
+                    for block in indented_templates(self.body(skill))
+                    for line in block
+                ]
+                self.assertIn(heading, lines)
+                self.assertEqual(lines[lines.index(heading) + 1], entry)
+                self.assertFalse(
+                    [line for line in lines if line.startswith(heading + " — ")]
+                )
+
+    def test_every_quarterly_bet_carries_opened_and_judgment_dates(self):
+        bets = [
+            block[block.index(line):]
+            for block in indented_templates(self.body("quarterly-planning"))
+            for line in block
+            if line.startswith("### Bet ")
+        ]
+        self.assertEqual(len(bets), 2)
+        for bet in bets:
+            with self.subTest(bet=bet[0]):
+                self.assertIn("Opened: YYYY-MM-DD", bet)
+                self.assertIn("Judgment date: YYYY-MM-DD", bet)
+        recurring = "\n".join(bets[1])
+        for field in ("Cost:", "Cap:", "If wrong:", "Kill if:"):
+            self.assertIn(field, recurring)
+
+    def test_unattended_cadences_block_instead_of_inventing_inputs(self):
+        for skill in (
+            "calendar-audit", "week-plan", "revenue-review", "quarterly-planning"
+        ):
+            with self.subTest(skill=skill):
+                self.assertIn(
+                    "blocked — needs founder input:",
+                    " ".join(self.body(skill).split()),
+                )
+        quarterly = " ".join(self.body("quarterly-planning").split())
+        self.assertIn("do not replace `goals.md`'s bets.", quarterly)
+        revenue = " ".join(self.body("revenue-review").split())
+        self.assertIn("do not replace the close.", revenue)
+
+    def test_metrics_staleness_reads_the_dated_close_not_the_mtime(self):
+        context = " ".join(self.body("context-load").split())
+        doctor = " ".join(self.body("founder-os-doctor").split())
+        self.assertIn("The metrics date is the close, not the file.", context)
+        self.assertNotIn("last-modified dates", context)
+        for check in ("**Stale metrics**", "**Metrics abandoned**"):
+            row = next(line for line in doctor.split(" | **") if check.strip("*") in line[:20])
+            self.assertIn("## Close — YYYY-MM", row)
+            self.assertNotIn("unmodified", row)
+
+    def test_every_skill_that_runs_queue_declares_queue_md(self):
+        for skill, (writes, body) in sorted(self.skills.items()):
+            if re.search(r"(?i)\brun `queue`", body):
+                with self.subTest(skill=skill):
+                    self.assertIn("queue.md", writes)
+
+    def test_non_owners_hand_decision_logging_to_the_chief_of_staff(self):
+        for skill in ("guardrails", "revenue-review", "proposal-draft"):
+            with self.subTest(skill=skill):
+                body = " ".join(self.body(skill).split())
+                self.assertNotRegex(body, r"(?i)\blog (it|the concern) in `decisions/`")
+                self.assertIn("`/decision-log` request to the **Chief of Staff**", body)
+
+    def test_won_deal_hands_off_through_a_persisted_proposal(self):
+        body = self.body("pipeline-review")
+        self.assertNotIn("Delivery Lead notified", body)
+        self.assertIn(
+            "    Proposed: open clients/<client-slug>.md with a client-health baseline",
+            body,
+        )
+        self.assertIn("engagement intake", self.body("client-health"))
+        self.assertIn("Touch:", body.split("    ## Won", 1)[0])
+
+    def test_judgment_dates_reach_a_cadence(self):
+        brief = " ".join(self.body("daily-brief").split())
+        self.assertIn("`Judgment date:` has passed with no verdict", brief)
+        self.assertIn("Proposals answered:", self.body("daily-brief"))
+        self.assertIn("goals.md", self.skills["experiment"][0])
+        self.assertIn(
+            "    Experiment: [[YYYY-MM-DD-<slug>]] — Judgment date: YYYY-MM-DD",
+            self.body("experiment"),
+        )
+
+    def test_the_charter_has_a_revision_path_after_activation(self):
+        self.assertIn("charter.md", self.skills["decision-log"][0])
+        self.assertIn("write `charter.md` in the same pass", self.body("decision-log"))
+
+    def test_triage_routes_by_the_chief_of_staff_table(self):
+        body = self.body("triage")
+        self.assertNotIn("| the item is about |", body)
+        self.assertIn("agents/chief-of-staff.md", body)
+
+    def test_stub_creation_never_crosses_an_ownership_boundary(self):
+        doctor = " ".join(self.body("founder-os-doctor").split())
+        init = " ".join(self.body("founder-os-init").split())
+        self.assertIn("only in a file the Chief of Staff owns", doctor)
+        self.assertNotIn("are the only two that may create a file", doctor)
+        self.assertIn("Never write another owner's path, not even an empty stub", init)
 
 
 if __name__ == "__main__":

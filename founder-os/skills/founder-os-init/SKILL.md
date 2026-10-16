@@ -98,14 +98,22 @@ Any failed preflight check stops before mutation. Report the failed check, why
 it matters and the exact repair or resume command. Never silently choose a
 different business.
 
-For a `new` workspace, scaffold every `workspace_files:` entry using the H1 and
-ordered empty headings from `sections:`. Create directories as directories.
-For a new second active business, scaffold the portfolio workspace from
-`portfolio_files:` as `multi-business.md` requires. Scaffolding is lifecycle:
-outside Chief of Staff-owned paths, never put content below those headings.
+For a `new` workspace, scaffold every `workspace_files:` entry the Chief of
+Staff owns (`owns: chief-of-staff` in `ownership.yaml`) using the H1 and ordered
+empty headings from `sections:`. Create directories as directories. **Never
+write another owner's path, not even an empty stub** — the gateway refuses it
+with `ROLE_NOT_OWNER` and has no lifecycle exemption. Every other file is
+created by its owner on its first create-only write: the Stage 2–4 owners create
+`offer.md`, `goals.md`, `reviews/quarterly/` and `metrics.md`, and the rest are
+created the first time their owner's workflow runs. Until then they are absent,
+and every reader treats an absent file as the empty input it is.
+For a new second active business, the portfolio workspace's `portfolio_files:`
+belong to the Portfolio Manager, whose first `portfolio-review` creates them, as
+`multi-business.md` requires.
 
-For an `incomplete` workspace, create only missing stubs or missing declared
-headings. Never replace, normalize, reorder or rephrase existing content.
+For an `incomplete` workspace, create only missing Chief of Staff-owned stubs or
+missing declared headings in Chief of Staff-owned files. Never replace,
+normalize, reorder or rephrase existing content.
 
 ## Activation intent
 
@@ -221,9 +229,9 @@ lines. The quarter's cash capacity is a bet constraint, not this blocker.
 ## Stage 5 — Owner-safe delegation
 
 The Chief of Staff writes only `charter.md`, `queue.md`, `decisions/`,
-`reviews/daily/`, `reviews/weekly/`, `reviews/monthly/` and `inbox.md`; it
-scaffolds other paths as empty lifecycle stubs and delegates all content to the
-owner declared by `references/ownership.yaml`.
+`evaluations/`, `reviews/daily/`, `reviews/weekly/`, `reviews/monthly/` and
+`inbox.md`; it scaffolds none of the other paths and delegates every one of them,
+stub and content, to the owner declared by `references/ownership.yaml`.
 
 Return each owner request to the main thread. Pass the carried answer, resolved
 workspace tuple and bounded-first-run marker unchanged. The main thread alone
