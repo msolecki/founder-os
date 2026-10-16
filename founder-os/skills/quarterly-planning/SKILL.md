@@ -71,6 +71,8 @@ On the complete path, write one `### Bet` under `goals.md` `## Bets`:
     Judgment date: YYYY-MM-DD
     Outcome: <metric> reaches <numeric value> by <date>
     Cost: <supplied hours> h + <supplied cash cap>
+    Cap: stop at <supplied hours> h or <supplied cash cap>, or <judgment date> — whichever comes first
+    If wrong: <what is lost, concretely> — reversible in <time>
     Kill if: <metric> is below <numeric threshold> on <date>
 
 `Opened:` is the run date. `Judgment date:` is the supplied 90-day horizon —

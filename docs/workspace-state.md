@@ -56,7 +56,8 @@ map does not own.
 Directory paths (`clients/`, `decisions/`, `reviews/*/`, `drafts/*/`) hold one
 file per instance. `founder-os-init` creates the directory, not its members; for
 those paths the sections above are the *vocabulary* each member file uses,
-enforced at write time by the skill that owns the template.
+enforced by the gateway at write time: a member's headings must be an ordered
+subset of the declared ones, each at most once.
 `clients/_capacity.md` is an aggregate, not a client file: it is its own entry
 in the map and carries one `## Capacity — <date>` section instead of the client
 sections.

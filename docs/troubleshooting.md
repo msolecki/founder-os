@@ -74,7 +74,7 @@ right now*.
 
 | Check | Trips when | Hands to |
 |---|---|---|
-| **Missing files** | A Chief of Staff entry in `workspace_files:` doesn't exist. Another owner's file that was never written is reported as `not yet written` — its owner's first run creates it. | repair (scaffold) |
+| **Missing files** | A Chief of Staff entry in `workspace_files:` doesn't exist. Another owner's file that was never written is reported as `not yet written` — its owner's first run creates it. | repair (Chief of Staff files); any other owner creates its file on its first run |
 | **Section drift** | A flat file lost a heading `sections:` declares, or grew one the map doesn't. (A dated suffix like `## Close — 2026-07` is *not* drift.) | repair |
 | **Stale metrics** | The close is > 30 days old, dated from the `Closed:` line, else the newest `## Close — YYYY-MM` heading, else the `## Runway — as of` date (the file's mtime only when none is written) — every agent is quoting last quarter's number. A fresh workspace reports `no close yet`. | CFO |
 | **Metrics abandoned** | The close is > 60 days old by the same count — stop reporting, escalate; label everything downstream a guess. | CFO |
