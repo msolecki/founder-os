@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import os
 import subprocess
 import tempfile
@@ -90,7 +92,10 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         probe = load_probe_module()
         with self.assertRaisesRegex(probe.ProbeFailure, "claude.*unavailable"):
             probe.require_cli("claude", which=lambda _name: None)
-        self.assertEqual(probe.main([]), 2)
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(probe.main([]), 2)
+        self.assertIn("select --claude and/or --codex", stderr.getvalue())
 
     def test_pass_record_contains_hashes_but_no_business_content(self):
         probe = load_probe_module()
@@ -145,9 +150,8 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         workflow = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(
             encoding="utf-8"
         )
-        self.assertIn(
-            "python3 -m unittest tests.test_installed_host_probes -v", workflow
-        )
+        # The discover run covers this module; a dedicated step ran it twice.
+        self.assertIn("python3 -m unittest discover -s tests", workflow)
         self.assertNotIn("install claude", workflow.lower())
         self.assertNotIn("install codex", workflow.lower())
 
