@@ -118,8 +118,9 @@ nothing, be able to say why — as the board can.
 
 **The system skills are exempt** — `founder-os-init`, `founder-os-doctor`,
 `context-load`, `guardrails`, `state-integrity`, `ingestion-gate`. They are
-cross-cutting, they write no workspace file of their own, and `founder-os-init`
-scaffolds the entire workspace regardless of owner. Do not add `metadata.writes`
+cross-cutting, and they write no workspace file of their own: `founder-os-init`
+scaffolds only the Chief of Staff's paths and every other owner creates its file
+on its first write. Do not add `metadata.writes`
 to them; the validator skips them by design. `SYSTEM_SKILLS` in
 `scripts/validate_package.py` is the list that decides, not this sentence — if
 the two ever disagree, the code is right and this line is the stale copy.
@@ -154,8 +155,9 @@ a weekly sweep, a triage run, a new hypothesis — never appends a second `##`:
 it adds a `### YYYY-MM-DD` entry under the one `## <Heading>`. Two `## Sweep —`
 headings in one file are refused by the gateway, on the second Friday.
 
-The failure this prevents is quiet and it is why the key exists. `founder-os-init`
-scaffolds these headings and nothing else. A skill told to "replace `## Shape`" in
+The failure this prevents is quiet and it is why the key exists. Every new file
+is created with these headings and nothing else — by `founder-os-init` for the
+Chief of Staff's files, by the owner's first write for the rest. A skill told to "replace `## Shape`" in
 a file where nobody scaffolded `## Shape` will helpfully create it — and the next
 skill creates `## Deep hours` for the same thing, and now the file has two
 headings, one of which is read and one of which is furniture the founder can see
