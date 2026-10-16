@@ -364,8 +364,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     # history of a past day, or plants a future one, with today's readings —
     # in the one file a rerun cannot rebuild. The page is regenerable; the
     # series and the envelope beside it are kept to days that happened.
+    # Only an explicit `--now` can be a preview: without one, a run that
+    # crosses midnight would otherwise skip persisting its own day.
     real = _real_today()
-    preview = today != real
+    preview = args.now is not None and today != real
 
     updated = []
     try:
