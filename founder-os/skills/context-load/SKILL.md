@@ -54,13 +54,17 @@ Then, and only then, the one file your decision owns.
 1. **Load the three, in order, with their dates.** The dates are not metadata.
    They are the confidence interval on everything you are about to say.
 
-   **The metrics date is the close, not the file.** Read it from the newest
-   `## Close — YYYY-MM` heading in `metrics.md`: the close is as of the first day
-   after the month it names, so `## Close — 2026-07` is as of 2026-08-01. Never use
-   the file's last-modified date for it — `signal-check` rewrites `## Signals`
-   every Friday, so the file is never more than a week old while the close in it
-   can be three months old (house rule 5). No dated `## Close` heading means no
-   close on record, which is the > 60-day case below.
+   **The metrics date is the close, not the file.** Take it from the first of
+   these that `metrics.md` carries: a `Closed: YYYY-MM-DD` line in `## Close`;
+   else the newest `## Close — YYYY-MM` heading, as of the first day after the
+   month it names (`## Close — 2026-07` is as of 2026-08-01); else the
+   `## Runway — as of YYYY-MM-DD` date. The file's last-modified date counts
+   only when none of the three is written — `signal-check` rewrites
+   `## Signals` every Friday, so the file is never more than a week old while
+   the close in it can be three months old (house rule 5). None of the three
+   written is a workspace with **no close yet** (a fresh install), not an
+   abandoned close: say `no close yet`, and give the file's date as the file's
+   age, never as the close's.
 2. **Stop if `charter.md` is empty.** There is no business described, so there
    is nothing to advise on. Run `founder-os-init`. Do not proceed on the
    assumption that you can infer the business from the other files.
@@ -71,6 +75,9 @@ Then, and only then, the one file your decision owns.
    - **> 60 days** — say the close is overdue and hand to the **CFO** before
      advising on anything the numbers touch. Advising on nine-week-old runway is
      not caution, it is fiction with a decimal point.
+   - **No close yet** — there are no closed numbers to quote. Say so, quote
+     nothing from `metrics.md` as current, and hand the first close to the
+     **CFO** when a decision needs the numbers.
 4. **Load your own file.** The one your decision writes to — `pipeline.md` for
    the Pipeline Coach, `clients/` for the Delivery Lead. That is the fourth
    file, and for most cadences it is the last.

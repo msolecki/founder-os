@@ -3,7 +3,7 @@ name: capacity-check
 description: Compute real deliverable hours before accepting work — run before any yes to a new client, an extra deliverable, or a start date
 metadata:
   writes:
-    - clients/
+    - clients/_capacity.md
 ---
 
 # Capacity Check
