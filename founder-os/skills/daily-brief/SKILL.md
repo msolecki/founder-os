@@ -69,10 +69,12 @@ Read whole:
 - `queue.md` — `## Doing` first: what the founder already has in flight, and how
   long it has been in flight. Yesterday's commitment is an item here, not a
   memory, and whether it closed is a fact rather than a conversation.
-- `reviews/daily/` — the most recent brief before today (the newest dated
-  file, not literally yesterday's: Monday's predecessor is Friday's): what did
-  they commit to? Its `## Triage` also carries the list of proposals already
-  answered, which step 0 needs.
+- `reviews/daily/` — the most recent brief before today: the newest dated
+  file that carries `## The one thing`, not literally yesterday's (Monday's
+  predecessor is Friday's) and not a file `triage` created with only
+  `## Triage` in it, which carries no list and would re-queue every proposal.
+  What did they commit to? Its `## Triage` also carries the list of proposals
+  already answered, which step 0 needs.
 
 Read for one named section only:
 
@@ -170,7 +172,7 @@ Read for one named section only:
    line lives in `goals.md` for the whole quarter, and a refused proposal never
    reaches the queue at all. So every answer — taken or refused — is also a line
    under `Proposals answered:` in today's `## Triage`, keyed by the proposal's
-   source and its verbatim text. Carry the most recent brief's list forward, and drop an entry
+   source and its verbatim text. Carry the predecessor brief's list forward (the newest one carrying `## The one thing`), and drop an entry
    only when its source line is gone from the section you read it in — you read
    every one of those sections this morning, so you know. A `Proposed:` line whose
    key is on the list has been answered: leave it alone, whatever the queue
@@ -235,7 +237,8 @@ Read for one named section only:
 5. **On an empty input, say so in one line and do not fill the gap.** `clients/`
    is empty on day one and stays empty until the first engagement; `reviews/daily/`
    is empty until tomorrow; `pipeline.md` is empty until the Pipeline Coach has
-   run once. *"No clients on the books yet, so nothing to score"* is a true line
+   run once. An absent `pipeline.md`, `content.md`, `network.md` or `clients/` is
+   the same empty input, not an error. *"No clients on the books yet, so nothing to score"* is a true line
    that costs four words. The brief that invents a rotting item to look useful on
    a thin workspace has taught the founder on day one that this file is padded,
    and they will read it accordingly for as long as they keep it.

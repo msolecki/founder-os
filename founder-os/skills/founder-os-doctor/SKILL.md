@@ -75,8 +75,8 @@ a health report that lists a screen of green checks trains the founder to skim i
 | **Goals without bets** | `goals.md` has no bet with a numeric kill condition, and the quarter is > 1/3 gone | A bet without a threshold cannot be killed, so it will not be. `kill-or-continue` has nothing to force. |
 | **Orphan clients** | A `clients/*.md` file names no client that `metrics.md` shows revenue for, and is unmodified > 90 days | Two possibilities and both matter: the engagement ended and nobody closed the file, or work is being delivered and not billed. |
 | **Empty decision log** | `decisions/` is empty after 30 days of use | House rule 3 is not being followed. Six months from now the founder asks why they raised rates and the answer will not exist. `annual-review` has nothing to read. |
-| **Cadence never fired** | `reviews/daily/` is empty, and `charter.md` is more than 3 days old | `setup-cadences` was never run. The workspace looks installed and no cadence exists: scheduled state is installed on the founder's machine only after they approve that skill. This is the most common finding on a workspace that "went quiet in week one", and it is the cheapest to fix. |
-| **Cadence gone quiet** | `reviews/daily/` has files, but none for the last 5 weekdays | It fired before and it stopped. **You cannot see why** — the scheduler is on the host and you have no shell. The job may have been removed, the host binary or authentication may have changed, or cron may have missed sleeping-machine runs. Report the last date you can see and hand to `setup-cadences`; its per-cadence logs and smoke test are where the answer actually is. |
+| **Cadence never fired** | `reviews/daily/` holds no brief (a file carrying `## The one thing`; a triage-only file is not one), and `charter.md` is more than 3 days old | `setup-cadences` was never run. The workspace looks installed and no cadence exists: scheduled state is installed on the founder's machine only after they approve that skill. This is the most common finding on a workspace that "went quiet in week one", and it is the cheapest to fix. |
+| **Cadence gone quiet** | `reviews/daily/` has briefs (files carrying `## The one thing`), but none for the last 5 weekdays | It fired before and it stopped. **You cannot see why** — the scheduler is on the host and you have no shell. The job may have been removed, the host binary or authentication may have changed, or cron may have missed sleeping-machine runs. Report the last date you can see and hand to `setup-cadences`; its per-cadence logs and smoke test are where the answer actually is. |
 | **Broken link** | A `[[slug]]` in any file resolves to neither a workspace file nor a `network.md` `## Map` row | House rule 6 says a name another file holds is a link. A link that resolves to nothing is worse than the retyped name it replaced: it looks joined. `follow-up-sweep` reads `## Map` and `pipeline-review` reads `pipeline.md`, and a dangling `[[acme-corp]]` means one of them is advising on a company the other cannot see. Report the file, the line and the slug, and hand to the owner of the file holding the link — the fix is theirs, and inventing the missing row would be inventing an entity. |
 | **Inbox not drained** | `inbox.md` `## Inbox` is non-empty and `reviews/daily/` has a file from today or later | The inbox has no clock because it has a drain — `triage` and `daily-brief` empty it every run. A brief that ran and left lines behind is a brief that skipped step 0, and those lines are now in the one file with no cap, no clock and no reaper. This is the graveyard forming in the door built to have none. Hand to the **Chief of Staff**; do not drain it yourself, because draining means deciding what each line is, and that is the triage you are not running. |
 | **Briefs nobody acted on** | 10+ files in `reviews/daily/`, and fewer than 1 in 5 of their `## The one thing` items appear in `queue.md` `## Done` or `## Dropped` | The company is writing and nobody is reading. Every other check here finds state that is wrong; this one finds state that is fine and ignored, which is the failure that ends the install — the cadences fire, the files fill, and the founder stopped opening them in week three. **Say what this does and does not measure**: it sees whether the one thing reached the queue, not whether the founder did the work. A founder who does the work and never closes the item trips this check and is right to be annoyed. Report the ratio and the window, ask which of the two it is, and hand to the **Chief of Staff**. Never repair — there is nothing structural here to fix. |
@@ -122,13 +122,16 @@ lifecycle exemption, and a repair promised across that line can never succeed.
   only a heading the map declares. A heading the map does not declare is a
   finding for its owner, never a repair: deleting it would destroy content.
 
-**For any other owner's file, the same two repairs go through its owner.** Return
-the shared sibling request (`references/orchestration.md`) for the owner in
-`owns:`, naming one workflow that role holds whose `metadata.writes` declares
-the path, with the path alone in `expected_persistence` and a handoff that asks
-for the empty stub or the empty heading and nothing else — a create-only write
-for a missing file. The main thread opens that role; you re-read the file when
-it returns and re-run the check.
+**For any other owner's file, neither repair is yours.** A missing file is not
+stubbed by anyone: its owner in `owns:` creates it on its first real run, with
+real content under its declared headings, so report `not yet written —
+<owner>'s first run creates it` and hand to that owner by name. A missing
+heading in an existing file goes through its owner: return the shared sibling
+request (`references/orchestration.md`) for the owner in `owns:`, naming one
+workflow that role holds whose `metadata.writes` declares the path, with the
+path alone in `expected_persistence` and a handoff that asks for the empty
+heading and nothing else. The main thread opens that role; you re-read the file
+when it returns and re-run the check.
 
 Everything else is a handoff, by name and with the finding attached: stale
 metrics → **CFO**. Goals without kill conditions → **Strategist**. Orphan client
@@ -223,8 +226,8 @@ count, or a ratio. **Nothing the founder wrote enters it.**
 | `workspace` | `<present>/<declared>` against `workspace_files:`, then the names of any missing entries | Those names come from `ownership.yaml`. The founder did not choose them. |
 | `sections` | Per file, the *declared* headings that are missing, spelled from the map. Undeclared headings by **count only** | An undeclared heading is text the founder wrote. `## Acme renewal` is a client name in a heading. |
 | `metrics` | Days since the close, counted as **Stale metrics** counts them, or `no close yet` | An age, not a number from inside the file. |
-| `cadence` | `live`, `quiet <N>d`, or `never` | Derived from filenames and dates. |
-| `briefs` | Count, and days since the newest | Counts. |
+| `cadence` | `live`, `quiet <N>d`, or `never` | Derived from the dates of brief files — those carrying `## The one thing`; a triage-only file is not a brief. |
+| `briefs` | Count of `reviews/daily/` files carrying `## The one thing`, and days since the newest | Counts. |
 | `queue` | Item counts per section | Counts. Never an item's text — a queue line is usually a client obligation. |
 | `clients` | Count, and how many tripped **Orphan clients** | Counts. Never a filename: `clients/*.md` is named after the client. |
 | `decisions` | Count of files in `decisions/` | A count. Decision titles are strategy. |
