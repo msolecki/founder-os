@@ -61,6 +61,11 @@ GATEWAY_TOOLS = frozenset({
     "close_role_session",
 })
 OUTBOUND_TOOLS = frozenset({"Bash", "WebFetch", "WebSearch"})
+# Host-internal tools that touch no file, network or process. A role needs
+# ToolSearch to load its own deferred gateway tools on Claude Code — denying it
+# leaves the role holding tool names it can never call — and TodoWrite only
+# keeps the agent's own checklist. Exact names: anything else stays denied.
+ROLE_HARMLESS_TOOLS = frozenset({"ToolSearch", "TodoWrite"})
 # A role does not spawn subagents. One-level orchestration is the packaged
 # contract (`check_one_level_orchestration`) and no role's frontmatter lists
 # these, but the guard denies them anyway: a role that can spawn a subagent
@@ -883,7 +888,15 @@ def _bind_generic_role(agent_type, tool_name, data, role):
         log("allow: generic gateway call carries no agent, turn or session id "
             "— no identity to bind the role lockdown to")
         return
-    if _mapped_agent_type(stem) == role:
+    bound = _mapped_agent_type(stem)
+    if bound == role:
+        return
+    if bound == MAIN_AGENT_TYPE:
+        # A Codex turn the recorder mapped to the founder's own thread. That
+        # thread holds sessions by design, and overwriting its mapping with a
+        # role would lock the founder out of their own turn.
+        log("allow: gateway call on the recorded main-thread turn — "
+            "the main-thread mapping is never rebound")
         return
     target_dir = os.path.join(_data_root(), "agent-types")
     temporary = None
@@ -1249,6 +1262,8 @@ def main():
     if MCP_TOOL.match(tool_name):
         check_gateway(agent_type, role, tool_name, tool_input)
         allow()
+    if tool_name in ROLE_HARMLESS_TOOLS:
+        allow("host-internal tool with no file, network or process reach")
     if tool_name in NESTED_AGENT_TOOLS:
         _deny_tool(
             agent_type,
