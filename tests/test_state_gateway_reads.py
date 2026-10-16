@@ -681,6 +681,37 @@ class RoleSessionStoreReadTests(unittest.TestCase):
             )
         )
 
+    def test_role_set_comes_from_agents_and_one_bad_file_disables_only_itself(self) -> None:
+        agents = self.packaged_root / "agents"
+        # A YAML flow list, quoted items and a comment are valid frontmatter.
+        (agents / "cfo.md").write_text(
+            '---\nname: cfo\nskills: ["revenue-review", week-plan]  # note\n'
+            "---\n# role\n",
+            encoding="utf-8",
+        )
+        (agents / "chief-of-staff.md").write_text(
+            "---\nname: chief-of-staff\nskills: not-a-list\n---\n",
+            encoding="utf-8",
+        )
+        (agents / "extra-role.md").write_text(
+            "---\nname: extra-role\nskills:\n  - week-plan\n---\n",
+            encoding="utf-8",
+        )
+        roles = self.store.roles()
+        self.assertIn("extra-role", roles)
+        self.assertNotIn("chief-of-staff", roles)
+        self.assertEqual(13, len(roles))
+        for role, workflow in (("cfo", "week-plan"), ("extra-role", "week-plan")):
+            with self.subTest(role=role):
+                self.assertTrue(self.store.open(
+                    "workspace-1", role, "corr-derived", workflow, "business"
+                ))
+        self.assert_invalid(
+            lambda: self.store.open(
+                "workspace-1", "chief-of-staff", "corr-x", "daily-brief", "business"
+            )
+        )
+
     def test_blank_workspace_or_correlation_id_cannot_create_persisted_session_metadata(self) -> None:
         self.assert_invalid(
             lambda: self.store.open(

@@ -18,7 +18,7 @@ if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
 from mcp.gateway import Gateway
-from mcp.ownership import OwnershipSchema
+from mcp.ownership import OwnershipError, OwnershipSchema
 from mcp.safe_io import SafeStateIO
 from mcp.sessions import JournalError, RoleSessionStore
 from mcp.workspaces import WorkspaceResolver
@@ -293,7 +293,7 @@ class OwnershipSchemaTests(unittest.TestCase):
             _ownership_yaml() if contents is None else contents,
             encoding="utf-8",
         )
-        return OwnershipSchema.load(path)
+        return OwnershipSchema.load(path, roles=set(ROLES))
 
     def test_load_rejects_unknown_or_missing_top_level_keys_and_wrong_types(self):
         valid = _minimal_ownership_yaml()
@@ -421,6 +421,75 @@ class OwnershipSchemaTests(unittest.TestCase):
             ["## Scope", "## Health", "## Retro"],
             list(schema.sections_for("clients/acme.md")),
         )
+
+    def test_owner_check_is_skipped_only_without_a_role_set(self):
+        document = _minimal_ownership_yaml().replace(
+            "  cfo:", "  mystery-role:", 1
+        )
+        path = self.root / "ownership.yaml"
+        path.write_text(document, encoding="utf-8")
+        self.assertEqual("mystery-role", OwnershipSchema.load(path).owner_for(
+            "metrics.md"
+        ))
+        with self.assertRaises(OwnershipError):
+            OwnershipSchema.load(path, roles={"cfo", "portfolio-manager"})
+
+    def test_a_directory_member_carries_an_ordered_subset_of_its_vocabulary(self):
+        """`reviews/quarterly/` holds a plan and an annual review, which share
+        no heading; demanding all ten refused both shipped templates."""
+        schema = self._load()
+        path = "reviews/quarterly/2026-Q3.md"
+        accepted = {
+            "quarterly plan": (
+                "## Last quarter's verdicts\n## Never measured\n"
+                "## This quarter's bets\n## What we are not doing\n"
+            ),
+            "annual review": "## Scorecard\n## Blind months — 2026\n",
+            "one heading": "## Verdicts\n### 2026-07-01\n### 2026-08-01\n",
+        }
+        for name, document in accepted.items():
+            with self.subTest(accepted=name):
+                schema.validate_document(path, "# Q\n" + document)
+                self.assertEqual((), schema.missing_sections(path, document))
+        refused = {
+            "no declared heading": "# Q\n\nprose only\n",
+            "out of order": "## Verdicts\n## Never measured\n",
+            "repeated": "## Verdicts\n## Verdicts\n",
+            "repeated with suffixes": (
+                "## Verdicts — 2026-07\n## Verdicts — 2026-08\n"
+            ),
+            "undeclared": "## Never measured\n## Notes\n",
+        }
+        for name, document in refused.items():
+            with self.subTest(refused=name):
+                with self.assertRaises(OwnershipError) as raised:
+                    schema.validate_document(path, document)
+                self.assertEqual(
+                    "INVALID_DOCUMENT_STRUCTURE", raised.exception.code
+                )
+        # A flat file still carries its whole list.
+        with self.assertRaises(OwnershipError):
+            schema.validate_document("week.md", "## Arithmetic\n")
+
+    def test_a_file_declared_inside_a_directory_keeps_its_own_sections(self):
+        """`clients/_capacity.md` is an aggregate, not a client file."""
+        document = _ownership_yaml()
+        document = document.replace(
+            "  - clients/\n", "  - clients/\n  - clients/_capacity.md\n", 1
+        )
+        document = document.replace(
+            "    - clients/\n", "    - clients/\n    - clients/_capacity.md\n", 1
+        )
+        document += '  clients/_capacity.md:\n    - "## Capacity"\n'
+        schema = self._load(document)
+        path = "clients/_capacity.md"
+
+        self.assertEqual("delivery-lead", schema.owner_for(path))
+        schema.validate_document(path, "## Capacity — 2026-07-27\nUtil: 70%\n")
+        with self.assertRaises(OwnershipError):
+            schema.validate_document(path, "## Scope\n")
+        # Still the directory `clients/`, so an old workspace gets it created.
+        self.assertEqual("clients/", schema.directory_for(path))
 
 
 class StateGatewayWriteTests(unittest.TestCase):
@@ -790,8 +859,10 @@ class StateGatewayWriteTests(unittest.TestCase):
                     response,
                     code="INVALID_DOCUMENT_STRUCTURE",
                     action=(
-                        "Carry every heading references/ownership.yaml "
-                        "declares for this path, in its order and no others, then retry"
+                        "Carry the headings references/ownership.yaml "
+                        "declares for this path (every one for a file, a "
+                        "subset for a directory member), in its order, each "
+                        "once and no others, then retry"
                     ),
                 )
 

@@ -320,13 +320,14 @@ class Gateway:
         """
         path = self._packaged_root / "references" / "ownership.yaml"
         try:
-            stamp = (path.stat().st_mtime_ns, path.stat().st_size)
+            info = path.stat()
         except OSError:
             raise OwnershipError("STATE_IO_ERROR")
+        stamp = (info.st_mtime_ns, info.st_size)
         cached = getattr(self, "_ownership_cache", None)
         if cached is not None and cached[0] == stamp:
             return cached[1]
-        schema = OwnershipSchema.load(path)
+        schema = OwnershipSchema.load(path, roles=self._sessions.roles())
         self._ownership_cache = (stamp, schema)
         return schema
 
