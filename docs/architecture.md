@@ -100,7 +100,6 @@ founder os/                     ← repo root (marketplace + source)
 │   ├── .claude-plugin/plugin.json   ← Claude Code manifest (name, version)
 │   ├── .mcp.json                    ← Claude local state-gateway adapter
 │   ├── .codex-plugin/plugin.json    ← Codex manifest
-│   ├── CLAUDE.md               ← guidance injected into every session
 │   ├── COMMANDS.md             ← GENERATED catalogue (do not hand-edit)
 │   ├── README.md               ← product philosophy
 │   ├── agents/*.md             ← 13 agents (role definitions)
@@ -111,7 +110,8 @@ founder os/                     ← repo root (marketplace + source)
 │   ├── mcp/                    ← eight-tool local state gateway
 │   ├── scripts/cadence_manager.py ← safe local scheduler manager
 │   ├── scripts/dashboard/      ← the `/dashboard` renderer (package)
-│   ├── references/             ← house-rules, ownership.yaml, thresholds.yaml,
+│   ├── references/             ← guidance.md (injected into every session),
+│   │                             house-rules, ownership.yaml, thresholds.yaml,
 │   │                             linking, orchestration, multi-business,
 │   │                             skill-template
 │   └── images/                 ← org chart, etc.
@@ -188,7 +188,7 @@ Three kinds of skill:
 
 | Event | Hook | What it does |
 |---|---|---|
-| `SessionStart` (startup/resume/clear/compact) | `session-context.py` | Injects `founder-os/CLAUDE.md` into the session as additional context. This is how the house rules and state map are present in every session. |
+| `SessionStart` (startup/resume/clear/compact) | `session-context.py` | Injects `founder-os/references/guidance.md` into the session as additional context. This is how the house rules and state map are present in every session. |
 | `UserPromptSubmit` and `SubagentStart` | `record-agent.py` | Records `turn_id → agent_type` for Codex (Claude includes `agent_type` directly; Codex identifies later tool calls by `turn_id`). Lets one guard enforce both hosts. The same script is registered under both events and each registration passes `--event`, because a payload field that stops arriving would record nothing for the main turn — and the guard denies every call on a turn it cannot resolve. |
 | `PreToolUse` on direct file, shell, web, and MCP tools | `ownership-guard.py` | Denies known roles direct file/outbound/unknown-MCP access, denies self-elevation, and checks gateway capabilities against native role identity. |
 
@@ -201,7 +201,7 @@ use.
 
 ## Session start: what happens
 
-1. `session-context.py` fires and injects `CLAUDE.md` — the founder-as-CEO
+1. `session-context.py` fires and injects `references/guidance.md` — the founder-as-CEO
    framing, where state lives, the never-outbound/never-money rules, and "ask the
    chief-of-staff when you don't know who to ask."
 2. When a workflow runs, `context-load` (house-rule-1 check) loads `charter.md`,
@@ -313,7 +313,7 @@ The same package runs under Claude Code and Codex:
   registration records the main turn, `--event subagent-start` records a
   subagent's role. A Codex turn with no mapping is denied rather than treated as
   the founder. `AGENTS.md` at the repo root
-  points Codex at `founder-os/CLAUDE.md` as the canonical guidance.
+  points Codex at `founder-os/references/guidance.md` as the canonical guidance.
 - The main thread prefers a named native role where the host exposes it. The
   portable generic-agent fallback receives the byte-identical packaged role
   file, one active workflow, one bounded handoff, and the same role capability;

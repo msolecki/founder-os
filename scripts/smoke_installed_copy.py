@@ -55,7 +55,7 @@ def create_installed_copy(source_plugin, marketplace_root):
     installed_plugin.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source_plugin, installed_plugin)
 
-    guidance_path = installed_plugin / "CLAUDE.md"
+    guidance_path = installed_plugin / "references" / "guidance.md"
     marker = "<!-- installed-copy-smoke:%s -->" % installed_plugin
     guidance = guidance_path.read_text(encoding="utf-8")
     guidance_path.write_text(
@@ -104,7 +104,7 @@ def check_session_context(installed_plugin, cwd, hook_plugin_root=None):
     installed_plugin = Path(installed_plugin)
     runtime_root = Path(hook_plugin_root or installed_plugin)
     hook_path = installed_plugin / "hooks" / "session-context.py"
-    installed_guidance = (installed_plugin / "CLAUDE.md").read_text(
+    installed_guidance = (installed_plugin / "references" / "guidance.md").read_text(
         encoding="utf-8"
     )
     expected_context = CONTEXT_PREFIX + installed_guidance

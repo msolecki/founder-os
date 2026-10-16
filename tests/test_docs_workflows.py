@@ -1019,13 +1019,13 @@ def _flowed(text):
 
 
 class CanonicalGuidanceContractTest(unittest.TestCase):
-    """The always-loaded CLAUDE.md must agree with the map it defers to."""
+    """The always-loaded guidance must agree with the map it defers to."""
 
     # A term in the file map: a lowercase word that may carry digits or
     # hyphens, so the first workspace file named like `client-health.md` does
     # not break a test that is correct on both sides.
     TERM = r"[a-z][a-z0-9-]*"
-    CANONICAL = (REPO_ROOT / "founder-os" / "CLAUDE.md").read_text(
+    CANONICAL = (REPO_ROOT / "founder-os" / "references" / "guidance.md").read_text(
         encoding="utf-8"
     )
     OWNERSHIP = (
@@ -1040,7 +1040,7 @@ class CanonicalGuidanceContractTest(unittest.TestCase):
     # rather than maintained — but it may never silently discover nothing.
     RULE_ZERO_MARKER = "no signature"
     RULE_ZERO_REQUIRED = {
-        "founder-os/CLAUDE.md",
+        "founder-os/references/guidance.md",
         "founder-os/references/house-rules.md",
         "docs/house-rules.md",
         "docs/concepts.md",
@@ -1050,7 +1050,7 @@ class CanonicalGuidanceContractTest(unittest.TestCase):
         return set(yaml.safe_load(self.OWNERSHIP)["workspace_files"])
 
     def test_claude_md_file_map_matches_ownership_workspace_files(self):
-        # CLAUDE.md carries the file map as one prose sentence ("one owner per
+        # The guidance carries the file map as one prose sentence ("one owner per
         # file: inbox, charter, …"). Expand it and require set equality with
         # `workspace_files:` — the 2026-07-30 audit found `evaluations/`
         # shipped in the map but missing from the sentence (RULE-001).
@@ -1058,7 +1058,7 @@ class CanonicalGuidanceContractTest(unittest.TestCase):
             r"one owner per file:\s*(.*?)\.\s", _flowed(self.CANONICAL)
         )
         self.assertIsNotNone(
-            match, "CLAUDE.md no longer carries the file-map sentence"
+            match, "guidance.md no longer carries the file-map sentence"
         )
         expanded = []
         for term in re.findall(
@@ -1082,7 +1082,7 @@ class CanonicalGuidanceContractTest(unittest.TestCase):
     def test_public_state_page_lists_every_owned_workspace_file(self):
         # docs/workspace-state.md calls itself "the full map of that state".
         # It is the reader-facing twin of `workspace_files:` and drifted the
-        # same way CLAUDE.md did: `evaluations/` shipped owned but unlisted.
+        # same way the guidance did: `evaluations/` shipped owned but unlisted.
         listed = {
             row[0]
             for row in re.findall(
@@ -1094,7 +1094,7 @@ class CanonicalGuidanceContractTest(unittest.TestCase):
         self.assertEqual(sorted(listed), sorted(self._workspace_files()))
 
     def test_rule_zero_enumerations_agree_everywhere(self):
-        # The CLAUDE.md summary may not be stricter than the full text it
+        # The guidance summary may not be stricter than the full text it
         # defers to, and no public mirror may lag either (RULE-002).
         tracked = subprocess.run(
             ["git", "ls-files", "--", "*.md"],

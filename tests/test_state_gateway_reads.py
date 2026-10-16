@@ -995,9 +995,9 @@ class SafeStateIOTests(unittest.TestCase):
         self.workspace = self.root / "workspace"
         self.workspace.mkdir()
         self.package = write_packaged_root(self.root / "package")
-        (self.package / "CLAUDE.md").write_text("# package\n", encoding="utf-8")
         references = self.package / "references"
         references.mkdir(exist_ok=True)
+        (references / "guidance.md").write_text("# package\n", encoding="utf-8")
         # `ownership.yaml` is deliberately absent from this list: the fixture
         # already wrote the real map and the gateway parses it on every read.
         # Overwriting it with its own filename made the schema unparseable, so
@@ -1287,7 +1287,7 @@ class SafeStateIOTests(unittest.TestCase):
 
     def test_reference_allowlist_returns_only_authorized_role_workflow_and_package_files(self) -> None:
         allowed = (
-            "CLAUDE.md",
+            "references/guidance.md",
             "agents/chief-of-staff.md",
             "skills/week-plan/SKILL.md",
             "references/ownership.yaml",
@@ -1474,9 +1474,9 @@ class GatewayReadSurfaceTests(unittest.TestCase):
         self.state_file = self.workspace / "state.md"
         self.state_file.write_bytes(b"gateway state\n")
         self.package = write_packaged_root(self.root / "package")
-        (self.package / "CLAUDE.md").write_text("# package\n", encoding="utf-8")
         references = self.package / "references"
         references.mkdir(exist_ok=True)
+        (references / "guidance.md").write_text("# package\n", encoding="utf-8")
         # `ownership.yaml` is deliberately absent from this list: the fixture
         # already wrote the real map and the gateway parses it on every read.
         # Overwriting it with its own filename made the schema unparseable, so
@@ -1628,7 +1628,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
                 return []
 
             def read_reference(self, *args, **kwargs):
-                return {"path": "CLAUDE.md"}
+                return {"path": "references/guidance.md"}
 
         self.gateway._io_factory = lambda *unused: TrackingIO()
         self.payload(
@@ -1646,7 +1646,7 @@ class GatewayReadSurfaceTests(unittest.TestCase):
         self.payload(
             self.gateway.call(
                 "read_reference",
-                {"capability": capability, "path": "CLAUDE.md"},
+                {"capability": capability, "path": "references/guidance.md"},
             )
         )
 

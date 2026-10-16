@@ -257,11 +257,12 @@ claude plugin validate .
 claude plugin validate founder-os
 ```
 
-The marketplace must pass without warnings. The package currently emits one
-addressed warning for `founder-os/CLAUDE.md`: plugin roots are not loaded as
-project context by Claude, so the `SessionStart` hook injects that canonical
-guidance. `tests/test_session_context.py` and the installed-copy smoke pin the
-actual delivery path. Any new or different warning blocks the release.
+Both must pass without warnings; any warning blocks the release. The canonical
+guidance lives at `founder-os/references/guidance.md`, not a root `CLAUDE.md`,
+because plugin roots are not loaded as project context by Claude: the
+`SessionStart` hook injects that canonical guidance.
+`tests/test_session_context.py` and the installed-copy smoke pin the actual
+delivery path.
 
 These local official commands are a release gate, not CI coverage. Adding a
 pinned Claude CLI package to CI would download and execute an npm dependency;

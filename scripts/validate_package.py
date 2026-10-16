@@ -1191,7 +1191,7 @@ VERSION_SCANNED = (
     "docs/trust.md",
     "docs/trust.html",
     "founder-os/README.md",
-    "founder-os/CLAUDE.md",
+    "founder-os/references/guidance.md",
     ".github/ISSUE_TEMPLATE/report.yml",
     ".github/ISSUE_TEMPLATE/idea.yml",
 )
@@ -1346,7 +1346,7 @@ def check_readme_counts(root, agents):
             site / "commands.md", site / "cadences.md",
             site / "troubleshooting.md", site / "og-image.svg",
             site / "concepts.md", site / "agents.md",
-            root / "README.md", root / "CLAUDE.md", root / "COMMANDS.md",
+            root / "README.md", root / "references" / "guidance.md", root / "COMMANDS.md",
             root / "references" / "extensibility.md",
             root / "skills" / "skill-forge" / "SKILL.md",
             root.parent / ".github" / "ISSUE_TEMPLATE" / "idea.yml",

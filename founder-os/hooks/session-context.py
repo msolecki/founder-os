@@ -16,8 +16,8 @@ def _emit_context(text):
 def _emit_warning(root, reason):
     diagnostic = (
         "Founder OS context warning: installed guidance is %s under resolved "
-        "plugin path %s. Do not give Founder OS advice until CLAUDE.md is "
-        "restored."
+        "plugin path %s. Do not give Founder OS advice until "
+        "references/guidance.md is restored."
     ) % (reason, root)
     sys.stderr.write(diagnostic + "\n")
     _emit_context(diagnostic)
@@ -30,7 +30,7 @@ def main():
         or str(Path(__file__).resolve().parents[1])
     )
     root = Path(configured_root).expanduser().resolve()
-    guidance = root / "CLAUDE.md"
+    guidance = root / "references" / "guidance.md"
     try:
         text = guidance.read_text(encoding="utf-8")
     except FileNotFoundError:
