@@ -40,6 +40,9 @@ page that disagrees with the workspace.
 `--json` prints the facts and writes nothing, which is the mode to use when the
 founder asks a question the page already answers.
 
+`--now` with a date other than today is a preview: only the page is written,
+and the series in `snapshots.csv` is left alone unless the run is for today.
+
 ## What it refuses
 
 - It does not repair state. A missing section is reported, never filled in.

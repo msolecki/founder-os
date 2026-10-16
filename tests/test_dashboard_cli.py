@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest import mock
 
@@ -40,6 +41,21 @@ def load_main():
     return importlib.import_module("fos_dashboard.__main__")
 
 
+def standing_on(main, args):
+    """The machine's clock set to the day `--now` names.
+
+    A `--now` that is not today is a preview and persists nothing, so a test
+    that checks what a run persists has to stand on the day it names.
+    """
+    if "--now" not in args:
+        return contextlib.nullcontext()
+    try:
+        day = date.fromisoformat(args[args.index("--now") + 1])
+    except (IndexError, ValueError):
+        return contextlib.nullcontext()
+    return mock.patch.object(main, "_real_today", return_value=day)
+
+
 class TestCli(unittest.TestCase):
     def setUp(self):
         self.main = load_main()
@@ -49,7 +65,8 @@ class TestCli(unittest.TestCase):
     def _run(self, *args):
         out = io.StringIO()
         err = io.StringIO()
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), \
+                standing_on(self.main, args):
             code = self.main.main(list(args))
         return code, out.getvalue(), err.getvalue()
 
@@ -138,6 +155,34 @@ class TestCli(unittest.TestCase):
         self.assertEqual(code, self.main.EXIT_UNRESOLVED)
         self.assertIn("YYYY-MM-DD", err)
 
+    def test_a_now_other_than_today_writes_the_page_and_persists_nothing(self):
+        """A preview must not rewrite the series it is previewing.
+
+        `snapshots.merge` replaces the row for the run's date, so `--now` on a
+        past day overwrote that day's real history with today's readings, and
+        on a future day planted a row nothing ever prunes.
+        """
+        self._run("--home", str(self.workspace), "--now", "2026-07-20")
+        derived = self.workspace / "_dashboard"
+        series = (derived / "snapshots.csv").read_bytes()
+        envelope = (derived / "facts.json").read_bytes()
+        (derived / "index.html").unlink()
+        for day in ("2026-07-19", "2026-12-31"):
+            with self.subTest(day=day):
+                with mock.patch.object(self.main, "_real_today",
+                                       return_value=date(2026, 7, 20)):
+                    out, err = io.StringIO(), io.StringIO()
+                    with contextlib.redirect_stdout(out), \
+                            contextlib.redirect_stderr(err):
+                        code = self.main.main(
+                            ["--home", str(self.workspace), "--now", day])
+                self.assertEqual(code, self.main.EXIT_OK, err.getvalue())
+                self.assertIn("preview", err.getvalue())
+                self.assertIn(day, err.getvalue())
+                self.assertTrue((derived / "index.html").exists())
+                self.assertEqual((derived / "snapshots.csv").read_bytes(), series)
+                self.assertEqual((derived / "facts.json").read_bytes(), envelope)
+
     def test_unreadable_file_still_produces_a_page_and_exit_zero(self):
         (self.workspace / "metrics.md").write_bytes(b"\xff\xfe\x00")
         code, _, _ = self._run("--home", str(self.workspace), "--now", "2026-07-20")
@@ -158,7 +203,8 @@ class TestPage(unittest.TestCase):
     def _run(self, *args):
         out = io.StringIO()
         err = io.StringIO()
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), \
+                standing_on(self.main, args):
             code = self.main.main(list(args))
         return code, out.getvalue(), err.getvalue()
 
@@ -382,7 +428,8 @@ class TestRegistry(unittest.TestCase):
         out = io.StringIO()
         err = io.StringIO()
         with mock.patch.dict(os.environ, environment, clear=True):
-            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), \
+                    standing_on(self.main, args):
                 code = self.main.main(list(args))
         return code, out.getvalue(), err.getvalue()
 
@@ -626,7 +673,7 @@ class TestRunnableAsACommand(unittest.TestCase):
         shutil.copytree(EXAMPLE, workspace)
         result = subprocess.run(
             [sys.executable, str(DASHBOARD),
-             "--home", str(workspace), "--now", "2026-07-20"],
+             "--home", str(workspace)],
             capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("index.html", result.stdout)
