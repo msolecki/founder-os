@@ -55,6 +55,15 @@ Read first, in order — house rule 1:
    Do not reconstruct the week from the founder's memory — they will remember it
    generously and inaccurately, and an audit against a flattering memory is
    worse than none. Say so, run `week-plan` Monday, audit next Friday.
+
+   **No calendar, no audit either — and say which input is missing, in the
+   file.** The calendar is not a workspace file and no tool you hold can read it;
+   it reaches you only when the founder supplies it in the session. The Friday
+   15:00 scheduled run has nobody to supply it. Then write exactly
+   `blocked — needs founder input: last week's calendar, planned vs actual hours`
+   as the whole body of `## Audit` and stop. Never estimate the hours: an
+   invented audit feeds `## Ledger`, `signal-check` and `energy-audit`, and every
+   one of them would quote it as fact.
 2. **Account for every hour.** Assign each actual hour to a planned block or to
    `unplanned`. Do not round in the founder's favour. Unplanned hours get a
    second column: whose priority was that?
@@ -81,7 +90,8 @@ Read first, in order — house rule 1:
 
 Fill the `## Audit` section of `week.md` — the file `week-plan` wrote on Monday.
 Change nothing else in that file; `week-plan` rewrites it and carries the ledger
-forward.
+forward. Without the calendar (step 1), the section's whole body is the one
+`blocked — needs founder input: …` line.
 
     ## Audit
     Planned <h> / actual <h> · unplanned <h> (<n>% of the week)

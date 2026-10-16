@@ -51,6 +51,15 @@ Read first, in order — house rule 1:
 
 ## Steps
 
+0. **No calendar, no arithmetic.** The calendar is not a workspace file and no
+   tool you hold can read it; it reaches you only when the founder supplies it in
+   the session, and the Monday 08:30 scheduled run has nobody to supply it.
+   Without it, available hours are unknown and every number below would be
+   invented. Still rewrite `week.md` as the Output says — carry `## Shape` and
+   `## Ledger` forward and prepend last week's ledger line — but write exactly
+   `blocked — needs founder input: this week's calendar, what others have already booked`
+   as the body of `## Arithmetic`, leave `## Blocks`, `## Unfunded` and
+   `## The trade` empty, and stop. Never guess the hours.
 1. **Do the arithmetic first, and say it first.** Available hours minus
    committed delivery hours equals free hours. Total the bets' required hours.
    If required > free, the plan is fiction and everything below it is theatre —
