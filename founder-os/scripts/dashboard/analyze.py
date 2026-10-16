@@ -535,11 +535,15 @@ def build_bets(sources, today: date):
             tuple(findings))
 
 
+# Signed, because an over-committed week has a negative Free — the week this
+# panel most needs to read — and strict, so a token like `4..5` fails the match
+# rather than `float()`.
+_HOURS = r"-?\d+(?:\.\d+)?"
 _ARITHMETIC = re.compile(
-    r"Available\s+(?P<available>[\d.]+)\s*h.*?"
-    r"Committed delivery\s+(?P<delivery>[\d.]+)\s*h.*?"
-    r"Free\s+(?P<free>[\d.]+)\s*h.*?"
-    r"Planned\s+(?P<planned>[\d.]+)\s*h", re.S)
+    r"Available\s+(?P<available>%s)\s*h.*?"
+    r"Committed delivery\s+(?P<delivery>%s)\s*h.*?"
+    r"Free\s+(?P<free>%s)\s*h.*?"
+    r"Planned\s+(?P<planned>%s)\s*h" % ((_HOURS,) * 4), re.S)
 _TABLE_ROW = re.compile(r"^\|(?P<cells>.+)\|[ \t]*$", re.M)
 _TIME_RANGE = re.compile(r"(\d{1,2}):(\d{2})\s*[–—-]\s*(\d{1,2}):(\d{2})")
 # The normal band may be written as a range ("normal 3-5") or as a single value
