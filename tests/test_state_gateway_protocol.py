@@ -309,5 +309,23 @@ class StdioGatewayContractTests(unittest.TestCase):
             self.assertEqual(response["jsonrpc"], "2.0")
 
 
+
+class NativeWindowsTests(unittest.TestCase):
+    def test_native_windows_exits_with_wsl_guidance_before_importing_fcntl(self) -> None:
+        import contextlib
+        import io
+        import runpy
+        from unittest import mock
+
+        stderr = io.StringIO()
+        with mock.patch.object(sys, "platform", "win32"), \
+                contextlib.redirect_stderr(stderr), \
+                self.assertRaises(SystemExit) as raised:
+            runpy.run_path(str(ENTRYPOINT), run_name="__main__")
+
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("wsl --install", stderr.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

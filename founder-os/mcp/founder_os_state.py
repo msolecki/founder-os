@@ -6,6 +6,19 @@ from pathlib import Path
 import sys
 
 
+# The state layer needs POSIX locking and dir_fd-relative opens; native
+# Windows Python has neither, so stop with an actionable message instead of
+# an ImportError traceback.
+WINDOWS_UNSUPPORTED = (
+    "Founder OS does not run on native Windows: its state server needs POSIX "
+    "file locking and symlink-safe opens. Install WSL (wsl --install), open "
+    "Claude Code or Codex inside the WSL shell, and run setup again there."
+)
+if sys.platform == "win32":
+    sys.stderr.write(WINDOWS_UNSUPPORTED + "\n")
+    raise SystemExit(1)
+
+
 if __package__ in (None, ""):
     package_root = str(Path(__file__).resolve().parents[1])
     if package_root not in sys.path:

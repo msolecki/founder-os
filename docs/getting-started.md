@@ -31,6 +31,7 @@ workspace before installing.
 |---|---|
 | A recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) installation | Founder OS is a plugin, not a standalone app. |
 | Python 3.9+ | Runs the local state gateway and host hooks. |
+| macOS, Linux, or WSL on Windows | The state gateway needs POSIX file locking; native Windows is not supported. Install WSL (`wsl --install`) and run Claude Code or Codex inside it. |
 | PyYAML *(development/tests only)* | Runs the full package validator; the installed runtime remains dependency-light. |
 | Node.js 20+ *(development/tests only)* | Runs the landing-page behavior contract test. |
 | A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Every workflow also works manually. |

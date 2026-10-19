@@ -270,5 +270,30 @@ class TestSessionContextFailureVisibility(unittest.TestCase):
                 )
 
 
+
+class TestNativeWindowsSessionContext(unittest.TestCase):
+    def test_native_windows_replaces_guidance_with_wsl_warning(self):
+        import contextlib
+        import io
+        from unittest import mock
+
+        spec = importlib.util.spec_from_file_location(
+            "session_context", SESSION_HOOK
+        )
+        hook = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(hook)
+        stdout = io.StringIO()
+        with mock.patch.object(sys, "platform", "win32"), \
+                contextlib.redirect_stdout(stdout), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(hook.main(), 0)
+
+        context = json.loads(stdout.getvalue())[
+            "hookSpecificOutput"
+        ]["additionalContext"]
+        self.assertEqual(context, hook.WINDOWS_UNSUPPORTED)
+        self.assertIn("wsl --install", context)
+
+
 if __name__ == "__main__":
     unittest.main()
