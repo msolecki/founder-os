@@ -23,7 +23,19 @@ def _emit_warning(root, reason):
     _emit_context(diagnostic)
 
 
+WINDOWS_UNSUPPORTED = (
+    "Founder OS context warning: this session runs on native Windows, where "
+    "the Founder OS state server cannot start. Do not run Founder OS "
+    "workflows here. Tell the user to install WSL (wsl --install), open "
+    "Claude Code or Codex inside the WSL shell, and run setup again there."
+)
+
+
 def main():
+    if sys.platform == "win32":
+        sys.stderr.write(WINDOWS_UNSUPPORTED + "\n")
+        _emit_context(WINDOWS_UNSUPPORTED)
+        return 0
     configured_root = (
         os.environ.get("PLUGIN_ROOT")
         or os.environ.get("CLAUDE_PLUGIN_ROOT")
