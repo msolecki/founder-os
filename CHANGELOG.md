@@ -5,6 +5,8 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+## 2.9.1 — 2026-10-19
+
 **Native Windows stops with a pointer to WSL instead of a traceback.** The
 state gateway needs POSIX file locking and `dir_fd`-relative, symlink-safe
 opens, which native Windows Python does not provide, so the
@@ -13,6 +15,9 @@ It now exits before that import with a message to install WSL and run Claude
 Code or Codex inside it, and the `SessionStart` hook tells the session the same
 in place of the guidance. The requirement tables in the README and
 `docs/getting-started.md` name macOS, Linux, or WSL on Windows.
+Nothing else moved: the guard still reads a tool's file arguments and never a
+shell command, and the package still ships **57 workflows** and runs
+**21 build-time checks**.
 
 ## 2.9.0 — 2026-10-16
 

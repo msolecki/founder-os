@@ -35,7 +35,7 @@ CADENCES_PATH = (
 DOCTOR_PATH = (
     REPO_ROOT / "founder-os" / "skills" / "founder-os-doctor" / "SKILL.md"
 )
-RELEASE_VERSION = "2.9.0"
+RELEASE_VERSION = "2.9.1"
 # The most recent published tag, and a record rather than a site: it names an
 # entry that already shipped, so a bump moves RELEASE_VERSION above and leaves
 # this alone until the release after next freezes a new one.
