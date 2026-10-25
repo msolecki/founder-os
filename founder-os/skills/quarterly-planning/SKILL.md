@@ -84,6 +84,7 @@ On the complete path, write one `### Bet` under `goals.md` `## Bets`:
     Cap: stop at <supplied hours> h or <supplied cash cap>, or <judgment date> — whichever comes first
     If wrong: <what is lost, concretely> — reversible in <time>
     Kill if: <metric> is below <numeric threshold> on <date>
+    Counted from: <path> ## <Section> | amount >= <n> | target <n>   (optional; grammar in docs/dashboard.md)
 
 `Opened:` is the run date. `Judgment date:` is the supplied 90-day horizon —
 exactly 90 days after `Opened:` — and each line carries the bare date and
@@ -241,6 +242,7 @@ Replace `goals.md` with this quarter's bets:
     Cap: stop at <hours> h or <cash>, or <date> — whichever comes first
     If wrong: <what is lost, concretely> — reversible in <time>
     Kill if: <metric> is below <value> on <date>
+    Counted from: <path> ## <Section> | amount >= <n> | target <n>   (optional; grammar in docs/dashboard.md)
 
 Carry every open `Experiment:` line forward under the bet it serves, or under
 `## Bets` when its bet was closed — the experiment is still open, and its
