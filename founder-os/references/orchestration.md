@@ -154,7 +154,7 @@ in a human-facing error receipt containing these five facts:
 | `WORKSPACE_UNRESOLVED` | Ask which business is active; perform no read or write. |
 | `ROLE_SESSION_INVALID` | Stop the role run and return control to the main thread. |
 | `PATH_OUTSIDE_WORKSPACE` | Refuse the path and name the resolved workspace boundary. |
-| `ROLE_NOT_OWNER` | Name the canonical owner and request one bounded handoff. |
+| `ROLE_NOT_OWNER` | Name the canonical owner and request one bounded handoff. A scheduled (cadence-pinned) run stops here instead: it cannot open the owner's workflow, so it reports the owner and leaves the handoff to the founder. |
 | `INVALID_DOCUMENT_STRUCTURE` | Preserve the file, name the structural mismatch, and route to the owner or doctor. |
 | `STALE_WRITE` | Re-read, reconcile deliberately, and retry once. |
 | `STATE_IO_ERROR` | Preserve the original file, stop, and surface the concrete recovery step. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
