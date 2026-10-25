@@ -14,6 +14,7 @@ queue:
   blocked_days: 14
 signals:
   cap: 3
+  stale_days: 14
 briefs:
   window: 10
   acted_one_in: 5

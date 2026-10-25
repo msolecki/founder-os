@@ -435,7 +435,7 @@ class TestContestedPipeline(unittest.TestCase):
     def test_both_readings_are_on_the_page(self):
         self.assertIn("Two readings disagree", self.html)
         self.assertIn("$18,000", self.html)
-        self.assertIn("€15,000", self.html)
+        self.assertIn("EUR 15,000", self.html)
 
     def test_the_field_that_would_settle_it_is_named(self):
         settle = self.facts.panels["pipeline"].settle_with
@@ -514,6 +514,73 @@ class TestJudgedBets(unittest.TestCase):
     def test_a_bet_with_no_verdict_still_counts_down(self):
         html = self.page("Cost: 40 h")
         self.assertIn("Judged in 72 days", html)
+
+
+class TestPassedBetDates(unittest.TestCase):
+    """A date behind today reads as overdue, never as a negative countdown."""
+
+    def setUp(self):
+        def passed(home):
+            text = (home / "goals.md").read_text(encoding="utf-8")
+            text = text.replace("Judgment date: 2026-09-30",
+                                "Judgment date: 2026-07-01", 1)
+            text = text.replace("by 2026-08-31", "by 2026-07-15", 1)
+            (home / "goals.md").write_text(text, encoding="utf-8")
+        render = load_dashboard("render")
+        self.html = render.render([build_payload("x", passed)], generated="g",
+                                  active_slug="x")
+
+    def test_a_passed_judgment_date_is_overdue(self):
+        self.assertIn("Judgment overdue by 19 days", self.html)
+        self.assertNotIn("Judged in -", self.html)
+
+    def test_a_passed_kill_date_says_how_long_ago(self):
+        self.assertIn("(kill date passed 5 days ago)", self.html)
+        self.assertNotIn("days left)", self.html.split("Kill condition", 2)[1])
+
+
+class TestSignalAndRunwayAge(unittest.TestCase):
+    def page(self, mutate=None):
+        render = load_dashboard("render")
+        return render.render([build_payload("x", mutate)], generated="g",
+                             active_slug="x")
+
+    def test_the_signals_note_carries_the_read_age(self):
+        self.assertIn("read 3 days ago", self.page())
+
+    def test_stale_signals_are_marked(self):
+        def stale(home):
+            text = (home / "metrics.md").read_text(encoding="utf-8")
+            (home / "metrics.md").write_text(
+                text.replace("Read: 2026-07-17", "Read: 2026-06-01"),
+                encoding="utf-8")
+        self.assertIn("stale — read more than 14 days ago", self.page(stale))
+
+    def test_signals_without_a_read_date_say_so(self):
+        def unread(home):
+            text = (home / "metrics.md").read_text(encoding="utf-8")
+            (home / "metrics.md").write_text(
+                text.replace("Read: 2026-07-17 — week 2026-W29\n", ""),
+                encoding="utf-8")
+        self.assertIn("read date not recorded", self.page(unread))
+
+    def test_the_cash_panel_shows_the_runway_age(self):
+        self.assertEqual(_cell(self.page(), "Runway age"), "<td>19 days</td>")
+
+
+class TestWeekSegmentLabels(unittest.TestCase):
+    def test_a_bet_named_in_the_serves_cell_is_labelled_by_its_id(self):
+        def named(home):
+            text = (home / "week.md").read_text(encoding="utf-8")
+            (home / "week.md").write_text(
+                text.replace("| Follow-up sweep | B1 |",
+                             "| Follow-up sweep | B1 — v2.1 sprint |"),
+                encoding="utf-8")
+        render = load_dashboard("render")
+        html = render.render([build_payload("x", named)], generated="g",
+                             active_slug="x")
+        self.assertIn("B1 4.5h", html)
+        self.assertNotIn("v2 ", html)
 
 
 class TestBetWindow(unittest.TestCase):

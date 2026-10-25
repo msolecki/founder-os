@@ -147,6 +147,12 @@ def _money(amount: float) -> str:
     return "{:,.0f}".format(amount)
 
 
+def _priced(symbol: Optional[str], amount: float) -> str:
+    """`$18,000`, or `PLN 15,000`: a code is a word and needs its space."""
+    symbol = symbol or ""
+    return "%s%s%s" % (symbol, " " if symbol.isalpha() else "", _money(amount))
+
+
 def _entry_amount(entry) -> parse.Value:
     """What an entry records as its amount, or a Value carrying no number.
 
@@ -241,7 +247,12 @@ def build_pipeline(sources, today: date) -> Panel:
 
     priced = [item for item in values if item.number is not None]
     currencies = sorted({item.currency or _UNMARKED for item in priced})
+    unread = len(entries) - len(priced)
     if len(currencies) > 1:
+        # A deal with no amount belongs to no currency, so every reading is
+        # short of it and says so, as the single-currency total does.
+        excluded = (" — excludes %d of %d deals that record no amount"
+                    % (unread, len(entries)) if unread else "")
         readings = tuple(
             Reading(
                 label=symbol or _UNMARKED_LABEL,
@@ -249,9 +260,9 @@ def build_pipeline(sources, today: date) -> Panel:
                     "live_amount", sum(
                         item.number for item in priced
                         if (item.currency or _UNMARKED) == symbol),
-                    "%s%s" % (symbol, _money(sum(
+                    _priced(symbol, sum(
                         item.number for item in priced
-                        if (item.currency or _UNMARKED) == symbol))),
+                        if (item.currency or _UNMARKED) == symbol)) + excluded,
                     live_cite, currency=symbol or None))
             for symbol in currencies)
         settle = (
@@ -267,7 +278,6 @@ def build_pipeline(sources, today: date) -> Panel:
             settle_with=settle)
 
     symbol = (currencies[0] if currencies else None) or None
-    unread = len(entries) - len(priced)
     if unread:
         # A sum of the deals that happened to carry a price, printed beside a
         # count of all of them, is a smaller number than the pipeline wearing
@@ -279,10 +289,10 @@ def build_pipeline(sources, today: date) -> Panel:
     elif priced:
         total = sum(item.number for item in priced)
         amount = number_fact(
-            "live_amount", total, "%s%s" % (symbol or "", _money(total)),
+            "live_amount", total, _priced(symbol, total),
             live_cite, currency=symbol)
     else:
-        amount = number_fact("live_amount", 0, "%s0" % (symbol or ""), live_cite)
+        amount = number_fact("live_amount", 0, _priced(symbol, 0), live_cite)
 
     facts = (amount,) + counted
     return Panel(id="pipeline", title="Pipeline", status=panel_status(facts),
@@ -304,7 +314,7 @@ class CountSpec:
 
 
 def parse_counted_from(raw: Optional[str]) -> Optional[CountSpec]:
-    """The closed grammar from spec §9, or None.
+    """The closed grammar `docs/dashboard.md` documents, or None.
 
     Closed on purpose. A grammar that falls back to best effort is a grammar that
     silently reports the wrong number for a bet the founder is about to judge.
@@ -609,7 +619,14 @@ def _triage_count(body: str) -> Optional[float]:
 
 def build_brief(sources, today: date) -> Panel:
     cite = "reviews/daily/"
-    newest = sources.newest_member("reviews/daily/")
+    # `triage` may create today's file holding only `## Triage`, so the newest
+    # dated file that carries a brief is the brief; the newest file is the
+    # fallback when none does.
+    written = [member for member in sources.members.get(cite) or ()
+               if member.readable
+               and parse.parse_iso_date(Path(member.path).stem) is not None
+               and (member.sections.get("## The one thing") or "").strip()]
+    newest = written[-1] if written else sources.newest_member(cite)
     if newest is None or not newest.readable:
         return Panel(id="brief", title="Today", status=STATUS_MISSING,
                      facts=(unknown("one_thing", cite),), citations=(cite,))
@@ -641,7 +658,7 @@ def build_brief(sources, today: date) -> Panel:
                  facts=tuple(facts), citations=(cite,))
 
 
-def build_signals(sources):
+def build_signals(sources, today: Optional[date] = None, thresholds=None):
     cite = "metrics.md ## Signals"
     body = sources.section("metrics.md", "## Signals")
     if body is None:
@@ -706,6 +723,19 @@ def build_signals(sources):
     else:
         count = number_fact("signal_count", len(signals), str(len(signals)), cite)
     facts = [count]
+    # Six-week-old readings look exactly like this week's, so the `Read:` date
+    # signal-check writes is their age, and past the limit the age says stale.
+    read = parse.parse_iso_date(parse.parse_field(body, "Read"))
+    if today is not None and read is not None:
+        age = (today - read).days
+        stale = (thresholds or {}).get("signals", {}).get("stale_days")
+        facts.append(number_fact("signals_age_days", age, "%d days" % age, cite))
+        if stale is not None and age > stale:
+            facts.append(text_fact(
+                "signals_stale", "stale — read more than %g days ago" % stale,
+                cite))
+    else:
+        facts.append(unknown("signals_age_days", cite))
     for signal in signals:
         facts.append(number_fact(
             "signal.%s" % signal.name, signal.value,
@@ -760,9 +790,12 @@ def build_week(sources, today: date):
         blocks.append(Block(day=cells[0], hours=hours, title=cells[2],
                             serves=cells[3]))
 
+    # Keyed by the bet's id, not the cell as written: `B1 — Make the sprint
+    # default` and `B1` are one bet. The cell itself stays on the block.
     per_bet = {}
     for block in blocks:
-        per_bet[block.serves] = per_bet.get(block.serves, 0.0) + (block.hours or 0.0)
+        key = _bet_key(block.serves)[0]
+        per_bet[key] = per_bet.get(key, 0.0) + (block.hours or 0.0)
     for key in sorted(per_bet):
         facts.append(number_fact("planned.%s" % key, round(per_bet[key], 2),
                                  "%gh" % round(per_bet[key], 2), blocks_cite))
@@ -849,6 +882,17 @@ def build_cash(sources, today: date) -> Panel:
             close_cite))
     else:
         facts.append(unknown("close_age_days", close_cite))
+    # The runway is recalculated on its own clock, so it carries its own age:
+    # `Last calculated:` where the example writes it, else the `as of` date
+    # runway-forecast puts in the heading.
+    calculated = (parse.parse_iso_date(parse.parse_field(runway, "Last calculated"))
+                  or parse.parse_iso_date(sources.heading("metrics.md", "## Runway")))
+    if calculated is not None:
+        age = (today - calculated).days
+        facts.append(number_fact("runway_age_days", age, "%d days" % age,
+                                 runway_cite))
+    else:
+        facts.append(unknown("runway_age_days", runway_cite))
     return Panel(id="cash", title="Cash and rate",
                  status=panel_status(tuple(facts)), facts=tuple(facts),
                  citations=(close_cite, runway_cite))
@@ -894,7 +938,8 @@ def build_queue(sources, thresholds) -> Panel:
 
 def build_facts(sources, today: date, generated: str, thresholds) -> Facts:
     bets_panel, bets, bet_findings = build_bets(sources, today)
-    signals_panel, signals, signal_findings = build_signals(sources)
+    signals_panel, signals, signal_findings = build_signals(
+        sources, today, thresholds)
     week_panel, blocks = build_week(sources, today)
     panels = {
         "brief": build_brief(sources, today),

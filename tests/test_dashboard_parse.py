@@ -72,9 +72,17 @@ class TestMoney(unittest.TestCase):
         self.assertEqual(value.currency, "PLN")
 
     def test_trailing_currency_sign_is_read(self):
-        self.assertEqual(parse.parse_money("12 000 zł").currency, "zł")
+        self.assertEqual(parse.parse_money("12 000 zł").currency, "PLN")
         self.assertEqual(parse.parse_money("18,000 EUR").currency, "EUR")
-        self.assertEqual(parse.parse_money("3 500 €").currency, "€")
+        self.assertEqual(parse.parse_money("3 500 €").currency, "EUR")
+
+    def test_an_unambiguous_symbol_is_filed_under_its_code(self):
+        self.assertEqual(parse.parse_money("15 000 zł").currency,
+                         parse.parse_money("PLN 15 000").currency)
+        self.assertEqual(parse.parse_money("£900").currency, "GBP")
+        # `$` and `¥` each name more than one currency, so they stay as written.
+        self.assertEqual(parse.parse_money("$900").currency, "$")
+        self.assertEqual(parse.parse_money("¥900").currency, "¥")
 
     def test_a_hyphenated_acronym_is_not_a_currency(self):
         value = parse.parse_money("8 ICP-matched discovery calls")

@@ -224,6 +224,16 @@ class TestBriefPanel(unittest.TestCase):
         panel = analyze.build_brief(example_sources(clear), TODAY)
         self.assertEqual(panel.status, analyze.STATUS_MISSING)
 
+    def test_a_triage_only_file_does_not_hide_the_last_brief(self):
+        def triage_today(home):
+            write(home, "reviews/daily/2026-07-21.md",
+                  "# 2026-07-21\n\n## Triage\n\n+3 items handed to triage\n")
+        panel = analyze.build_brief(example_sources(triage_today),
+                                    date(2026, 7, 21))
+        self.assertIn("Acme proposal scope", fact(panel, "one_thing").display)
+        self.assertEqual(panel.citations, ("reviews/daily/2026-07-20.md",))
+        self.assertEqual(fact(panel, "brief_age_days").number, 1.0)
+
 
 class TestSignalsPanel(unittest.TestCase):
     def test_three_signals_with_bands_and_series(self):
@@ -249,6 +259,39 @@ class TestSignalsPanel(unittest.TestCase):
         panel, _, _ = analyze.build_signals(example_sources())
         self.assertEqual(fact(panel, "signal_count").number, 3.0)
 
+    def test_signals_age_is_read_from_the_read_date(self):
+        panel, _, _ = analyze.build_signals(
+            example_sources(), TODAY, contracts.load_thresholds())
+        age = fact(panel, "signals_age_days")
+        self.assertEqual(age.number, 3.0)
+        self.assertEqual(age.display, "3 days")
+
+    def test_signals_read_more_than_fourteen_days_ago_are_stale(self):
+        panel, _, _ = analyze.build_signals(
+            example_sources(edit("metrics.md", "Read: 2026-07-17",
+                                 "Read: 2026-07-05")),
+            TODAY, contracts.load_thresholds())
+        age = fact(panel, "signals_age_days")
+        self.assertEqual(age.number, 15.0)
+        self.assertIn("stale", fact(panel, "signals_stale").display)
+
+    def test_signals_read_fourteen_days_ago_are_not_stale(self):
+        panel, _, _ = analyze.build_signals(
+            example_sources(edit("metrics.md", "Read: 2026-07-17",
+                                 "Read: 2026-07-06")),
+            TODAY, contracts.load_thresholds())
+        self.assertEqual(fact(panel, "signals_age_days").number, 14.0)
+        self.assertNotIn("signals_stale", [item.key for item in panel.facts])
+
+    def test_signals_without_a_read_date_have_no_age(self):
+        panel, _, _ = analyze.build_signals(
+            example_sources(edit("metrics.md",
+                                 "Read: 2026-07-17 — week 2026-W29\n", "")),
+            TODAY, contracts.load_thresholds())
+        age = fact(panel, "signals_age_days")
+        self.assertFalse(age.known)
+        self.assertEqual(age.display, analyze.NOT_RECORDED)
+
 
 class TestWeekPanel(unittest.TestCase):
     def test_arithmetic_and_blocks(self):
@@ -262,6 +305,16 @@ class TestWeekPanel(unittest.TestCase):
         panel, _ = analyze.build_week(example_sources(), TODAY)
         self.assertEqual(fact(panel, "planned.B1").number, 4.5)
         self.assertEqual(fact(panel, "planned.B2").number, 4.5)
+
+    def test_a_serves_cell_carrying_the_bet_name_joins_the_bet(self):
+        panel, blocks = analyze.build_week(example_sources(edit(
+            "week.md", "| Finish Acme proposal scope | B1 |",
+            "| Finish Acme proposal scope | B1 — Make the sprint default |")),
+            TODAY)
+        self.assertEqual(fact(panel, "planned.B1").number, 4.5)
+        self.assertFalse([item for item in panel.facts
+                          if item.key.startswith("planned.B1 ")])
+        self.assertEqual(blocks[0].serves, "B1 — Make the sprint default")
 
     def test_missing_arithmetic_is_unknown_not_zero(self):
         def strip(home):
@@ -304,6 +357,25 @@ class TestCashPanel(unittest.TestCase):
     def test_close_age_is_measured_from_the_closed_date(self):
         panel = analyze.build_cash(example_sources(), TODAY)
         self.assertEqual(fact(panel, "close_age_days").number, 19.0)
+
+    def test_runway_age_is_read_from_last_calculated(self):
+        panel = analyze.build_cash(example_sources(), TODAY)
+        age = fact(panel, "runway_age_days")
+        self.assertEqual(age.number, 19.0)
+        self.assertEqual(age.cite, "metrics.md ## Runway")
+
+    def test_runway_age_falls_back_to_the_as_of_heading(self):
+        # runway-forecast writes `## Runway — as of YYYY-MM-DD` and no field.
+        panel = analyze.build_cash(example_sources(edit(
+            "metrics.md", "## Runway\n\nLast calculated: 2026-07-01\n",
+            "## Runway — as of 2026-07-10\n")), TODAY)
+        self.assertEqual(fact(panel, "runway_age_days").number, 10.0)
+
+    def test_an_undated_runway_has_no_age(self):
+        panel = analyze.build_cash(example_sources(edit(
+            "metrics.md", "## Runway\n\nLast calculated: 2026-07-01\n",
+            "## Runway\n")), TODAY)
+        self.assertFalse(fact(panel, "runway_age_days").known)
 
 
 class TestQueuePanel(unittest.TestCase):
@@ -411,6 +483,32 @@ class TestPipelineReadsOnlyRecordedMoney(unittest.TestCase):
         self.assertEqual(panel.status, analyze.STATUS_CONTESTED)
         self.assertEqual(fact(panel, "overdue_count").number, 1.0)
         self.assertTrue(fact(panel, "coverage").known)
+
+    def test_contested_readings_say_an_unpriced_deal_is_excluded(self):
+        def mutate(home):
+            edit("pipeline.md", "Amount: $15,000 [VALIDATE]",
+                 "Amount: €15,000")(home)
+            edit("pipeline.md", "## Won",
+                 "### Initech — discovery — new\n\nNext action: call — "
+                 "2026-07-25\n\n## Won")(home)
+        panel = analyze.build_pipeline(example_sources(mutate), TODAY)
+        self.assertEqual(panel.status, analyze.STATUS_CONTESTED)
+        self.assertEqual(fact(panel, "live_count").number, 3.0)
+        for reading in panel.readings:
+            self.assertIn("excludes 1 of 3 deals that record no amount",
+                          reading.fact.display)
+
+    def test_one_currency_under_two_spellings_is_one_total(self):
+        def mutate(home):
+            edit("pipeline.md", "Amount: $18,000", "Amount: 18 000 zł")(home)
+            edit("pipeline.md", "Amount: $15,000 [VALIDATE]",
+                 "Amount: PLN 15 000")(home)
+        panel = analyze.build_pipeline(example_sources(mutate), TODAY)
+        amount = fact(panel, "live_amount")
+        self.assertNotEqual(panel.status, analyze.STATUS_CONTESTED)
+        self.assertEqual(amount.number, 33000.0)
+        self.assertEqual(amount.currency, "PLN")
+        self.assertEqual(amount.display, "PLN 33,000")
 
 
 WON_TEMPLATE = """

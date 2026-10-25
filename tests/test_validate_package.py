@@ -1339,10 +1339,11 @@ class TestThresholdsCheck(unittest.TestCase):
         root = self.mutated_package()
         (root / "skills" / "signal-check" / "SKILL.md").unlink()
         errs = V.check_thresholds(root, {})
-        self.assertEqual(len(errs), 2, errs)
+        self.assertEqual(len(errs), 3, errs)
         self.assertTrue(all("skills/signal-check/SKILL.md" in e for e in errs),
                         errs)
-        self.assertTrue(all("signals.cap" in e for e in errs), errs)
+        self.assertEqual(sum("signals.cap" in e for e in errs), 2, errs)
+        self.assertEqual(sum("signals.stale_days" in e for e in errs), 1, errs)
 
     def test_a_value_the_runtime_reader_rejects_is_an_error_here(self):
         """The yaml is read the way `contracts.load_thresholds` reads it.
