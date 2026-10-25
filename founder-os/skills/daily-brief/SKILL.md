@@ -103,7 +103,9 @@ Read for one named section only:
 - `week.md` `## Arithmetic` and `## Audit` — the `Proposed:` line a blocked
   `week-plan` or `calendar-audit` leaves, and nothing else. Friday's audit line
   lives only until `week-plan` rewrites the file at 08:30 on Monday, so the
-  08:00 Monday brief is the one that drains it.
+    08:00 Monday brief is the one that drains it.
+- `reviews/weekly/` — the newest review's `## Next week`, only when the
+  unattended Friday run left a `Proposed:` line there instead of an id.
 
 ## Beliefs
 
