@@ -162,20 +162,31 @@ def _ownership_module():
     lockdown does not read the map, so it stays closed either way.
     """
     if not _OWNERSHIP:
-        source = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "mcp", "ownership.py")
         try:
-            import importlib.util
-            spec = importlib.util.spec_from_file_location(
-                "_founder_os_guard_ownership", source)
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[spec.name] = module
-            spec.loader.exec_module(module)
+            module = _load_mcp_module("ownership")
         except Exception as e:  # noqa: BLE001 - coverage, never a write
-            log("could not load %s (%s)" % (source, e))
+            log("could not load mcp/ownership.py (%s)" % e)
             module = None
         _OWNERSHIP.append(module)
     return _OWNERSHIP[0]
+
+
+def _load_mcp_module(name):
+    """`<plugin>/mcp/<name>.py`, loaded by path; raises on any failure.
+
+    The gateway's modules are the guard's single source for the map and the
+    registry, and the dashed `hooks/` directory is not a package that could
+    import them. Registered in `sys.modules`: dataclasses resolve by module.
+    """
+    import importlib.util
+    source = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "mcp", name + ".py")
+    spec = importlib.util.spec_from_file_location(
+        "_founder_os_guard_" + name, source)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _derived_from_text(text, source):
@@ -380,15 +391,7 @@ def _registry_roots():
                                        "businesses.yaml")):
         return []
     try:
-        import importlib.util
-        source = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "mcp", "workspaces.py")
-        spec = importlib.util.spec_from_file_location(
-            "_founder_os_guard_workspaces", source)
-        workspaces = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = workspaces  # dataclasses resolve by module
-        spec.loader.exec_module(workspaces)
-        registry = workspaces.load_registry(user_home)
+        registry = _load_mcp_module("workspaces").load_registry(user_home)
     except Exception as e:  # noqa: BLE001 - coverage, never a write
         log("could not read registry under %s (%s)" % (user_home, e))
         return []
