@@ -174,7 +174,7 @@ brief can take it.
     ## Won
     ### <Client> — won YYYY-MM-DD — <amount> — <offer>
     Proposal sent: YYYY-MM-DD
-        Proposed: run /client-health baseline for [[<client-slug>]] — bet: <B<n> | none>
+    Proposed: run /client-health baseline for [[<client-slug>]] — bet: <B<n> | none>
     Exclusions — verbatim from the signed proposal, scope-guard's baseline:
     - <exclusion> → if requested: <change order at <rate> | separate engagement>
     Engagement: <live | closed YYYY-MM-DD>

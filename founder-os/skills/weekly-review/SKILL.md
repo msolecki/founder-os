@@ -139,7 +139,7 @@ Append to `reviews/weekly/YYYY-Www.md`:
 
     # YYYY-Www
     ## Committed vs done
-        <N>/5 — <one line per miss, no reasons attached>
+    <N>/5 — <one line per miss, no reasons attached>
     Last week's commitment: [q-MMDDx] <done | missed> | none
     Queue: doing <n>/3 | queued <n>/15 | blocked <n> | aged out this sweep <n> | bet:none <n>/<n>
     Signals: <the one that moved, or "all three inside range" — read YYYY-MM-DD>
@@ -148,7 +148,7 @@ Append to `reviews/weekly/YYYY-Www.md`:
     ## The pattern
     <what the last four weeks say, not what this week says>
     ## Next week
-        [q-MMDDx] <one commitment, and how Friday will know> | Proposed: <…> — bet: <B<n> | none>
+    [q-MMDDx] <one commitment, and how Friday will know> | Proposed: <…> — bet: <B<n> | none>
 
 ## Guardrails
 

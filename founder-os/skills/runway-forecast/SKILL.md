@@ -48,7 +48,7 @@ Replace `metrics.md` `## Runway` with:
     Optimism gap: <computed difference, or UNKNOWN>
     Band: <computed from honest runway, or UNKNOWN>
     Consequence: <band action, or resolve the blocking cash/burn input>
-        Tax reserve: UNKNOWN unless supplied; runway is before any tax reserve
+    Tax reserve: UNKNOWN unless supplied; runway is before any tax reserve
     Handed to: Chief of Staff for queue intake
 
 When cash or burn is unknown, also add one line at the end of `metrics.md`
