@@ -70,8 +70,6 @@ def main():
         os.environ.get("TMPDIR") or "/tmp", os.getuid())
     marker_dir = os.path.join(base, "stop-nudge")
     marker = os.path.join(marker_dir, sid)
-    if os.path.exists(marker):
-        return 0
 
     # The marker directory must be ours and not a link, or another local user
     # could steer the cleanup or plant a scan state.
@@ -81,6 +79,27 @@ def main():
     finally:
         os.umask(old)
     if not (owned_dir(marker_dir) and owned_dir(os.path.dirname(marker_dir))):
+        return 0
+
+    # Every Stop leaves a scan state, and most sessions never reach the nudge,
+    # so the sweep runs here, at most once a day, not only after a nudge.
+    now = time.time()
+    stamp = os.path.join(marker_dir, ".swept")
+    try:
+        due = now - os.stat(stamp).st_mtime >= 86400
+    except OSError:
+        due = True
+    if due:
+        open(stamp, "w").close()
+        for entry in os.scandir(marker_dir):
+            try:
+                if (entry.is_file(follow_symlinks=False)
+                        and now - entry.stat(follow_symlinks=False).st_mtime
+                        >= 8 * 86400):
+                    os.remove(entry.path)
+            except OSError:
+                pass
+    if os.path.exists(marker):
         return 0
 
     minimum = os.environ.get("FOUNDER_OS_STOP_NUDGE_MIN", "30")
@@ -115,15 +134,10 @@ def main():
         return 0
 
     open(marker, "w").close()
-    now = time.time()
-    for entry in os.scandir(marker_dir):
-        try:
-            if (entry.is_file(follow_symlinks=False)
-                    and now - entry.stat(follow_symlinks=False).st_mtime
-                    >= 8 * 86400):
-                os.remove(entry.path)
-        except OSError:
-            pass
+    try:
+        os.remove(state_path)  # the marker ends this session's scanning
+    except OSError:
+        pass
 
     # additionalContext, unlike exit 2 or decision "block", continues the turn
     # without a hook error label.

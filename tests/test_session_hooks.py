@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -136,12 +137,16 @@ class TestDecisionNudge(HookCase):
             f.write('{"type":"assistant","message":{"content":'
                     '[{"type":"tool_use","name":"Read"}]}}')
         size = path.stat().st_size
-        out = self.run_hook(NUDGE, self.payload(path))
-        self.assertIn("30 tool calls",
-                      out["hookSpecificOutput"]["additionalContext"])
+        # A nudge ends the session's scanning and drops its state, so the
+        # state is read from a Stop that stays below the threshold.
+        self.assertIsNone(self.run_hook(
+            NUDGE, self.payload(path), FOUNDER_OS_STOP_NUDGE_MIN="31"))
         state = json.loads((self.data / "stop-nudge" / "s1.scan").read_text())
         self.assertLess(state["offset"], size)
         self.assertEqual(29, state["n"])
+        out = self.run_hook(NUDGE, self.payload(path))
+        self.assertIn("30 tool calls",
+                      out["hookSpecificOutput"]["additionalContext"])
 
     def test_a_rewritten_transcript_is_rescanned_from_the_start(self):
         stop_nudge = self.data / "stop-nudge"
@@ -150,6 +155,22 @@ class TestDecisionNudge(HookCase):
             json.dumps({"offset": 10 ** 9, "n": 0, "in_use": False}))
         path = self.transcript(30)
         self.assertIsNotNone(self.run_hook(NUDGE, self.payload(path)))
+
+    def test_stale_state_is_swept_without_a_nudge_and_scan_dropped_on_one(self):
+        stop_nudge = self.data / "stop-nudge"
+        stop_nudge.mkdir(parents=True)
+        old = time.time() - 9 * 86400
+        for name in ("s9", "s9.scan", "s9.scan.tmp"):
+            (stop_nudge / name).write_text("{}")
+            os.utime(stop_nudge / name, (old, old))
+        (stop_nudge / "s8.scan").write_text("{}")
+        self.assertIsNone(self.run_hook(NUDGE, self.payload(self.transcript(5))))
+        self.assertEqual({".swept", "s1.scan", "s8.scan"},
+                         {p.name for p in stop_nudge.iterdir()})
+        self.assertIsNotNone(
+            self.run_hook(NUDGE, self.payload(self.transcript(30))))
+        self.assertTrue((stop_nudge / "s1").exists())
+        self.assertFalse((stop_nudge / "s1.scan").exists())
 
     def test_threshold_is_configurable(self):
         path = self.transcript(5)
