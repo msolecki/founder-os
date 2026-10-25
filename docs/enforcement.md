@@ -79,9 +79,26 @@ The guard reads `references/ownership.yaml` and a workspace's
 `_local/ownership.yaml` with the gateway's own parser, `mcp/ownership.py`,
 loaded by path, so it enforces the same map with or without PyYAML installed.
 `owns:` and `derived_files:` are parsed independently, so a broken `owns:` does
-not switch the derived deny off. A map in a shape that parser does not accept
-(flow lists, tabs, other indents) is logged and ignored: less coverage, never a
-deny, and never a change to the role lockdown, which does not read the map.
+not switch the derived deny off. The grammar the guard reads, for both files
+(`read_key`):
+
+- `owns:` and `derived_files:` as column-0 block keys, optionally followed by a
+  ` #` comment;
+- under `owns:`, `  agent:` at two spaces and `    - path` at four; under
+  `derived_files:`, `  - path` at two;
+- each value bare (no `[`, `]`, `{`, `}`; a ` #` comment after it is dropped)
+  or quoted with `'` or `"` at both ends, holding neither its own quote mark
+  nor, in double quotes, a backslash — no escape is ever decoded, so `'it''s'`
+  is refused.
+
+What it ignores: blank and comment lines, one leading `---`, every other
+top-level key with its block, and every other top-level `key: scalar` line
+(`version: 2`). What makes it ignore the key it asked for: anything else inside
+that key's block (tabs, other indents, flow lists, a value written inline as
+`owns: {}`, a duplicate), a column-0 line that is no key, an indented line
+under a scalar key, or a second `---`. A key it cannot read is logged and
+ignored: less coverage, never a deny, and never a change to the role lockdown,
+which does not read the map.
 Guard, gateway and validator match paths with the same two functions
 (`owner_key`, `derived_entry`), casefolded: the guard denies `Goals.md` as
 `goals.md`, and the gateway grants a write only to the map's own spelling.
