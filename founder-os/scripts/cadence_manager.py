@@ -922,8 +922,8 @@ def apply(
         _atomic_write(directory / name, content)
     def fail(message: str, result: object) -> None:
         # Roll back the whole identity: a half-loaded set runs some cadences
-        # and silently skips the rest.  The snapshot backup keeps the prior
-        # files for a manual restore.
+        # and silently skips the rest.  That removes units which ran before
+        # this apply too; the snapshot backup keeps them for a manual restore.
         stderr = getattr(result, "stderr", "")
         if isinstance(stderr, str) and stderr.strip():
             message += ": " + stderr.strip()[-500:]
@@ -933,10 +933,15 @@ def apply(
                    runner=runner)
         except CadenceError as error:
             raise CadenceError(
-                "%s; rollback failed (%s): run `remove --identity %s`"
-                % (message, error, identity)
+                "%s; rollback failed (%s): run `remove --identity %s`, then "
+                "restore the earlier units from %s"
+                % (message, error, identity, backup_path)
             )
-        raise CadenceError(message + "; removed the partial install")
+        raise CadenceError(
+            "%s; removed every unit of identity %s, including any that ran "
+            "before this apply: restore those from %s"
+            % (message, identity, backup_path)
+        )
 
     if scheduler == "launchd":
         domain = "gui/" + str(os.getuid())

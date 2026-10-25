@@ -415,7 +415,9 @@ class CadenceManagerTests(unittest.TestCase):
             label = Path(bootstraps[2]).name.removesuffix(".plist")
             self.assertIn(label, str(caught.exception))
             self.assertIn("Input/output error", str(caught.exception))
-            self.assertIn("removed the partial install", str(caught.exception))
+            self.assertIn("removed every unit of identity a, including any "
+                          "that ran before this apply: restore those from "
+                          + snapshot["backup_path"], str(caught.exception))
             self.assertEqual([], list(scheduler_directory.iterdir()))
 
     def test_log_directories_are_private(self):

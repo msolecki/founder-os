@@ -97,7 +97,9 @@ the preview, apply stops. Before writing, it also recomputes the only valid
 artifacts from the manifest config and snapshot; a resealed but changed cron,
 plist, or unit is rejected. Existing manifest and backup paths are never
 overwritten. If launchd or systemd refuses a unit, apply names it and the
-scheduler's error, then removes every unit of that identity it just wrote.
+scheduler's error, then removes every unit of that identity — including units
+that ran before this apply — and names the snapshot backup from step 2 to
+restore the earlier ones from.
 
 Cron fences use exact identities: legacy `founder-os`, a business such as
 `founder-os:a`, sibling `founder-os:acme`, and `founder-os:portfolio` never
