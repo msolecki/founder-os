@@ -234,6 +234,8 @@ def build_pipeline(sources, today: date) -> Panel:
     values = [_entry_amount(entry) for entry in entries]
     disregarded = sum(
         1 for item in values if _DISREGARDED.search(item.raw or ""))
+    # The admitted deals: the denominator of every "no amount" note below.
+    # `live_count` stays the deals listed, DISREGARD included.
     values = [item for item in values
               if not _DISREGARDED.search(item.raw or "")]
 
@@ -267,7 +269,7 @@ def build_pipeline(sources, today: date) -> Panel:
         # A deal with no amount belongs to no currency, so every reading is
         # short of it and says so, as the single-currency total does.
         excluded = (" — excludes %d of %d deals that record no amount"
-                    % (unread, len(entries)) if unread else "")
+                    % (unread, len(values)) if unread else "")
         readings = tuple(
             Reading(
                 label=symbol or _UNMARKED_LABEL,
@@ -300,7 +302,7 @@ def build_pipeline(sources, today: date) -> Panel:
         amount = unknown(
             "live_amount", live_cite,
             "%s — %d of %d deals record no amount"
-            % (NOT_RECORDED, unread, len(entries)))
+            % (NOT_RECORDED, unread, len(values)))
     elif priced:
         total = sum(item.number for item in priced)
         amount = number_fact(

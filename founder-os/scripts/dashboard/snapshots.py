@@ -225,7 +225,13 @@ def merge(path: Path, row: Mapping[str, str]) -> None:
         # Blank rows first, so a row already carrying the slug wins its day.
         for (day, business), old in sorted(
                 existing.items(), key=lambda item: bool(item[0][1])):
-            relabelled[(day, slug)] = dict(old, business=slug)
+            kept = dict(old, business=slug)
+            # The blank row it replaces may hold a founder column this one
+            # lacks; the file cannot be rebuilt, so that value moves across.
+            dropped = relabelled.get((day, slug), {})
+            for field in extra:
+                kept[field] = kept.get(field) or dropped.get(field, "")
+            relabelled[(day, slug)] = kept
         existing = relabelled
     cell = tuple(row.get(key, "") for key in _KEY)
     previous = existing.get(cell, {})

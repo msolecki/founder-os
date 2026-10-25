@@ -539,6 +539,33 @@ class TestPipelineReadsOnlyRecordedMoney(unittest.TestCase):
         self.assertIn("1 marked [DISREGARD]", note)
         self.assertNotIn("[VALIDATE]", note)
 
+    def test_the_no_amount_note_counts_only_admitted_deals(self):
+        def mutate(home):
+            edit("pipeline.md", "Amount: $15,000 [VALIDATE]",
+                 "Amount: $15,000 [DISREGARD]")(home)
+            edit("pipeline.md", "## Won",
+                 "### Initech — discovery — new\n\nNext action: call — "
+                 "2026-07-25\n\n## Won")(home)
+        panel = analyze.build_pipeline(example_sources(mutate), TODAY)
+        self.assertEqual(fact(panel, "live_count").number, 3.0)
+        self.assertIn("1 of 2 deals record no amount",
+                      fact(panel, "live_amount").display)
+
+    def test_contested_no_amount_note_counts_only_admitted_deals(self):
+        def mutate(home):
+            edit("pipeline.md", "Amount: $18,000",
+                 "Amount: $18,000 [DISREGARD]")(home)
+            edit("pipeline.md", "## Won",
+                 "### Initech — discovery — new\n\nAmount: €9,000\n\n"
+                 "### Globex — discovery — new\n\nNext action: call — "
+                 "2026-07-25\n\n## Won")(home)
+        panel = analyze.build_pipeline(example_sources(mutate), TODAY)
+        self.assertEqual(panel.status, analyze.STATUS_CONTESTED)
+        self.assertEqual(fact(panel, "live_count").number, 4.0)
+        for reading in panel.readings:
+            self.assertIn("excludes 1 of 3 deals that record no amount",
+                          reading.fact.display)
+
     def test_only_disregard_amounts_is_not_a_zero(self):
         live = "\n### Acme — sprint\n\nAmount: $9,000 [DISREGARD]\n"
         panel = analyze.build_pipeline(example_sources(lambda home: write(

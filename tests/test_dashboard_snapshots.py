@@ -215,6 +215,26 @@ class TestMerge(unittest.TestCase):
                      ("2026-07-20", "studio-north")])
                 self.assertEqual(rows[1]["queue_doing"], "2")
 
+    def test_relabelling_keeps_a_founder_column_only_the_blank_row_had(self):
+        path = self._path()
+        header = ",".join(list(snapshots.FIELDS) + ["note", "tag"])
+        cells = {field: "" for field in snapshots.FIELDS}
+        blank = dict(cells, date="2026-07-19")
+        named = dict(cells, date="2026-07-19", business="studio-north")
+        path.write_text("\n".join([
+            header,
+            ",".join([blank[f] for f in snapshots.FIELDS] + ["paid VAT", "x"]),
+            ",".join([named[f] for f in snapshots.FIELDS] + ["", "kept"]),
+        ]) + "\n", encoding="utf-8")
+        snapshots.merge(path, {"date": "2026-07-20",
+                               "business": "studio-north"})
+        rows = _rows(path)
+        self.assertEqual([(r["date"], r["business"]) for r in rows],
+                         [("2026-07-19", "studio-north"),
+                          ("2026-07-20", "studio-north")])
+        self.assertEqual(rows[0]["note"], "paid VAT")
+        self.assertEqual(rows[0]["tag"], "kept")
+
     def test_rows_stay_sorted_by_date_then_business(self):
         path = self._path()
         row = snapshots.row_from(example_facts())
