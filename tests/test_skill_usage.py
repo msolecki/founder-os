@@ -104,7 +104,10 @@ class TestSkillUsage(unittest.TestCase):
                                 capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("workflow | capture | 1 | 2999-01-01", result.stdout)
-        self.assertIn("workflow | daily-brief | ", result.stdout)
+        self.assertTrue(any(
+            line.startswith("workflow | daily-brief | ")
+            and line.endswith(" | %s" % self.recent)
+            for line in result.stdout.splitlines()), result.stdout)
         self.assertIn("Never used (", result.stdout)
         for leaked in ("SECRET", "9000", "secret-client", str(self.config)):
             self.assertNotIn(leaked, result.stdout)
