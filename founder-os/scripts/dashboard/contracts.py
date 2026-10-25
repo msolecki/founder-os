@@ -51,9 +51,9 @@ class OwnershipView:
     owners: Mapping[str, str]
 
 
-def load_ownership(path: Optional[Path] = None) -> OwnershipView:
+def load_ownership() -> OwnershipView:
     ownership = _load_sibling("ownership", "mcp/ownership.py")
-    target = Path(path) if path else plugin_root() / "references" / "ownership.yaml"
+    target = plugin_root() / "references" / "ownership.yaml"
     document = ownership.load_document(target)
     owners = {}
     for role, paths in document["owns"].items():

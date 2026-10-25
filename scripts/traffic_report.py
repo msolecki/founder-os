@@ -141,7 +141,7 @@ def last_day(rows):
     return None
 
 
-def sources(directory: Path, today: date, limit=3):
+def sources(directory: Path, today: date):
     """The newest referrer snapshot, and whether it falls inside the window.
 
     They are photographs, so the newest is the only one worth reading — but a
@@ -167,7 +167,7 @@ def sources(directory: Path, today: date, limit=3):
     with inside.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     rows.sort(key=lambda row: _number(row, "uniques"), reverse=True)
-    return inside.name, rows[:limit], True
+    return inside.name, rows[:3], True
 
 
 def _excluded(flagged, label) -> str:
