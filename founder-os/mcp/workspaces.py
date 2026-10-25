@@ -9,6 +9,22 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
+if __package__:
+    from .ownership import _parse_scalar
+else:
+    # ponytail: the ownership hook and the dashboard load this file by path,
+    # with no package to import from, so the sibling is loaded the same way.
+    # A real package for mcp/ would retire this branch.
+    import importlib.util
+
+    _spec = importlib.util.spec_from_file_location(
+        "_founder_os_workspaces_ownership",
+        Path(__file__).with_name("ownership.py"),
+    )
+    _ownership = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_ownership)
+    _parse_scalar = _ownership._parse_scalar
+
 
 _UNRESOLVED_CODE = "WORKSPACE_UNRESOLVED"
 _UNRESOLVED_ACTION = "Ask for the business; make no read or write"
@@ -209,7 +225,7 @@ class WorkspaceResolver:
                     result["businesses"] = businesses
                     in_businesses = True
                 else:
-                    result[key] = cls._parse_scalar(value)
+                    result[key] = _parse_scalar(value, WorkspaceResolutionError)
                     in_businesses = False
                 continue
 
@@ -227,7 +243,7 @@ class WorkspaceResolver:
                 entry = businesses[current_slug]
                 if key not in _BUSINESS_KEYS or key in entry:
                     raise WorkspaceResolutionError()
-                entry[key] = cls._parse_scalar(value)
+                entry[key] = _parse_scalar(value, WorkspaceResolutionError)
                 continue
 
             raise WorkspaceResolutionError()
@@ -261,25 +277,6 @@ class WorkspaceResolver:
             ):
                 return value[:index].rstrip()
 
-        return value
-
-    @staticmethod
-    def _parse_scalar(value: str) -> str:
-        if not value:
-            raise WorkspaceResolutionError()
-
-        if value[0] in ("'", '"'):
-            quote = value[0]
-            if len(value) < 2 or value[-1] != quote:
-                raise WorkspaceResolutionError()
-            value = value[1:-1]
-            if not value or quote in value:
-                raise WorkspaceResolutionError()
-        elif any(character in value for character in "[]{}"):
-            raise WorkspaceResolutionError()
-
-        if "\x00" in value or "\n" in value or "\r" in value:
-            raise WorkspaceResolutionError()
         return value
 
     @classmethod

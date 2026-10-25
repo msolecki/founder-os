@@ -235,6 +235,38 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                     registry, root, None, {"FOUNDER_OS_HOME": str(beta)}),
             )
 
+    def test_the_registry_and_the_ownership_map_read_scalars_alike(self) -> None:
+        """One scalar grammar: a value one file accepts the other accepts too.
+
+        The registry took `"C:\\x"` literally where the map decoded escapes,
+        and the map took `'it''s'` and `[a]` where the registry refused them.
+        """
+        from mcp import ownership
+
+        accepted = {
+            "acme": "acme",
+            '"/x/biz"': "/x/biz",
+            "'/x/biz'": "/x/biz",
+            "/x/biz#2": "/x/biz#2",
+            '"## Last month\'s correction"': "## Last month's correction",
+        }
+        refused = ('""', "''", "'it''s'", '"a\\b"', '"a"b"', "[a]",
+                   "a{b}", '"open', "'open")
+        for raw, value in accepted.items():
+            with self.subTest(raw=raw):
+                self.assertEqual(value, ownership._parse_scalar(raw))
+                self.assertEqual(
+                    value,
+                    WorkspaceResolver._parse_registry(
+                        "default: " + raw + "\n")["default"],
+                )
+        for raw in refused:
+            with self.subTest(raw=raw):
+                with self.assertRaises(ownership.OwnershipError):
+                    ownership._parse_scalar(raw)
+                with self.assertRaises(WorkspaceResolutionError):
+                    WorkspaceResolver._parse_registry("default: " + raw + "\n")
+
     def test_explicit_slug_default_and_portfolio_select_the_intended_business(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import AbstractSet, Dict, List, Optional, Tuple
+from typing import AbstractSet, Callable, Dict, List, Optional, Tuple
 
 
 _REQUIRED_TOP_LEVEL_KEYS = {
@@ -125,29 +124,38 @@ def _schema_error() -> OwnershipError:
     return OwnershipError("STATE_IO_ERROR")
 
 
-def _parse_scalar(raw: str) -> str:
+def _parse_scalar(
+    raw: str,
+    error: Callable[[], Exception] = _schema_error,
+) -> str:
+    """One YAML scalar, for this map and for the business registry alike.
+
+    The grammar is the stricter of the two parsers it replaced, on every axis:
+    a quoted value is quoted at both ends with the same mark and holds neither
+    that mark nor, in double quotes, a backslash, so no escape is ever
+    decoded; an unquoted value holds no flow brackets; no value is empty or
+    spans a line. Nothing the package ships or its tests write needed more.
+    `error` builds the caller's own refusal.
+    """
     value = raw.strip()
-    if not value:
-        raise _schema_error()
-    if value.startswith('"'):
-        try:
-            decoded = json.loads(value)
-        except (TypeError, ValueError):
-            raise _schema_error()
-        if not isinstance(decoded, str) or not decoded:
-            raise _schema_error()
-        return decoded
-    if value.startswith("'"):
-        if len(value) < 2 or not value.endswith("'"):
-            raise _schema_error()
-        decoded = value[1:-1].replace("''", "'")
-        if not decoded:
-            raise _schema_error()
-        return decoded
-    if " #" in value:
-        value = value.split(" #", 1)[0].rstrip()
-    if not value or value in {"[]", "{}"}:
-        raise _schema_error()
+    if value[:1] in ("'", '"'):
+        quote = value[0]
+        inner = value[1:-1]
+        if (
+            len(value) < 2
+            or value[-1] != quote
+            or quote in inner
+            or (quote == '"' and "\\" in inner)
+        ):
+            raise error()
+        value = inner
+    else:
+        if " #" in value:
+            value = value.split(" #", 1)[0].rstrip()
+        if any(character in value for character in "[]{}"):
+            raise error()
+    if not value or "\x00" in value or "\n" in value or "\r" in value:
+        raise error()
     return value
 
 
