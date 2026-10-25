@@ -167,20 +167,18 @@ def _read(path: Path):
         return None, digest, stamp
 
 
-def collect(home: Path, view, slug: str = "", portfolio: bool = False) -> Sources:
+def collect(home: Path, view, slug: str = "") -> Sources:
     root = Path(home)
     files: Dict[str, SourceFile] = {}
     members: Dict[str, Tuple[SourceFile, ...]] = {}
     directories: Dict[str, bool] = {}
 
-    # One root, one list. `portfolio_files:` is listed separately in the map
-    # because a portfolio file inside a business workspace would be a
-    # cross-business claim filed under one business's name; reading the union
-    # against a business root reports `portfolio.md` absent on every run of
-    # every install, which is a finding about a file that must never be there.
-    declared = tuple(
-        view.portfolio_files if portfolio else view.workspace_files)
-    for declared_path in declared:
+    # A business workspace, and only its own list. `portfolio_files:` is listed
+    # separately in the map because a portfolio file inside a business workspace
+    # would be a cross-business claim filed under one business's name; reading
+    # the union reports `portfolio.md` absent on every run of every install,
+    # which is a finding about a file that must never be there.
+    for declared_path in tuple(view.workspace_files):
         headings = tuple(view.sections.get(declared_path, ()))
         if declared_path.endswith("/"):
             directory = root / declared_path

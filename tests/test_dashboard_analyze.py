@@ -510,6 +510,43 @@ class TestPipelineReadsOnlyRecordedMoney(unittest.TestCase):
         self.assertEqual(amount.currency, "PLN")
         self.assertEqual(amount.display, "PLN 33,000")
 
+    def test_coverage_is_the_ratio_not_the_gap(self):
+        for line, ratio in (("3x against $15,000", 3.0),
+                            ("2,5× against a $15,000 gap", 2.5)):
+            with self.subTest(line=line):
+                panel = analyze.build_pipeline(example_sources(edit(
+                    "pipeline.md",
+                    "Coverage: 2.2× against a $15,000 gap (goals.md 2026-07-01)",
+                    "Coverage: %s" % line)), TODAY)
+                self.assertEqual(fact(panel, "coverage").number, ratio)
+        panel = analyze.build_pipeline(example_sources(), TODAY)
+        self.assertEqual(fact(panel, "coverage").number, 2.2)
+
+    def test_coverage_with_no_ratio_is_not_recorded(self):
+        panel = analyze.build_pipeline(example_sources(edit(
+            "pipeline.md",
+            "Coverage: 2.2× against a $15,000 gap (goals.md 2026-07-01)",
+            "Coverage: against a $15,000 gap")), TODAY)
+        self.assertFalse(fact(panel, "coverage").known)
+
+    def test_a_disregard_amount_is_left_out_of_the_total(self):
+        panel = analyze.build_pipeline(example_sources(edit(
+            "pipeline.md", "Amount: $15,000 [VALIDATE]",
+            "Amount: $15,000 [DISREGARD]")), TODAY)
+        self.assertEqual(fact(panel, "live_amount").number, 18000.0)
+        self.assertEqual(fact(panel, "live_count").number, 2.0)
+        note = fact(panel, "live_unvalidated").display
+        self.assertIn("1 marked [DISREGARD]", note)
+        self.assertNotIn("[VALIDATE]", note)
+
+    def test_only_disregard_amounts_is_not_a_zero(self):
+        live = "\n### Acme — sprint\n\nAmount: $9,000 [DISREGARD]\n"
+        panel = analyze.build_pipeline(example_sources(lambda home: write(
+            home, "pipeline.md", "# Pipeline\n\n## Live\n%s\n## Last review\n"
+            % live)), TODAY)
+        self.assertEqual(fact(panel, "live_count").number, 1.0)
+        self.assertFalse(fact(panel, "live_amount").known)
+
 
 WON_TEMPLATE = """
 ### Acme — won 2026-08-15 — $18,000 — strategy sprint
@@ -865,6 +902,15 @@ class TestBriefCountsWhatTheBriefWrote(unittest.TestCase):
             "- Delta invoice — 9 days overdue\n"
             "+7 more — handed to triage")), TODAY)
         self.assertEqual(fact(panel, "rotting_count").number, 10.0)
+
+    def test_a_sole_handed_over_line_counts_its_remainder(self):
+        self.assertEqual(
+            analyze._rotting_count("+7 more — handed to triage\n"), 7.0)
+        panel = analyze.build_brief(example_sources(edit(
+            "reviews/daily/2026-07-20.md",
+            "- Northwind reference follow-up — 3 days overdue",
+            "+7 more — handed to triage")), TODAY)
+        self.assertEqual(fact(panel, "rotting_count").number, 7.0)
 
     def test_a_first_run_rotting_line_is_a_zero(self):
         """daily-brief's first run writes `none — <why>`, not a bare `none`."""
