@@ -317,6 +317,6 @@ Claude Code is the only host:
 ## Versioning
 
 The version lives in `founder-os/.claude-plugin/plugin.json`; the [`CHANGELOG.md`](../CHANGELOG.md) tracks it.
-Current candidate: **2.9.1** (decision-first activation and workflow receipts,
+Current candidate: **3.0.0** (decision-first activation and workflow receipts,
 on Claude Code). Releases follow SemVer against the plugin
 manifest. See [`development.md`](development.md) for the release checklist.
