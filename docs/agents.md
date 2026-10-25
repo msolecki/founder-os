@@ -51,9 +51,9 @@ or that agrees with the CEO, is decoration.
 
 Each agent below lists the decision it owns, the workspace files it may write
 (from [`ownership.yaml`](../founder-os/references/ownership.yaml)), and its role
-skills. Every agent *also* holds the three universal system skills —
-`guardrails`, `state-integrity`, `ingestion-gate` — omitted from the lists below
-for brevity. Full command descriptions are in [`commands.md`](commands.md).
+skills. Every agent *also* holds the four universal system skills —
+`guardrails`, `state-integrity`, `ingestion-gate`, `context-load` — omitted
+from the lists below for brevity. Full command descriptions are in [`commands.md`](commands.md).
 
 ### Chief of Staff
 - **Decides:** what deserves the founder's attention right now, and who handles

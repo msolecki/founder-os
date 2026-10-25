@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import validate_package as V
 
 
-UNIVERSALS = ["guardrails", "state-integrity", "ingestion-gate"]
+UNIVERSALS = ["guardrails", "state-integrity", "ingestion-gate", "context-load"]
 DEFAULT_TOOLS = (
     "mcp__plugin_founder-os_founder-os-state__resolve_workspace, "
     "mcp__plugin_founder-os_founder-os-state__list_state, "
@@ -281,6 +281,12 @@ class TestAgents(ValidatorTestCase):
         self.assertIn("agents/cfo.md: must list universal skill 'state-integrity'",
                       self.check(V.check_agents))
 
+    def test_missing_context_load_is_caught(self):
+        self.write_agent("cfo", skills=[s for s in UNIVERSALS
+                                        if s != "context-load"])
+        self.assertIn("agents/cfo.md: must list universal skill 'context-load'",
+                      self.check(V.check_agents))
+
     def test_name_not_matching_filename_is_caught(self):
         self.write_agent("cfo", name="CFO", skills=list(UNIVERSALS))
         self.assertIn("agents/cfo.md: name 'CFO' does not match the filename",
@@ -480,7 +486,7 @@ class TestRoleSkillExclusivity(ValidatorTestCase):
             self.check(V.check_role_skill_exclusivity))
 
     def test_universal_skills_are_exempt_from_exclusivity(self):
-        # Both fixture agents hold all three universals; that is the design.
+        # Both fixture agents hold every universal; that is the design.
         self.assertEqual(self.check(V.check_role_skill_exclusivity), [])
 
 
@@ -898,13 +904,13 @@ class TestReadmeCounts(ValidatorTestCase):
               "| Agents  | %d    |\n| Skills  | %d    |\n")
 
     def test_matching_counts_are_clean(self):
-        # Fixture: 2 agents, 4 skills (3 universals + daily-brief), no
+        # Fixture: 2 agents, 5 skills (4 universals + daily-brief), no
         # setup-cadences so the cadence row is not required.
-        write(self.root / "README.md", self.README % (2, 4))
+        write(self.root / "README.md", self.README % (2, 5))
         self.assertEqual(self.check(V.check_readme_counts), [])
 
     def test_stale_agent_count_is_caught(self):
-        write(self.root / "README.md", self.README % (12, 4))
+        write(self.root / "README.md", self.README % (12, 5))
         errs = self.check(V.check_readme_counts)
         self.assertTrue(any("claims 12 agents, the package has 2" in e
                             for e in errs), errs)
@@ -914,11 +920,11 @@ class TestReadmeCounts(ValidatorTestCase):
               "# X\n\n| Content | Count |\n|---|---|\n"
               "| Agents | 2 |\n| Skills | 2 |\n")
         errs = self.check(V.check_readme_counts)
-        self.assertTrue(any("claims 2 skills, the package has 4" in e
+        self.assertTrue(any("claims 2 skills, the package has 5" in e
                             for e in errs), errs)
 
     def test_missing_cadence_row_is_caught_when_cadence_exists(self):
-        write(self.root / "README.md", self.README % (2, 4))
+        write(self.root / "README.md", self.README % (2, 5))
         self.write_skill("setup-cadences", body="## Steps\n\n1. Go.\n")
         errs = self.check(V.check_readme_counts)
         self.assertTrue(any("no 'Cadences' row" in e for e in errs), errs)
@@ -927,7 +933,7 @@ class TestReadmeCounts(ValidatorTestCase):
         self.assertEqual(self.check(V.check_readme_counts), [])
 
     def test_document_count_drift_is_caught(self):
-        write(self.root / "README.md", self.README % (2, 4))
+        write(self.root / "README.md", self.README % (2, 5))
         write(self.tmp / "docs" / "README.md",
               "Founder OS adds 12 agents, 48 workflows, and 9 optional cadences.")
         errs = self.check(V.check_readme_counts)

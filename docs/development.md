@@ -101,7 +101,7 @@ ownership claim the agent doesn't have.
 ## Adding an agent
 
 1. Create `founder-os/agents/<slug>.md`. Frontmatter: `name` (= filename),
-   `description`, `skills:` (must include the three universal ones), `tools:` (an
+   `description`, `skills:` (must include the four universal ones), `tools:` (an
    explicit allowlist — never omit it, and never an outbound tool).
 2. Body: the four mandated headings, in order.
 3. If it owns files, add them under `owns:` in `ownership.yaml`, ensure each is in
