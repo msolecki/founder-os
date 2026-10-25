@@ -5,6 +5,8 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+## 3.0.0 — 2026-10-25
+
 **Breaking: Claude Code is the only host.** Codex support is removed: the
 `.codex-plugin` manifest, the per-skill `agents/openai.yaml` adapters, the
 `record-agent.py` hook that mapped a Codex `turn_id` to a role, the guard's
