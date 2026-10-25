@@ -84,14 +84,27 @@ def main():
     # Every Stop leaves a scan state, and most sessions never reach the nudge,
     # so the sweep runs here, at most once a day, not only after a nudge.
     now = time.time()
+    nudged = os.path.exists(marker)
+    if nudged:
+        # A session still in use keeps its marker fresh, before the sweep
+        # below can take it, so the nudge stays once per session.
+        try:
+            os.utime(marker)
+        except OSError:
+            pass
     stamp = os.path.join(marker_dir, ".swept")
     try:
         due = now - os.stat(stamp).st_mtime >= 86400
     except OSError:
         due = True
     if due:
-        open(stamp, "w").close()
-        for entry in os.scandir(marker_dir):
+        # A failed sweep must not stop the nudge itself.
+        try:
+            open(stamp, "w").close()
+            entries = list(os.scandir(marker_dir))
+        except OSError:
+            entries = []
+        for entry in entries:
             try:
                 if (entry.is_file(follow_symlinks=False)
                         and now - entry.stat(follow_symlinks=False).st_mtime
@@ -99,7 +112,7 @@ def main():
                     os.remove(entry.path)
             except OSError:
                 pass
-    if os.path.exists(marker):
+    if nudged:
         return 0
 
     minimum = os.environ.get("FOUNDER_OS_STOP_NUDGE_MIN", "30")

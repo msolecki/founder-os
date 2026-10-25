@@ -172,6 +172,18 @@ class TestDecisionNudge(HookCase):
         self.assertTrue((stop_nudge / "s1").exists())
         self.assertFalse((stop_nudge / "s1.scan").exists())
 
+    def test_a_live_session_keeps_its_marker_past_the_sweep(self):
+        path = self.transcript(30)
+        self.assertIsNotNone(self.run_hook(NUDGE, self.payload(path)))
+        stop_nudge = self.data / "stop-nudge"
+        old = time.time() - 9 * 86400
+        os.utime(stop_nudge / "s1", (old, old))
+        os.utime(stop_nudge / ".swept", (old, old))
+        # The next Stop refreshes the marker; the sweep then leaves it.
+        self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
+        self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
+        self.assertTrue((stop_nudge / "s1").exists())
+
     def test_threshold_is_configurable(self):
         path = self.transcript(5)
         self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
