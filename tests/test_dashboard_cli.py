@@ -623,6 +623,16 @@ class TestRegistry(unittest.TestCase):
         self.assertEqual(out, "")
         self.assertIn("acme", err)
 
+    def test_json_refuses_an_unmatched_founder_os_home_with_one_business(self):
+        """One registered business is no licence to ignore the pointer."""
+        self._registry("businesses:\n  acme:\n    home: %s\n"
+                       "    status: active\n" % self.acme)
+        code, out, err = self._run("--now", "2026-07-20", "--json",
+                                   home_env=self.lab / "elsewhere")
+        self.assertEqual(code, self.main.EXIT_UNRESOLVED, err)
+        self.assertEqual(out, "")
+        self.assertFalse((self.acme / "_dashboard").exists())
+
     def test_the_page_refuses_when_founder_os_home_names_no_registered_business(self):
         """The page is written into a workspace, so it refuses too.
 
