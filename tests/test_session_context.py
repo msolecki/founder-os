@@ -147,7 +147,7 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
             )
             reports = {
                 "claude": smoke.check_mcp_lifecycle(
-                    installed, temp_root / "claude-workspace", "claude"
+                    installed, temp_root / "claude-workspace"
                 ),
             }
 

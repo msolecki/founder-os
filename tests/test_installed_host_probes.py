@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 import yaml
 from pathlib import Path
@@ -52,7 +53,7 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir).resolve()
-            claude = probe.isolated_environment(root, "claude", inherited)
+            claude = probe.isolated_environment(root, inherited)
 
             self.assertTrue(Path(claude["HOME"]).is_relative_to(root))
             self.assertTrue(
@@ -66,7 +67,7 @@ class InstalledHostProbeContractTest(unittest.TestCase):
     def test_install_commands_use_only_the_local_marketplace(self):
         probe = load_probe_module()
         commands = probe.installation_commands(
-            "claude", REPO_ROOT, "/absolute/host-cli"
+            REPO_ROOT, "/absolute/host-cli"
         )
         flattened = [item for command in commands for item in command]
         self.assertIn(str(REPO_ROOT), flattened)
@@ -76,19 +77,49 @@ class InstalledHostProbeContractTest(unittest.TestCase):
             any("founder-os@founder-os" in command for command in commands)
         )
 
-    def test_unavailable_cli_and_missing_host_selection_are_failures(self):
+    def test_unavailable_cli_is_a_failure_and_no_host_selection_is_needed(self):
         probe = load_probe_module()
         with self.assertRaisesRegex(probe.ProbeFailure, "claude.*unavailable"):
-            probe.require_cli("claude", which=lambda _name: None)
+            probe.require_cli(which=lambda _name: None)
         stderr = io.StringIO()
-        with contextlib.redirect_stderr(stderr):
-            self.assertEqual(probe.main([]), 2)
-        self.assertIn("select --claude", stderr.getvalue())
+        with contextlib.redirect_stderr(stderr), mock.patch.object(
+            probe, "require_cli", side_effect=probe.ProbeFailure("no cli")
+        ):
+            self.assertEqual(probe.main([]), 1)
+        self.assertIn("FAIL: no cli", stderr.getvalue())
+
+    def test_scheduled_dispatch_requires_a_chief_of_staff_write(self):
+        probe = load_probe_module()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir).resolve()
+            journal = root / "data" / "operations.jsonl"
+            journal.parent.mkdir()
+            script = (
+                'mkdir -p "$FOUNDER_OS_HOME/reviews/daily" && '
+                'touch "$FOUNDER_OS_HOME/reviews/daily/2026-10-26.md" && '
+                "echo '{\"result\":\"OK\",\"role\":\"%s\","
+                "\"path\":\"reviews/daily/2026-10-26.md\"}' >> " + str(journal)
+            )
+            environment = dict(os.environ)
+            self.assertEqual("PASS", probe.check_scheduled_dispatch(
+                ["/bin/sh", "-c", script % "chief-of-staff"],
+                environment, root / "run", root,
+            ))
+            journal.write_text("")
+            with self.assertRaisesRegex(probe.ProbeFailure, "wrong role"):
+                probe.check_scheduled_dispatch(
+                    ["/bin/sh", "-c", script % "strategist"],
+                    environment, root / "run", root,
+                )
+            journal.write_text("")
+            with self.assertRaisesRegex(probe.ProbeFailure, "no daily review"):
+                probe.check_scheduled_dispatch(
+                    ["/bin/sh", "-c", "exit 0"], environment, root / "run", root
+                )
 
     def test_pass_record_contains_hashes_but_no_business_content(self):
         probe = load_probe_module()
         record = probe.format_pass_record(
-            "claude",
             {
                 "version": "3.0.0",
                 "initial_sha256": "a" * 64,
@@ -121,7 +152,7 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             claude = probe.check_cadence_preview(
-                PLUGIN_ROOT, "claude", root / "claude", root / "workspace"
+                PLUGIN_ROOT, root / "claude", root / "workspace"
             )
         self.assertIn("--allowedTools", claude)
         self.assertIn(

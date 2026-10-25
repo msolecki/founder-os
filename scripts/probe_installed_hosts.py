@@ -31,7 +31,7 @@ class ProbeFailure(AssertionError):
     """An installed host did not satisfy the release contract."""
 
 
-def isolated_environment(root, host, inherited=None):
+def isolated_environment(root, inherited=None):
     """Return a host environment whose writable discovery state is temporary."""
     root = Path(root).resolve()
     environment = dict(os.environ if inherited is None else inherited)
@@ -53,37 +53,32 @@ def isolated_environment(root, host, inherited=None):
     environment["HOME"] = str(home)
     environment["XDG_CONFIG_HOME"] = str(xdg)
     environment["TMPDIR"] = str(temporary)
-    if host == "claude":
-        config = root / "claude"
-        config.mkdir(parents=True, exist_ok=True)
-        environment["CLAUDE_CONFIG_DIR"] = str(config)
-    else:
-        raise ProbeFailure("unknown host: %s" % host)
+    config = root / "claude"
+    config.mkdir(parents=True, exist_ok=True)
+    environment["CLAUDE_CONFIG_DIR"] = str(config)
     return environment
 
 
-def require_cli(host, which=shutil.which):
-    """Resolve a required release CLI; absence is never a skip."""
-    path = which(host)
+def require_cli(which=shutil.which):
+    """Resolve the Claude CLI; absence is never a skip."""
+    path = which("claude")
     if not path:
-        raise ProbeFailure("%s CLI is unavailable" % host)
+        raise ProbeFailure("claude CLI is unavailable")
     return os.path.abspath(path)
 
 
-def installation_commands(host, repo_root, binary):
+def installation_commands(repo_root, binary):
     """Build the local-only marketplace, install, and discovery commands."""
     source = str(Path(repo_root).resolve())
-    if host == "claude":
-        return [
-            [binary, "plugin", "marketplace", "add", source, "--scope", "user"],
-            [binary, "plugin", "install", PLUGIN_ID, "--scope", "user"],
-            [binary, "plugin", "list", "--json"],
-            [binary, "plugin", "details", PLUGIN_ID],
-        ]
-    raise ProbeFailure("unknown host: %s" % host)
+    return [
+        [binary, "plugin", "marketplace", "add", source, "--scope", "user"],
+        [binary, "plugin", "install", PLUGIN_ID, "--scope", "user"],
+        [binary, "plugin", "list", "--json"],
+        [binary, "plugin", "details", PLUGIN_ID],
+    ]
 
 
-def _run_command(command, environment, cwd, label):
+def _run_command(command, environment, cwd, label, timeout=90):
     try:
         result = subprocess.run(
             command,
@@ -92,7 +87,7 @@ def _run_command(command, environment, cwd, label):
             capture_output=True,
             text=True,
             check=False,
-            timeout=90,
+            timeout=timeout,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise ProbeFailure("%s could not run: %s" % (label, exc)) from exc
@@ -100,13 +95,6 @@ def _run_command(command, environment, cwd, label):
         detail = result.stderr.strip() or result.stdout.strip() or "no output"
         raise ProbeFailure("%s exited %d: %s" % (label, result.returncode, detail))
     return result
-
-
-def _json_output(source, label):
-    try:
-        return json.loads(source)
-    except (TypeError, ValueError) as exc:
-        raise ProbeFailure("%s did not emit JSON discovery data" % label) from exc
 
 
 def _inside(path, root, label):
@@ -119,8 +107,8 @@ def _inside(path, root, label):
     return path
 
 
-def _discover_install(host, results, isolated_root):
-    listing = _json_output(results[2].stdout, "claude plugin list")
+def _discover_install(results, isolated_root):
+    listing = installed_smoke._json_output(results[2], "claude plugin list")
     matches = [
         item
         for item in listing
@@ -135,20 +123,20 @@ def _discover_install(host, results, isolated_root):
     details = results[3].stdout
 
     if not isinstance(install_path, str):
-        raise ProbeFailure("%s discovery omitted its installed path" % host)
-    plugin_root = _inside(install_path, isolated_root, host + " install")
+        raise ProbeFailure("Claude discovery omitted its installed path")
+    plugin_root = _inside(install_path, isolated_root, "Claude install")
     if not plugin_root.is_dir():
-        raise ProbeFailure("%s discovered install does not exist" % host)
+        raise ProbeFailure("Claude discovered install does not exist")
     if cli_version != VERSION or enabled is not True:
-        raise ProbeFailure("%s discovered the wrong or disabled release" % host)
+        raise ProbeFailure("Claude discovered the wrong or disabled release")
 
     manifest_path = plugin_root / ".claude-plugin" / "plugin.json"
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, TypeError, ValueError) as exc:
-        raise ProbeFailure("%s installed manifest is unreadable" % host) from exc
+        raise ProbeFailure("Claude installed manifest is unreadable") from exc
     if manifest.get("name") != "founder-os" or manifest.get("version") != VERSION:
-        raise ProbeFailure("%s installed manifest identity drifted" % host)
+        raise ProbeFailure("Claude installed manifest identity drifted")
     return plugin_root, details
 
 
@@ -169,11 +157,11 @@ def execution_envelopes(plugin_root):
     return _execution_envelope(plugin_root), _execution_envelope(plugin_root)
 
 
-def check_cadence_preview(plugin_root, host, binary, workspace_root):
+def check_cadence_preview(plugin_root, binary, workspace_root):
     """Render an installed host command without invoking a model or scheduler."""
     script = Path(plugin_root) / "scripts" / "cadence_manager.py"
     spec = importlib.util.spec_from_file_location(
-        "founder_os_installed_cadence_manager_" + host, script
+        "founder_os_installed_cadence_manager", script
     )
     if spec is None or spec.loader is None:
         raise ProbeFailure("installed cadence manager is unavailable")
@@ -183,7 +171,6 @@ def check_cadence_preview(plugin_root, host, binary, workspace_root):
         spec.loader.exec_module(module)
         workspace_root = Path(workspace_root).resolve()
         config = module.CadenceConfig(
-            host=host,
             binary=Path(binary).resolve(),
             workspace=workspace_root / "founder-os",
             workdir=workspace_root,
@@ -192,7 +179,7 @@ def check_cadence_preview(plugin_root, host, binary, workspace_root):
         )
         argv = module.host_argv(config, "daily-brief")
     except Exception as exc:
-        raise ProbeFailure("%s cadence preview failed: %s" % (host, exc)) from exc
+        raise ProbeFailure("cadence preview failed: %s" % exc) from exc
     required = {
         "dontAsk",
         "--allowedTools",
@@ -200,18 +187,59 @@ def check_cadence_preview(plugin_root, host, binary, workspace_root):
         "mcp__plugin_founder-os_founder-os-state__*",
     }
     if not required.issubset(set(argv)):
-        raise ProbeFailure("%s cadence preview drifted" % host)
+        raise ProbeFailure("cadence preview drifted")
     return tuple(argv)
 
 
-def _check_orchestration(host, plugin_root, details, guard_report, required):
+def check_scheduled_dispatch(argv, environment, workspace_root, isolated_root):
+    """Run the scheduled daily-brief argv once; a role session must write it.
+
+    Spends one real model run and needs credentials the isolated config can
+    use (for example ANTHROPIC_API_KEY), so it runs only with --live-cadence.
+    Under ``dontAsk`` the argv allows only the gateway tools; this proves the
+    host still dispatches the owning role, whose capability the gateway
+    journals, rather than the brief going unwritten.
+    """
+    workspace_root = Path(workspace_root).resolve()
+    workspace = workspace_root / "founder-os"
+    workspace.mkdir(parents=True, exist_ok=True)
+    _run_command(
+        list(argv),
+        dict(environment, FOUNDER_OS_HOME=str(workspace)),
+        workspace_root,
+        "scheduled daily-brief",
+        timeout=900,
+    )
+    writes = []
+    for journal in Path(isolated_root).rglob("operations.jsonl"):
+        for line in journal.read_text(encoding="utf-8").splitlines():
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if (
+                isinstance(event, dict)
+                and event.get("result") == "OK"
+                and str(event.get("path", "")).startswith("reviews/daily/")
+            ):
+                writes.append(event)
+    if not writes:
+        raise ProbeFailure("scheduled daily-brief wrote no daily review")
+    if any(event.get("role") != "chief-of-staff" for event in writes):
+        raise ProbeFailure("scheduled daily-brief was written by the wrong role")
+    if not any((workspace / event["path"]).is_file() for event in writes):
+        raise ProbeFailure("scheduled daily-brief journal does not match disk")
+    return "PASS"
+
+
+def _check_orchestration(plugin_root, details, guard_report, required):
     agents = package_validator.load_agents(plugin_root)
     native, fallback = execution_envelopes(plugin_root)
     errors = package_validator.execution_envelope_errors(
         plugin_root, agents, native, fallback
     )
     if errors:
-        raise ProbeFailure("%s fallback envelope failed: %s" % (host, "; ".join(errors)))
+        raise ProbeFailure("fallback envelope failed: %s" % "; ".join(errors))
 
     native_status = "not-exposed"
     if (
@@ -226,15 +254,15 @@ def _check_orchestration(host, plugin_root, details, guard_report, required):
         "PASS" if guard_report.get("fallback_allowed") is None else "FAIL"
     )
     if required and fallback_status != "PASS":
-        raise ProbeFailure("%s generic fallback was not exercised" % host)
+        raise ProbeFailure("generic fallback was not exercised")
     return native_status, fallback_status
 
 
-def probe_host(host, repo_root, isolated_root, require_native_and_fallback=False):
-    """Install one host locally, discover it, and run installed role I/O."""
-    binary = require_cli(host)
+def probe_host(repo_root, isolated_root, require_native_and_fallback, live_cadence):
+    """Install Claude Code locally, discover it, and run installed role I/O."""
+    binary = require_cli()
     isolated_root = Path(isolated_root).resolve()
-    environment = isolated_environment(isolated_root, host)
+    environment = isolated_environment(isolated_root)
     run_root = isolated_root / "run"
     run_root.mkdir(parents=True, exist_ok=True)
     results = [
@@ -242,51 +270,50 @@ def probe_host(host, repo_root, isolated_root, require_native_and_fallback=False
             command,
             environment,
             run_root,
-            "%s install step %d" % (host, index),
+            "claude install step %d" % index,
         )
         for index, command in enumerate(
-            installation_commands(host, repo_root, binary), start=1
+            installation_commands(repo_root, binary), start=1
         )
     ]
-    plugin_root, details = _discover_install(host, results, isolated_root)
-    check_cadence_preview(
-        plugin_root,
-        host,
-        binary,
-        run_root / (host + "-cadence-workspace"),
-    )
+    plugin_root, details = _discover_install(results, isolated_root)
+    cadence_root = run_root / "claude-cadence-workspace"
+    argv = check_cadence_preview(plugin_root, binary, cadence_root)
     installed_smoke.check_session_context(plugin_root, run_root)
     installed_smoke.check_session_context_warning(plugin_root, run_root)
     guard_report = installed_smoke.check_ownership_guard(
-        plugin_root, run_root / (host + "-guard-workspace")
+        plugin_root, run_root / "claude-guard-workspace"
     )
     report = installed_smoke.check_mcp_lifecycle(
-        plugin_root, run_root / (host + "-workspace"), host
+        plugin_root, run_root / "claude-workspace"
     )
     native, fallback = _check_orchestration(
-        host,
         plugin_root,
         details,
         guard_report,
         require_native_and_fallback,
     )
-    report.update(native=native, fallback=fallback)
+    report.update(native=native, fallback=fallback, scheduled="skipped")
+    if live_cadence:
+        report["scheduled"] = check_scheduled_dispatch(
+            argv, environment, cadence_root, isolated_root
+        )
     return report
 
 
-def format_pass_record(host, report):
+def format_pass_record(report):
     """Return a content-free release record with only result metadata."""
     return (
-        "installed-host probe: {host} PASS version={version} role_io=PASS "
+        "installed-host probe: claude PASS version={version} role_io=PASS "
         "initial_sha256={initial} persisted_sha256={persisted} "
-        "native={native} fallback={fallback}"
+        "native={native} fallback={fallback} scheduled={scheduled}"
     ).format(
-        host=host,
         version=report["version"],
         initial=report["initial_sha256"],
         persisted=report["persisted_sha256"],
         native=report["native"],
         fallback=report["fallback"],
+        scheduled=report.get("scheduled", "skipped"),
     )
 
 
@@ -294,11 +321,21 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Probe isolated local Founder OS installs on real host CLIs."
     )
-    parser.add_argument("--claude", action="store_true", help="require Claude Code")
+    parser.add_argument(
+        "--claude",
+        action="store_true",
+        help="accepted for compatibility; Claude Code is the only host",
+    )
     parser.add_argument(
         "--require-native-and-fallback",
         action="store_true",
         help="require native discovery where exposed and byte-identical fallback",
+    )
+    parser.add_argument(
+        "--live-cadence",
+        action="store_true",
+        help="also run the scheduled daily-brief argv once (spends a model run)"
+        " and require the chief-of-staff role session to write the brief",
     )
     return parser
 
@@ -306,30 +343,15 @@ def _parser():
 def main(argv=None):
     parser = _parser()
     arguments = parser.parse_args(argv)
-    hosts = [
-        host
-        for host, enabled in (("claude", arguments.claude),)
-        if enabled
-    ]
-    if not hosts:
-        parser.print_usage(sys.stderr)
-        print("probe_installed_hosts.py: error: select --claude", file=sys.stderr)
-        return 2
-
     try:
         with tempfile.TemporaryDirectory(prefix="founder-os-host-probes-") as temp_dir:
-            root = Path(temp_dir)
-            reports = {
-                host: probe_host(
-                    host,
-                    REPO_ROOT,
-                    root / host,
-                    require_native_and_fallback=arguments.require_native_and_fallback,
-                )
-                for host in hosts
-            }
-        for host in hosts:
-            print(format_pass_record(host, reports[host]))
+            report = probe_host(
+                REPO_ROOT,
+                Path(temp_dir) / "claude",
+                arguments.require_native_and_fallback,
+                arguments.live_cadence,
+            )
+        print(format_pass_record(report))
     except (ProbeFailure, installed_smoke.SmokeFailure, OSError) as exc:
         print("installed-host probe: FAIL: %s" % exc, file=sys.stderr)
         return 1

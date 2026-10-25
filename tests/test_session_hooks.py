@@ -116,6 +116,41 @@ class TestDecisionNudge(HookCase):
         self.assertNotIn("SECRET-LINE", json.dumps(out))
         self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
 
+    def test_repeat_stops_resume_from_the_last_offset(self):
+        path = self.transcript(20)
+        self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
+        state = json.loads((self.data / "stop-nudge" / "s1.scan").read_text())
+        self.assertEqual(
+            {"offset": path.stat().st_size, "n": 20, "in_use": True}, state)
+        with path.open("a", encoding="utf-8") as f:
+            for _ in range(10):
+                f.write('{"type":"assistant","message":{"content":'
+                        '[{"type":"tool_use","name":"Read"}]}}\n')
+        out = self.run_hook(NUDGE, self.payload(path))
+        self.assertIn("30 tool calls",
+                      out["hookSpecificOutput"]["additionalContext"])
+
+    def test_a_partial_last_line_counts_but_is_rescanned(self):
+        path = self.transcript(29)
+        with path.open("a", encoding="utf-8") as f:
+            f.write('{"type":"assistant","message":{"content":'
+                    '[{"type":"tool_use","name":"Read"}]}}')
+        size = path.stat().st_size
+        out = self.run_hook(NUDGE, self.payload(path))
+        self.assertIn("30 tool calls",
+                      out["hookSpecificOutput"]["additionalContext"])
+        state = json.loads((self.data / "stop-nudge" / "s1.scan").read_text())
+        self.assertLess(state["offset"], size)
+        self.assertEqual(29, state["n"])
+
+    def test_a_rewritten_transcript_is_rescanned_from_the_start(self):
+        stop_nudge = self.data / "stop-nudge"
+        stop_nudge.mkdir(parents=True)
+        (stop_nudge / "s1.scan").write_text(
+            json.dumps({"offset": 10 ** 9, "n": 0, "in_use": False}))
+        path = self.transcript(30)
+        self.assertIsNotNone(self.run_hook(NUDGE, self.payload(path)))
+
     def test_threshold_is_configurable(self):
         path = self.transcript(5)
         self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))

@@ -457,11 +457,8 @@ class _McpClient:
             self._abort("returned a mismatched JSON-RPC id")
         return response
 
-    def notify(self, method, params=None):
-        message = {"jsonrpc": "2.0", "method": method}
-        if params is not None:
-            message["params"] = params
-        self._send(message)
+    def notify(self, method):
+        self._send({"jsonrpc": "2.0", "method": method})
 
     def _send(self, message):
         if self.process.stdin is None:
@@ -538,10 +535,8 @@ class _McpClient:
         return False
 
 
-def _adapter_command(installed_plugin, host):
+def _adapter_command(installed_plugin):
     installed_plugin = Path(installed_plugin).resolve()
-    if host != "claude":
-        raise SmokeFailure("unknown installed adapter: %s" % host)
     manifest_path = installed_plugin / ".mcp.json"
     root_variable = "${CLAUDE_PLUGIN_ROOT}"
     try:
@@ -557,7 +552,7 @@ def _adapter_command(installed_plugin, host):
         or len(server["args"]) != 1
         or not isinstance(server["args"][0], str)
     ):
-        raise SmokeFailure("%s installed adapter has an invalid command" % host)
+        raise SmokeFailure("Claude installed adapter has an invalid command")
     argument = server["args"][0].replace(root_variable, str(installed_plugin))
     if root_variable in argument:
         raise SmokeFailure("Claude installed adapter root did not expand")
@@ -565,9 +560,9 @@ def _adapter_command(installed_plugin, host):
     try:
         entry.relative_to(installed_plugin)
     except ValueError as exc:
-        raise SmokeFailure("%s installed adapter escapes the plugin" % host) from exc
+        raise SmokeFailure("Claude installed adapter escapes the plugin") from exc
     if not entry.is_file():
-        raise SmokeFailure("%s installed adapter entry does not exist" % host)
+        raise SmokeFailure("Claude installed adapter entry does not exist")
     return [server["command"], str(entry)]
 
 
@@ -604,8 +599,9 @@ def _error_code(result, label):
     return code
 
 
-def check_mcp_lifecycle(installed_plugin, workspace_root, host):
+def check_mcp_lifecycle(installed_plugin, workspace_root):
     """Run initialize/list/call and a complete role I/O cycle via one adapter."""
+    host = "claude"  # label prefix only
     installed_plugin = Path(installed_plugin).resolve()
     workspace_root = Path(workspace_root).resolve()
     workspace_root.mkdir(parents=True, exist_ok=True)
@@ -628,7 +624,7 @@ def check_mcp_lifecycle(installed_plugin, workspace_root, host):
     env["FOUNDER_OS_HOME"] = str(workspace_root)
     env["PLUGIN_DATA"] = str(runtime_root / "plugin-data")
     env.pop("CLAUDE_PLUGIN_DATA", None)
-    command = _adapter_command(installed_plugin, host)
+    command = _adapter_command(installed_plugin)
 
     with _McpClient(command, workspace_root.parent, env, host + "/MCP") as client:
         initialized = client.request(
@@ -861,9 +857,9 @@ def check_package_tools(repo_root, installed_plugin):
     return results
 
 
-def run_smoke(repo_root=REPO_ROOT, hook_plugin_root=None):
+def run_smoke():
     """Run the complete smoke lifecycle in an isolated temporary directory."""
-    repo_root = Path(repo_root)
+    repo_root = REPO_ROOT
     source_plugin = repo_root / "founder-os"
     source_before = tree_fingerprint(source_plugin)
     try:
@@ -872,14 +868,10 @@ def run_smoke(repo_root=REPO_ROOT, hook_plugin_root=None):
             installed = create_installed_copy(
                 source_plugin, temp_root / "marketplace"
             )
-            check_session_context(
-                installed, temp_root, hook_plugin_root=hook_plugin_root
-            )
+            check_session_context(installed, temp_root)
             check_session_context_warning(installed, temp_root)
             check_ownership_guard(installed, temp_root / "guard-workspace")
-            check_mcp_lifecycle(
-                installed, temp_root / "claude-workspace", "claude"
-            )
+            check_mcp_lifecycle(installed, temp_root / "claude-workspace")
             check_package_tools(repo_root, installed)
     finally:
         assert_tree_unchanged(source_plugin, source_before)

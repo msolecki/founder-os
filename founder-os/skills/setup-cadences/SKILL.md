@@ -21,6 +21,11 @@ the portfolio schedule once when at least two businesses are active.
 - The scheduler: `launchd` for a sleeping macOS laptop, persistent user
   `systemd` timers for a sleeping Linux machine, or user `cron` for an
   always-on machine. Never use `sudo`, `/etc/crontab`, or `/etc/cron.d`.
+  Tell a `systemd` founder that user timers stop at logout unless lingering is
+  on (`loginctl enable-linger "$USER"`; check with `loginctl show-user "$USER"
+  -p Linger`) — ask before running it. Tell every founder that `launchd` and
+  persistent timers run a missed job at the next wake or login, so a laptop
+  closed all day produces that morning's brief late, not never.
 - Absolute paths for the host binary, workspace, workspace parent, and
   `~/.founder-os/logs`. Relative paths are invalid.
 - The exact registry slug, or no slug when the registry is absent. A portfolio
@@ -93,7 +98,7 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 3. **Preview exact artifacts.** Run:
 
        python3 <plugin>/scripts/cadence_manager.py preview \
-         --host claude --binary <absolute-binary> \
+         --binary <absolute-binary> \
          --workspace <absolute-workspace> --workdir <absolute-parent> \
          --log-root <absolute-home>/.founder-os/logs \
          --scheduler <cron|launchd|systemd> [--slug <exact-slug>] \
@@ -132,20 +137,27 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
    digest, or if the artifacts do not exactly match a fresh derivation from
    the confirmed config and backup, it stops before installation. It never
    silently overwrites a change made while the founder was reviewing the
-   preview.
+   preview. If `launchd` or `systemd` refuses a unit, apply names the unit and
+   the scheduler's error, then removes the whole identity it just wrote, so no
+   half-installed set keeps running; the snapshot backup still holds the prior
+   files.
 
 7. **Smoke-test the exact host argv.** Run:
 
        python3 <plugin>/scripts/cadence_manager.py smoke \
-         --host claude --binary <absolute-binary> \
+         --binary <absolute-binary> \
          --workspace <absolute-workspace> --workdir <absolute-parent> \
          --log-root <absolute-home>/.founder-os/logs [--slug <exact-slug>] \
          --workflow <daily-brief|portfolio-review>
 
    Use `portfolio-review` for the portfolio identity. Smoke takes no
    `--scheduler`. It uses a cron-like minimal environment and the previewed
-   working directory. A failed
-   auth or flag check is a failed setup, not a warning to discover tomorrow.
+   working directory. Tell the founder before running it that the smoke is a
+   real run: it writes today's brief (or portfolio review) into the workspace
+   and spends one workflow run of their Claude usage. It stops after 10
+   minutes, so a hung login prompt fails instead of blocking setup, and a
+   failure prints the host's own error. A failed auth or flag check is a
+   failed setup, not a warning to discover tomorrow.
 
 8. **Report the installed identity and next run.** Name the scheduler, backup,
    log directory, and next cadence time. Do not prescribe recurring scheduler
@@ -157,7 +169,7 @@ Removal is exact and explicit. Show the scheduler and identity, ask once,
 and only on a yes run:
 
     python3 <plugin>/scripts/cadence_manager.py remove \
-      --host <host> --binary <binary> --workspace <workspace> \
+      --binary <binary> --workspace <workspace> \
       --workdir <parent> --log-root <log-root> --scheduler <scheduler> \
       [--slug <slug>] --identity <exact-slug|founder-os|all> \
       --backup-root <absolute-home>/.founder-os
@@ -185,6 +197,7 @@ remove scheduler state.
 
 This skill modifies only the current user's scheduler and its own files under
 `~/.founder-os/`. It never uses `sudo`, never touches another user's schedule,
-never executes through `shell=True`, and never sends or spends anything. A host
+never executes through `shell=True`, and never sends anything; the only spend
+is the one disclosed smoke run. A host
 change requires preview, disclosed backup, and explicit confirmation every
 time.
