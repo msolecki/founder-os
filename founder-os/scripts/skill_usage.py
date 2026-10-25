@@ -114,6 +114,9 @@ def report(used, skills, agents, today):
     dates = [day for days in used.values() for day in days]
     if dates:
         rows.append("History covers %s to %s." % (min(dates), max(dates)))
+    # Cadences run with --no-session-persistence, so they leave no transcript.
+    rows.append("Note: scheduled runs are not counted (they keep no session "
+                "history), so a cadence workflow can show as never used.")
     return "\n".join(rows)
 
 

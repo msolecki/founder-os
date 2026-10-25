@@ -90,6 +90,7 @@ class TestSkillUsage(unittest.TestCase):
         self.assertIn("Never used (1): capture", lines)
         self.assertIn("Seen in history, no longer packaged: retired-flow",
                       lines)
+        self.assertIn("scheduled runs are not counted", lines[-1])
 
     def test_cli_honors_config_dir_and_prints_no_content(self):
         env = {**os.environ, "CLAUDE_CONFIG_DIR": str(self.config)}
