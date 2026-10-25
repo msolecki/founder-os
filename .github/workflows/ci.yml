@@ -93,8 +93,9 @@ jobs:
           if git diff --name-only "$BASE" "$HEAD" | grep -E '(^|/)\.gitleaks(\.toml|ignore)$'; then
             echo "gitleaks configuration changed in this pull request; a maintainer reviews it by hand" >&2; exit 1
           fi
-          if git diff "$BASE" "$HEAD" | grep -E '^\+.*gitleaks:allow'; then
-            echo "this pull request adds a gitleaks:allow marker; a maintainer reviews it by hand" >&2; exit 1
+          # [:] keeps this line from matching itself when the workflow changes.
+          if git diff "$BASE" "$HEAD" | grep -E '^\+.*gitleaks[:]allow'; then
+            echo "this pull request adds a gitleaks allow marker; a maintainer reviews it by hand" >&2; exit 1
           fi
           gitleaks git --no-banner --redact --log-opts="$BASE..$HEAD" .
       # Scan only what git tracks, not ignored local files.
