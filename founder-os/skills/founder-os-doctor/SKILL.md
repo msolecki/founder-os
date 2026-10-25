@@ -186,6 +186,23 @@ Deliver in conversation:
 
 If nothing tripped, say so in one line. Do not enumerate the passing checks.
 
+### Optional: which workflows ever run
+
+Not a check — nothing here is rot — and only when the founder asks which
+workflows they use, or is about to prune or add one. You have no shell, so you
+do not run it: offer the founder the command to run in their own terminal (or
+the main thread, outside any role), and read what they paste back.
+
+    python3 <plugin>/scripts/skill_usage.py
+
+It reads their local Claude Code session history, read-only, and prints per
+workflow and role the calls in the last 30 days and the last date, then the
+names that never ran. It prints names and dates only, never transcript content,
+and nothing leaves the machine. Add it under the report as **Usage**, one line
+per name that ran plus the never-used list, and draw no conclusion the
+founder did not ask for: a workflow nobody ran may simply not have been needed
+yet.
+
 ## The shareable report
 
 Everything above is written for the founder, about their own company, and none

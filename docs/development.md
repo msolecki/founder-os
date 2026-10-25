@@ -21,7 +21,7 @@ is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
 
-`scripts/validate_package.py` runs 20 build-time checks (each named function).
+`scripts/validate_package.py` runs 21 build-time checks (each named function).
 They enforce *structure*; they cannot decide whether business advice is good.
 
 | Check | Fails when… |

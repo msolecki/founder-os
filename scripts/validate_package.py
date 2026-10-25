@@ -974,6 +974,12 @@ def check_beliefs(root, agents):
     return errs
 
 
+HOOK_OUTPUT_CAP = 10000
+# session-context's prefix plus the version notice and their JSON envelopes,
+# measured at about 620 characters; the rest is margin.
+HOOK_OUTPUT_ROOM = 1024
+
+
 def check_hooks(root, agents):
     """Validate matcher coverage and compile the identity-boundary hook.
 
@@ -1021,6 +1027,30 @@ def check_hooks(root, agents):
             else:
                 errs.append("hooks/hooks.json: PreToolUse matcher does not "
                             "cover '%s'" % tool)
+    # A command hook without a timeout inherits the host's default, which is
+    # minutes: a hung guard would stall every tool call for that long.
+    for event, entries in sorted(hooks.items()):
+        for entry in entries or []:
+            for hook in entry.get("hooks") or []:
+                timeout = hook.get("timeout")
+                if hook.get("type") == "command" and not (
+                        isinstance(timeout, int)
+                        and not isinstance(timeout, bool) and timeout > 0):
+                    errs.append("hooks/hooks.json: %s command %r has no "
+                                "positive integer timeout"
+                                % (event, hook.get("command", "")))
+    # Claude Code caps hook output at 10,000 characters. session-context
+    # injects all of guidance.md, and the version notice lands in the same
+    # SessionStart context, so together they must fit — a guidance file that
+    # grows past the cap is truncated mid-rule, silently.
+    guidance = root / "references" / "guidance.md"
+    if guidance.exists():
+        size = len(guidance.read_text(encoding="utf-8"))
+        if size + HOOK_OUTPUT_ROOM > HOOK_OUTPUT_CAP:
+            errs.append("references/guidance.md: %d characters leaves no room "
+                        "for the hook prefix and notice under Claude Code's "
+                        "%d-character hook output cap"
+                        % (size, HOOK_OUTPUT_CAP))
     guard = root / "hooks" / "ownership-guard.py"
     if not guard.exists():
         errs.append("hooks/ownership-guard.py: missing")
@@ -1347,6 +1377,47 @@ def check_docs_parity(root, agents):
     return errs
 
 
+def check_surface(root, agents):
+    """`SURFACE.txt` lists every public name, and must match the disk.
+
+    A skill, agent or output style is something a founder types or a host
+    loads by name, and a hook event or script is something their machine runs.
+    Renaming or dropping one breaks an installed habit, so it should be a
+    deliberate edit to this list — and a changelog line — never a side effect
+    of moving a file. Skipped when the package carries no list, which is every
+    test fixture.
+    """
+    listed_path = root / "SURFACE.txt"
+    if not listed_path.exists():
+        return []
+    names = ["skill " + p.parent.name
+             for p in (root / "skills").glob("*/SKILL.md")]
+    names += ["agent " + p.stem for p in (root / "agents").glob("*.md")]
+    names += ["output-style " + p.stem
+              for p in (root / "output-styles").glob("*.md")]
+    hooks_json = root / "hooks" / "hooks.json"
+    if hooks_json.exists():
+        try:
+            events = json.loads(hooks_json.read_text(encoding="utf-8"))
+        except ValueError:
+            events = {}  # check_hooks reports the broken file
+        names += ["hook " + event for event in (events.get("hooks") or {})]
+    names += ["hook-script " + p.name for p in (root / "hooks").glob("*.py")]
+    on_disk = set(names)
+    lines = [line.strip() for line in
+             listed_path.read_text(encoding="utf-8").splitlines()
+             if line.strip()]
+    listed = set(lines)
+    errs = [] if lines == sorted(listed) else [
+        "SURFACE.txt: not sorted, or a name is listed twice"]
+    errs += ["SURFACE.txt: '%s' ships but is not listed — add it and a "
+            "changelog line" % name for name in sorted(on_disk - listed)]
+    errs += ["SURFACE.txt: lists '%s', which no longer ships — a rename or "
+             "removal is a changelog line, not a silent edit" % name
+             for name in sorted(listed - on_disk)]
+    return errs
+
+
 CHECKS = [check_plugin, check_host_adapters, check_agents,
           check_agent_tools, check_one_level_orchestration,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
@@ -1354,7 +1425,7 @@ CHECKS = [check_plugin, check_host_adapters, check_agents,
           check_workspace_files_complete, check_skill_writes,
           check_sections, check_capture_contract, check_beliefs, check_hooks,
           check_readme_counts, check_docs_parity,
-          check_version_sites]
+          check_version_sites, check_surface]
 
 
 def run_checks(root):

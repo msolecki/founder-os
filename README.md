@@ -149,7 +149,7 @@ The full recovery branches are in
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (the expected inventory; init scaffolds the Chief of Staff's entries, each other owner creates its own on first write), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
 | Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Reads the Claude Code `agent_type`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the local gateway. |
-| Validator | `scripts/validate_package.py` | 20 build-time checks (below). CI runs it on every push. |
+| Validator | `scripts/validate_package.py` | 21 build-time checks (below). CI runs it on every push. |
 | Cadences | `founder-os/scripts/cadence_manager.py` | Previews, snapshots, and safely applies ten jobs per business plus one conditional portfolio job through cron, launchd, or persistent user systemd. Exact identities prevent sibling schedules from being overwritten. |
 | Local overlay | `founder-os/references/extensibility.md` | Per-business extension without a fork: `$FOUNDER_OS_HOME/_local/` may **add** a file, skill or agent and can never reassign or remove one the package ships. Merged into the guard's map per workspace; validated by `founder-os-doctor`, because a build-time validator cannot see a stranger's workspace. Forged by `/skill-forge`, whose commonest correct answer is "a packaged agent already owns this decision". |
 | Multi-business | `founder-os/references/multi-business.md` | One workspace per business + a registry (`~/.founder-os/businesses.yaml`) + a portfolio workspace. The hook resolves all registered roots; `context-load` step 0 picks the business before any file opens. |
@@ -174,7 +174,7 @@ button.
 
 ### Enforcement is layered, deliberately
 
-1. **Build time** — `scripts/validate_package.py`: 20 build-time checks cover
+1. **Build time** — `scripts/validate_package.py`: 21 build-time checks cover
    the manifest and gateway adapter, strict frontmatter and tools, one-level sibling
    orchestration, ownership/section joins, beliefs, hooks, public counts, and
    the reference pages' membership against the package.
@@ -207,14 +207,17 @@ founder-os/                       # the plugin (what gets installed)
   mcp/                            # one eight-tool local state gateway
   scripts/cadence_manager.py      # safe scheduler preview/snapshot/apply
   scripts/dashboard/              # the /dashboard renderer (reads state, writes _dashboard/)
-  hooks/                          # hooks.json + ownership-guard.py
+  scripts/skill_usage.py          # read-only per-workflow usage from local history
+  hooks/                          # guard, session context, version notice, Stop nudge
+  output-styles/                  # founder-brief
+  SURFACE.txt                     # every public name; the validator diffs it
   references/                     # guidance.md (injected into every session;
                                   # the never-miss rules), ownership.yaml,
                                   # house-rules, skill-template,
                                   # thresholds.yaml, ingestion-gate, linking,
                                   # multi-business
   images/                         # org chart (mermaid + png)
-scripts/validate_package.py       # build-time validator (20 checks)
+scripts/validate_package.py       # build-time validator (21 checks)
 scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it
 tests/                            # validator mutations + hook subprocess + registry roots
 CHANGELOG.md                      # what shipped in each version

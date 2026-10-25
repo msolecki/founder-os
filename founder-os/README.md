@@ -147,6 +147,25 @@ remain governed by that environment's data-handling terms.
 
 The full catalogue — every skill, its agent, and its schedule — is
 [`COMMANDS.md`](COMMANDS.md), generated from the package so it cannot drift.
+Every public name — workflow, agent, output style, hook — is listed in
+[`SURFACE.txt`](SURFACE.txt), so a rename is a deliberate, changelogged edit.
+
+**Output style.** Pick `founder-brief` in `/config` → Output style for terse
+answers in a fixed order: the decision first, then the numbers with the
+workspace file each came from, then what is a guess
+([`output-styles/founder-brief.md`](output-styles/founder-brief.md)).
+
+**Session hooks.** Besides the guidance and the guard, after an install or an
+update the first session shows one line with the version and a link to the
+changelog (`FOUNDER_OS_NOTICES=off` silences it). Once in a long session that
+used Founder OS — 30 tool calls, `FOUNDER_OS_STOP_NUDGE_MIN` to change it — the
+agent offers to log an irreversible decision to `decisions/` and capture loose
+items; `FOUNDER_OS_STOP_NUDGE=off` turns that off. Neither reads the network or
+prints your conversation.
+
+**Which workflows you use.** `python3 <plugin>/scripts/skill_usage.py` counts,
+from your local Claude Code history, the calls per workflow in the last 30 days
+and lists the ones that never ran. `/founder-os-doctor` explains it on request.
 
 ## The org
 

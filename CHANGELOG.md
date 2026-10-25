@@ -13,8 +13,35 @@ syntax in the docs and the generated catalogue. Founder OS no longer installs
 in Codex. If you run it there, stay on **2.9.1**; your Markdown workspace is
 unchanged and opens in Claude Code as it is. On Claude Code nothing moved: the
 guard still reads a tool's file arguments and never a shell command, and the
-package still ships **57 workflows**. It now runs **20 build-time checks** —
-the Codex skill-adapter check went with the adapters.
+package still ships **57 workflows**. It now runs **21 build-time checks** —
+the Codex skill-adapter check went with the adapters, and `check_surface` came
+in (below).
+
+**What changed, in one line, after an update.** A `SessionStart` hook on
+`startup` shows the version and a link to the changelog page once after an
+install or an update (marker in the plugin data directory, no network;
+`FOUNDER_OS_NOTICES=off`).
+
+**Long sessions end with an offer to log the decision.** A `Stop` hook, once per
+session after 30 tool calls (`FOUNDER_OS_STOP_NUDGE_MIN`) in a session that used
+Founder OS, asks the agent to offer `decision-log` for an irreversible decision
+and `capture` for loose items. It skips headless runs, never loops on
+`stop_hook_active`, prints no transcript content, and `FOUNDER_OS_STOP_NUDGE=off`
+turns it off.
+
+**`founder-brief` output style**: decision first, then the numbers with their
+source files, then what is a guess.
+
+**`founder-os/SURFACE.txt`** lists every public name (workflows, agents, output
+styles, hook events and scripts); `check_surface` fails the build when it and
+the disk disagree. `check_hooks` now also requires a timeout on every command
+hook and holds `guidance.md` under Claude Code's 10,000-character hook output
+cap.
+
+**Which workflows you use.** `founder-os/scripts/skill_usage.py` counts, from
+local Claude Code history and read-only, each workflow's and role's calls in the
+last 30 days and lists the ones that never ran; `founder-os-doctor` offers it as
+an optional section.
 
 ## 2.9.1 — 2026-10-19
 

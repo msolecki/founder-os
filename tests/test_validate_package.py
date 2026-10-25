@@ -780,6 +780,79 @@ class TestCheckHooks(unittest.TestCase):
         errs = V.check_hooks(self.root, {})
         self.assertTrue(any("not a valid regex" in e for e in errs), errs)
 
+    def test_command_hook_without_timeout_is_an_error(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": ".*", "hooks": [
+                {"type": "command", "command": "guard", "timeout": 5}]}],
+            "Stop": [{"hooks": [
+                {"type": "command", "command": "nudge"},
+                {"type": "command", "command": "flag", "timeout": True}]}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertEqual(
+            [e for e in errs if "timeout" in e],
+            ["hooks/hooks.json: Stop command 'nudge' has no positive "
+             "integer timeout",
+             "hooks/hooks.json: Stop command 'flag' has no positive "
+             "integer timeout"])
+
+    def test_guidance_over_the_hook_output_cap_is_an_error(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": ".*", "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        guidance = self.root / "references" / "guidance.md"
+        write(guidance, "x" * (V.HOOK_OUTPUT_CAP - V.HOOK_OUTPUT_ROOM))
+        self.assertEqual(V.check_hooks(self.root, {}), [])
+        write(guidance, "x" * (V.HOOK_OUTPUT_CAP - V.HOOK_OUTPUT_ROOM + 1))
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("hook output cap" in e for e in errs), errs)
+
+
+class TestCheckSurface(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        write(self.root / "skills" / "triage" / "SKILL.md", "x")
+        write(self.root / "agents" / "cfo.md", "x")
+        write(self.root / "output-styles" / "founder-brief.md", "x")
+        write(self.root / "hooks" / "hooks.json",
+              json.dumps({"hooks": {"Stop": [], "PreToolUse": []}}))
+        write(self.root / "hooks" / "guard.py", "x")
+        self.listed = ["agent cfo", "hook PreToolUse", "hook Stop",
+                       "hook-script guard.py", "output-style founder-brief",
+                       "skill triage"]
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def surface(self, lines):
+        write(self.root / "SURFACE.txt", "\n".join(lines) + "\n")
+        return V.check_surface(self.root, {})
+
+    def test_matching_list_is_clean(self):
+        self.assertEqual(self.surface(self.listed), [])
+
+    def test_no_list_is_skipped(self):
+        self.assertEqual(V.check_surface(self.root, {}), [])
+
+    def test_unlisted_and_stale_names_are_errors(self):
+        lines = [l for l in self.listed if l != "skill triage"]
+        lines.append("skill zombie")
+        self.assertEqual(self.surface(lines), [
+            "SURFACE.txt: 'skill triage' ships but is not listed — add it "
+            "and a changelog line",
+            "SURFACE.txt: lists 'skill zombie', which no longer ships — a "
+            "rename or removal is a changelog line, not a silent edit"])
+
+    def test_unsorted_list_is_an_error(self):
+        errs = self.surface(list(reversed(self.listed)))
+        self.assertEqual(errs, ["SURFACE.txt: not sorted, or a name is "
+                                "listed twice"])
+
+    def test_real_package_matches_its_list(self):
+        real = Path(__file__).resolve().parents[1] / "founder-os"
+        self.assertTrue((real / "SURFACE.txt").is_file())
+        self.assertEqual(V.check_surface(real, {}), [])
+
 
 class TestReadmeCounts(ValidatorTestCase):
     """The README table is a count of a growing set — the exact object the
