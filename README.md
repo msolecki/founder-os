@@ -264,8 +264,9 @@ CI (`.github/workflows/ci.yml`) runs all six on every push and PR.
 
 One agent = one decision no other agent can make — that's the test every
 existing agent had to pass. The exact role-callable `founder-os-state` allowlist,
-the shared sibling/delegation contract, the four mandated headings, the three
-universal skills (`guardrails`, `state-integrity`, `ingestion-gate`), and an
+the shared sibling/delegation contract, the four mandated headings, the four
+universal skills (`guardrails`, `state-integrity`, `ingestion-gate`,
+`context-load`), and an
 entry in `ownership.yaml` if it owns anything. Owning nothing must be a
 decision, not an omission — the board-member is the worked example.
 

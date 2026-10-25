@@ -1,6 +1,6 @@
 """The series is a series only if the same day twice is one row.
 
-`scripts/traffic_snapshot.py` learned this against the GitHub Traffic API: a
+A traffic series learned this against the GitHub Traffic API: a
 dated file that appends produces two answers for one day, and a chart drawn over
 it is a chart of how often the script ran. Merge by key, and write nothing for a
 value that was not read — an empty cell says "we did not look", a zero says the

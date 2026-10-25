@@ -107,20 +107,6 @@ makes. Project decisions behind several of them are in
   the 50-turn bound (`founder-os/skills/setup-cadences/SKILL.md`, step 1, warns
   against exactly this).
 
-## Traffic history lives on an orphan `metrics` branch
-
-- **Where:** `.github/workflows/traffic-snapshot.yml`;
-  [`development.md`](development.md)
-- **Looks like:** analytics data missing from `main`, and a branch with no
-  shared history.
-- **Why it is deliberate:** this repository is also the plugin marketplace.
-  Every commit on `main` reaches every installed copy at the next
-  `/plugin marketplace update`, and a weekly analytics commit is bandwidth the
-  founder's users pay for. The workflow creates the orphan branch on its first
-  run and never merges it.
-- **Breaks if changed:** merging `metrics` into `main`, or writing the series
-  there, ships analytics inside the product package.
-
 ## Count checks skip the landing page
 
 - **Where:** `check_readme_counts` in `scripts/validate_package.py`
