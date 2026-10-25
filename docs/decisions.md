@@ -96,13 +96,16 @@ entry. Deliberate settings that follow from these are in
 ## D8. Traffic history lives on an orphan `metrics` branch
 
 - **Date:** 2026-08-25 · **Commit:** `3205088`
-- **Decision:** `.github/workflows/traffic-snapshot.yml` keeps the GitHub
-  Traffic API's fourteen-day window as a series on an orphan `metrics` branch
-  that never merges into `main`.
+- **Decision:** a weekly workflow kept the GitHub Traffic API's fourteen-day
+  window as a series on an orphan `metrics` branch that never merged into
+  `main`.
 - **Why:** the Traffic API discards data after fourteen days. Not on `main`
   because "this repository is also the marketplace, so every commit on the
   default branch reaches every installed copy at the next
   `/plugin marketplace update`".
+- **Superseded 2026-10-25:** the workflow and its scripts were removed; the
+  Traffic API needs an admin personal access token the founder chose not to
+  keep.
 
 ## D9. The canonical guidance lives in `references/guidance.md`
 
