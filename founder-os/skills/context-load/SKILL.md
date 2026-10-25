@@ -116,7 +116,10 @@ one file your decision owns.
    one.** It reads the three, its own `reviews/daily/`, `queue.md`, `pipeline.md`,
    `clients/` `## Health`, `offer.md` `## ICP` `### Not this`, `metrics.md`
    `## Close` (the receivable lines and the `Proposed:` lines, nothing else), and
-   the `Proposed:` line in `content.md` and `network.md`. That is well past the cap and it is
+   the `Proposed:` line in `content.md` and `network.md`, `week.md` `## Arithmetic`
+   and `## Audit` (the `Proposed:` line a blocked run leaves, nothing else), and
+   the newest `reviews/weekly/` `## Next week` when it holds a `Proposed:` line.
+   That is well past the cap and it is
    deliberate, because **the brief is the one cadence whose decision is the
    ranking across books.** Every other cadence answers a question inside one book
    — is this deal real, does this month clear, is this client dying — and for

@@ -96,9 +96,9 @@ Every other file answers *what is true*; the queue answers *what is
 outstanding* — the state between a cadence that produces an obligation and the
 day it is done or dropped. It has a cap (`## Doing` holds at most three), an
 expiry (an item nobody started in 15 working days is dropped, with a reason), and
-one owner. **Eight cadences propose into it** — `pipeline-review`,
-`revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`, and
-the three draft skills — but only the Chief of Staff writes it. A queue that only
+one owner. **Eleven cadences propose into it** — `pipeline-review`,
+`revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`,
+`week-plan`, `calendar-audit`, `runway-forecast`, and the three draft skills — but only the Chief of Staff writes it. A queue that only
 grows is a to-do list, and you already have one of those.
 
 Every taken item carries `from: <file> <date>` (the proposal it came from) so

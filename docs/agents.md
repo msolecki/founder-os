@@ -67,7 +67,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 - **Notes:** the default entry point and the role that decides routing. It
   returns the canonical delegation request; the main thread executes it.
   `queue.md` is the state between a cadence that produces an obligation and the
-  day it is done or dropped — eight cadences *propose* into it, only this agent
+  day it is done or dropped — eleven cadences *propose* into it, only this agent
   writes it. Owns the retrospectives but not the numbers: it narrates what the
   CFO's `metrics.md` means, never restating a number it did not read.
 
