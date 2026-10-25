@@ -160,7 +160,7 @@ poisoned it, in the one file every other agent trusts. The heading is scaffoldin
 and the CFO's to restore when you ask; the line under it is the CFO's and never
 yours to write.
 
-**No overlay finding is repairable, and that is one rule rather than six.**
+**No overlay finding is repairable, and that is one rule rather than five.**
 `_local/` is the founder's own map (`references/extensibility.md`), and this
 skill does not edit the map that decides what agents may write — for the same
 reason the guard denies every subagent that directory. Report the finding, name

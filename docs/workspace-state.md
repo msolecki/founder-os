@@ -113,8 +113,8 @@ only place in the workspace where the founder's own edit to the machine's draft
 survives the session, and `voice-capture` reads exactly that diff.
 
 **House rule 0 is untouched by this.** A body on disk is not a sent body.
-`## Sent` is written only when the founder *reports* what went out — no agent may
-fill it in, and no agent may infer it from `## Draft`.
+`## Sent` is written only by the directory's owner, verbatim, from the founder's
+*report* of what went out — no agent infers it from `## Draft`.
 
 ### `decisions/` — why, not just what
 

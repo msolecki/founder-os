@@ -66,7 +66,7 @@ Failures use one stable code and one recovery action:
 | `ROLE_NOT_OWNER` | The role does not own the target; hand off to the canonical owner. |
 | `STALE_WRITE` | The file changed since read; re-read, reconcile, then retry once. |
 | `INVALID_DOCUMENT_STRUCTURE` | Required headings or lifecycle shape are absent; a flat file carries exactly the headings `ownership.yaml` declares for it, in that order and no others; a directory member carries an ordered subset of its directory's declared vocabulary, each heading at most once and none undeclared (a ` — <suffix>` after a declared name is allowed in both). A read reports `missing_sections` — the declared headings the file does not carry in position — before the write is attempted. |
-| `STATE_IO_ERROR` | A bounded filesystem operation failed; preserve the original and surface the error. |
+| `STATE_IO_ERROR` | A bounded filesystem operation failed; preserve the original and surface the error. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
 
 ## What the host guard does
 

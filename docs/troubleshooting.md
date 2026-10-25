@@ -69,7 +69,7 @@ whether the founder must act. A failed write is never described as persisted.
 | `ROLE_NOT_OWNER` | The canonical owner is named and receives one bounded handoff. |
 | `INVALID_DOCUMENT_STRUCTURE` | The original file is preserved; fix the mismatch with its owner or `/founder-os-doctor`. |
 | `STALE_WRITE` | Re-read, reconcile the concurrent change, and retry once. |
-| `STATE_IO_ERROR` | Preserve the original, stop, and follow the concrete recovery step shown. |
+| `STATE_IO_ERROR` | Preserve the original, stop, and follow the concrete recovery step shown. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
 
 ## `/founder-os-doctor` — what it checks
 

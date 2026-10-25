@@ -94,7 +94,7 @@ next; and whether the founder must act.
 | `ROLE_NOT_OWNER` | Name the canonical owner and request one bounded handoff. |
 | `INVALID_DOCUMENT_STRUCTURE` | Preserve the file, name the mismatch, and route to the owner or doctor. |
 | `STALE_WRITE` | Re-read, reconcile deliberately, and retry once. |
-| `STATE_IO_ERROR` | Preserve the original, stop, and show the concrete recovery step. |
+| `STATE_IO_ERROR` | Preserve the original, stop, and show the concrete recovery step. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
 
 ## Repository layout
 
