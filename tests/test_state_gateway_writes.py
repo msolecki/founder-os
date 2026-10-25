@@ -922,6 +922,62 @@ class StateGatewayWriteTests(unittest.TestCase):
                     action="Preserve the original file and surface the error",
                 )
 
+    def test_a_path_the_journal_cannot_hold_keeps_its_real_refusal(self):
+        capability = self._open("cfo")
+        for path in ("metrics\x00.md", "   ", "\ud800.md"):
+            with self.subTest(path=repr(path)):
+                response = self._write(
+                    capability, path, _metrics(), create_only=True
+                )
+                self._assert_error(response, code="PATH_OUTSIDE_WORKSPACE")
+
+    def test_create_only_false_beside_a_valid_hash_is_accepted(self):
+        capability = self._open("cfo")
+        created = self._write(
+            capability, "metrics.md", _metrics(), create_only=True
+        )
+        self.assertFalse(created["isError"], created)
+        replaced = self._write(
+            capability,
+            "metrics.md",
+            _metrics(close="Booked: 11"),
+            expected_sha256=created["structuredContent"]["after_sha256"],
+            create_only=False,
+        )
+        self.assertFalse(replaced["isError"], replaced)
+        not_a_bool = self._write(
+            capability,
+            "metrics.md",
+            _metrics(),
+            expected_sha256=replaced["structuredContent"]["after_sha256"],
+            create_only=0,
+        )
+        self._assert_error(not_a_bool, code="STATE_IO_ERROR")
+
+    def test_an_unknown_argument_is_one_bad_argument_code_on_every_tool(self):
+        capability = self._open("cfo")
+        calls = {
+            "resolve_workspace": {"project_dir": str(self.base)},
+            "open_role_session": {
+                "workspace_id": self.binding.workspace_id,
+                "role": "cfo",
+                "correlation_id": "corr",
+                "workflow": "revenue-review",
+            },
+            "list_state": {"capability": capability, "pattern": "*.md"},
+            "close_role_session": {"capability": capability},
+        }
+        for name, arguments in calls.items():
+            with self.subTest(tool=name):
+                response = self._call(name, dict(arguments, foo=1))
+                self._assert_error(response, code="STATE_IO_ERROR")
+
+    def test_a_relative_project_dir_is_refused(self):
+        response = self._call(
+            "resolve_workspace", {"project_dir": "projects/primary"}
+        )
+        self._assert_error(response, code="WORKSPACE_UNRESOLVED")
+
     def test_write_failures_use_only_approved_fail_closed_codes(self):
         capability = self._open("cfo")
 

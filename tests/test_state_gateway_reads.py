@@ -2095,8 +2095,9 @@ class GatewayPortfolioReadTests(unittest.TestCase):
             },
         )
         self.assertTrue(extra_paths["isError"], extra_paths)
+        # An unknown argument is a bad argument on every tool (MCP-05).
         self.assertEqual(
-            "ROLE_SESSION_INVALID",
+            "STATE_IO_ERROR",
             extra_paths["structuredContent"]["error"]["code"],
         )
 

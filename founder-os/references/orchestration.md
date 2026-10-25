@@ -147,7 +147,7 @@ in a human-facing error receipt containing these five facts:
 | `ROLE_NOT_OWNER` | Name the canonical owner and request one bounded handoff. |
 | `INVALID_DOCUMENT_STRUCTURE` | Preserve the file, name the structural mismatch, and route to the owner or doctor. |
 | `STALE_WRITE` | Re-read, reconcile deliberately, and retry once. |
-| `STATE_IO_ERROR` | Preserve the original file, stop, and surface the concrete recovery step. |
+| `STATE_IO_ERROR` | Preserve the original file, stop, and surface the concrete recovery step. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
 
 The first line must describe user impact. No error message may imply that a
 failed write was persisted. The raw code may follow as technical detail.
