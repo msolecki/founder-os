@@ -153,7 +153,7 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
 
         for host, report in reports.items():
             with self.subTest(host=host):
-                self.assertEqual(report["version"], "3.0.0")
+                self.assertEqual(report["version"], "3.1.0")
                 self.assertEqual(report["tool_count"], 8)
                 self.assertEqual(report["wrong_owner"], "ROLE_NOT_OWNER")
                 self.assertEqual(report["stale_write"], "STALE_WRITE")

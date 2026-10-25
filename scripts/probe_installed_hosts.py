@@ -23,7 +23,7 @@ import smoke_installed_copy as installed_smoke
 import validate_package as package_validator
 
 
-VERSION = "3.0.0"
+VERSION = "3.1.0"
 PLUGIN_ID = "founder-os@founder-os"
 
 

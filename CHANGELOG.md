@@ -5,6 +5,8 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+## 3.1.0 — 2026-10-25
+
 **Re-run `setup-cadences` after updating: scheduled runs are pinned to their workflow.** Every generated cron, launchd and systemd unit now exports `FOUNDER_OS_CADENCE_WORKFLOW=<workflow>`, and while it is set the state gateway refuses to open any other workflow, so text planted in a file a scheduled run reads cannot make it rewrite another role's state. Units installed before this change stay unpinned until you preview and apply again; a preview made before the update no longer applies. A scheduled run that needs another owner now stops at `ROLE_NOT_OWNER` and leaves the handoff to you. A failed apply rolls the identity back and names the backup to restore earlier units from, and `smoke` has a timeout and shows the host's error.
 
 **The guard covers more and the gateway trusts less.** `MultiEdit` is checked like `Edit`. A non-role subagent can no longer write the plugin's own files, its data directory or `~/.founder-os/businesses.yaml` (any letter case). The gateway accepts only role sessions it opened itself, caps them at the 30-minute TTL, and a gateway restart ends every open session — the main thread opens a new one. A bad or unknown tool argument now returns `STATE_IO_ERROR` ("fix the call") on every tool.
