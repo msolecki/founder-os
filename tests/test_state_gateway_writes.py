@@ -6,9 +6,11 @@ import os
 from pathlib import Path
 import sys
 import stat
+import subprocess
 import tempfile
 import textwrap
 import threading
+import time
 import unittest
 from unittest import mock
 
@@ -922,6 +924,62 @@ class StateGatewayWriteTests(unittest.TestCase):
                     action="Preserve the original file and surface the error",
                 )
 
+    def test_a_path_the_journal_cannot_hold_keeps_its_real_refusal(self):
+        capability = self._open("cfo")
+        for path in ("metrics\x00.md", "   ", "\ud800.md"):
+            with self.subTest(path=repr(path)):
+                response = self._write(
+                    capability, path, _metrics(), create_only=True
+                )
+                self._assert_error(response, code="PATH_OUTSIDE_WORKSPACE")
+
+    def test_create_only_false_beside_a_valid_hash_is_accepted(self):
+        capability = self._open("cfo")
+        created = self._write(
+            capability, "metrics.md", _metrics(), create_only=True
+        )
+        self.assertFalse(created["isError"], created)
+        replaced = self._write(
+            capability,
+            "metrics.md",
+            _metrics(close="Booked: 11"),
+            expected_sha256=created["structuredContent"]["after_sha256"],
+            create_only=False,
+        )
+        self.assertFalse(replaced["isError"], replaced)
+        not_a_bool = self._write(
+            capability,
+            "metrics.md",
+            _metrics(),
+            expected_sha256=replaced["structuredContent"]["after_sha256"],
+            create_only=0,
+        )
+        self._assert_error(not_a_bool, code="STATE_IO_ERROR")
+
+    def test_an_unknown_argument_is_one_bad_argument_code_on_every_tool(self):
+        capability = self._open("cfo")
+        calls = {
+            "resolve_workspace": {"project_dir": str(self.base)},
+            "open_role_session": {
+                "workspace_id": self.binding.workspace_id,
+                "role": "cfo",
+                "correlation_id": "corr",
+                "workflow": "revenue-review",
+            },
+            "list_state": {"capability": capability, "pattern": "*.md"},
+            "close_role_session": {"capability": capability},
+        }
+        for name, arguments in calls.items():
+            with self.subTest(tool=name):
+                response = self._call(name, dict(arguments, foo=1))
+                self._assert_error(response, code="STATE_IO_ERROR")
+
+    def test_a_relative_project_dir_is_refused(self):
+        response = self._call(
+            "resolve_workspace", {"project_dir": "projects/primary"}
+        )
+        self._assert_error(response, code="WORKSPACE_UNRESOLVED")
+
     def test_write_failures_use_only_approved_fail_closed_codes(self):
         capability = self._open("cfo")
 
@@ -1128,6 +1186,91 @@ class StateGatewayWriteTests(unittest.TestCase):
         archive.mkdir()
         with self.assertRaises(JournalError):
             self.sessions.preflight_journal()
+
+    def test_a_held_journal_lock_fails_the_write_instead_of_freezing(self):
+        capability = self._open("cfo")
+        os.close(self.sessions.preflight_journal())  # creates the journal
+        holder = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "import fcntl, sys, time\n"
+                "handle = open(sys.argv[1], 'a')\n"
+                "fcntl.flock(handle, fcntl.LOCK_EX)\n"
+                "print('locked', flush=True)\n"
+                "time.sleep(60)\n",
+                str(self.data_root / "operations.jsonl"),
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            self.assertEqual("locked", holder.stdout.readline().strip())
+            self.sessions.JOURNAL_LOCK_TIMEOUT_SECONDS = 0.3
+            started = time.monotonic()
+            response = self._write(
+                capability, "metrics.md", _metrics(), create_only=True
+            )
+            self.assertLess(time.monotonic() - started, 5)
+        finally:
+            holder.kill()
+            holder.wait()
+            holder.stdout.close()
+        self._assert_error(response, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "metrics.md").exists())
+
+    def test_a_held_write_lock_fails_the_write_instead_of_freezing(self):
+        capability = self._open("cfo")
+        lock = self.workspace / (
+            ".founder-os-write-"
+            + hashlib.sha256(b"metrics.md").hexdigest()
+            + ".lock"
+        )
+        holder = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "import fcntl, sys, time\n"
+                "handle = open(sys.argv[1], 'a')\n"
+                "fcntl.flock(handle, fcntl.LOCK_EX)\n"
+                "print('locked', flush=True)\n"
+                "time.sleep(60)\n",
+                str(lock),
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            self.assertEqual("locked", holder.stdout.readline().strip())
+            with mock.patch.object(SafeStateIO, "WRITE_LOCK_TIMEOUT_SECONDS", 0.3):
+                started = time.monotonic()
+                response = self._write(
+                    capability, "metrics.md", _metrics(), create_only=True
+                )
+                self.assertLess(time.monotonic() - started, 5)
+        finally:
+            holder.kill()
+            holder.wait()
+            holder.stdout.close()
+        self._assert_error(response, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "metrics.md").exists())
+
+    def test_an_oversized_final_status_is_refused(self):
+        capability = self._open("cfo")
+        response = self._call(
+            "close_role_session",
+            {"capability": capability, "final_status": "x" * 100_000},
+        )
+        self._assert_error(response, code="ROLE_SESSION_INVALID")
+
+    def test_an_oversized_session_record_is_pruned_by_age(self):
+        self.data_root.mkdir(parents=True, exist_ok=True)
+        oversized = self.data_root / ("a" * 64 + ".json")
+        oversized.write_text("x" * 100_000, encoding="utf-8")
+        old = self.clock_value - RoleSessionStore.SESSION_RETENTION_SECONDS - 1
+        os.utime(oversized, (old, old))
+        self._open("cfo")
+        self.assertFalse(oversized.exists())
 
     def test_concurrent_journal_preflights_are_serialized(self):
         first = self.sessions.preflight_journal()

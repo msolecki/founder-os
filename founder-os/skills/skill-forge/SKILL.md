@@ -134,8 +134,9 @@ beliefs matter.
 9. **Verify against the doctor's overlay checks and show the result.** Overlay
    parses; no packaged path claimed; every local path has exactly one owner;
    the skill's `metadata.writes` is owned by its agent; beliefs present, three
-   or more, before the steps; slug prefixed and not colliding; installed copy
-   matches the source. A forge that reports success without running these has
+   or more, before the steps; slug prefixed and not colliding. Then the check
+   only you can run, because the doctor is a role and cannot read
+   `~/.claude/skills/`: the installed copy matches the source. A forge that reports success without running these has
    handed the founder a workflow that fails the first time it matters.
 
 ## Output

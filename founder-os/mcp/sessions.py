@@ -13,6 +13,7 @@ import secrets
 import stat
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, Optional, Set
@@ -37,6 +38,9 @@ _ALLOWED_STATUSES = frozenset({"open", "closed", "expired"})
 _BUSINESS_WORKSPACE_KINDS = frozenset({"single-business", "business"})
 _WORKSPACE_KINDS = _BUSINESS_WORKSPACE_KINDS | {"portfolio"}
 _AUTHORITY_SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+# Every caller-supplied text field is capped, so a record stays under the
+# prune scan's size limit and is reaped like any other.
+_MAX_TEXT_LENGTH = 4096
 
 
 class RoleSessionError(Exception):
@@ -70,6 +74,9 @@ class RoleSessionStore:
     RETENTION_SCAN_LIMIT = 256
     JOURNAL_MAX_BYTES = 5 * 1024 * 1024
     JOURNAL_ARCHIVES = 3
+    # A journal lock held this long is stuck, not busy: the server is
+    # single-threaded, so waiting forever would freeze every role.
+    JOURNAL_LOCK_TIMEOUT_SECONDS = 5.0
 
     def __init__(
         self,
@@ -287,7 +294,7 @@ class RoleSessionStore:
                 or lock_info.st_nlink != 1
             ):
                 raise OSError("journal lock is not a private regular file")
-            fcntl.flock(lock_descriptor, fcntl.LOCK_EX)
+            self._flock_bounded(lock_descriptor)
 
             flags = (
                 os.O_WRONLY
@@ -306,7 +313,7 @@ class RoleSessionStore:
             )
             if not stat.S_ISREG(os.fstat(descriptor).st_mode):
                 raise OSError("journal is not a regular file")
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            self._flock_bounded(descriptor)
             if self._journal_needs_rotation(descriptor):
                 os.close(descriptor)
                 descriptor = None
@@ -318,7 +325,7 @@ class RoleSessionStore:
                 )
                 if not stat.S_ISREG(os.fstat(descriptor).st_mode):
                     raise OSError("journal is not a regular file")
-                fcntl.flock(descriptor, fcntl.LOCK_EX)
+                self._flock_bounded(descriptor)
             return descriptor
         except (OSError, TypeError, ValueError):
             if descriptor is not None:
@@ -333,6 +340,17 @@ class RoleSessionStore:
                     os.close(lock_descriptor)
                 except OSError:
                     pass
+
+    def _flock_bounded(self, descriptor: int) -> None:
+        deadline = time.monotonic() + self.JOURNAL_LOCK_TIMEOUT_SECONDS
+        while True:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise OSError("journal lock timed out")
+                time.sleep(0.05)
 
     def _journal_needs_rotation(self, descriptor: int) -> bool:
         limit = self.JOURNAL_MAX_BYTES
@@ -601,12 +619,18 @@ class RoleSessionStore:
                     flags |= os.O_CLOEXEC
                 descriptor = os.open(str(path), flags)
                 info = os.fstat(descriptor)
-                if not stat.S_ISREG(info.st_mode) or info.st_size > 16 * 1024:
+                if not stat.S_ISREG(info.st_mode):
                     continue
-                with os.fdopen(descriptor, encoding="utf-8") as handle:
-                    descriptor = None
-                    record = json.load(handle)
-                if self._valid_record(record, expected_hash=path.stem):
+                # An oversized record is not parsed, but it is still reaped
+                # by its age; skipping it kept it forever.
+                record = None
+                if info.st_size <= 16 * 1024:
+                    with os.fdopen(descriptor, encoding="utf-8") as handle:
+                        descriptor = None
+                        record = json.load(handle)
+                if record is not None and self._valid_record(
+                    record, expected_hash=path.stem
+                ):
                     status = record["status"]
                     if status == "open":
                         terminal_at = float(record["expires_at"])
@@ -653,6 +677,7 @@ class RoleSessionStore:
             isinstance(value, str)
             and bool(value.strip())
             and "\x00" not in value
+            and len(value) <= _MAX_TEXT_LENGTH
         )
 
     @staticmethod

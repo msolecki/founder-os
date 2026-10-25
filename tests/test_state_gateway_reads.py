@@ -415,6 +415,51 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 self.assert_unresolved(lambda: resolver.resolve(root))
 
 
+    def test_registry_refuses_default_portfolio(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            alpha = root / "alpha"
+            portfolio = root / "portfolio"
+            alpha.mkdir()
+            portfolio.mkdir()
+            write_registry(
+                home,
+                "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        f"    home: {alpha.as_posix()}",
+                        "    status: active",
+                        f"portfolio: {portfolio.as_posix()}",
+                        "default: portfolio",
+                    )
+                ),
+            )
+            resolver = WorkspaceResolver(env={}, home=home)
+            self.assert_unresolved(lambda: resolver.resolve(root))
+            self.assert_unresolved(lambda: resolver.resolve(root, "portfolio"))
+
+    def test_registry_saved_with_a_byte_order_mark_still_loads(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            alpha = root / "alpha"
+            alpha.mkdir()
+            write_registry(
+                home,
+                "\ufeff" + "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        f"    home: {alpha.as_posix()}",
+                        "    status: active",
+                    )
+                ),
+            )
+            binding = WorkspaceResolver(env={}, home=home).resolve(root)
+            self.assertEqual("alpha", binding.business_slug)
+
     def test_a_paused_default_falls_back_to_the_one_active_business(self) -> None:
         """Pausing is the documented first step before retiring a business.
 
@@ -1082,6 +1127,8 @@ class SafeStateIOTests(unittest.TestCase):
             "ingestion-gate.md",
             "linking.md",
             "thresholds.yaml",
+            "extensibility.md",
+            "skill-template.md",
         ):
             (references / name).write_text(name + "\n", encoding="utf-8")
         (self.workspace / "state.md").write_bytes(b"state bytes\n")
@@ -1374,6 +1421,9 @@ class SafeStateIOTests(unittest.TestCase):
             "references/ingestion-gate.md",
             "references/linking.md",
             "references/thresholds.yaml",
+            # The doctor checks the founder's overlay against these.
+            "references/extensibility.md",
+            "references/skill-template.md",
             ".claude-plugin/plugin.json",
         )
         for path in allowed:
@@ -2095,8 +2145,9 @@ class GatewayPortfolioReadTests(unittest.TestCase):
             },
         )
         self.assertTrue(extra_paths["isError"], extra_paths)
+        # An unknown argument is a bad argument on every tool (MCP-05).
         self.assertEqual(
-            "ROLE_SESSION_INVALID",
+            "STATE_IO_ERROR",
             extra_paths["structuredContent"]["error"]["code"],
         )
 

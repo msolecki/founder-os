@@ -52,8 +52,11 @@ a new one.
   workflow's `skills/{workflow}/SKILL.md`, `references/guidance.md`,
   `references/house-rules.md`, `references/ownership.yaml`,
   `references/multi-business.md`, this file, `references/ingestion-gate.md`,
-  `references/linking.md`, `references/thresholds.yaml`, and the plugin
-  manifest `.claude-plugin/plugin.json` — nothing else.
+  `references/linking.md`, `references/thresholds.yaml`,
+  `references/extensibility.md`, `references/skill-template.md`, and the plugin
+  manifest `.claude-plugin/plugin.json` — nothing else. Anything a workflow needs
+  from outside the package and the workspace, such as the business registry, the
+  main thread reads and puts in the handoff.
 
 ## Workflow result
 
@@ -148,7 +151,7 @@ in a human-facing error receipt containing these five facts:
 | `ROLE_NOT_OWNER` | Name the canonical owner and request one bounded handoff. |
 | `INVALID_DOCUMENT_STRUCTURE` | Preserve the file, name the structural mismatch, and route to the owner or doctor. |
 | `STALE_WRITE` | Re-read, reconcile deliberately, and retry once. |
-| `STATE_IO_ERROR` | Preserve the original file, stop, and surface the concrete recovery step. |
+| `STATE_IO_ERROR` | Preserve the original file, stop, and surface the concrete recovery step. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
 
 The first line must describe user impact. No error message may imply that a
 failed write was persisted. The raw code may follow as technical detail.

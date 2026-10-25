@@ -285,7 +285,7 @@ quietly:
 3. **Not agent-writable.** The guard denies every subagent any write under
    `_local/`. An agent that can edit the map governing it does not have a map.
 4. **Validated late, by the doctor.** `scripts/validate_package.py` runs in this
-   repository's CI and will never see a stranger's `_local/`, so the six overlay
+   repository's CI and will never see a stranger's `_local/`, so the five overlay
    checks live in `founder-os-doctor` and run weeks later on real state. That is
    worse than build-time validation and it is the only option; the skill says so
    rather than implying the overlay was vetted.

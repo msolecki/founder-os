@@ -13,6 +13,7 @@ import os
 import re
 import secrets
 import stat
+import time
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Optional, Tuple
 
@@ -37,6 +38,7 @@ class SafeStateError(Exception):
 
 
 class SafeStateIO:
+    WRITE_LOCK_TIMEOUT_SECONDS = 5.0
     _FORBIDDEN = "[]{}?\\"
 
     def __init__(
@@ -315,6 +317,9 @@ class SafeStateIO:
             "references/ingestion-gate.md",
             "references/linking.md",
             "references/thresholds.yaml",
+            # The doctor's overlay checks are judged against these two.
+            "references/extensibility.md",
+            "references/skill-template.md",
             ".claude-plugin/plugin.json",
         }
         if workflow is not None:
@@ -554,6 +559,9 @@ class SafeStateIO:
         before_sha256: Optional[str] = None
 
         try:
+            # One lock file per written file name, left beside it on purpose:
+            # unlinking it would let a second writer lock a fresh inode while
+            # the first still holds the old one. Hidden, empty, and harmless.
             lock_name = ".founder-os-write-{0}.lock".format(
                 hashlib.sha256(target_name.encode("utf-8")).hexdigest()
             )
@@ -572,7 +580,17 @@ class SafeStateIO:
                 or lock_info.st_nlink != 1
             ):
                 raise SafeStateError("STATE_IO_ERROR")
-            fcntl.flock(lock_descriptor, fcntl.LOCK_EX)
+            # Bounded: a writer that never lets go must fail this write, not
+            # freeze the single-threaded server for every role.
+            deadline = time.monotonic() + self.WRITE_LOCK_TIMEOUT_SECONDS
+            while True:
+                try:
+                    fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise SafeStateError("STATE_IO_ERROR")
+                    time.sleep(0.05)
             lock_path_info = os.stat(
                 lock_name,
                 dir_fd=parent_descriptor,

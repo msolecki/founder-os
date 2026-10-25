@@ -116,17 +116,14 @@ class ProtocolServer:
                 return None
             return _error(request_id, -32002, "Server not initialized")
 
-        if method == "notifications/cancelled":
-            return (
-                None
-                if is_notification
-                else _error(request_id, -32601, "Method not found")
-            )
-
         if method == "tools/list":
             if is_notification:
                 return None
-            if not self._valid_meta_only_params(message.get("params", {})):
+            # One page holds every tool, so a cursor is accepted and ignored.
+            params = message.get("params", {})
+            if isinstance(params, dict) and isinstance(params.get("cursor"), str):
+                params = {key: params[key] for key in params if key != "cursor"}
+            if not self._valid_meta_only_params(params):
                 return _error(request_id, -32602, "Invalid params")
             return _response(request_id, {"tools": self._gateway.tool_schemas()})
 
@@ -207,14 +204,22 @@ def serve(stdin: TextIO, stdout: TextIO, stderr: TextIO) -> int:
     Diagnostics are written only to stderr.
     """
     server = ProtocolServer()
+    # Invalid UTF-8 would raise out of the loop below and end the server; a
+    # replaced byte fails to parse instead and gets -32700 like any bad line.
+    if hasattr(stdin, "reconfigure"):
+        stdin.reconfigure(errors="replace")
     for raw_line in stdin:
         line = raw_line.strip()
         if not line:
             continue
         try:
             message = json.loads(line)
-        except json.JSONDecodeError as error:
-            stderr.write("Malformed JSON-RPC message: {}\n".format(error.msg))
+        except (ValueError, RecursionError) as error:
+            # JSONDecodeError is a ValueError; a deeply nested line raises
+            # RecursionError. Either one must cost a line, not the server.
+            stderr.write("Malformed JSON-RPC message: {}\n".format(
+                getattr(error, "msg", type(error).__name__)
+            ))
             stderr.flush()
             _write_response(stdout, _error(None, -32700, "Parse error"))
             continue

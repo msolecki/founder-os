@@ -203,26 +203,10 @@ class Gateway:
         """Dispatch a known tool through its bounded state interface."""
         if name not in self._TOOL_NAMES:
             raise UnknownToolError(name)
-        if not isinstance(arguments, Mapping):
-            error = (
-                WorkspaceResolutionError()
-                if name == "resolve_workspace"
-                else RoleSessionError()
-            )
-            return self._error(error)
-        try:
-            has_unknown_arguments = bool(
-                set(arguments) - self._TOOL_ARGUMENTS[name]
-            )
-        except (TypeError, ValueError):
-            has_unknown_arguments = True
-        if has_unknown_arguments:
-            error = (
-                WorkspaceResolutionError()
-                if name == "resolve_workspace"
-                else RoleSessionError()
-            )
-            return self._error(error)
+        # A typo in an argument name is a bad argument, the same code every
+        # tool returns for one. ROLE_SESSION_INVALID stopped the whole run.
+        if set(arguments) - self._TOOL_ARGUMENTS[name]:
+            return self._error(SafeStateError("STATE_IO_ERROR"))
 
         try:
             if name == "resolve_workspace":
@@ -256,8 +240,10 @@ class Gateway:
     def _resolve_workspace(self, arguments: Mapping[str, Any]) -> Dict[str, Any]:
         project_dir = arguments.get("project_dir")
         business_slug = arguments.get("business_slug")
-        if not self._text(project_dir) or (
-            business_slug is not None and not self._text(business_slug)
+        if (
+            not self._text(project_dir)
+            or not Path(project_dir).is_absolute()
+            or (business_slug is not None and not self._text(business_slug))
         ):
             raise WorkspaceResolutionError()
         binding = self._resolver.resolve(Path(project_dir), business_slug)
@@ -440,7 +426,10 @@ class Gateway:
                 # STALE_WRITE says re-read and retry, which cannot fix it.
                 if (
                     valid_create == valid_expected
-                    or ("create_only" in arguments and not valid_create)
+                    or (
+                        "create_only" in arguments
+                        and not isinstance(create_only, bool)
+                    )
                     or ("expected_sha256" in arguments and not valid_expected)
                 ):
                     raise OwnershipError("STATE_IO_ERROR")
@@ -468,20 +457,26 @@ class Gateway:
                     declared_directory=schema.directory_for(raw_path),
                 )
             except (OwnershipError, SafeStateError) as error:
-                if journal_path:
-                    self._sessions.append_journal(
-                        metadata,
-                        path=journal_path,
-                        operation=operation,
-                        result=error.code,
-                        before_sha256=getattr(
-                            error,
-                            "before_sha256",
-                            None,
-                        ),
-                        after_sha256=getattr(error, "after_sha256", None),
-                        descriptor=journal_descriptor,
-                    )
+                # A path the journal cannot hold (NUL, blank, lone surrogate)
+                # must not turn the real refusal into STATE_IO_ERROR; nothing
+                # was written, so the unjournaled rejection loses nothing.
+                try:
+                    if journal_path:
+                        self._sessions.append_journal(
+                            metadata,
+                            path=journal_path,
+                            operation=operation,
+                            result=error.code,
+                            before_sha256=getattr(
+                                error,
+                                "before_sha256",
+                                None,
+                            ),
+                            after_sha256=getattr(error, "after_sha256", None),
+                            descriptor=journal_descriptor,
+                        )
+                except (JournalError, UnicodeError):
+                    pass
                 raise
             finally:
                 if io_handle is not None:
