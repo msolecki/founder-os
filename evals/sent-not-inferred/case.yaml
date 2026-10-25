@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: sent-not-inferred
+tags: [drafts, negative]
+plugins: ["../../founder-os"]
+context:
+  scaffold_script: scaffold.sh
