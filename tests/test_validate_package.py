@@ -826,6 +826,44 @@ class TestReadmeCounts(ValidatorTestCase):
         self.assertTrue(any("docs/README.md" in err for err in errs), errs)
 
 
+class TestDocsFrontmatter(ValidatorTestCase):
+    """Every docs page carries title, status, owner and a last-verified date."""
+
+    GOOD = ("---\ntitle: Guide\nstatus: current\nowner: Someone\n"
+            "last-verified: 2026-10-25\n---\n\n# Guide\n")
+
+    def test_complete_frontmatter_is_clean(self):
+        write(self.tmp / "docs" / "guide.md", self.GOOD)
+        self.assertEqual(self.check(V.check_docs_frontmatter), [])
+
+    def test_absent_site_is_not_this_checks_problem(self):
+        self.assertEqual(self.check(V.check_docs_frontmatter), [])
+
+    def test_page_without_frontmatter_is_caught(self):
+        write(self.tmp / "docs" / "guide.md", "# Guide\n")
+        errs = self.check(V.check_docs_frontmatter)
+        self.assertEqual(len(errs), 1, errs)
+        self.assertTrue(errs[0].startswith(
+            "docs/guide.md: no readable frontmatter"), errs)
+
+    def test_each_missing_field_is_named(self):
+        write(self.tmp / "docs" / "guide.md",
+              "---\nstatus: shipped\nlast-verified: soon\n---\n\n# Guide\n")
+        self.assertEqual(self.check(V.check_docs_frontmatter), [
+            "docs/guide.md: frontmatter has no title",
+            "docs/guide.md: status must be current, draft or deprecated",
+            "docs/guide.md: frontmatter has no owner",
+            "docs/guide.md: last-verified is not a YYYY-MM-DD date",
+        ])
+
+    def test_one_bad_page_does_not_hide_the_next(self):
+        write(self.tmp / "docs" / "a.md", "# A\n")
+        write(self.tmp / "docs" / "b.md", self.GOOD.replace("Someone", "''"))
+        errs = self.check(V.check_docs_frontmatter)
+        self.assertEqual(len(errs), 2, errs)
+        self.assertIn("docs/b.md: frontmatter has no owner", errs)
+
+
 class TestRealPackage(unittest.TestCase):
     def test_shipped_package_passes_every_check(self):
         """The '13 agents, 57 skills, 0 errors' acceptance line, executable.

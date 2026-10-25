@@ -13,8 +13,20 @@ syntax in the docs and the generated catalogue. Founder OS no longer installs
 in Codex. If you run it there, stay on **2.9.1**; your Markdown workspace is
 unchanged and opens in Claude Code as it is. On Claude Code nothing moved: the
 guard still reads a tool's file arguments and never a shell command, and the
-package still ships **57 workflows**. It now runs **20 build-time checks** —
-the Codex skill-adapter check went with the adapters.
+package still ships **57 workflows**. It now runs **21 build-time checks** —
+the Codex skill-adapter check went with the adapters, and a docs frontmatter
+check arrived with the site below.
+
+**The site is built by GitHub Actions and Jekyll.** `docs/.nojekyll` is gone:
+`.github/workflows/pages.yml` renders the Markdown guides as pages next to the
+landing page and the Trust Center, copies this changelog in as
+`changelog.html`, and publishes a sitemap. The landing page and the Trust
+Center now link to those pages instead of to GitHub's file view. Every
+`docs/*.md` page carries `title`, `status`, `owner` and `last-verified`
+frontmatter, and `check_docs_frontmatter` fails the build when one does not.
+New pages: `docs/pitfalls.md` (deliberate settings that look like defects),
+`docs/decisions.md` (the project's decision log), `docs/glossary.md` and
+`docs/backlog.md`.
 
 ## 2.9.1 — 2026-10-19
 

@@ -1,3 +1,10 @@
+---
+title: "The agents"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-16
+---
+
 # The agents
 
 Thirteen agents. Each owns **one decision no other agent can make** — that is the

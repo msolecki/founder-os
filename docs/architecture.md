@@ -1,3 +1,10 @@
+---
+title: "Architecture"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Architecture
 
 How the machine works end to end. If [`concepts.md`](concepts.md) is the idea,

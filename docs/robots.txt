@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://msolecki.github.io/founder-os/sitemap.xml

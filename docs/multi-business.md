@@ -1,3 +1,10 @@
+---
+title: "Multi-business"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Multi-business
 
 One founder can run more than one company of one. The model does not change to

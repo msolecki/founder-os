@@ -114,6 +114,51 @@ class LocalLinkCheckerTest(unittest.TestCase):
         write(self.root, "docs/source.md", "# Here\n\n[Jump](#here)\n")
         self.assertEqual(self.check("docs/source.md"), [])
 
+    def test_frontmatter_mints_no_anchor(self):
+        write(
+            self.root,
+            "docs/source.md",
+            "---\ntitle: T\n---\n\n# Here\n\n[Bad](#title-t)\n",
+        )
+        self.assertEqual(
+            self.check("docs/source.md"),
+            ["docs/source.md:7: missing anchor 'title-t' in 'docs/source.md'"],
+        )
+
+    def test_jekyll_built_page_resolves_to_its_markdown_source(self):
+        write(
+            self.root,
+            "docs/index.html",
+            '<a href="guide.html">Guide</a>'
+            '<a href="changelog.html">Changes</a>'
+            '<a href="trust-notes.html">Notes</a>',
+        )
+        write(self.root, "docs/guide.md", "# Guide\n")
+        write(self.root, "docs/trust.md", "# Trust\n")
+        write(self.root, "CHANGELOG.md", "# Changelog\n")
+        self.assertEqual(
+            self.check(
+                "docs/index.html", "docs/guide.md", "docs/trust.md",
+                "CHANGELOG.md",
+            ),
+            [],
+        )
+
+    def test_built_page_exception_is_not_a_blanket_html_pass(self):
+        write(
+            self.root,
+            "docs/index.html",
+            '<a href="nowhere.html">A</a><a href="sub/guide.html">B</a>',
+        )
+        write(self.root, "docs/sub/guide.md", "# Guide\n")
+        self.assertEqual(
+            self.check("docs/index.html", "docs/sub/guide.md"),
+            [
+                "docs/index.html:1: missing target 'docs/nowhere.html'",
+                "docs/index.html:1: missing target 'docs/sub/guide.html'",
+            ],
+        )
+
 
 class RealRepositoryLinkContract(unittest.TestCase):
     def test_checker_exists_and_real_repository_is_clean(self):

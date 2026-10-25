@@ -1,0 +1,29 @@
+# Jekyll configuration for the public site, built by .github/workflows/pages.yml.
+# index.html, trust.html, the scripts and og-image.svg carry no front matter, so
+# Jekyll copies them byte for byte. The Markdown guides render as <name>.html.
+# Settings here that look wrong but are deliberate are in docs/pitfalls.md.
+title: Founder OS
+description: >-
+  Know what matters today with one source-linked daily decision from your
+  goals, cash, pipeline, and commitments.
+url: https://msolecki.github.io
+baseurl: /founder-os
+
+# No theme. The GitHub Pages default (primer) loads anchor-js from cdnjs, and
+# docs/trust.md promises the site loads no script from another origin. The
+# guides render without a layout instead.
+theme: null
+
+plugins:
+  - jekyll-relative-links # [x](guide.md) becomes guide.html
+  - jekyll-optional-front-matter
+  - jekyll-sitemap
+
+relative_links:
+  enabled: true
+  collections: false
+
+# index.html is the home page; README.md renders as README.html and must never
+# take its place.
+readme_index:
+  enabled: false

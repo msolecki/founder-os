@@ -1,3 +1,10 @@
+---
+title: "Getting started with Founder OS"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Getting started with Founder OS
 
 **Know what matters today.** Founder OS is for a solo service founder already

@@ -1,3 +1,10 @@
+---
+title: "Troubleshooting & FAQ"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Troubleshooting & FAQ
 
 Claude Code invokes packaged workflows as `/founder-os:<name>`. Short names

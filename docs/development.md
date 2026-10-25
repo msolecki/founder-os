@@ -1,3 +1,10 @@
+---
+title: "Development guide"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Development guide
 
 For working *on* the package. The repo is both the plugin marketplace and the
@@ -21,7 +28,7 @@ is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
 
-`scripts/validate_package.py` runs 20 build-time checks (each named function).
+`scripts/validate_package.py` runs 21 build-time checks (each named function).
 They enforce *structure*; they cannot decide whether business advice is good.
 
 | Check | Fails when… |
@@ -46,6 +53,7 @@ They enforce *structure*; they cannot decide whether business advice is good.
 | `check_readme_counts` | The README "What's inside" table's Agents/Skills/Cadences counts don't match the package. |
 | `check_version_sites` | A version literal appears somewhere `scripts/bump_version.py` does not know to rewrite, a declared site stops matching exactly once, or one of them disagrees with the manifest. |
 | `check_docs_parity` | A cadence is missing from a schedule table in `docs/commands.md` or `docs/cadences.md`; `docs/commands.md` has no row for a packaged workflow or a row for something the package does not ship; or `docs/agents.md` omits a skill an agent holds or a path it owns. |
+| `check_docs_frontmatter` | A `docs/*.md` page has no frontmatter, or it lacks a `title`, an `owner`, a `status` of `current`/`draft`/`deprecated`, or a `last-verified` date. |
 
 The **system skills** (`founder-os-init`, `founder-os-doctor`, `context-load`,
 `guardrails`, `state-integrity`, `ingestion-gate`) are exempt from the
@@ -118,13 +126,23 @@ an internal release plan. Use these sources of truth:
 | Runtime dependencies | Imports and subprocess entry points used by the installed gateway and hooks; development-only tooling is labeled separately. |
 | Gateway, ownership, and orchestration behavior | `founder-os/mcp/`, `founder-os/hooks/`, `founder-os/references/ownership.yaml`, and `founder-os/references/orchestration.md`. |
 
-The public site has two HTML surfaces. `docs/index.html` is one concise landing
-page containing the user-facing product contract, the installation path,
-current counts and version, and links to deeper Markdown guides. `docs/trust.html`
-is the separate Trust Center navigation destination for data, host, ownership,
-hook, installed-copy, and human-authority boundaries. Do not add another HTML
-page for release or technical details that belong in the one-page landing or an
-existing Markdown guide.
+The public site has two hand-written HTML surfaces. `docs/index.html` is one
+concise landing page containing the user-facing product contract, the
+installation path, current counts and version, and links to deeper Markdown
+guides. `docs/trust.html` is the separate Trust Center navigation destination
+for data, host, ownership, hook, installed-copy, and human-authority
+boundaries. Do not add another HTML page for release or technical details that
+belong in the one-page landing or an existing Markdown guide.
+
+`.github/workflows/pages.yml` builds `docs/` with Jekyll (`docs/_config.yml`)
+on every push to `main` that touches `docs/`, `CHANGELOG.md` or the workflow.
+The two HTML pages, the scripts and the images carry no front matter and are
+copied as they are; each `docs/*.md` guide renders as `<name>.html`, and
+`CHANGELOG.md` is copied in as `changelog.html`. Link the landing pages to a
+guide as `<name>.html`; `scripts/check_local_links.py` resolves that to the
+Markdown source. Every guide carries `title`, `status`, `owner` and
+`last-verified` frontmatter (`check_docs_frontmatter`). The settings that look
+wrong here are listed in [`pitfalls.md`](pitfalls.md).
 
 Release tests must derive totals and versions from their authorities and reject
 stale public copy. Landing tests must exercise the Claude Code installation

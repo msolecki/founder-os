@@ -1,3 +1,10 @@
+---
+title: "Commands"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Commands
 
 Claude Code invokes a skill as `/founder-os:<name>`. On a multi-business

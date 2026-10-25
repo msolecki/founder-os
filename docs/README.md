@@ -1,3 +1,10 @@
+---
+title: "Founder OS — Documentation"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Founder OS — Documentation
 
 Founder OS is for a solo service founder using
@@ -27,11 +34,14 @@ built to prevent.
 | Know which agent owns which decision | [`agents.md`](agents.md) |
 | Find the right command | [`commands.md`](commands.md) |
 | Understand data boundaries and the host | [`trust.md`](trust.md) |
+| Look up a term | [`glossary.md`](glossary.md) |
 
 ## Operating it
 
 - **[`concepts.md`](concepts.md)** — the mental model (founder as CEO, an org of
-  agents, one decision each, shared Markdown state) and a glossary.
+  agents, one decision each, shared Markdown state).
+- **[`glossary.md`](glossary.md)** — every term a new reader meets, one or two
+  lines each, linked to the page that explains it.
 - **[`workspace-state.md`](workspace-state.md)** — every workspace file, its
   owner, its pinned sections, and how work moves through them. Includes the
   guided tour of the `studio-north` example.
@@ -60,6 +70,14 @@ built to prevent.
   gateway, host-hook defense, build validator, and security-boundary limits.
 - **[`development.md`](development.md)** — how to add a skill or an agent, every
   check the validator runs, the test suite, CI, and versioning.
+- **[`pitfalls.md`](pitfalls.md)** — settings that look like defects and are
+  deliberate, why, and what breaks if they are "fixed".
+- **[`decisions.md`](decisions.md)** — the project's decision log (D1…), with
+  the commit behind each decision.
+- **[`backlog.md`](backlog.md)** — known follow-ups, tracked rather than fixed.
+
+The rendered site also carries the [changelog](../CHANGELOG.md), copied in at
+build time as `changelog.html`.
 
 ## Canonical sources (the maps these docs describe)
 
