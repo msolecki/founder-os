@@ -623,6 +623,23 @@ class TestRegistry(unittest.TestCase):
         self.assertEqual(out, "")
         self.assertIn("acme", err)
 
+    def test_the_page_refuses_when_founder_os_home_names_no_registered_business(self):
+        """The page is written into a workspace, so it refuses too.
+
+        Opening the first business would write `_dashboard/` into a company the
+        founder's most explicit setting says they are not in; the gateway
+        refuses the same session outright.
+        """
+        self._registry(default="zeta")
+        elsewhere = self.lab / "elsewhere"
+        code, out, err = self._run("--now", "2026-07-20", home_env=elsewhere)
+        self.assertEqual(code, self.main.EXIT_UNRESOLVED, err)
+        self.assertEqual(out, "")
+        self.assertIn(str(elsewhere.resolve()), err)
+        self.assertIn("acme", err)
+        for workspace in (self.acme, self.zeta):
+            self.assertFalse((workspace / "_dashboard").exists(), workspace)
+
     def test_out_refuses_another_registered_workspace_under_home(self):
         """`--home` narrows what is rendered, not what may be overwritten.
 

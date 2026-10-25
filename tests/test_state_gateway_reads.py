@@ -203,6 +203,38 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 fallback_resolver.resolve(project).root,
             )
 
+    def test_an_unmatched_founder_os_home_is_its_own_resolution_error(self) -> None:
+        """The dashboard picks its business with this function, and must tell
+        "the variable points nowhere" apart from "nothing is configured"."""
+        from mcp import workspaces
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            alpha = root / "alpha"
+            beta = root / "beta"
+            alpha.mkdir()
+            beta.mkdir()
+            registry = {
+                "businesses": {
+                    "alpha": {"home": str(alpha), "status": "active"},
+                    "beta": {"home": str(beta), "status": "active"},
+                },
+            }
+            with self.assertRaises(workspaces.ConfiguredHomeUnmatched) as raised:
+                workspaces.select_workspace(
+                    registry, root, None, {"FOUNDER_OS_HOME": str(root / "x")})
+            self.assertIsInstance(raised.exception, WorkspaceResolutionError)
+            self.assertIn(str((root / "x").resolve()), str(raised.exception))
+            with self.assertRaises(WorkspaceResolutionError) as raised:
+                workspaces.select_workspace(registry, root, None, {})
+            self.assertNotIsInstance(
+                raised.exception, workspaces.ConfiguredHomeUnmatched)
+            self.assertEqual(
+                (beta.resolve(), "beta", "business"),
+                workspaces.select_workspace(
+                    registry, root, None, {"FOUNDER_OS_HOME": str(beta)}),
+            )
+
     def test_explicit_slug_default_and_portfolio_select_the_intended_business(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
