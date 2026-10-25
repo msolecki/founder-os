@@ -61,10 +61,9 @@ class CadenceManagerTests(unittest.TestCase):
     def setUpClass(cls):
         cls.manager = load_manager()
 
-    def config(self, host="claude", slug="a"):
+    def config(self, slug="a"):
         return self.manager.CadenceConfig(
-            host=host,
-            binary=Path("/opt/%s App/bin/%s" % (host.title(), host)),
+            binary=Path("/opt/Claude App/bin/claude"),
             workspace=Path("/Users/Test Founder/work $;(tree)/founder-os"),
             workdir=Path("/Users/Test Founder/work $;(tree)"),
             log_root=Path("/Users/Test Founder/.founder-os/logs/'quoted'"),
@@ -72,7 +71,7 @@ class CadenceManagerTests(unittest.TestCase):
         )
 
     def test_host_argv_matches_the_supported_claude_contract(self):
-        claude = self.config("claude")
+        claude = self.config()
         self.assertEqual(
             self.manager.host_argv(claude, "daily-brief"),
             (
@@ -88,8 +87,6 @@ class CadenceManagerTests(unittest.TestCase):
                 "--no-session-persistence",
             ),
         )
-        with self.assertRaisesRegex(self.manager.CadenceError, "host must be claude"):
-            self.config("other")
 
     def test_cron_quoting_roundtrips_metacharacters_without_shell_fragments(self):
         config = self.config()
@@ -142,7 +139,6 @@ class CadenceManagerTests(unittest.TestCase):
 
     def test_percent_is_escaped_for_cron_before_the_shell_sees_it(self):
         config = self.manager.CadenceConfig(
-            host="claude",
             binary=Path("/opt/Claude%20App/bin/claude"),
             workspace=Path("/Users/founder/100%real/founder-os"),
             workdir=Path("/Users/founder/100%real"),
@@ -284,7 +280,6 @@ class CadenceManagerTests(unittest.TestCase):
             link.parent.mkdir()
             link.symlink_to(target)
             args = argparse.Namespace(
-                host="claude",
                 binary=link,
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -334,7 +329,7 @@ class CadenceManagerTests(unittest.TestCase):
             binary.chmod(0o755)
             with mock.patch.object(self.manager, "smoke") as smoke:
                 self.manager.main([
-                    "smoke", "--host", "claude", "--binary", str(binary),
+                    "smoke", "--binary", str(binary),
                     "--workspace", str(root / "work" / "founder-os"),
                     "--workdir", str(root / "work"),
                     "--log-root", str(root / "logs"),
@@ -342,13 +337,93 @@ class CadenceManagerTests(unittest.TestCase):
                 ])
             self.assertEqual("daily-brief", smoke.call_args[0][1])
 
+    def smoke_config(self, root, script):
+        binary = root / "claude"
+        binary.write_text("#!/bin/sh\n" + script)
+        binary.chmod(0o755)
+        (root / "work").mkdir()
+        return self.manager.CadenceConfig(
+            binary=binary,
+            workspace=root / "work" / "founder-os",
+            workdir=root / "work",
+            log_root=root / "logs",
+            slug=None,
+        )
+
+    def test_smoke_times_out_on_a_hung_host(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = self.smoke_config(Path(temporary), "exec /bin/sleep 30\n")
+            with mock.patch.object(self.manager, "SMOKE_TIMEOUT_SECONDS", 1):
+                with self.assertRaisesRegex(
+                    self.manager.CadenceError, "timed out after 1 seconds"
+                ):
+                    self.manager.smoke(config, "daily-brief")
+
+    def test_smoke_failure_surfaces_host_stderr(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = self.smoke_config(
+                Path(temporary), "echo 'not logged in' >&2\nexit 3\n"
+            )
+            with self.assertRaisesRegex(
+                self.manager.CadenceError, r"exit 3\): not logged in"
+            ):
+                self.manager.smoke(config, "daily-brief")
+
+    def test_legacy_manifest_config_with_host_still_decodes(self):
+        document = self.manager._config_document(self.config())
+        self.assertNotIn("host", document)
+        legacy = dict(document, host="claude")
+        self.assertEqual(
+            self.config(), self.manager._config_from_document(legacy)
+        )
+        for invalid in (dict(document, host="other"), dict(document, extra=1)):
+            with self.assertRaises(self.manager.CadenceError):
+                self.manager._config_from_document(invalid)
+
+    def test_launchd_bootstrap_failure_rolls_back_the_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            scheduler_directory = root / "LaunchAgents"
+            config = self.manager.CadenceConfig(
+                binary=root / "claude",
+                workspace=root / "work" / "founder-os",
+                workdir=root / "work",
+                log_root=root / "logs",
+                slug="a",
+            )
+            bootstraps = []
+
+            def runner(argv, **kwargs):
+                if argv[:2] == ["launchctl", "bootstrap"]:
+                    bootstraps.append(argv[3])
+                    if len(bootstraps) == 3:
+                        return Result(returncode=5, stderr="Input/output error")
+                return Result()
+
+            with mock.patch.object(
+                self.manager,
+                "_scheduler_directory",
+                return_value=scheduler_directory,
+            ):
+                manifest = self.manager.preview(config, "launchd")
+                snapshot = self.manager.snapshot(
+                    config, "launchd", root / "backups",
+                    timestamp="20260801-120000",
+                )
+                with self.assertRaises(self.manager.CadenceError) as caught:
+                    self.manager.apply(manifest, snapshot, runner=runner)
+            label = Path(bootstraps[2]).name.removesuffix(".plist")
+            self.assertIn(label, str(caught.exception))
+            self.assertIn("Input/output error", str(caught.exception))
+            self.assertIn("removed the partial install", str(caught.exception))
+            self.assertEqual([], list(scheduler_directory.iterdir()))
+
     def test_log_directories_are_private(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             log_root = root / "logs"
             log_root.mkdir(mode=0o755)
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "claude",
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -365,7 +440,6 @@ class CadenceManagerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "claude",
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -395,7 +469,6 @@ class CadenceManagerTests(unittest.TestCase):
             root = Path(temporary)
             scheduler_directory = root / "LaunchAgents"
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "claude",
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -435,7 +508,6 @@ class CadenceManagerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "claude",
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -478,7 +550,6 @@ class CadenceManagerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "claude",
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -569,7 +640,6 @@ class CadenceManagerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "100%n"
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "bin%h" / "claude",
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -592,7 +662,6 @@ class CadenceManagerTests(unittest.TestCase):
             directory = root / "systemd"
             directory.mkdir()
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "claude",
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -623,7 +692,6 @@ class CadenceManagerTests(unittest.TestCase):
             directory = root / "systemd"
             directory.mkdir()
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "claude",
                 workspace=root / "work" / "founder-os",
                 workdir=root / "work",
@@ -669,7 +737,6 @@ class CadenceManagerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             config = self.manager.CadenceConfig(
-                host="claude",
                 binary=root / "Claude App" / "claude",
                 workspace=root / "work tree" / "founder-os",
                 workdir=root / "work tree",
