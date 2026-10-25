@@ -53,7 +53,7 @@ Agents **read anything and write only what they own.** The map is
 [`references/ownership.yaml`](../founder-os/references/ownership.yaml), and it is
 the only map — if a file's contents and the map disagree, the map wins. The CFO
 owns `metrics.md`; nobody else writes it. The Chief of Staff owns `queue.md`;
-eight other cadences *propose* into it but none of them may write it.
+eleven other cadences *propose* into it but none of them may write it.
 
 This is enforced by the local `founder-os-state` gateway at the actual write,
 with the host hook as defense in depth. See
