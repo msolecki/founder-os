@@ -16,9 +16,8 @@ otherwise it selects the generic fallback under the identical envelope below.
 
 The main thread dispatches the generic fallback with the same tool allowlist
 the role's frontmatter carries — the six Founder OS state-gateway tools and
-nothing else: no shell, web, direct file, other MCP, or agent-spawning tool. On
-a host that sets a subagent's tools another way (Codex), it applies the
-equivalent restriction. The fallback holds a live role capability, so it is
+nothing else: no shell, web, direct file, other MCP, or agent-spawning tool. The
+fallback holds a live role capability, so it is
 bound exactly as tightly as the role it stands in for; the host guard adds the
 role lockdown from the fallback's first gateway call, and the allowlist is what
 binds it before that call. Prefer a native role wherever the host has one.
@@ -117,7 +116,7 @@ First-week guidance appears only in the workflow receipt's **Your move:** field
 and creates no progress file. Select exactly one action from the first matching
 rule, in this order:
 
-1. When no valid first brief exists, resume the host-specific
+1. When no valid first brief exists, resume the
    `founder-os-init` skill.
 2. When the current flow has just completed activation, show one `/capture`
    example.

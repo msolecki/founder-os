@@ -2,7 +2,7 @@
 
 > **Know what matters today.**
 
-Founder OS is for a solo service founder already using Claude Code or Codex.
+Founder OS is for a solo service founder already using Claude Code.
 When company decisions disappear into chats and disconnected notes, it turns
 current business state into one source-linked decision, saves it to local
 Markdown, and produces a valid first brief in less than fifteen minutes.
@@ -25,7 +25,7 @@ business is its own workspace, and the thirteenth agent exists to rank between
 them.
 
 **Founder OS is free and MIT-licensed.** It runs inside your existing Claude
-Code or Codex environment and adds no account or subscription of its own.
+Code environment and adds no account or subscription of its own.
 
 [Getting started](../docs/getting-started.md) ·
 [Example workspace](../examples/studio-north/README.md) ·
@@ -36,7 +36,7 @@ Code or Codex environment and adds no account or subscription of its own.
 
 | Requirement | Purpose |
 |---|---|
-| Recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) | Founder OS is a plugin, not a standalone app. |
+| Recent [Claude Code](https://code.claude.com/docs) | Founder OS is a plugin, not a standalone app. |
 | Python 3.9+ | Runs the local state gateway and host hooks. |
 | PyYAML *(development only)* | Runs the full package validator; installed runtime readers remain dependency-light. |
 | A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Manual workflows need none. |
@@ -49,35 +49,20 @@ question.
 Founder OS knows only what is recorded in its Markdown workspace or supplied
 in the current host session. It does **not** automatically sync your
 calendar, CRM, inbox, bank account, or accounting system. Workspace files stay
-on your machine; Claude Code or Codex data-handling terms still apply to prompts
+on your machine; Claude Code data-handling terms still apply to prompts
 and context sent through that host.
 
 ## Install
-
-Claude Code:
 
 ```
 /plugin marketplace add msolecki/founder-os
 /plugin install founder-os@founder-os
 ```
 
-Codex:
-
-```
-codex plugin marketplace add msolecki/founder-os
-codex plugin add founder-os@founder-os
-```
-
-Then run onboarding once. Claude Code:
+Then run onboarding once:
 
 ```text
 /founder-os:founder-os-init
-```
-
-Codex:
-
-```text
-$founder-os:founder-os-init
 ```
 
 An org of agents and an empty directory is not activation. Onboarding is one
@@ -100,11 +85,10 @@ after **Continue**. At the fifteen-minute hard stop, the flow prints a copyable
 command instead of opening another role session.
 
 Then, if you want the company to come to you rather than wait to be opened,
-run the matching host command:
+run:
 
 ```text
-/founder-os:setup-cadences       # Claude Code
-$founder-os:setup-cadences       # Codex
+/founder-os:setup-cadences
 ```
 
 This previews and snapshots local LaunchAgents, persistent user-systemd timers,
@@ -148,13 +132,9 @@ the source date without inventing a freshness label.
 Update with `/plugin marketplace update founder-os`, then
 `/plugin update founder-os@founder-os` and `/reload-plugins`. Use
 `/founder-os-doctor` for a live workspace that looks stale or structurally
-wrong. In Codex, run `codex plugin marketplace upgrade founder-os`, replace the
-cached install with `codex plugin remove founder-os@founder-os` followed by
-`codex plugin add founder-os@founder-os`, and start a new conversation. Remove
-the Claude plugin with `/plugin uninstall founder-os@founder-os`, or the Codex
-plugin with `codex plugin remove founder-os@founder-os`.
+wrong. Remove the plugin with `/plugin uninstall founder-os@founder-os`.
 Workspace files stay on your machine under `FOUNDER_OS_HOME`; they are separate
-from the installed plugin. Prompts and context sent through Claude Code or Codex
+from the installed plugin. Prompts and context sent through Claude Code
 remain governed by that environment's data-handling terms.
 
 ## What's inside
@@ -234,7 +214,7 @@ pipeline, the content plan, the follow-ups, the review, the close, the quarter.
 
 **Being honest about how:** Claude Code cannot ship a schedule inside a plugin.
 Session loops expire after seven days; cloud routines can't see your local
-files, and your workspace is local markdown by design. So the host-specific
+files, and your workspace is local markdown by design. So the
 `setup-cadences` workflow writes LaunchAgents, persistent user-systemd timers,
 or cron entries on **your** machine that call the skills headless. Launchd and
 persistent systemd catch up after sleep; cron runs only while its service and
@@ -256,7 +236,7 @@ why you raised rates or dropped a client. That's the file that answers.
 **That workspace is Founder OS's persistent business state.** Founder OS does
 not silently read a calendar, CRM, inbox, bank, or accounting tool. If a fact is
 not in the workspace or the current session, the agents do not know it. The
-files remain local, while prompts and context sent through Claude Code or Codex
+files remain local, while prompts and context sent through Claude Code
 remain subject to that environment's data-handling terms. This is why
 the example workspace shows the source file behind every daily-brief claim
 instead of implying a live integration.
@@ -355,8 +335,7 @@ position can be improved, a platitude can only be nodded at.
 `references/ownership.yaml` is the map: who owns each file, and which sections
 live inside it. Add a skill, declare what it writes, and make sure its agent
 owns that path — the validator (`scripts/validate_package.py`, in the source
-repo alongside the tests) fails the build if it doesn't. The same shared skill
-and role files drive Claude Code and Codex; host files are adapters only.
+repo alongside the tests) fails the build if it doesn't.
 
 ## License
 

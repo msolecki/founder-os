@@ -44,9 +44,8 @@ portfolio: /Users/x/.founder-os/portfolio   # scaffolded with the 2nd business
 
 Precedence, most explicit wins:
 
-1. **Named in the invocation** — `/founder-os:daily-brief acme` in Claude Code,
-   `$founder-os:daily-brief acme` in Codex, or the founder says "for acme" in
-   the session. Every cadence accepts the slug as its first argument and passes
+1. **Named in the invocation** — `/founder-os:daily-brief acme`, or the
+   founder says "for acme" in the session. Every cadence accepts the slug as its first argument and passes
    it to `context-load`.
 2. **`FOUNDER_OS_HOME`** — set in the environment; each scheduled job carries
    its business's absolute home. The registry maps the path back to a slug for

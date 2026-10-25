@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Move the plugin version, everywhere it is written, in one command.
 
-Eleven files carry it: three manifests, the gateway's protocol constant, the
+Ten files carry it: two manifests, the gateway's protocol constant, the
 host probe, three test constants, the landing page, the architecture note, and
 the changelog heading. A release used to mean editing all of them by hand from a
 checklist, and the checklist was itself a hand-kept list of places — the same
 shape as every count this package refuses to hand-keep elsewhere.
 
-So the list lives here, `check_version_sites` in the validator reads it, and a
-twelfth site added without telling this script fails the build rather than
+So the list lives here, `check_version_sites` in the validator reads it, and an
+eleventh site added without telling this script fails the build rather than
 shipping a package that disagrees with itself about what it is.
 
 The changelog is not a rewrite. `## Unreleased` is renamed to the dated heading
@@ -35,8 +35,6 @@ SITES = (
      r'("version"\s*:\s*")(\d+\.\d+\.\d+)(")', "marketplace entry"),
     ("founder-os/.claude-plugin/plugin.json",
      r'("version"\s*:\s*")(\d+\.\d+\.\d+)(")', "Claude manifest"),
-    ("founder-os/.codex-plugin/plugin.json",
-     r'("version"\s*:\s*")(\d+\.\d+\.\d+)(")', "Codex manifest"),
     ("founder-os/mcp/protocol.py",
      r'(SERVER_VERSION = ")(\d+\.\d+\.\d+)(")', "gateway server version"),
     ("scripts/probe_installed_hosts.py",

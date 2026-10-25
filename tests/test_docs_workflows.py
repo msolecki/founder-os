@@ -23,17 +23,9 @@ CLAUDE_INSTALL = (
     "/plugin marketplace add msolecki/founder-os",
     "/plugin install founder-os@founder-os",
 )
-CODEX_INSTALL = (
-    "codex plugin marketplace add msolecki/founder-os",
-    "codex plugin add founder-os@founder-os",
-)
 CLAUDE_WORKFLOWS = (
     "/founder-os:founder-os-init",
     "/founder-os:setup-cadences",
-)
-CODEX_WORKFLOWS = (
-    "$founder-os:founder-os-init",
-    "$founder-os:setup-cadences",
 )
 BEHAVIOR_TEST = (
     REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
@@ -162,7 +154,7 @@ class ExampleWorkspaceLoopTest(unittest.TestCase):
 
 
 class WorkflowLibraryContractTest(unittest.TestCase):
-    def test_one_page_publishes_the_current_dual_host_contract(self):
+    def test_one_page_publishes_the_current_host_contract(self):
         nav = HTML[HTML.index('<div class="nav-links"'):HTML.index("</nav>")]
         self.assertIn('<a href="#trust">Trust</a>', nav)
         self.assertIn('<a href="trust.html">Read the full Trust Center', HTML)
@@ -174,11 +166,6 @@ class WorkflowLibraryContractTest(unittest.TestCase):
                 '<section class="install-box" '
                 'aria-labelledby="install-claude-title">',
                 CLAUDE_INSTALL + CLAUDE_WORKFLOWS,
-            ),
-            "Codex": (
-                '<section class="install-box" '
-                'aria-labelledby="install-codex-title">',
-                CODEX_INSTALL + CODEX_WORKFLOWS,
             ),
         }
         for host, (marker, expected_commands) in install_sections.items():
@@ -331,7 +318,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertIn('rel="icon" type="image/svg+xml"', HTML)
         self.assertIn('rel="apple-touch-icon"', HTML)
 
-    def test_trust_center_and_host_parity_are_public(self):
+    def test_trust_center_is_public(self):
         trust = (REPO_ROOT / "docs" / "trust.md").read_text(encoding="utf-8")
         for token in (
             "local Markdown", "Prompts,", "review and trust",
@@ -677,7 +664,7 @@ class ActivationCopyContractTest(unittest.TestCase):
         compact = re.sub(r"\s+", " ", self.HERO)
         for marker in (
             "solo service founders",
-            "Claude Code or Codex",
+            "using Claude Code",
             "decisions disappear into chats and disconnected notes",
             "source-linked decision",
             "local",
@@ -994,7 +981,7 @@ class ActivationCopyContractTest(unittest.TestCase):
             with self.subTest(document=name):
                 for marker in (
                     "solo service founder",
-                    "Claude Code or Codex",
+                    "using Claude Code",
                     "source-linked decision",
                     "local Markdown",
                     "fifteen minutes",

@@ -27,8 +27,8 @@ rates, entity slugs and absolute paths are not, and a private advisory becomes a
 public one when it is published.
 
 Include the plugin version (the first line of `/founder-os-doctor`, or
-`founder-os/.claude-plugin/plugin.json`), the host
-(Claude Code or Codex), and what you expected the boundary to be.
+`founder-os/.claude-plugin/plugin.json`), the Claude Code version, and what you
+expected the boundary to be.
 
 ## What is in scope
 

@@ -16,9 +16,8 @@ the portfolio schedule once when at least two businesses are active.
 
 ## Inputs
 
-- The chosen host: `claude` or `codex`. Resolve each candidate with
-  `command -v`; if both exist, ask which one should run unattended. If neither
-  exists, stop.
+- The host binary: resolve `claude` with `command -v`. If it does not exist,
+  stop.
 - The scheduler: `launchd` for a sleeping macOS laptop, persistent user
   `systemd` timers for a sleeping Linux machine, or user `cron` for an
   always-on machine. Never use `sudo`, `/etc/crontab`, or `/etc/cron.d`.
@@ -59,24 +58,18 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 - A schedule that misses sleeping hours is not automation. Catch-up behavior
   determines the scheduler; operating-system familiarity does not.
 - Unattended permission is a narrow capability, not trust in the whole host.
-  Claude receives only the Founder OS MCP tool pattern; Codex runs with no
-  approvals in a workspace-write sandbox whose network access is pinned off on
-  the command line, whatever the founder's `config.toml` says. The run needs
-  only the local `founder-os-state` MCP server, so an offline shell loses
-  nothing and an injected instruction cannot reach the network.
+  Claude receives only the Founder OS MCP tool pattern. The run needs only the
+  local `founder-os-state` MCP server, so a run without a shell or the web
+  loses nothing and an injected instruction cannot reach the network.
 - Exact identity beats prefix matching. `a`, `acme`, `portfolio`, and the
   legacy unslugged fence are four different schedules.
 
 ## Steps
 
-1. **Resolve and validate the host.** Record the absolute binary path. For
-   Claude, the generated argv is:
+1. **Resolve and validate the host.** Record the absolute binary path. The
+   generated argv is:
 
        claude -p /founder-os:<workflow> --permission-mode dontAsk --allowedTools 'mcp__plugin_founder-os_founder-os-state__*' --max-turns 50 --no-session-persistence
-
-   For Codex, it is:
-
-       codex -a never -c sandbox_workspace_write.network_access=false exec --sandbox workspace-write --ephemeral -C <workdir> '$founder-os:<workflow>'
 
    Pass the path `command -v` printed, not its symlink target: the manager
    schedules that path unresolved, so a Homebrew, npm, or native-installer
@@ -100,7 +93,7 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 3. **Preview exact artifacts.** Run:
 
        python3 <plugin>/scripts/cadence_manager.py preview \
-         --host <claude|codex> --binary <absolute-binary> \
+         --host claude --binary <absolute-binary> \
          --workspace <absolute-workspace> --workdir <absolute-parent> \
          --log-root <absolute-home>/.founder-os/logs \
          --scheduler <cron|launchd|systemd> [--slug <exact-slug>] \
@@ -114,8 +107,8 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
    Systemd services use direct `ExecStart`, never `/bin/sh -c`, and timers set
    `Persistent=true`. Every scheduler receives a minimal `PATH` that begins
    with the selected binary's directory, so an `/usr/bin/env` shebang can find
-   a colocated runtime without loading an interactive shell profile. Both
-   hosts disable scheduled-session persistence; durable business state remains
+   a colocated runtime without loading an interactive shell profile. The argv
+   disables scheduled-session persistence; durable business state remains
    in the workspace instead of accumulating host transcripts.
 
 4. **Snapshot current scheduler state.** Before confirmation, run the matching
@@ -144,7 +137,7 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 7. **Smoke-test the exact host argv.** Run:
 
        python3 <plugin>/scripts/cadence_manager.py smoke \
-         --host <claude|codex> --binary <absolute-binary> \
+         --host claude --binary <absolute-binary> \
          --workspace <absolute-workspace> --workdir <absolute-parent> \
          --log-root <absolute-home>/.founder-os/logs [--slug <exact-slug>] \
          --workflow <daily-brief|portfolio-review>

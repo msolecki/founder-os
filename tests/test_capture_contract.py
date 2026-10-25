@@ -121,17 +121,6 @@ class CaptureSkillContract(unittest.TestCase):
             self.body,
             r"(?is)only.*?/daily-brief.*?/triage.*drain",
         )
-        interface = yaml.safe_load(
-            (
-                PLUGIN_ROOT
-                / "skills"
-                / "capture"
-                / "agents"
-                / "openai.yaml"
-            ).read_text(encoding="utf-8")
-        )["interface"]
-        self.assertIn("$capture", interface["default_prompt"])
-        self.assertRegex(interface["default_prompt"], r"(?i)one.*line.*inbox")
 
 
 class CaptureDrainKeepsFounderLinesContract(unittest.TestCase):

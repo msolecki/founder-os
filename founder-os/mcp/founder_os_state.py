@@ -12,7 +12,7 @@ import sys
 WINDOWS_UNSUPPORTED = (
     "Founder OS does not run on native Windows: its state server needs POSIX "
     "file locking and symlink-safe opens. Install WSL (wsl --install), open "
-    "Claude Code or Codex inside the WSL shell, and run setup again there."
+    "Claude Code inside the WSL shell, and run setup again there."
 )
 if sys.platform == "win32":
     sys.stderr.write(WINDOWS_UNSUPPORTED + "\n")

@@ -109,12 +109,10 @@ beliefs matter.
    dress it in a `## Beliefs` heading it has not earned.
 
 6. **Write the source of truth**, at
-   `$FOUNDER_OS_HOME/_local/skills/local-<slug>/SKILL.md` and
-   `agents/openai.yaml`, from
+   `$FOUNDER_OS_HOME/_local/skills/local-<slug>/SKILL.md`, from
    `references/skill-template.md` verbatim: frontmatter with `name` and
    `description`, `metadata.writes` for every path it writes, `## Beliefs`
-   before `## Steps`, `## Output` naming the exact file and heading, and
-   `agents/openai.yaml` must name `$local-<slug>` in `default_prompt`; the
+   before `## Steps`, `## Output` naming the exact file and heading; the
    `local-` prefix is not decoration — a packaged skill
    added upstream next year must not silently shadow this one.
 
@@ -127,12 +125,9 @@ beliefs matter.
 
 8. **Install, by name, with consent.** Say the exact path you are about to
    write —
-   `~/.claude/skills/founder-os-local-<business>-<slug>/` and
-   `~/.codex/skills/founder-os-local-<business>-<slug>/` — say that both are
-   outside the workspace and plugin, and ask once. Write only on a yes — both
-   destinations are written together or neither is written.
-   Copy the same source directory, including `agents/openai.yaml`, to both
-   destinations and report both paths. This is the `setup-cadences` rule applied
+   `~/.claude/skills/founder-os-local-<business>-<slug>/` — say that it is
+   outside the workspace and plugin, and ask once. Write only on a yes.
+   Copy the source directory there and report the path. This is the `setup-cadences` rule applied
    to a file instead of scheduler state, for the same reason: a plugin cannot make
    a host load a workflow, so the founder does, knowingly.
 
@@ -149,10 +144,9 @@ Four paths at most, and every one of them named before it is written:
 
 - `$FOUNDER_OS_HOME/_local/skills/local-<slug>/SKILL.md` — the source of truth.
 - `$FOUNDER_OS_HOME/_local/ownership.yaml` — created or extended, additive only.
-- `~/.claude/skills/founder-os-local-<business>-<slug>/` and
-  `~/.codex/skills/founder-os-local-<business>-<slug>/` — identical installed
-  copies, only on an explicit yes, carrying a first-line comment naming the
-  source path so whoever finds either copy knows which file to edit.
+- `~/.claude/skills/founder-os-local-<business>-<slug>/` — the installed copy,
+  only on an explicit yes, carrying a first-line comment naming the source path
+  so whoever finds the copy knows which file to edit.
 
 Optionally `$FOUNDER_OS_HOME/_local/agents/<slug>.md`, when the founder passed
 the one-decision test in step 4 and not otherwise.

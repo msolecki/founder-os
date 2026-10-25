@@ -39,8 +39,7 @@ class TestVersionSites(unittest.TestCase):
     def test_the_package_agrees_with_itself_about_its_version(self):
         version = bump.current_version(REPO_ROOT)
         for relative in (".claude-plugin/marketplace.json",
-                         "founder-os/.claude-plugin/plugin.json",
-                         "founder-os/.codex-plugin/plugin.json"):
+                         "founder-os/.claude-plugin/plugin.json"):
             with self.subTest(manifest=relative):
                 data = json.loads(
                     (REPO_ROOT / relative).read_text(encoding="utf-8")

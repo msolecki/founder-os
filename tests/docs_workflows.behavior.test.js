@@ -606,12 +606,10 @@ test('native clipboard success is confirmed before success UI appears', async ()
   assert.equal(dom.body.children.length, 0);
 });
 
-test('host-specific onboarding and cadence buttons copy matching syntax', async () => {
+test('onboarding and cadence buttons copy matching syntax', async () => {
   for (const command of [
     '/founder-os:founder-os-init',
     '/founder-os:setup-cadences',
-    '$founder-os:founder-os-init',
-    '$founder-os:setup-cadences',
   ]) {
     const dom = buildClipboardDom({ copy: command });
     let copied = null;

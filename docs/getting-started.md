@@ -1,7 +1,7 @@
 # Getting started with Founder OS
 
 **Know what matters today.** Founder OS is for a solo service founder already
-using Claude Code or Codex. It turns current business state into one
+using Claude Code. It turns current business state into one
 source-linked decision, saves it to local Markdown, and produces a valid first
 brief in less than fifteen minutes.
 
@@ -29,9 +29,9 @@ workspace before installing.
 
 | Requirement | Why it is needed |
 |---|---|
-| A recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) installation | Founder OS is a plugin, not a standalone app. |
+| A recent [Claude Code](https://code.claude.com/docs) installation | Founder OS is a plugin, not a standalone app. |
 | Python 3.9+ | Runs the local state gateway and host hooks. |
-| macOS, Linux, or WSL on Windows | The state gateway needs POSIX file locking; native Windows is not supported. Install WSL (`wsl --install`) and run Claude Code or Codex inside it. |
+| macOS, Linux, or WSL on Windows | The state gateway needs POSIX file locking; native Windows is not supported. Install WSL (`wsl --install`) and run Claude Code inside it. |
 | PyYAML *(development/tests only)* | Runs the full package validator; the installed runtime remains dependency-light. |
 | Node.js 20+ *(development/tests only)* | Runs the landing-page behavior contract test. |
 | A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Every workflow also works manually. |
@@ -55,7 +55,7 @@ They can draft a message, proposal, or plan, but cannot send, post, pay, sign,
 or transfer anything.
 
 Workspace files stay on your machine. The prompts and context you send through
-Claude Code or Codex are still governed by that environment's data-handling
+Claude Code are still governed by that environment's data-handling
 terms.
 
 ## Install
@@ -68,16 +68,7 @@ Run these commands in Claude Code, in order:
 /founder-os:founder-os-init
 ```
 
-In Codex, install the same package from the repository marketplace:
-
-```text
-codex plugin marketplace add msolecki/founder-os
-codex plugin add founder-os@founder-os
-$founder-os:founder-os-init
-```
-
-Review and trust bundled hooks when prompted. After updating or reinstalling in
-Codex, start a new conversation so the cached copy is refreshed.
+Review and trust bundled hooks when prompted.
 
 `founder-os-init` is one continuous, resumable flow from an empty folder to a
 persisted first brief. It checks the install and target before writing, then
@@ -103,7 +94,7 @@ The median target is ten minutes and the hard stop is fifteen minutes. Unknown
 cash, revenue or burn stays unknown and becomes an owned follow-up; it is never
 filled from inference. `Activation complete` appears only after that valid
 brief passes the same check in the same resolved workspace. If the flow stops,
-repeat the host-specific init command: populated sections are preserved and the
+repeat the init command: populated sections are preserved and the
 first missing stage resumes.
 
 The activation receipt leads with the value you can inspect:
@@ -142,11 +133,10 @@ the source date without inventing a freshness label.
 
 ## Optional: schedule the cadences
 
-After the first brief, run the command for your host:
+After the first brief, run:
 
 ```text
-/founder-os:setup-cadences       # Claude Code
-$founder-os:setup-cadences       # Codex
+/founder-os:setup-cadences
 ```
 
 With your consent, this writes local LaunchAgents, persistent user-systemd
@@ -192,18 +182,9 @@ without restarting Claude Code:
 These are the current
 [Claude Code plugin-management commands](https://code.claude.com/docs/en/discover-plugins).
 
-Codex keeps a marketplace snapshot and an installed cache. Refresh and replace
-that cached copy, then start a new conversation:
-
-```text
-codex plugin marketplace upgrade founder-os
-codex plugin remove founder-os@founder-os
-codex plugin add founder-os@founder-os
-```
-
 For a workspace that is missing files, stale, or structurally inconsistent,
 run `/founder-os-doctor`. It reports before proposing any repair. For an
-interrupted first run, repeat the host-specific init command; do not delete the
+interrupted first run, repeat the init command; do not delete the
 workspace or manually replay the owner workflows.
 
 To remove the plugin:
@@ -211,8 +192,6 @@ To remove the plugin:
 ```text
 /plugin uninstall founder-os@founder-os
 ```
-
-In Codex, use `codex plugin remove founder-os@founder-os`.
 
 The Markdown workspace under `FOUNDER_OS_HOME` is separate from the installed
 plugin and remains yours. Back it up before deleting it yourself. See
@@ -225,5 +204,5 @@ plugin and remains yours. Back it up before deleting it yourself. See
 - [Product philosophy and agent map](../founder-os/README.md)
 - [Source code](https://github.com/msolecki/founder-os)
 - [Report an issue](https://github.com/msolecki/founder-os/issues)
-- [Trust Center](trust.md) — data boundaries, permissions, and host parity
+- [Trust Center](trust.md) — data boundaries, permissions, and the host
 - [MIT license](../LICENSE)

@@ -15,7 +15,6 @@ MARKETPLACE_PATH = REPO_ROOT / ".claude-plugin" / "marketplace.json"
 CLAUDE_MANIFEST_PATH = (
     REPO_ROOT / "founder-os" / ".claude-plugin" / "plugin.json"
 )
-CODEX_MANIFEST_PATH = REPO_ROOT / "founder-os" / ".codex-plugin" / "plugin.json"
 CHANGELOG_PATH = REPO_ROOT / "CHANGELOG.md"
 CI_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 DEVELOPMENT_PATH = REPO_ROOT / "docs" / "development.md"
@@ -67,9 +66,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         cls.claude_manifest = json.loads(
             CLAUDE_MANIFEST_PATH.read_text(encoding="utf-8")
         )
-        cls.codex_manifest = json.loads(
-            CODEX_MANIFEST_PATH.read_text(encoding="utf-8")
-        )
         cls.changelog = CHANGELOG_PATH.read_text(encoding="utf-8")
         cls.ci = CI_PATH.read_text(encoding="utf-8")
         cls.development = DEVELOPMENT_PATH.read_text(encoding="utf-8")
@@ -86,7 +82,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         versions = {
             "marketplace": self.marketplace["plugins"][0]["version"],
             "claude": self.claude_manifest["version"],
-            "codex": self.codex_manifest["version"],
         }
         self.assertEqual(set(versions.values()), {RELEASE_VERSION}, versions)
 
@@ -95,7 +90,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "marketplace": self.marketplace.get("description"),
             "marketplace entry": self.marketplace["plugins"][0]["description"],
             "claude": self.claude_manifest["description"],
-            "codex": self.codex_manifest["description"],
         }
         self.assertEqual(
             set(descriptions.values()), {ACTIVATION_DESCRIPTION}, descriptions
@@ -119,10 +113,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, release)
-        self.assertNotIn("Codex remains beta/manual", release)
-
-        historical = self.changelog.split("## 2.4.0 — 2026-07-22", 1)[1]
-        self.assertIn("Codex remains beta/manual", historical)
 
     def test_a_published_release_entry_is_never_rewritten(self):
         """A tagged entry is a record, not a draft.
@@ -211,7 +201,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "agents": 13,
             "skills": 57,
             "cadences": 11,
-            "validator": 21,
+            "validator": 20,
             "doctor": 20,
         })
 
@@ -265,8 +255,8 @@ class ReleaseMetadataContractTest(unittest.TestCase):
                 "authoritative write boundary", "fail closed", "defense in depth",
             ),
             "docs/getting-started.md": (
-                "codex plugin marketplace add msolecki/founder-os",
-                "codex plugin add founder-os@founder-os",
+                "/plugin marketplace add msolecki/founder-os",
+                "/plugin install founder-os@founder-os",
             ),
         }
         documents = {
@@ -315,7 +305,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "all 50 commands",
             "current: **2.4.0**",
             "current: **2.3.0**",
-            "codex remains beta/manual",
             "seven-tool state gateway",
             "managers can summon",
             "it can summon the rest",
@@ -375,19 +364,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "internal planning artifacts are tracked under docs/ and would be "
             "published: %s — move them to docs/superpowers/" % internal,
         )
-
-    def test_codex_manifest_names_the_real_gateway_and_trust_boundary(self):
-        self.assertEqual(
-            set(self.codex_manifest["mcpServers"]),
-            {"founder-os-state"},
-        )
-        self.assertEqual(
-            self.codex_manifest["interface"]["privacyPolicyURL"],
-            "https://msolecki.github.io/founder-os/trust.html",
-        )
-        capabilities = self.codex_manifest["interface"]["capabilities"]
-        self.assertIn("Local state gateway", capabilities)
-        self.assertIn("Role-owned Markdown writes", capabilities)
 
     def test_internal_launch_working_material_is_not_shipped(self):
         product_hunt = REPO_ROOT / "docs" / "product-hunt"

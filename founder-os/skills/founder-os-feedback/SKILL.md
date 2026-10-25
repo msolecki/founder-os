@@ -37,12 +37,9 @@ Read first — house rule 1, and note how little of it there is:
 - The session itself: which workflow ran, what the founder expected, what
   happened.
 - `.claude-plugin/plugin.json` — the `version` field, through `read_reference`,
-  which allows both host manifests for exactly this; read the `.codex-plugin`
-  one instead when the host is Codex. The validator pins the two equal, so
-  either answers — but the founder checking your work looks in the one their own
-  host installed. From the package, never from memory; a version quoted from
-  memory is the version at training time.
-- Which host is running — Claude Code or Codex.
+  which allows the manifest for exactly this. From the package, never from
+  memory; a version quoted from memory is the version at training time.
+- Which host is running — Claude Code.
 
 **No workspace file is read.** Not `metrics.md`, not `pipeline.md`, not the file
 the failing workflow was writing. This is the only skill in the package that
@@ -129,7 +126,7 @@ percent-encoded:
     https://github.com/msolecki/founder-os/issues/new?template=report.yml
       &title=%5Breport%5D%20<summary>
       &kind=<option label>&workflow=<slug>
-      &host=<Claude%20Code|Codex|Both>&version=<x.y.z>
+      &host=Claude%20Code&version=<x.y.z>
       &expected=<what they expected>&actual=<what happened>
       &doctor=<report, when it ran>
 

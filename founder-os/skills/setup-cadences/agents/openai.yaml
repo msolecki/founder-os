@@ -1,4 +1,0 @@
-interface:
-  display_name: "Setup Cadences"
-  short_description: "Run the Setup Cadences Founder OS workflow."
-  default_prompt: "Use $setup-cadences to handle this Founder OS task."

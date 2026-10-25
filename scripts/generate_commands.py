@@ -29,10 +29,8 @@ HEADER = """\
      when this file and the package disagree. A hand edit here is a second
      map, and second maps go stale silently. -->
 
-Claude Code invokes a skill as `/founder-os:<name>`; Codex invokes it as
-`$founder-os:<name>`. On a multi-business install, pass the business slug first
-— `/founder-os:daily-brief acme` in Claude Code or
-`$founder-os:daily-brief acme` in Codex.
+Claude Code invokes a skill as `/founder-os:<name>`. On a multi-business
+install, pass the business slug first — `/founder-os:daily-brief acme`.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 """
@@ -79,7 +77,7 @@ def render(root):
     lines = [HEADER]
 
     lines.append("## The cadences\n")
-    lines.append("Scheduled by the host-specific `setup-cadences` skill; every"
+    lines.append("Scheduled by the `setup-cadences` skill; every"
                  " one also works typed by hand.\n")
     lines.append("| Command | When | Run by |")
     lines.append("|---|---|---|")

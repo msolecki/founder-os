@@ -99,36 +99,19 @@ def check_plugin(root, agents):
         errs.append("plugin.json: 'name' is the one required field and it is missing")
     if d.get("name") and d["name"] != "founder-os":
         errs.append("plugin.json: name must be 'founder-os'")
-    codex_path = root / ".codex-plugin" / "plugin.json"
-    if codex_path.exists():
-        try:
-            codex = json.loads(codex_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as e:
-            return errs + [".codex-plugin/plugin.json: invalid JSON (%s)" % e]
-        for field in ("name", "version", "description"):
-            if d.get(field) != codex.get(field):
-                errs.append("plugin manifests: %s differs between Claude and Codex" % field)
     return errs
 
 
 def check_host_adapters(root, agents):
-    """Validate Claude and Codex point at the same packaged stdio gateway."""
+    """Validate Claude Code points at the packaged stdio gateway."""
     errs = []
     claude_path = root / ".mcp.json"
-    codex_path = root / ".codex-plugin" / "plugin.json"
     claude_expected = {
         "mcpServers": {
             "founder-os-state": {
                 "command": "python3",
                 "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/founder_os_state.py"],
             },
-        },
-    }
-    codex_expected = {
-        "founder-os-state": {
-            "command": "python3",
-            "args": ["./mcp/founder_os_state.py"],
-            "cwd": ".",
         },
     }
 
@@ -144,21 +127,6 @@ def check_host_adapters(root, agents):
                 errs.append(
                     ".mcp.json: founder-os-state must use python3 and "
                     "${CLAUDE_PLUGIN_ROOT}/mcp/founder_os_state.py"
-                )
-
-    if not codex_path.is_file():
-        errs.append(".codex-plugin/plugin.json: missing Codex adapter manifest")
-    else:
-        try:
-            codex = json.loads(codex_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            errs.append(".codex-plugin/plugin.json: invalid JSON (%s)" % exc)
-        else:
-            if codex.get("mcpServers") != codex_expected:
-                errs.append(
-                    ".codex-plugin/plugin.json: mcpServers must inline "
-                    "founder-os-state via ./mcp/founder_os_state.py with "
-                    "cwd '.'"
                 )
 
     entry = root / "mcp" / "founder_os_state.py"
@@ -209,58 +177,6 @@ def check_host_adapters(root, agents):
                     "missing=%s unexpected=%s"
                     % (missing, unexpected)
                 )
-    return errs
-
-
-def check_codex_skill_interfaces(root, agents):
-    """Prove every shared workflow has a Codex discovery adapter."""
-    errs = []
-    for skill_path in sorted((root / "skills").glob("*/SKILL.md")):
-        slug = skill_path.parent.name
-        interface_path = skill_path.parent / "agents" / "openai.yaml"
-        if not interface_path.exists():
-            errs.append(
-                "skills/%s: missing agents/openai.yaml for Codex" % slug
-            )
-            continue
-        try:
-            data = yaml.safe_load(
-                interface_path.read_text(encoding="utf-8")
-            ) or {}
-        except yaml.YAMLError as exc:
-            errs.append(
-                "skills/%s/agents/openai.yaml: invalid YAML (%s)"
-                % (slug, exc)
-            )
-            continue
-        interface = data.get("interface") if isinstance(data, dict) else None
-        if not isinstance(interface, dict):
-            errs.append(
-                "skills/%s/agents/openai.yaml: missing interface" % slug
-            )
-            continue
-        for field in (
-            "display_name",
-            "short_description",
-            "default_prompt",
-        ):
-            value = interface.get(field)
-            if not isinstance(value, str) or not value.strip():
-                errs.append(
-                    "skills/%s/agents/openai.yaml: missing %s"
-                    % (slug, field)
-                )
-        prompt = interface.get("default_prompt", "")
-        prompt_names_skill = (
-            isinstance(prompt, str)
-            and prompt.strip()
-            and ("$" + slug) in prompt
-        )
-        if isinstance(prompt, str) and prompt.strip() and not prompt_names_skill:
-            errs.append(
-                "skills/%s/agents/openai.yaml: default_prompt must name $%s"
-                % (slug, slug)
-            )
     return errs
 
 
@@ -1059,7 +975,7 @@ def check_beliefs(root, agents):
 
 
 def check_hooks(root, agents):
-    """Validate matcher coverage and compile both identity-boundary hooks.
+    """Validate matcher coverage and compile the identity-boundary hook.
 
     A typo in the matcher or a syntax error in the guard ships silently today:
     every other check validates prose and map, and the one layer that acts at
@@ -1081,39 +997,6 @@ def check_hooks(root, agents):
     patterns = [h.get("matcher", "")
                 for h in hooks.get("PreToolUse", [])]
 
-    def recorders(event):
-        return [
-            hook.get("command", "")
-            for group in hooks.get(event, [])
-            for hook in group.get("hooks", [])
-            if isinstance(hook, dict) and hook.get("type") == "command"
-            and "record-agent.py" in hook.get("command", "")
-        ]
-
-    # One script under two events, and both registrations have to exist. Which
-    # one fired is the host's knowledge, and a payload that stops carrying
-    # `hook_event_name` records nothing — after which the guard denies every
-    # Codex tool call on the unrecorded turn. The existence half was checked for
-    # the main turn only, so deleting the whole SubagentStart block validated
-    # clean while every subagent turn went unmapped.
-    for event, flag, denied in (
-        ("UserPromptSubmit", "--event user-prompt", "the founder's main turn"),
-        ("SubagentStart", "--event subagent-start", "every subagent turn"),
-    ):
-        registrations = recorders(event)
-        if not registrations:
-            errs.append(
-                "hooks/hooks.json: %s must record its turn via "
-                "record-agent.py — without it the guard denies %s under Codex"
-                % (event, denied)
-            )
-        for command in registrations:
-            if flag not in command:
-                errs.append(
-                    "hooks/hooks.json: the %s registration of record-agent.py "
-                    "must pass %s" % (event, flag)
-                )
-
     def covered(tool_name):
         for pat in list(patterns):
             if not pat:
@@ -1129,7 +1012,7 @@ def check_hooks(root, agents):
 
     for tool in (
         "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep",
-        "Bash", "WebFetch", "WebSearch", "apply_patch", "mcp__x",
+        "Bash", "WebFetch", "WebSearch", "mcp__x",
     ):
         if not covered(tool):
             if tool == "mcp__x":
@@ -1146,14 +1029,6 @@ def check_hooks(root, agents):
             compile(guard.read_text(encoding="utf-8"), str(guard), "exec")
         except SyntaxError as e:
             errs.append("hooks/ownership-guard.py: does not compile (%s)" % e)
-    recorder = root / "hooks" / "record-agent.py"
-    if not recorder.exists():
-        errs.append("hooks/record-agent.py: missing")
-    else:
-        try:
-            compile(recorder.read_text(encoding="utf-8"), str(recorder), "exec")
-        except SyntaxError as e:
-            errs.append("hooks/record-agent.py: does not compile (%s)" % e)
     return errs
 
 
@@ -1205,10 +1080,10 @@ VERSION_SCANNED = (
 def check_version_sites(root, agents):
     """Every place the version is written must be one `bump_version.py` knows.
 
-    A release moves one number through eleven files. The list of eleven lived in
+    A release moves one number through ten files. The list of ten lived in
     a prose checklist, which is a hand-kept list of places — the same shape as
     every count this package refuses to hand-keep. So the list lives in
-    `scripts/bump_version.py`, this reads it, and a twelfth site added without
+    `scripts/bump_version.py`, this reads it, and an eleventh site added without
     telling that script fails the build instead of shipping a package that
     disagrees with itself about which version it is.
 
@@ -1307,8 +1182,7 @@ def _counted_docs(root):
             root / "README.md", root / "references" / "guidance.md", root / "COMMANDS.md",
             root / "references" / "extensibility.md",
             root / "skills" / "skill-forge" / "SKILL.md",
-            root.parent / ".github" / "ISSUE_TEMPLATE" / "idea.yml",
-            root / ".codex-plugin" / "plugin.json"]
+            root.parent / ".github" / "ISSUE_TEMPLATE" / "idea.yml"]
 
 
 def check_readme_counts(root, agents):
@@ -1473,7 +1347,7 @@ def check_docs_parity(root, agents):
     return errs
 
 
-CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check_agents,
+CHECKS = [check_plugin, check_host_adapters, check_agents,
           check_agent_tools, check_one_level_orchestration,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_derived_files, check_thresholds,

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Decision Log"
-  short_description: "Run the Decision Log Founder OS workflow."
-  default_prompt: "Use $decision-log to handle this Founder OS task."
