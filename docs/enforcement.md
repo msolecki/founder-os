@@ -61,7 +61,7 @@ Failures use one stable code and one recovery action:
 | Code | Meaning |
 |---|---|
 | `WORKSPACE_UNRESOLVED` | No unique business workspace; ask, then make no read or write. |
-| `ROLE_SESSION_INVALID` | Capability missing, expired, closed, forged, or mismatched; return to the main thread. |
+| `ROLE_SESSION_INVALID` | Capability missing, expired, closed, forged, mismatched, or minted before the gateway last restarted; return to the main thread. |
 | `PATH_OUTSIDE_WORKSPACE` | Path or symlink escaped the bounded root; refuse without guessing another path. |
 | `ROLE_NOT_OWNER` | The role does not own the target; hand off to the canonical owner. |
 | `STALE_WRITE` | The file changed since read; re-read, reconcile, then retry once. |
@@ -99,7 +99,10 @@ For a known packaged role, the guard:
    recognize;
 4. denies `open_role_session` to subagents so they cannot mint or elevate their
    own authority; and
-5. requires a live capability whose role matches that identity.
+5. requires a live capability whose role matches that identity — a persisted
+   session record whose expiry is no later than now plus the gateway's 30-minute
+   session TTL (the gateway also refuses any capability its own process did not
+   mint, which the guard, a separate process, cannot see).
 
 A generic fallback (`general-purpose`, `default`) may spend a live capability
 of any role. That gateway call binds the capability's role to the agent's

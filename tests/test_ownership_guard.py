@@ -1275,10 +1275,23 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
 
         self.assertIsNone(role)
 
+    def test_the_guard_caps_expiry_at_the_gateways_session_ttl(self):
+        sys.path.insert(0, str(PLUGIN_ROOT))
+        try:
+            from mcp.gateway import Gateway
+        finally:
+            sys.path.pop(0)
+        self.assertEqual(load_guard().SESSION_TTL_SECONDS,
+                         Gateway.DEFAULT_SESSION_TTL_SECONDS)
+
     def test_every_malformed_persisted_session_shape_is_denied(self):
         mutations = (
             ("closed", lambda record: record.update(status="closed")),
             ("expired", lambda record: record.update(expires_at=0)),
+            (
+                "expiry past the session ttl",
+                lambda record: record.update(expires_at=time.time() + 3600),
+            ),
             (
                 "wrong hash",
                 lambda record: record.update(capability_hash="0" * 64),

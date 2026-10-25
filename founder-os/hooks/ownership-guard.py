@@ -104,6 +104,9 @@ SESSION_FIELDS = frozenset({
     "correlation_id", "workflow", "expires_at", "status",
 })
 AGENT_MAPPING_TTL_SECONDS = 24 * 60 * 60
+# `mcp/gateway.py::Gateway.DEFAULT_SESSION_TTL_SECONDS`, pinned equal by
+# tests. A record expiring later than this from now was edited, not minted.
+SESSION_TTL_SECONDS = 1800
 
 # The founder's local overlay (references/extensibility.md). `_local/` is the
 # directory; the file below it is the additive half of the ownership map.
@@ -630,6 +633,7 @@ def _session_role(tool_input):
         or not isinstance(expires_at, (int, float))
         or not math.isfinite(float(expires_at))
         or now >= float(expires_at)
+        or float(expires_at) > now + SESSION_TTL_SECONDS
     ):
         return None
     return role

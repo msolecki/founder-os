@@ -22,7 +22,7 @@ if str(PACKAGE_ROOT) not in sys.path:
 from mcp.gateway import Gateway
 from mcp.ownership import OwnershipError, OwnershipSchema
 from mcp.safe_io import SafeStateIO
-from mcp.sessions import JournalError, RoleSessionStore
+from mcp.sessions import JournalError, RoleSessionError, RoleSessionStore
 from mcp.workspaces import WorkspaceResolver
 
 
@@ -825,6 +825,55 @@ class StateGatewayWriteTests(unittest.TestCase):
                 )
                 self.assertTrue(response["isError"], response)
         self.assertFalse((self.workspace / "metrics.md").exists())
+
+    def test_a_session_record_this_gateway_did_not_mint_is_refused(self):
+        # SEC-03: a well-formed record on disk is not a capability. One left
+        # by an earlier gateway process (a restart) and one written by hand
+        # are both refused, and neither file is rewritten.
+        earlier_process = RoleSessionStore(
+            data_root=self.data_root,
+            packaged_root=self.package,
+            clock=lambda: self.clock_value,
+            ttl_seconds=300,
+        )
+        earlier = earlier_process.open(
+            self.binding.workspace_id, "cfo", "corr-earlier",
+            "revenue-review", "business",
+        )
+        earlier_process.resolve(earlier)
+        record_path = self.sessions._record_path(
+            self.sessions._capability_hash(earlier))
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        forged = "forged-capability-" + "x" * 32
+        forged_hash = self.sessions._capability_hash(forged)
+        forged_path = self.sessions._record_path(forged_hash)
+        forged_path.write_text(json.dumps(dict(
+            record, capability_hash=forged_hash)), encoding="utf-8")
+        for label, capability, path in (("restart", earlier, record_path),
+                                        ("forged", forged, forged_path)):
+            with self.subTest(label):
+                before = path.read_bytes()
+                with self.assertRaises(RoleSessionError):
+                    self.sessions.resolve(capability)
+                response = self._write(
+                    capability, "metrics.md", _metrics(), create_only=True)
+                self.assertTrue(response["isError"], response)
+                self.assertEqual(before, path.read_bytes())
+        self.assertFalse((self.workspace / "metrics.md").exists())
+
+    def test_an_expiry_past_the_session_ttl_is_refused(self):
+        capability = self._open("cfo", correlation_id="corr-ttl-cap")
+        self.sessions.resolve(capability)  # now + ttl exactly is the TTL
+        record_path = self.sessions._record_path(
+            self.sessions._capability_hash(capability))
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        record["expires_at"] = self.clock_value + 300 + 1
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        with self.assertRaises(RoleSessionError):
+            self.sessions.resolve(capability)
+        response = self._write(
+            capability, "metrics.md", _metrics(), create_only=True)
+        self.assertTrue(response["isError"], response)
 
     def test_strategist_cannot_write_metrics_and_is_handed_to_canonical_owner(self):
         capability = self._open("strategist", correlation_id="corr-denial")
