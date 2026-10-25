@@ -98,12 +98,13 @@ answers *what is outstanding*, which is the only question a brief that closes at
 08:15 cannot answer for itself. Run `queue` and it is the reason your advice
 survives the session that produced it.
 
-That is also why the queue is yours and nobody else's. **Eight cadences propose
+That is also why the queue is yours and nobody else's. **Eleven cadences propose
 into it** — `pipeline-review`, `revenue-review`, `content-plan`,
-`quarterly-planning`, `follow-up-sweep`, and the three draft skills,
+`quarterly-planning`, `follow-up-sweep`, `week-plan`, `calendar-audit`,
+`runway-forecast`, and the three draft skills,
 `outreach-draft`, `proposal-draft` and `content-draft`. Every one of them would
-happily hold its own list instead. That is eight private lists, none of them
-ranked against each other, which is eight answers to a question that has exactly
+happily hold its own list instead. That is eleven private lists, none of them
+ranked against each other, which is eleven answers to a question that has exactly
 one. They propose; you write. Take the handoff by name, apply the caps, and drop
 what has aged out.
 

@@ -142,22 +142,24 @@ Read for one named section only:
    inbox emptied is seven of the founder's own sentences that now exist in no
    file, and `triage` reads them from here because the inbox no longer holds them.
 
-   Eight cadences produce obligations and none of them may write `queue.md` —
+   Eleven cadences produce obligations and none of them may write `queue.md` —
    `pipeline-review`,
-   `revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`, and
+   `revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`,
+   `week-plan`, `calendar-audit`, `runway-forecast`, and
    the three draft skills, `outreach-draft`, `proposal-draft` and `content-draft`.
-   All eight hand to the **Chief of Staff** by name. Five of them fire on a
+   All eleven hand to the **Chief of Staff** by name. Seven of them fire on a
    schedule, with nobody in the room to hand to; the three draft skills run with
    the founder present, so those the founder can hand over directly. **You are
    the Chief of Staff and this is the room.** Each leaves a `Proposed:` line in the
    section it owns; you read those sections; you take the item or you refuse it.
 
-   **Eight cadences, still five sections, no new file.** `outreach-draft` and
+   **Eleven cadences, no new file.** `outreach-draft` and
    `proposal-draft` propose into `pipeline.md`; `content-draft` proposes into
-   `content.md`. You already open both. This does not widen the `context-load`
-   exemption you run under, and that is not luck — the draft skills propose into
-   the file they already own precisely so that the brief's read set could stay
-   where it is. A draft skill that wanted a book of its own would have cost you the
+   `content.md`; `runway-forecast` proposes into `metrics.md` `## Close`. You
+   already open all three. `week-plan` and `calendar-audit` propose into
+   `week.md`, the only file they own, so their blocked runs widen the read set
+   by two named sections. The draft skills propose into the file they already
+   own precisely so that the brief's read set could stay where it is. A draft skill that wanted a book of its own would have cost you the
    exemption, and `context-load` step 5 is where that argument gets settled, not
    here.
 
