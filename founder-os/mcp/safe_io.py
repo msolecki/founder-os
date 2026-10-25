@@ -554,6 +554,9 @@ class SafeStateIO:
         before_sha256: Optional[str] = None
 
         try:
+            # One lock file per written file name, left beside it on purpose:
+            # unlinking it would let a second writer lock a fresh inode while
+            # the first still holds the old one. Hidden, empty, and harmless.
             lock_name = ".founder-os-write-{0}.lock".format(
                 hashlib.sha256(target_name.encode("utf-8")).hexdigest()
             )

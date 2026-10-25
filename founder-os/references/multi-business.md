@@ -42,8 +42,8 @@ portfolio: /Users/x/.founder-os/portfolio   # scaffolded with the 2nd business
   makes the registry unreadable, because every business role would resolve to
   a workspace it is refused in.
 - **`portfolio`** is a reserved selector, not a slug: no business may take it,
-  and naming it (`/founder-os:portfolio-review portfolio`, or `portfolio` as
-  the gateway's `business_slug`) selects the `portfolio:` workspace. Only the
+  and naming it (as the business in the invocation, or as the gateway's
+  `business_slug`) selects the `portfolio:` workspace. Only the
   Portfolio Manager may open a session there.
 
 ## How a session picks a business

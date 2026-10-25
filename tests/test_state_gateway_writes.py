@@ -6,9 +6,11 @@ import os
 from pathlib import Path
 import sys
 import stat
+import subprocess
 import tempfile
 import textwrap
 import threading
+import time
 import unittest
 from unittest import mock
 
@@ -1184,6 +1186,55 @@ class StateGatewayWriteTests(unittest.TestCase):
         archive.mkdir()
         with self.assertRaises(JournalError):
             self.sessions.preflight_journal()
+
+    def test_a_held_journal_lock_fails_the_write_instead_of_freezing(self):
+        capability = self._open("cfo")
+        os.close(self.sessions.preflight_journal())  # creates the journal
+        holder = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "import fcntl, sys, time\n"
+                "handle = open(sys.argv[1], 'a')\n"
+                "fcntl.flock(handle, fcntl.LOCK_EX)\n"
+                "print('locked', flush=True)\n"
+                "time.sleep(60)\n",
+                str(self.data_root / "operations.jsonl"),
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            self.assertEqual("locked", holder.stdout.readline().strip())
+            self.sessions.JOURNAL_LOCK_TIMEOUT_SECONDS = 0.3
+            started = time.monotonic()
+            response = self._write(
+                capability, "metrics.md", _metrics(), create_only=True
+            )
+            self.assertLess(time.monotonic() - started, 5)
+        finally:
+            holder.kill()
+            holder.wait()
+            holder.stdout.close()
+        self._assert_error(response, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "metrics.md").exists())
+
+    def test_an_oversized_final_status_is_refused(self):
+        capability = self._open("cfo")
+        response = self._call(
+            "close_role_session",
+            {"capability": capability, "final_status": "x" * 100_000},
+        )
+        self._assert_error(response, code="ROLE_SESSION_INVALID")
+
+    def test_an_oversized_session_record_is_pruned_by_age(self):
+        self.data_root.mkdir(parents=True, exist_ok=True)
+        oversized = self.data_root / ("a" * 64 + ".json")
+        oversized.write_text("x" * 100_000, encoding="utf-8")
+        old = self.clock_value - RoleSessionStore.SESSION_RETENTION_SECONDS - 1
+        os.utime(oversized, (old, old))
+        self._open("cfo")
+        self.assertFalse(oversized.exists())
 
     def test_concurrent_journal_preflights_are_serialized(self):
         first = self.sessions.preflight_journal()
