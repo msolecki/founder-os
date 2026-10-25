@@ -773,6 +773,22 @@ class TestCheckHooks(unittest.TestCase):
         real = Path(__file__).resolve().parents[1] / "founder-os"
         self.assertEqual(V.check_hooks(real, {}), [])
 
+    def test_every_script_a_hook_command_runs_must_exist_and_compile(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": ".*", "hooks": []}],
+            "Stop": [{"hooks": [
+                {"type": "command", "timeout": 5, "command":
+                    'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/nudge.py"'},
+                {"type": "command", "timeout": 5, "command":
+                    'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/broken.py"'}]}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        write(self.root / "hooks" / "broken.py", "def broken(:\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertIn("hooks/nudge.py: missing", errs)
+        self.assertTrue(
+            any(e.startswith("hooks/broken.py: does not compile") for e in errs),
+            errs)
+
     def test_invalid_regex_matcher_is_an_error_not_a_crash(self):
         write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
             "PreToolUse": [{"matcher": "([", "hooks": []}]}}))
@@ -806,6 +822,25 @@ class TestCheckHooks(unittest.TestCase):
         write(guidance, "x" * (V.HOOK_OUTPUT_CAP - V.HOOK_OUTPUT_ROOM + 1))
         errs = V.check_hooks(self.root, {})
         self.assertTrue(any("hook output cap" in e for e in errs), errs)
+
+
+class TestCheckVersionSites(unittest.TestCase):
+    def setUp(self):
+        self.repo = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.repo, ignore_errors=True)
+        self.root = self.repo / "founder-os"
+        write(self.root / ".claude-plugin" / "plugin.json",
+              json.dumps({"name": "founder-os", "version": "1.0.0"}))
+
+    def test_a_fixture_without_the_bump_script_is_skipped(self):
+        self.assertEqual([], V.check_version_sites(self.root, {}))
+
+    def test_a_checkout_without_the_bump_script_fails(self):
+        (self.repo / ".git").mkdir()
+        errs = V.check_version_sites(self.root, {})
+        self.assertEqual(1, len(errs), errs)
+        self.assertTrue(errs[0].startswith("scripts/bump_version.py: missing"),
+                        errs)
 
 
 class TestCheckSurface(unittest.TestCase):

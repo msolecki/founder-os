@@ -57,7 +57,7 @@ SITES = (
 RECORDS = (
     ("tests/test_release_metadata.py",
      r'PUBLISHED_RELEASE = "(\d+\.\d+\.\d+)"',
-     "the most recent published tag"),
+     "a frozen fixture naming one release that shipped"),
     ("docs/development.md",
      r'`v(\d+\.\d+\.\d+)` was tagged with',
      "the worked example of a rewritten release entry"),
@@ -146,9 +146,14 @@ def main(argv=None) -> int:
     if was == args.version:
         parser.error("the package is already %s" % args.version)
 
-    apply = not args.dry_run
-    heading = open_release(REPO_ROOT, args.version, released_on, apply)
-    changes = rewrite(REPO_ROOT, args.version, apply)
+    # Both passes read and check everything before either writes, so a site
+    # that no longer matches stops the bump with the tree untouched rather
+    # than half-bumped behind an already-renamed changelog.
+    heading = open_release(REPO_ROOT, args.version, released_on, False)
+    changes = rewrite(REPO_ROOT, args.version, False)
+    if not args.dry_run:
+        open_release(REPO_ROOT, args.version, released_on, True)
+        rewrite(REPO_ROOT, args.version, True)
 
     width = max(len(relative) for relative, _, _ in changes)
     for relative, previous, _ in changes:
