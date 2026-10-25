@@ -441,6 +441,14 @@ class TestPipelineReadsOnlyRecordedMoney(unittest.TestCase):
         self.assertIn("1 marked [DISREGARD]", note)
         self.assertNotIn("[VALIDATE]", note)
 
+    def test_only_disregard_amounts_is_not_a_zero(self):
+        live = "\n### Acme — sprint\n\nAmount: $9,000 [DISREGARD]\n"
+        panel = analyze.build_pipeline(example_sources(lambda home: write(
+            home, "pipeline.md", "# Pipeline\n\n## Live\n%s\n## Last review\n"
+            % live)), TODAY)
+        self.assertEqual(fact(panel, "live_count").number, 1.0)
+        self.assertFalse(fact(panel, "live_amount").known)
+
 
 WON_TEMPLATE = """
 ### Acme — won 2026-08-15 — $18,000 — strategy sprint

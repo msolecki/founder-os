@@ -296,6 +296,9 @@ def build_pipeline(sources, today: date) -> Panel:
         amount = number_fact(
             "live_amount", total, "%s%s" % (symbol or "", _money(total)),
             live_cite, currency=symbol)
+    elif disregarded:
+        # Every amount here was DISREGARD: nothing admitted is not a $0.
+        amount = unknown("live_amount", live_cite)
     else:
         amount = number_fact("live_amount", 0, "%s0" % (symbol or ""), live_cite)
 
