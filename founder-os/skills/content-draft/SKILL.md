@@ -168,7 +168,7 @@ index, the draft file is the thing:
     One idea: <the single sentence>
     Evidence: <what happened, when, the number>
     Draft: [[YYYY-MM-DD-<slug>]]
-    Status: draft | HELD for morning re-read | shipped YYYY-MM-DD
+    Status: draft | HELD for morning re-read
     Proposed: publish "<title>" — [[YYYY-MM-DD-<slug>]] — bet: <B<n> | none> | none
 
 The fields are the other five proposers' fields exactly, and `bet:` is not optional
@@ -179,22 +179,30 @@ can draft two posts in an afternoon and a single line holds one of them.
 
 **`Draft:` and `Proposed:` both carry the same `[[slug]]` and that is not
 duplication.** They answer different questions and have different lifetimes:
-`Draft:` is the card's pointer to its body and lives as long as the card, following
-it into `## Shipped`. `Proposed:` is an obligation with a clock. When `daily-brief`
+`Draft:` is the card's pointer to its body and lives as long as the card; its
+`[[slug]]` follows the piece into its `## Shipped` line.
+`Proposed:` is an obligation with a clock. When `daily-brief`
 takes it, the queue item it creates carries `from: content.md <date>` so tomorrow's
 brief leaves the line alone — `daily-brief` cannot write `content.md`, and does not
 need to. The line is yours to clear when the card ships or you supersede it.
 Clearing `Proposed:` must never orphan the card from its body: `Draft:` is what
 joins them, and it stays.
 
-On publication, move the card to `## Shipped` with its date, channel and link —
-`content-plan` computes the cadence from the trailing four weeks of that list.
+When the founder reports it published — in this session or any later one, and
+never on a scheduled date passing — remove the card from `## Drafts` and append
+one line to `## Shipped`, the only `## Shipped` format, the one `content-plan`
+counts the trailing four weeks from:
+
+    ## Shipped
+    - YYYY-MM-DD — <title> — <channel> — <link> — conversations produced: <n | unknown> — [[YYYY-MM-DD-<slug>]]
+
 **The draft file stays in `drafts/content/`.** It is not moved, not deleted, and
 not tidied: `## Sent` carries the published version, which is the only durable
 sample of the founder's public register this package will ever hold.
 
 **When the founder tells you what they published, write it verbatim under
-`## Sent`, then run `voice-capture` on that file.** Both skills are the **Brand
+`## Sent` in the same step, then run `voice-capture` on that file.** A report that
+arrives in a later session is recorded the same way, by this skill. Both skills are the **Brand
 Editor's**, so this costs one step — and it used to get skipped for exactly that
 reason, because it felt like bookkeeping and the moment passed.
 

@@ -161,11 +161,13 @@ the path, and the next `daily-brief` drains it — step 0 there. Write `none`
 explicitly on the Wednesdays there is nothing, which is most of them: an absent
 line reads to the brief exactly like a cadence that forgot.
 
-Append to `## Shipped` as pieces go out — this is what the trailing-four-week
-cadence is computed from, so it is not optional bookkeeping:
+`## Shipped` is what the trailing-four-week cadence is computed from, so it is not
+optional bookkeeping. This plan reads it and does not write it: `content-draft`
+appends one line per piece, only when the founder reports it published, in the
+one format both skills use:
 
     ## Shipped
-    - YYYY-MM-DD — <title> — <channel> — <link> — conversations produced: <n | unknown>
+    - YYYY-MM-DD — <title> — <channel> — <link> — conversations produced: <n | unknown> — [[YYYY-MM-DD-<slug>]]
 
 ## Guardrails
 

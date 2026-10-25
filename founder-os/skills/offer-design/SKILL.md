@@ -119,7 +119,8 @@ it and `scope-guard` (Delivery Lead) enforces it. An exclusion that is not
 written here cannot be defended later, and "we both understood that wasn't
 included" has never once worked.
 
-Changing what the company sells is material. Log it via `decision-log`.
+Changing what the company sells is material. Return a `/decision-log` request
+to the **Chief of Staff**, who owns `decisions/`.
 
 ## Guardrails
 

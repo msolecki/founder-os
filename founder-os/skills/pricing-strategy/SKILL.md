@@ -116,8 +116,8 @@ Write to `offer.md`, replacing the `## Pricing` section entirely:
     Effective rate, last 3 engagements: <n> vs target <n> (metrics.md YYYY-MM-DD)
     Flinch rate: <n> of last <n> qualified prospects
 
-A price change is material. Log it via `decision-log` — what changed, why, and
-what would send it back.
+A price change is material. Return a `/decision-log` request to the **Chief of
+Staff**, who owns `decisions/` — what changed, why, and what would send it back.
 
 ## Guardrails
 
