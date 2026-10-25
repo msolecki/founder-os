@@ -99,8 +99,6 @@ body:
       label: Host
       options:
         - Claude Code
-        - Codex
-        - Both
     validations:
       required: true
   - type: input
