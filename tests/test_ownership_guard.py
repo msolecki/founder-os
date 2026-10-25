@@ -67,7 +67,10 @@ class TestLazyYamlImport(unittest.TestCase):
 
         self.assertEqual(imported, [])
 
+
 class TestOwnerOfCasefold(unittest.TestCase):
+    """The guard's owner lookup: the shared `owner_key`, casefolded."""
+
     BY_PATH = {
         "goals.md": "strategist",
         "drafts/outreach/": "pipeline-coach",
@@ -75,31 +78,59 @@ class TestOwnerOfCasefold(unittest.TestCase):
     }
 
     def setUp(self):
-        self.guard = load_guard()
+        self.matcher = load_guard()._ownership_module()
+
+    def owner_of(self, rel, by_path):
+        return by_path.get(self.matcher.owner_key(rel, by_path))
 
     def test_exact_match_still_works(self):
-        self.assertEqual(self.guard.owner_of("goals.md", self.BY_PATH),
+        self.assertEqual(self.owner_of("goals.md", self.BY_PATH),
                          "strategist")
 
     def test_file_case_variant_is_the_same_file(self):
-        self.assertEqual(self.guard.owner_of("Goals.md", self.BY_PATH),
+        self.assertEqual(self.owner_of("Goals.md", self.BY_PATH),
                          "strategist")
-        self.assertEqual(self.guard.owner_of("GOALS.MD", self.BY_PATH),
+        self.assertEqual(self.owner_of("GOALS.MD", self.BY_PATH),
                          "strategist")
 
     def test_directory_case_variant_is_the_same_directory(self):
         self.assertEqual(
-            self.guard.owner_of("Drafts/Outreach/2026-07-16-anna.md",
+            self.owner_of("Drafts/Outreach/2026-07-16-anna.md",
                                 self.BY_PATH),
             "pipeline-coach")
 
     def test_longest_match_survives_casefold(self):
         self.assertEqual(
-            self.guard.owner_of("DRAFTS/OUTREACH/x.md", self.BY_PATH),
+            self.owner_of("DRAFTS/OUTREACH/x.md", self.BY_PATH),
             "pipeline-coach")
 
     def test_uncovered_path_still_returns_none(self):
-        self.assertIsNone(self.guard.owner_of("scratch.md", self.BY_PATH))
+        self.assertIsNone(self.owner_of("scratch.md", self.BY_PATH))
+
+    def test_a_grant_needs_the_maps_spelling(self):
+        # One matcher, one case rule: the guard denies `Goals.md` as
+        # `goals.md`, and the gateway and validator, which grant, still
+        # refuse to hand anyone a second spelling of the file.
+        schema = self.matcher.OwnershipSchema.load(
+            PLUGIN_ROOT / "references" / "ownership.yaml")
+        owner = schema.owner_for("goals.md")
+        self.assertIsNotNone(owner)
+        self.assertIsNone(schema.owner_for("Goals.md"))
+        self.assertEqual(self.matcher.owner_key(
+            "Goals.md", ["goals.md"]), "goals.md")
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        try:
+            import validate_package
+        finally:
+            sys.path.pop(0)
+        from pathlib import PurePosixPath
+        by_path = {"goals.md": owner, "drafts/": "pipeline-coach"}
+        self.assertEqual(validate_package._owner_for(
+            by_path, PurePosixPath("goals.md")), owner)
+        self.assertIsNone(validate_package._owner_for(
+            by_path, PurePosixPath("Goals.md")))
+        self.assertEqual(validate_package._owner_for(
+            by_path, PurePosixPath("drafts/x.md")), "pipeline-coach")
 
 
 class TestHookIntegration(unittest.TestCase):
@@ -322,10 +353,10 @@ class TestDerivedEntryMatching(unittest.TestCase):
     ENTRIES = ("_dashboard/",)
 
     def setUp(self):
-        self.guard = load_guard()
+        self.matcher = load_guard()._ownership_module()
 
-    def _entry(self, rel):
-        return self.guard._derived_entry(rel, self.ENTRIES)
+    def _entry(self, rel, entries=ENTRIES):
+        return self.matcher.derived_entry(rel, entries)
 
     def test_a_file_under_the_directory_matches(self):
         self.assertEqual(self._entry("_dashboard/notes.md"), "_dashboard/")
@@ -349,13 +380,13 @@ class TestDerivedEntryMatching(unittest.TestCase):
 
     def test_an_entry_written_without_its_slash_still_covers_the_tree(self):
         self.assertEqual(
-            self.guard._derived_entry("_dashboard/notes.md", ("_dashboard",)),
+            self._entry("_dashboard/notes.md", ("_dashboard",)),
             "_dashboard")
         self.assertIsNone(
-            self.guard._derived_entry("_dashboardish/x.md", ("_dashboard",)))
+            self._entry("_dashboardish/x.md", ("_dashboard",)))
 
     def test_no_entries_means_no_match(self):
-        self.assertIsNone(self.guard._derived_entry("_dashboard/notes.md", ()))
+        self.assertIsNone(self._entry("_dashboard/notes.md", ()))
 
 
 class TestDerivedFilesAreParsedByThePackageParser(unittest.TestCase):
@@ -1830,7 +1861,7 @@ class TestRuntimeShapeFailOpen(unittest.TestCase):
 
     def test_role_name_in_the_wrong_case_is_still_the_role(self):
         # Role-ness decides whether the lockdown applies at all, so a near
-        # miss has to resolve toward the restricted reading. `owner_of` is
+        # miss has to resolve toward the restricted reading. `owner_key` is
         # casefolded and APFS is too, so the alternative is an identity that
         # is "not a role" to the lockdown and the CFO to the ownership map.
         for agent_type in ("founder-os:CFO", "FOUNDER-OS:cfo", "Cfo"):

@@ -491,35 +491,29 @@ def check_workspace_files_complete(root, agents):
     return errs
 
 
-def _derived_segments(value):
-    return tuple(part.casefold() for part in PurePosixPath(str(value)).parts)
+def _ownership_matchers():
+    """`founder-os/mcp/ownership.py`, loaded by path, for its two matchers.
+
+    The guard, the gateway and this validator share `owner_key` and
+    `derived_entry`, so a map this check accepts is a map the guard reads the
+    same way. Loaded from this repository, not from `root`, because a test
+    fixture package carries a map and no `mcp/`.
+    """
+    module = sys.modules.get("_founder_os_validator_ownership")
+    if module is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "_founder_os_validator_ownership",
+            Path(__file__).resolve().parents[1] / "founder-os" / "mcp"
+            / "ownership.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules[spec.name] = module
+    return module
 
 
 def _under_derived(derived, path):
-    """Is `path` the derived entry, or inside it?
-
-    A `derived_files:` entry ending in `/` names a directory, and exact string
-    equality reads it as a file with a slash in its name: `_dashboard/` matched,
-    `_dashboard/snapshots/` did not, so a path one segment down walked through
-    all three joins below. Compare segments instead, the rule `_owner_for`
-    already applies to an ownership prefix — `_dashboard/` covers
-    `_dashboard/today.html` and does not cover `_dashboardx/today.html`.
-
-    Casefolded, and the trailing slash is read as decoration rather than
-    required, because `hooks/ownership-guard.py:_derived_entry` is the rule that
-    decides at write time and that is what it does. Three matchers for one map
-    meant a map this check accepted could be a map the guard denies: with
-    `_Dashboard/` declared derived, `_dashboard/snapshots/` passed here and was
-    refused on the founder's machine. The deny list is the place to be broad —
-    an entry that lost its slash is a typo, and the safe reading of a typo in a
-    deny list is the one that still covers the directory.
-    """
-    candidate = _derived_segments(path)
-    for entry in derived:
-        prefix = _derived_segments(entry)
-        if prefix and candidate[:len(prefix)] == prefix:
-            return True
-    return False
+    return _ownership_matchers().derived_entry(str(path), derived) is not None
 
 
 def check_derived_files(root, agents):
@@ -1556,20 +1550,10 @@ def _safe_state_path(value):
 
 
 def _owner_for(ownership, path):
-    matches = []
-    for prefix, owner in ownership.items():
-        raw_prefix = str(prefix)
-        prefix_path = PurePosixPath(raw_prefix)
-        parts = prefix_path.parts
-        is_owned = (
-            path == prefix_path
-            if not raw_prefix.endswith("/")
-            else len(path.parts) > len(parts)
-            and path.parts[:len(parts)] == parts
-        )
-        if is_owned:
-            matches.append((len(parts), owner))
-    return max(matches)[1] if matches else None
+    """The owner the gateway would grant `path` to (`owner_key`, exact spelling)."""
+    value = path.as_posix()
+    key = _ownership_matchers().owner_key(value, ownership)
+    return ownership[key] if key is not None and value.startswith(key) else None
 
 
 def delegation_request_errors(package_root, agents, request,

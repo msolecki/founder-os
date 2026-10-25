@@ -82,6 +82,9 @@ loaded by path, so it enforces the same map with or without PyYAML installed.
 not switch the derived deny off. A map in a shape that parser does not accept
 (flow lists, tabs, other indents) is logged and ignored: less coverage, never a
 deny, and never a change to the role lockdown, which does not read the map.
+Guard, gateway and validator match paths with the same two functions
+(`owner_key`, `derived_entry`), casefolded: the guard denies `Goals.md` as
+`goals.md`, and the gateway grants a write only to the map's own spelling.
 
 For a known packaged role, the guard:
 

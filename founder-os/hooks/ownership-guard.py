@@ -478,64 +478,6 @@ def resolve_in_workspace(file_path, hook_cwd, roots=None):
     return (None, None)
 
 
-def owner_of(rel, by_path):
-    """Owner of a workspace-relative path, or None if the map doesn't cover it.
-
-    Entries are flat files (`goals.md`) or directories (`decisions/`,
-    `reviews/daily/`, `clients/`). Longest match wins, so a nested entry beats a
-    broader one that also matches.
-
-    An uncovered path returns None and is allowed. The map governs the files it
-    names; a scratch file someone dropped in the workspace has no owner to be
-    stolen from, and inventing one is how you block a founder's own note.
-
-    Comparison is case-folded: the workspace ships lowercase, but APFS is
-    case-insensitive by default, so `Goals.md` and `goals.md` are one file on a
-    Mac — matched exactly, the map is dodged by a shift key. On a case-sensitive
-    filesystem this can deny a legitimately distinct `Goals.md`; a workspace
-    that distinguishes files by case alone has worse problems than this deny.
-    """
-    best, best_owner = None, None
-    rel_cmp = rel.casefold()
-    for entry, agent in by_path.items():
-        entry_cmp = entry.casefold()
-        if entry.endswith("/"):
-            if not rel_cmp.startswith(entry_cmp):
-                continue
-        elif rel_cmp != entry_cmp:
-            continue
-        if best is None or len(entry) > len(best):
-            best, best_owner = entry, agent
-    return best_owner
-
-
-def _derived_entry(rel, derived):
-    """The `derived_files:` entry covering a workspace-relative path, or None.
-
-    Matched by path *segment*, never by string prefix: `_dashboard/` covers
-    `_dashboard` and everything under `_dashboard/`, and covers neither
-    `_dashboard_secrets.md` nor `_dashboardish/x.md`. A prefix test would deny
-    both of those, and a deny the founder cannot explain from the map is how a
-    guard stops being read as a map.
-
-    The trailing slash is stripped rather than required, because an entry that
-    lost it is a typo in the map and the safe reading of a typo in a deny list
-    is the broader one. Casefolded to agree with `owner_of` — a map dodged by a
-    shift key is not a map.
-
-    `rel` arrives from `resolve_in_workspace`, which has already realpath'd and
-    normalized it, so there is no `..` left here to walk out of the directory.
-    """
-    rel_cmp = rel.casefold()
-    for entry in derived:
-        entry_cmp = entry.casefold().rstrip("/")
-        if not entry_cmp:
-            continue
-        if rel_cmp == entry_cmp or rel_cmp.startswith(entry_cmp + "/"):
-            return entry
-    return None
-
-
 def _deny_tool(agent_type, tool_name, reason):
     deny(
         "Founder OS role boundary: `%s` may not use `%s`. %s\n\n"
@@ -556,7 +498,7 @@ def _role_of(agent_type):
     as ``<their-plugin>:cfo`` — that is their agent, and it must not inherit the
     founder's CFO authority at the gateway. It is a stranger, handled as one.
 
-    The bare segment is matched casefolded because `owner_of` is casefolded and
+    The bare segment is matched casefolded because `owner_key` is casefolded and
     the filesystem may be too: without this, ``founder-os:CFO`` would be "not a
     role" to the lockdown and the CFO to the ownership map at the same time.
     Role-ness decides whether the lockdown applies at all, so a near miss has
@@ -884,7 +826,8 @@ def check_derived(agent_type, rel, derived):
     why the deny text names the tools it reads rather than claiming the
     absolute. `check_local_map` judges both names the same way.
     """
-    entry = _derived_entry(rel, derived)
+    # Non-empty `derived` means `_ownership_module` loaded; it holds the matcher.
+    entry = _ownership_module().derived_entry(rel, derived) if derived else None
     if entry is None:
         return
     deny(
@@ -984,7 +927,9 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
         for spelled_rel in _workspace_rels(file_path, hook_cwd, roots):
             check_local_map(agent_type, spelled_rel)
             check_derived(agent_type, spelled_rel, derived)
-        owner = owner_of(rel, merged_ownership(by_path, root))
+        # Casefolded (`owner_key`): this is a deny, so the broad reading.
+        merged = merged_ownership(by_path, root)
+        owner = merged.get(_ownership_module().owner_key(rel, merged))
         if owner is None:
             log("allow: %s has no owner in the map" % rel)
             continue

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import AbstractSet, Dict, List, Optional, Tuple
+from typing import AbstractSet, Dict, Iterable, List, Optional, Tuple
 
 
 _REQUIRED_TOP_LEVEL_KEYS = {
@@ -197,34 +197,52 @@ def _validate_requested_path(value: str) -> str:
     return value
 
 
-def _derived_segments(value: str) -> Tuple[str, ...]:
-    return tuple(part.casefold() for part in value.split("/") if part)
+def owner_key(path: str, keys: Iterable[str]) -> Optional[str]:
+    """The `owns:` entry that governs a workspace-relative path, or None.
 
+    The one owner matcher: the guard, the gateway and the validator all call
+    it. An entry is a file (`goals.md`) or a directory (`decisions/`), and the
+    longest match wins, so `drafts/outreach/` beats `drafts/`.
 
-def _is_derived(derived_files: List[str], value: str) -> bool:
-    """Is `value` a derived path, or a path inside a derived directory?
-
-    A `derived_files:` entry ending in `/` names a directory, and comparing the
-    two lists as sets read that slash as part of a filename: `_dashboard/` was
-    refused as owned state and `_dashboard/snapshots/` was accepted one segment
-    down, with `owner_for("_dashboard/snapshots/x.md")` then answering with a
-    role.
-
-    Matched by segment, casefolded, and with the trailing slash optional rather
-    than required, because `hooks/ownership-guard.py:_derived_entry` is what
-    decides at write time and that is the rule it applies. A map this loader
-    accepts and the guard reads as derived hands an agent an owner for a path it
-    will then be refused: with `_Dashboard/` declared derived,
-    `_dashboard/snapshots/` was owned here and denied there. Broad is the safe
-    direction for a deny list, and `_dashboardx/` is a different first segment,
-    so it stays outside.
+    The case rule is casefolding, everywhere. APFS is case-insensitive by
+    default, so `Goals.md` *is* `goals.md` on a Mac and an exact match lets a
+    shift key dodge the map. For a deny — the guard — the casefolded answer is
+    used as is: the stricter reading, and on a case-sensitive filesystem it can
+    refuse a distinct `Goals.md`, which a workspace that tells files apart by
+    case alone has earned. A *grant* — the gateway's write, the validator's
+    `expected_persistence` check — also requires the path to start with the
+    entry spelled as the map spells it, so the gateway never writes a second
+    `Goals.md` beside `goals.md` on Linux. Broad to refuse, exact to allow.
     """
-    parts = _derived_segments(value)
-    for entry in derived_files:
-        prefix = _derived_segments(entry)
+    folded = path.casefold()
+    best: Optional[str] = None
+    for key in keys:
+        entry = key.casefold()
+        if folded.startswith(entry) if key.endswith("/") else folded == entry:
+            if best is None or len(key) > len(best):
+                best = key
+    return best
+
+
+def derived_entry(path: str, derived: Iterable[str]) -> Optional[str]:
+    """The `derived_files:` entry covering `path`, or None.
+
+    The one derived-path matcher, for the guard's write-time deny, this
+    loader's refusal of an owned derived path, and the validator's joins.
+    Matched by path *segment*, never by string prefix: `_dashboard/` covers
+    `_dashboard` and everything under it, and covers neither
+    `_dashboard_secrets.md` nor `_dashboardish/x.md`. Casefolded like
+    `owner_key`, and the trailing slash is optional rather than required: an
+    entry that lost it is a typo, and the safe reading of a typo in a deny list
+    is the broader one. With `_Dashboard/` declared derived, a loader that
+    compared exactly owned `_dashboard/snapshots/` and the guard denied it.
+    """
+    parts = [part.casefold() for part in path.split("/") if part]
+    for entry in derived:
+        prefix = [part.casefold() for part in entry.split("/") if part]
         if prefix and parts[:len(prefix)] == prefix:
-            return True
-    return False
+            return entry
+    return None
 
 
 def load_document(path: Path) -> Dict[str, object]:
@@ -332,7 +350,7 @@ class OwnershipSchema:
             _validate_owned_path(derived_path)
         if len(set(derived_files)) != len(derived_files):
             raise _schema_error()
-        if any(_is_derived(derived_files, owned_path) for owned_path in all_files):
+        if any(derived_entry(owned_path, derived_files) for owned_path in all_files):
             raise _schema_error()
 
         owners: Dict[str, str] = {}
@@ -383,16 +401,9 @@ class OwnershipSchema:
 
     def _matching_key(self, relative_path: str) -> Optional[str]:
         path = _validate_requested_path(relative_path)
-        matches = []
-        for owned_path in self._owners:
-            if owned_path.endswith("/"):
-                if path.startswith(owned_path):
-                    matches.append(owned_path)
-            elif path == owned_path:
-                matches.append(owned_path)
-        if not matches:
-            return None
-        return max(matches, key=len)
+        match = owner_key(path, self._owners)
+        # A grant: the path must spell the entry as the map does (`owner_key`).
+        return match if match is not None and path.startswith(match) else None
 
     def owner_for(self, relative_path: str) -> Optional[str]:
         match = self._matching_key(relative_path)
