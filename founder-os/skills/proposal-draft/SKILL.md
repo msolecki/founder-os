@@ -146,13 +146,15 @@ not sign, and does not invoice.
 **When the founder tells you what they actually sent, write it verbatim under
 `## Sent`, add `Proposal sent: YYYY-MM-DD` — the date they report — under the
 deal in `pipeline.md` `## Live`, then hand the file to `voice-capture` (Brand
-Editor) by path.** A
+Editor) by path.** A report that arrives in a later session is recorded the same
+way, by this skill. A
 proposal the founder rewrote before sending is the highest-stakes prose they
 produce, and the diff against `## Draft` is them correcting us with a deal on the
 table. It is also the founder's formal register, under pressure, with money on
 it, and `## Register` cannot be filled from cold outreach alone.
 
-Ask once. If they do not answer, leave `## Sent` empty — an empty `## Sent` is a
+Ask once, through the receipt's **Your move:** — the answer arrives in a later
+session's handoff. Until it does, leave `## Sent` empty — an empty `## Sent` is a
 true statement about what you know, and a guess at what they sent is a fabricated
 record of a contract.
 

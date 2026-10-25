@@ -81,7 +81,9 @@ Read first, in order — house rule 1:
    Move a deal to `## Won` only when the file already records it signed.
 4. **Ask the question that ends the argument: if this prospect said no
    tomorrow, would you be surprised?** If the founder would not be surprised, it
-   is already a no and the only thing missing is the writing down.
+   is already a no and the only thing missing is the writing down. The main thread
+   asks it before dispatch and passes each answer in the handoff; a deal the
+   handoff carries no answer for takes the unattended rule above.
 5. **Move every failed entry to `## Dead` with a cause.** Not "went quiet" —
    what specifically was the last thing that happened, and who went quiet first.
    Each entry in `## Dead` is an input to `win-loss-analysis`; a cause of "went

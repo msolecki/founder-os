@@ -122,7 +122,7 @@ Tuesday, and the founder can see the date it was constructed.
 this skill's own conclusion — not an ingested claim, and it carries `GUESS` when
 the prospect never spoke, which is the label house rule 2 already requires.
 
-When a cluster reaches three, that is material — log it via `decision-log` with
+When a cluster reaches three, that is material — return a `/decision-log` request to the **Chief of Staff** with
 what would change your mind, so the next quarter can check whether the fix
 worked instead of re-litigating the theory.
 

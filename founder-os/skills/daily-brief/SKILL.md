@@ -186,7 +186,10 @@ Read for one named section only:
    fills `## Doing` to its cap of three, that is step 2's finding arriving early —
    say it there, not here.
 
-1. **Check yesterday's commitment, in `## Doing`.** Did it happen? If it did,
+1. **Check yesterday's commitment, in `## Doing`.** Did it happen? `queue.md`
+   answers, not a question: an id in `## Done` happened, an id still in
+   `## Doing` did not — unless the handoff carries the founder's word that it
+   did. If it did,
    close it — run `queue`, which will ask what it emits, because *follow up with
    Anna* resolving into *draft the proposal* is the moment that proposal either
    gets an id or gets forgotten. If it didn't and it's the third day running,
