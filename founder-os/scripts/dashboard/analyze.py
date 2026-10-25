@@ -147,6 +147,12 @@ def _money(amount: float) -> str:
     return "{:,.0f}".format(amount)
 
 
+def _priced(symbol: Optional[str], amount: float) -> str:
+    """`$18,000`, or `PLN 15,000`: a code is a word and needs its space."""
+    symbol = symbol or ""
+    return "%s%s%s" % (symbol, " " if symbol.isalpha() else "", _money(amount))
+
+
 def _entry_amount(entry) -> parse.Value:
     """What an entry records as its amount, or a Value carrying no number.
 
@@ -241,7 +247,12 @@ def build_pipeline(sources, today: date) -> Panel:
 
     priced = [item for item in values if item.number is not None]
     currencies = sorted({item.currency or _UNMARKED for item in priced})
+    unread = len(entries) - len(priced)
     if len(currencies) > 1:
+        # A deal with no amount belongs to no currency, so every reading is
+        # short of it and says so, as the single-currency total does.
+        excluded = (" — excludes %d of %d deals that record no amount"
+                    % (unread, len(entries)) if unread else "")
         readings = tuple(
             Reading(
                 label=symbol or _UNMARKED_LABEL,
@@ -249,9 +260,9 @@ def build_pipeline(sources, today: date) -> Panel:
                     "live_amount", sum(
                         item.number for item in priced
                         if (item.currency or _UNMARKED) == symbol),
-                    "%s%s" % (symbol, _money(sum(
+                    _priced(symbol, sum(
                         item.number for item in priced
-                        if (item.currency or _UNMARKED) == symbol))),
+                        if (item.currency or _UNMARKED) == symbol)) + excluded,
                     live_cite, currency=symbol or None))
             for symbol in currencies)
         settle = (
@@ -267,7 +278,6 @@ def build_pipeline(sources, today: date) -> Panel:
             settle_with=settle)
 
     symbol = (currencies[0] if currencies else None) or None
-    unread = len(entries) - len(priced)
     if unread:
         # A sum of the deals that happened to carry a price, printed beside a
         # count of all of them, is a smaller number than the pipeline wearing
@@ -279,10 +289,10 @@ def build_pipeline(sources, today: date) -> Panel:
     elif priced:
         total = sum(item.number for item in priced)
         amount = number_fact(
-            "live_amount", total, "%s%s" % (symbol or "", _money(total)),
+            "live_amount", total, _priced(symbol, total),
             live_cite, currency=symbol)
     else:
-        amount = number_fact("live_amount", 0, "%s0" % (symbol or ""), live_cite)
+        amount = number_fact("live_amount", 0, _priced(symbol, 0), live_cite)
 
     facts = (amount,) + counted
     return Panel(id="pipeline", title="Pipeline", status=panel_status(facts),

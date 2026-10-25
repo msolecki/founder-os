@@ -435,7 +435,7 @@ class TestContestedPipeline(unittest.TestCase):
     def test_both_readings_are_on_the_page(self):
         self.assertIn("Two readings disagree", self.html)
         self.assertIn("$18,000", self.html)
-        self.assertIn("€15,000", self.html)
+        self.assertIn("EUR 15,000", self.html)
 
     def test_the_field_that_would_settle_it_is_named(self):
         settle = self.facts.panels["pipeline"].settle_with

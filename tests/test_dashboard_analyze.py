@@ -412,6 +412,32 @@ class TestPipelineReadsOnlyRecordedMoney(unittest.TestCase):
         self.assertEqual(fact(panel, "overdue_count").number, 1.0)
         self.assertTrue(fact(panel, "coverage").known)
 
+    def test_contested_readings_say_an_unpriced_deal_is_excluded(self):
+        def mutate(home):
+            edit("pipeline.md", "Amount: $15,000 [VALIDATE]",
+                 "Amount: €15,000")(home)
+            edit("pipeline.md", "## Won",
+                 "### Initech — discovery — new\n\nNext action: call — "
+                 "2026-07-25\n\n## Won")(home)
+        panel = analyze.build_pipeline(example_sources(mutate), TODAY)
+        self.assertEqual(panel.status, analyze.STATUS_CONTESTED)
+        self.assertEqual(fact(panel, "live_count").number, 3.0)
+        for reading in panel.readings:
+            self.assertIn("excludes 1 of 3 deals that record no amount",
+                          reading.fact.display)
+
+    def test_one_currency_under_two_spellings_is_one_total(self):
+        def mutate(home):
+            edit("pipeline.md", "Amount: $18,000", "Amount: 18 000 zł")(home)
+            edit("pipeline.md", "Amount: $15,000 [VALIDATE]",
+                 "Amount: PLN 15 000")(home)
+        panel = analyze.build_pipeline(example_sources(mutate), TODAY)
+        amount = fact(panel, "live_amount")
+        self.assertNotEqual(panel.status, analyze.STATUS_CONTESTED)
+        self.assertEqual(amount.number, 33000.0)
+        self.assertEqual(amount.currency, "PLN")
+        self.assertEqual(amount.display, "PLN 33,000")
+
 
 WON_TEMPLATE = """
 ### Acme — won 2026-08-15 — $18,000 — strategy sprint

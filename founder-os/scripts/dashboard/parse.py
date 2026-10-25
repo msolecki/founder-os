@@ -24,6 +24,11 @@ _GAPS = _SPACES + "\t"
 
 _MARKERS = ("zł", "$", "€", "£", "¥")
 
+# A symbol that names exactly one currency is filed under that currency's code,
+# so `15 000 zł` and `PLN 15 000` add up instead of contesting the pipeline. `$`
+# and `¥` each name several currencies and stay as written.
+_CANONICAL = {"zł": "PLN", "€": "EUR", "£": "GBP"}
+
 # The ISO 4217 codes this product reads as money, and nothing else. Shape is not
 # evidence: a bare uppercase triple in a founder's prose is an acronym far more
 # often than a currency — "3 NDA rounds", "5 API keys", "4 QBR sessions" — and
@@ -284,7 +289,9 @@ def parse_money(raw: Optional[str]) -> Value:
                    and suffix_end < len(text) and text[suffix_end] == ")")
         if sign != wrapped:
             number = -number
-        return Value(raw=text, number=number, currency=prefix or suffix)
+        marker = prefix or suffix
+        return Value(raw=text, number=number,
+                     currency=_CANONICAL.get(marker, marker))
     return Value(raw=text, number=None, currency=None)
 
 
