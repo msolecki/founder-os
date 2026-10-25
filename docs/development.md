@@ -197,7 +197,16 @@ reaches every installed copy at the next `/plugin marketplace update`. Fifty-two
 commits a year of analytics inside the product package is bandwidth the founder's
 users pay for. The workflow writes to an orphan branch called `metrics`, which
 shares no history with `main` and never merges into it. **It creates the branch
-itself on the first run**, so there is nothing to set up by hand.
+itself on the first run.**
+
+**One thing is set up by hand: the `TRAFFIC_TOKEN` secret.** The Traffic API
+needs Administration: read, which the workflow's own `GITHUB_TOKEN` cannot be
+granted, so without the secret every run fails with HTTP 403. Create a
+fine-grained personal access token scoped to this repository only, with
+Repository permissions → Administration: Read-only (Metadata: Read-only comes
+with it), and save it under Settings → Secrets and variables → Actions as
+`TRAFFIC_TOKEN`. It is used only to read; the push to `metrics` still uses
+`GITHUB_TOKEN`. Renew it before it expires — an expired token is the same 403.
 
 - `metrics/traffic.csv` — one row per day, keyed by date:
   `date,clones_count,clones_uniques,views_count,views_uniques,stars,forks,issues_opened,automation_suspected`.

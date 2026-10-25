@@ -663,11 +663,11 @@ def _parse_thresholds(text):
             continue
         indent, key, value = match.groups()
         if not indent:
-            # The reader resets a group it meets again, so a second `queue:`
-            # silently drops every key above it there while passing here.
+            # The reader refuses a group it meets again, so a second `queue:`
+            # that passed here would stop the dashboard from loading at all.
             if key in groups:
                 errs.append("references/thresholds.yaml: '%s' is declared twice "
-                            "— the dashboard keeps only the last one" % key)
+                            "— the dashboard refuses to load it" % key)
             current = key
             groups.append(key)
             if value:
@@ -981,7 +981,7 @@ HOOK_OUTPUT_ROOM = 1024
 
 
 def check_hooks(root, agents):
-    """Validate matcher coverage and compile the identity-boundary hook.
+    """Validate matcher coverage and compile every hook script.
 
     A typo in the matcher or a syntax error in the guard ships silently today:
     every other check validates prose and map, and the one layer that acts at
@@ -1051,14 +1051,23 @@ def check_hooks(root, agents):
                         "for the hook prefix and notice under Claude Code's "
                         "%d-character hook output cap"
                         % (size, HOOK_OUTPUT_CAP))
-    guard = root / "hooks" / "ownership-guard.py"
-    if not guard.exists():
-        errs.append("hooks/ownership-guard.py: missing")
-    else:
+    # The guard is required outright; every other script is required because
+    # a hook command runs it, and a missing or broken one fails only at runtime.
+    scripts = {"ownership-guard.py"}
+    for entries in hooks.values():
+        for entry in entries or []:
+            for hook in entry.get("hooks") or []:
+                scripts.update(re.findall(r"hooks/([\w.-]+\.py)",
+                                          str(hook.get("command", ""))))
+    for name in sorted(scripts):
+        script = root / "hooks" / name
+        if not script.exists():
+            errs.append("hooks/%s: missing" % name)
+            continue
         try:
-            compile(guard.read_text(encoding="utf-8"), str(guard), "exec")
+            compile(script.read_text(encoding="utf-8"), str(script), "exec")
         except SyntaxError as e:
-            errs.append("hooks/ownership-guard.py: does not compile (%s)" % e)
+            errs.append("hooks/%s: does not compile (%s)" % (name, e))
     return errs
 
 
@@ -1124,6 +1133,11 @@ def check_version_sites(root, agents):
     repo = root.parent
     bump = repo / "scripts" / "bump_version.py"
     manifest = root / ".claude-plugin" / "plugin.json"
+    if not bump.exists() and (repo / ".git").exists():
+        # A checkout is the repo, not a fixture: a missing script is the
+        # finding, not a reason to skip the check that reads it.
+        return ["scripts/bump_version.py: missing, so no version site is "
+                "checked"]
     if not (bump.exists() and manifest.exists()):
         return errs
     try:

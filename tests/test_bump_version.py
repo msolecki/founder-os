@@ -169,6 +169,32 @@ class TestBumpRoundTrip(unittest.TestCase):
             before, (self.repo / "CHANGELOG.md").read_text(encoding="utf-8")
         )
 
+    def test_a_site_that_no_longer_matches_leaves_every_file_untouched(self):
+        self.seed_unreleased()
+        files = [relative for relative, _, _ in bump.SITES] + [bump.CHANGELOG]
+        before = {
+            relative: (self.repo / relative).read_text(encoding="utf-8")
+            for relative in files
+        }
+        broken = bump.SITES[:-1] + (
+            (bump.SITES[-1][0], r"(nowhere )(\d+\.\d+\.\d+)( here)",
+             bump.SITES[-1][2]),
+        )
+        original = bump.SITES
+        bump.SITES = broken
+        try:
+            with self.assertRaises(SystemExit):
+                self.run_bump("9.9.9", "--date", "2026-12-01")
+        finally:
+            bump.SITES = original
+
+        for relative in files:
+            with self.subTest(file=relative):
+                self.assertEqual(
+                    before[relative],
+                    (self.repo / relative).read_text(encoding="utf-8"),
+                )
+
     def test_the_bumped_repository_still_passes_its_own_validator(self):
         """The point of the script: after it runs, nothing disagrees."""
         self.seed_unreleased()
