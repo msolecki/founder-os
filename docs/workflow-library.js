@@ -35,6 +35,13 @@
       ...documentRoot.querySelectorAll('[data-workflow-group]'),
     ];
     const workflows = [...documentRoot.querySelectorAll('[data-workflow]')];
+    // Lowercased once here, not on every keystroke.
+    const groupWorkflows = groups.map((group) => [
+      ...group.querySelectorAll('[data-workflow]'),
+    ].map((workflow) => ({
+      workflow,
+      text: `${workflow.dataset.search || ''}\n${workflow.textContent.toLowerCase()}`,
+    })));
     let activeCategory = 'all';
 
     function update({ closeGroups = false } = {}) {
@@ -42,17 +49,14 @@
       const filtering = activeCategory !== 'all' || Boolean(query);
       let visibleCount = 0;
 
-      groups.forEach((group) => {
+      groups.forEach((group, index) => {
         const categoryMatches = activeCategory === 'all'
           || group.dataset.category === activeCategory;
         const groupTextMatches = !query || group.dataset.search?.includes(query);
-        const groupWorkflows = [...group.querySelectorAll('[data-workflow]')];
         let visibleInGroup = 0;
 
-        groupWorkflows.forEach((workflow) => {
-          const textMatches = !query || groupTextMatches
-            || workflow.dataset.search?.includes(query)
-            || workflow.textContent.toLowerCase().includes(query);
+        groupWorkflows[index].forEach(({ workflow, text }) => {
+          const textMatches = !query || groupTextMatches || text.includes(query);
           const isVisible = categoryMatches && textMatches;
           workflow.hidden = !isVisible;
           if (isVisible) visibleInGroup += 1;
@@ -120,12 +124,11 @@
       activeCategory = 'all';
       if (search) search.value = '';
       if (catalogue) catalogue.open = true;
-      update({ closeGroups: true });
+      update();
+      groups.forEach((group) => { group.open = true; });
     });
 
     update({ closeGroups: true });
-
-    return { update };
   }
 
   return { initWorkflowLibrary };

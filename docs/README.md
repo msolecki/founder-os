@@ -65,7 +65,7 @@ built to prevent.
 
 - **[`architecture.md`](architecture.md)** — plugin layout, the shared
   eight-tool state gateway, sibling orchestration, generated files, and
-  the host adapter.
+  how Claude Code loads the plugin.
 - **[`enforcement.md`](enforcement.md)** — the ownership map, authoritative
   gateway, host-hook defense, build validator, and security-boundary limits.
 - **[`development.md`](development.md)** — how to add a skill or an agent, every

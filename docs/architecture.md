@@ -191,12 +191,14 @@ Three kinds of skill:
 
 ### Hooks — the runtime layer
 
-`hooks/hooks.json` wires two Python hooks:
+`hooks/hooks.json` wires four Python hooks:
 
 | Event | Hook | What it does |
 |---|---|---|
 | `SessionStart` (startup/resume/clear/compact) | `session-context.py` | Injects `founder-os/references/guidance.md` into the session as additional context. This is how the house rules and state map are present in every session. |
+| `SessionStart` (startup only) | `version-notice.py` | Shows one line after an install or an update, with a link to the changelog. Nothing reaches the network. `FOUNDER_OS_NOTICES=off` turns it off. |
 | `PreToolUse` on every tool | `ownership-guard.py` | Denies known roles every tool but the gateway (and the harmless `ToolSearch` and `TodoWrite`), denies self-elevation, and checks gateway capabilities against native role identity. A generic fallback (`general-purpose`, `default`) gets the same lockdown from its first gateway call that spends a role capability (`docs/enforcement.md`). |
+| `Stop` | `decision-nudge.py` | Once per session, after `FOUNDER_OS_STOP_NUDGE_MIN` tool calls (default 30) in a session that used Founder OS, asks the agent to offer `decision-log` for irreversible decisions and `capture` for loose items. `FOUNDER_OS_STOP_NUDGE=off` turns it off. |
 
 The gateway and guard are covered in full in
 [`enforcement.md`](enforcement.md). The gateway is the authoritative state

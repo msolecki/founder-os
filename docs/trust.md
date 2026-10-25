@@ -8,8 +8,9 @@ permalink: /trust-notes.html
 
 # Founder OS Trust Center
 
-Founder OS is one product on Claude Code. The host adapter changes discovery; it
-does not change the workflow, workspace write, output, or guardrail contract.
+Founder OS is one product on Claude Code. The plugin manifest and `.mcp.json`
+change discovery; they do not change the workflow, workspace write, output, or
+guardrail contract.
 
 The deployable version of this page is the [public Trust Center](trust.html).
 

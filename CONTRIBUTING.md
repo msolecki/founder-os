@@ -67,7 +67,7 @@ directory by `tests/test_feedback_channels.py` for the same reason.
 
 ## The rules the validator cannot read
 
-The build checks structure; review holds the bar. The three that matter:
+The build checks structure; review holds the bar. The four that matter:
 
 1. **One agent = one decision no other agent can make.** That is the test
    every existing agent had to pass, and the reason there are thirteen rather
@@ -82,8 +82,9 @@ The build checks structure; review holds the bar. The three that matter:
    the outside world, and no PR that loosens an allowlist will be merged —
    agents draft, the founder sends.
 4. **One role contract.** The role file, workflow, bounded sibling handoff,
-   role capability, ownership rule, and persisted result are the contract; a
-   host file is an adapter to it, never a second copy of it.
+   role capability, ownership rule, and persisted result are the contract;
+   `.claude-plugin/plugin.json` and `.mcp.json` only point Claude Code at it,
+   never a second copy of it.
 
 ## Scope
 
