@@ -415,6 +415,51 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 self.assert_unresolved(lambda: resolver.resolve(root))
 
 
+    def test_registry_refuses_default_portfolio(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            alpha = root / "alpha"
+            portfolio = root / "portfolio"
+            alpha.mkdir()
+            portfolio.mkdir()
+            write_registry(
+                home,
+                "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        f"    home: {alpha.as_posix()}",
+                        "    status: active",
+                        f"portfolio: {portfolio.as_posix()}",
+                        "default: portfolio",
+                    )
+                ),
+            )
+            resolver = WorkspaceResolver(env={}, home=home)
+            self.assert_unresolved(lambda: resolver.resolve(root))
+            self.assert_unresolved(lambda: resolver.resolve(root, "portfolio"))
+
+    def test_registry_saved_with_a_byte_order_mark_still_loads(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            alpha = root / "alpha"
+            alpha.mkdir()
+            write_registry(
+                home,
+                "\ufeff" + "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        f"    home: {alpha.as_posix()}",
+                        "    status: active",
+                    )
+                ),
+            )
+            binding = WorkspaceResolver(env={}, home=home).resolve(root)
+            self.assertEqual("alpha", binding.business_slug)
+
     def test_a_paused_default_falls_back_to_the_one_active_business(self) -> None:
         """Pausing is the documented first step before retiring a business.
 

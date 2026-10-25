@@ -204,8 +204,6 @@ class WorkspaceResolver:
             )
 
         default = registry.get("default")
-        if default == "portfolio":
-            return Path(portfolio).resolve(), "portfolio", "portfolio"
         # A paused default is no default: pausing is the documented first step
         # before retiring a business, and it must not strand the others. The
         # single-active rule below decides instead.
@@ -397,12 +395,11 @@ class WorkspaceResolver:
         default = registry.get("default")
         if default is None:
             return
+        # `default: portfolio` is refused, not honoured: every business role
+        # would resolve to the portfolio workspace and be refused there until
+        # a slug was named. The portfolio is reached by naming it.
         if not isinstance(default, str):
             raise WorkspaceResolutionError()
-        if default == "portfolio":
-            if portfolio is None:
-                raise WorkspaceResolutionError()
-            return
         if not cls._valid_slug(default):
             raise WorkspaceResolutionError()
         if default not in businesses:
@@ -430,7 +427,8 @@ def load_registry(home: Path) -> Optional[dict[str, Any]]:
             return None
         if not path.is_file():
             raise WorkspaceResolutionError()
-        source = path.read_text(encoding="utf-8")
+        # utf-8-sig: an editor that saves with a BOM must not lose the registry.
+        source = path.read_text(encoding="utf-8-sig")
         registry = WorkspaceResolver._parse_registry(source)
         WorkspaceResolver._validate_registry(registry)
         return registry
