@@ -899,6 +899,26 @@ class TestLoadingMcpModulesByPath(unittest.TestCase):
             self.assertIs(load()._ownership, first._ownership)
 
 
+class TestDoubledQuoteIsRefused(unittest.TestCase):
+    """CHANGELOG: `'it''s'` refuses the registry and voids the overlay."""
+
+    def test_the_overlay_is_ignored_and_the_registry_refused(self):
+        guard = load_guard()
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "_local").mkdir()
+            (Path(td) / "_local" / "ownership.yaml").write_text(
+                "owns:\n  local-agent:\n    - 'it''s.md'\n", encoding="utf-8")
+            self.assertEqual(guard.local_ownership(td), {})
+            home = Path(td) / "home"
+            (home / ".founder-os").mkdir(parents=True)
+            (home / ".founder-os" / "businesses.yaml").write_text(
+                "businesses:\n  acme:\n    home: '/x/it''s'\n"
+                "    status: active\n", encoding="utf-8")
+            with self.assertRaises(Exception) as caught:
+                guard._load_mcp_module("workspaces").load_registry(home)
+            self.assertEqual(caught.exception.code, "WORKSPACE_UNRESOLVED")
+
+
 class TestRegistryRoots(unittest.TestCase):
     """Multi-business: the registry's workspace roots are guarded too.
 

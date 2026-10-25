@@ -5,6 +5,8 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+**Stricter quoting in `_local/ownership.yaml` and `~/.founder-os/businesses.yaml`, read by the guard's new parser.** The guard now reads both with the package parser (`mcp/ownership.py`), never PyYAML, and that grammar is stricter: a quoted value holds no backslash escape and no `''` escape, and a bare value holds no `[`, `]`, `{` or `}`. A registry with `'it''s'` is refused with `WORKSPACE_UNRESOLVED`; an overlay with it is ignored by the guard and reported by `founder-os-doctor` as **Overlay unreadable** (grammar in `docs/enforcement.md`).
+
 ## 3.0.0 — 2026-10-25
 
 **Breaking: Claude Code is the only host.** Codex support is removed: the
