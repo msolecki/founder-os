@@ -1642,6 +1642,18 @@ class SafeStateIOTests(unittest.TestCase):
             [(item["heading"], item["content"]) for item in payload["sections"]],
         )
 
+    def test_a_bare_h2_marker_opens_no_section(self) -> None:
+        """The old `safe_io` scanner wanted text after `## `; `split_h2` must
+        too, or a stray `## ` cuts the section above it short."""
+        (self.workspace / "goals.md").write_text(
+            "# Goals\n## Bets\nAlpha\n## \nStill bets\n", encoding="utf-8"
+        )
+        payload = self.io().read_fixed_sections({"goals.md": ("Bets",)})
+        self.assertEqual(
+            [("Bets", "Alpha\n## \nStill bets\n")],
+            [(item["heading"], item["content"]) for item in payload["sections"]],
+        )
+
     def test_a_batch_read_reports_an_absent_file_instead_of_failing(self) -> None:
         files = self.io().read_many(["state.md", "absent.md", "no-dir/x.md"])
         self.assertEqual(

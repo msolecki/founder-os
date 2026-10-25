@@ -75,8 +75,9 @@ def split_h2(content: str) -> Tuple[Optional[str], List[Tuple[str, str]]]:
     heading the write accepted could be one a read never found. A fence opens
     on three or more backticks or tildes indented at most three spaces, info
     string or not, and closes only on a run of the same character at least as
-    long with nothing after it. Heading lines are returned `rstrip()`ed and in
-    file order, duplicates included: each caller owns its duplicate policy.
+    long with nothing after it. A bare `## ` opens nothing: a heading has text.
+    Heading lines are returned `rstrip()`ed and in file order, duplicates
+    included: each caller owns its duplicate policy.
     """
     title: Optional[str] = None
     sections: List[Tuple[str, str]] = []
@@ -103,7 +104,11 @@ def split_h2(content: str) -> Tuple[Optional[str], List[Tuple[str, str]]]:
             ):
                 fence_character = None
                 fence_length = 0
-        elif fence_character is None and stripped.startswith("## "):
+        elif (
+            fence_character is None
+            and stripped.startswith("## ")
+            and stripped[3:].strip()
+        ):
             if current is not None:
                 sections.append((current, "".join(body)))
             current = stripped.rstrip()
