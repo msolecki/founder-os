@@ -15,6 +15,7 @@ queue:
   doing_days: 5
   queued_days: 21
   blocked_days: 14
+  done_ceiling_days: 60
 signals:
   cap: 3
   stale_days: 14

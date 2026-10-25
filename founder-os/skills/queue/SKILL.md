@@ -170,14 +170,14 @@ If no owner's file will take the date, the item is not real yet.
 Every section has a cap or a clock, and nothing is exempt from both. The numbers
 below are written down once, in `references/thresholds.yaml` (`queue.doing_cap`,
 `queue.queued_cap`, `queue.doing_days`, `queue.queued_days`,
-`queue.blocked_days`); this table restates them and that file settles them.
+`queue.blocked_days`, `queue.done_ceiling_days`); this table restates them and that file settles them.
 
 | section | cap | clock | when it fires |
 |---|---|---|---|
 | `## Doing` | 3 | 5 working days from `started` | it is not an item, it is a project — split it into items that close in a day, or drop it |
 | `## Queued` | 15 | 21 days from the id date | **dropped**, reason `aged out` |
 | `## Blocked` | — | 14 days from `blocked` | dropped, or its blocker is promoted to `## Doing` — decide which, do not renew |
-| `## Done` | — | 30 days, and never before `reviews/monthly/` holds the review for the month it closed in | deleted. Done is evidence and its half-life is a month; `monthly-review` runs only when a close is drained, so the clock waits for it |
+| `## Done` | — | 30 days, and never before `reviews/monthly/` holds the review for the month it closed in — and in any case at 60 days, noting the month was never reviewed | deleted. Done is evidence and its half-life is a month; `monthly-review` runs only when a close is drained, so the clock waits for it, but not forever |
 | `## Dropped` | — | 90 days | deleted |
 
 **The 21 days is the rule that matters, and it is not negotiable by anybody.** An

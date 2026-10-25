@@ -1234,6 +1234,13 @@ class TestThresholdsCheck(unittest.TestCase):
         self.assertIn("restates queue.doing_days as 5", errs[0])
         self.assertIn("says 55", errs[0])
 
+    def test_the_done_ceiling_raised_only_in_the_yaml_fails(self):
+        root = self.mutated_package()
+        self.retune(root, "done_ceiling_days: 60", "done_ceiling_days: 90")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("restates queue.done_ceiling_days as 60", errs[0])
+
     def test_a_number_no_python_reads_is_pinned_too(self):
         """`briefs` is prose on both ends — no code reads it, no unit test can.
 

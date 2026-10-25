@@ -606,6 +606,9 @@ _THRESHOLD_RESTATEMENTS = {
     "queue.blocked_days": (
         ("skills/queue/SKILL.md", r"(\S+) days from `blocked`"),
     ),
+    "queue.done_ceiling_days": (
+        ("skills/queue/SKILL.md", r"in any case at (\S+) days"),
+    ),
     "signals.cap": (
         ("skills/signal-check/SKILL.md", r"(\w+) is the cap"),
         ("skills/signal-check/SKILL.md", r"Cap at ([a-z]+)"),

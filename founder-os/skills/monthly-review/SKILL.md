@@ -46,7 +46,7 @@ Read first, in order — house rule 1:
 - `queue.md` `## Done` — the month's closed work, with what each item emitted. A
   monthly retrospective that cannot see what was finished is reviewing the plan
   rather than the month. `## Done` is kept 30 days and until this month's review exists in
-  `reviews/monthly/` — so read it, or that deletion is resting on a contract
+  `reviews/monthly/`, at most 60 days — so read it, or that deletion is resting on a contract
   nobody made.
 - `decisions/` — everything logged this month
 - `reviews/monthly/` — last month's correction: did it hold?
