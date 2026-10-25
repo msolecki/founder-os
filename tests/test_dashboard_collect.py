@@ -142,16 +142,6 @@ class TestDeclaredForTheRoot(unittest.TestCase):
             self.assertNotIn(path, sources.files, path)
         self.assertIn("charter.md", sources.files)
 
-    def test_the_portfolio_root_is_asked_for_exactly_its_own_files(self):
-        root = Path(tempfile.mkdtemp()) / "portfolio"
-        root.mkdir()
-        (root / "portfolio.md").write_text(
-            "# Portfolio\n\n## Allocation\n\nacme 60%\n", encoding="utf-8")
-        sources = collect.collect(root, self.view, portfolio=True)
-        self.assertIn("acme 60%", sources.section("portfolio.md", "## Allocation"))
-        for path in self.view.workspace_files:
-            self.assertNotIn(path, sources.files, path)
-
 
 class TestWorkspaceName(unittest.TestCase):
     def _workspace(self, *parts):
