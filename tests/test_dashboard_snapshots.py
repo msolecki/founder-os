@@ -197,6 +197,24 @@ class TestMerge(unittest.TestCase):
         rows = _rows(path)
         self.assertEqual(len(rows), 2)
 
+    def test_a_home_run_and_a_registry_run_on_one_day_are_one_row(self):
+        """`--home` files the row under no slug, the registry under its own."""
+        row = snapshots.row_from(example_facts())
+        for first, second in (("", "studio-north"), ("studio-north", "")):
+            with self.subTest(first=first, second=second):
+                path = self._path()
+                snapshots.merge(path, dict(row, date="2026-07-19",
+                                           business=""))
+                snapshots.merge(path, dict(row, business=first))
+                snapshots.merge(path, dict(row, business=second,
+                                           queue_doing="2"))
+                rows = _rows(path)
+                self.assertEqual(
+                    [(r["date"], r["business"]) for r in rows],
+                    [("2026-07-19", "studio-north"),
+                     ("2026-07-20", "studio-north")])
+                self.assertEqual(rows[1]["queue_doing"], "2")
+
     def test_rows_stay_sorted_by_date_then_business(self):
         path = self._path()
         row = snapshots.row_from(example_facts())
