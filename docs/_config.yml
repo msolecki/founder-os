@@ -11,8 +11,14 @@ baseurl: /founder-os
 
 # No theme. The GitHub Pages default (primer) loads anchor-js from cdnjs, and
 # docs/trust.md promises the site loads no script from another origin. The
-# guides render without a layout instead.
+# guides render through _layouts/default.html instead: inline CSS, no script.
 theme: null
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
 
 plugins:
   - jekyll-relative-links # [x](guide.md) becomes guide.html

@@ -66,9 +66,9 @@ which is the claim this section is making.
 
 The Markdown guides, this page among them, are rendered to HTML by Jekyll when
 the site is built. They use no theme, because GitHub's default one loads a
-script from another origin, and they load no script at all. They carry no
-`Content-Security-Policy` of their own; the landing page and the Trust Center
-do.
+script from another origin; one layout with inline CSS styles them, and they
+load no script at all. The layout carries the same `Content-Security-Policy`
+as the landing page and the Trust Center.
 
 What does exist is what exists for any hosted page: GitHub serves the request
 and keeps its own server-side logs, and the repository's owner can see the

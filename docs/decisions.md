@@ -141,7 +141,9 @@ entry. Deliberate settings that follow from these are in
   `actions/jekyll-build-pages` and deploys it with `actions/deploy-pages`.
   `docs/.nojekyll` is removed. The Markdown guides render as pages,
   `CHANGELOG.md` is copied in as `changelog.html`, and `jekyll-sitemap` adds a
-  sitemap. The site has no theme (see [`pitfalls.md`](pitfalls.md)).
+  sitemap. The site has no theme; the guides use one inline-styled layout
+  with no script (see [`pitfalls.md`](pitfalls.md)). Links from a guide to a
+  file outside `docs/` are pointed at GitHub's file view at build time.
 - **Why:** documentation and site parity with the developer-os repository,
   whose docs carry the same frontmatter and whose site is deployed by an
   Actions workflow. The landing page used to send readers to GitHub's file view

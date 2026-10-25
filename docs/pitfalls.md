@@ -149,15 +149,17 @@ makes. Project decisions behind several of them are in
 ## The site has no theme
 
 - **Where:** `theme: null` in `docs/_config.yml`
-- **Looks like:** the Markdown guides render as plain, unstyled HTML.
+- **Looks like:** a GitHub Pages site with no theme; the guides are styled by
+  `docs/_layouts/default.html` (inline CSS, no script) instead.
 - **Why it is deliberate:** the GitHub Pages default theme (primer) loads
   `anchor-js` from `cdnjs.cloudflare.com` on every page, and
   [`trust.md`](trust.md) promises that the site loads no script from another
   origin. Of the other GitHub themes checked, minimal references `html5shiv`
-  on cdnjs and cayman loads Google Fonts. A custom layout would need a `docs/_layouts/` directory, which the site
-  does not have.
+  on cdnjs and cayman loads Google Fonts.
+  The own layout carries the same `Content-Security-Policy` as the Trust Center.
 - **Breaks if changed:** setting a theme puts a third-party request on every
-  guide page and makes the Trust Center's website section false.
+  guide page and makes the Trust Center's website section false; a script or
+  an external font added to the layout does the same.
 
 ## `trust.md` is published as `trust-notes.html`
 
