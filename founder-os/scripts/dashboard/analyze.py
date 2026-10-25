@@ -172,19 +172,29 @@ def _entry_amount(entry) -> parse.Value:
 # and prints it bare is where the tier comes off, on the surface most likely to
 # be quoted back: `references/ingestion-gate.md` calls a flattering number
 # guilty until validated, and the whole file exists to stop exactly this.
-_TIERED = re.compile(r"\[(VALIDATE|DISREGARD)\]")
+_TIERED = re.compile(r"\[VALIDATE\]")
+# `ingestion-gate.md` says a DISREGARD claim never enters the workspace at all,
+# so one that did is not counted: it is kept out of the total and named.
+_DISREGARDED = re.compile(r"\[DISREGARD\]")
+# `Coverage: 3× against a $15,000 gap` — the ratio that leads the line.
+_COVERAGE = re.compile(r"^\s*(\d+(?:[.,]\d+)?)\s*[×xX]")
 
 
-def _tier_note(values, cite: str) -> Tuple[Fact, ...]:
+def _tier_note(values, cite: str, disregarded: int = 0) -> Tuple[Fact, ...]:
     """A note naming how much of a total is not yet validated, or nothing."""
     counted = [item for item in values if item.number is not None]
     tiered = [item for item in counted if _TIERED.search(item.raw or "")]
-    if not tiered:
+    notes = []
+    if tiered:
+        notes.append(
+            "%d of %d amounts here carry [VALIDATE] and are counted in this "
+            "total" % (len(tiered), len(counted)))
+    if disregarded:
+        notes.append(
+            "%d marked [DISREGARD], left out of this total" % disregarded)
+    if not notes:
         return ()
-    return (text_fact(
-        "live_unvalidated",
-        "%d of %d amounts here carry [VALIDATE] and are counted in this total"
-        % (len(tiered), len(counted)), cite),)
+    return (text_fact("live_unvalidated", "; ".join(notes), cite),)
 
 
 # An amount with no marker beside it is not "the same currency as the others" —
@@ -216,6 +226,10 @@ def build_pipeline(sources, today: date) -> Panel:
                    unlistable("overdue_count", live_cite)),
             citations=citations)
     values = [_entry_amount(entry) for entry in entries]
+    disregarded = sum(
+        1 for item in values if _DISREGARDED.search(item.raw or ""))
+    values = [item for item in values
+              if not _DISREGARDED.search(item.raw or "")]
 
     # Everything below the amount is counted first, because none of it depends
     # on the currency. A panel that refuses to sum two currencies and then also
@@ -228,16 +242,17 @@ def build_pipeline(sources, today: date) -> Panel:
 
     coverage_raw = parse.parse_field(
         sources.section("pipeline.md", "## Last review") or "", "Coverage")
+    # The ratio, not money: `parse_money` skips `3x` and reads the gap instead.
+    ratio = _COVERAGE.match(coverage_raw or "")
     coverage = (
-        number_fact("coverage", parse.parse_money(coverage_raw).number,
+        number_fact("coverage", float(ratio.group(1).replace(",", ".")),
                     coverage_raw, review_cite)
-        if coverage_raw and parse.parse_money(coverage_raw).number is not None
-        else unknown("coverage", review_cite))
+        if ratio else unknown("coverage", review_cite))
     counted = (
         number_fact("live_count", len(entries), str(len(entries)), live_cite),
         number_fact("overdue_count", overdue, str(overdue), live_cite),
         coverage,
-    ) + _tier_note(values, live_cite)
+    ) + _tier_note(values, live_cite, disregarded)
 
     priced = [item for item in values if item.number is not None]
     currencies = sorted({item.currency or _UNMARKED for item in priced})
@@ -267,7 +282,7 @@ def build_pipeline(sources, today: date) -> Panel:
             settle_with=settle)
 
     symbol = (currencies[0] if currencies else None) or None
-    unread = len(entries) - len(priced)
+    unread = len(values) - len(priced)
     if unread:
         # A sum of the deals that happened to carry a price, printed beside a
         # count of all of them, is a smaller number than the pipeline wearing
