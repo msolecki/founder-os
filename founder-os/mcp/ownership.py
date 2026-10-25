@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import AbstractSet, Callable, Dict, Iterable, List, Optional, Tuple
 
@@ -17,6 +18,8 @@ _REQUIRED_TOP_LEVEL_KEYS = {
 # written before this key existed must keep loading unchanged.
 _TOP_LEVEL_KEYS = _REQUIRED_TOP_LEVEL_KEYS | {"derived_files"}
 _LIST_KEYS = {"workspace_files", "portfolio_files", "derived_files"}
+# A plain top-level key `read_key` may skip when it carries a scalar.
+_TOP_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*\Z")
 
 
 class OwnershipError(Exception):
@@ -337,22 +340,47 @@ def read_key(contents: str, key: str) -> Optional[object]:
     `_local/` overlay (`owns:` only) and must not need PyYAML to do it. Each key
     is cut out and parsed alone, so a broken `owns:` cannot take
     `derived_files:` down with it — the guard runs the derived deny on both
-    sides of its `owns:` bail. A column-0 line that is not a key fails the
-    whole read, never a truncated block. None means absent or not in this grammar, and
-    the guard fails open on it; `load_document` stays the strict whole-map read.
+    sides of its `owns:` bail. Around the requested block this read is looser
+    than `_parse_subset`, so valid YAML the founder wrote does not switch the
+    guard off: a ` #` comment after a `key:`, a leading `---`, and other
+    top-level `key: scalar` lines are accepted, and other keys are skipped.
+    Inside the block `_parse_subset` decides. A column-0 line that is none of
+    these, an indented line under a scalar key, a second `---` or the requested
+    key written inline fails the whole read, never a truncated block. None
+    means absent or not in this grammar, and the guard fails open on it;
+    `load_document` stays the strict whole-map read.
     """
     block: List[str] = []
     inside = False
+    scalar = False
+    seen_key = False
     for line in contents.splitlines():
-        if line[:1] not in ("", " ", "#"):
-            stripped = line.strip()
-            if not stripped.endswith(":") or stripped.count(":") != 1:
-                # Not a key: `_parse_subset` refuses the whole map here, and
-                # cutting the block short would hand back part of `owns:`.
+        if line[:1] in ("", " ", "#"):
+            if scalar and line.strip() and not line.lstrip().startswith("#"):
+                # PyYAML refuses this or folds it into the scalar; either
+                # way it is not a line of the block below the key.
                 return None
-            inside = stripped[:-1] == key
+            if inside:
+                block.append(line)
+            continue
+        stripped = line.split(" #", 1)[0].strip()
+        if stripped == "---" and not seen_key:
+            continue
+        name, separator, value = stripped.partition(": ")
+        if stripped.endswith(":") and stripped.count(":") == 1:
+            name, scalar = stripped[:-1], False
+        elif separator and value.strip() and _TOP_KEY.match(name):
+            if name == key:
+                return None
+            scalar = True
+        else:
+            # Not a key: `_parse_subset` refuses the whole map here, and
+            # cutting the block short would hand back part of `owns:`.
+            return None
+        seen_key = True
+        inside = name == key and not scalar
         if inside:
-            block.append(line)
+            block.append(name + ":")
     if not block:
         return None
     try:

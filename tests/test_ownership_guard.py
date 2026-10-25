@@ -427,6 +427,37 @@ class TestDerivedFilesAreParsedByThePackageParser(unittest.TestCase):
                          ("_dashboard/",))
         self.assertIsNone(self.guard._owns_from_text(text, "x"))
 
+    BODY = "  strategist:\n    - goals.md\n"
+
+    def test_valid_yaml_around_the_key_still_yields_it(self):
+        # Each of these read as None, and the guard failed open for the file.
+        import yaml
+        for text in ("owns:  # the founder's own files\n" + self.BODY,
+                     "---\nowns:\n" + self.BODY,
+                     "version: 2\nowns:\n" + self.BODY,
+                     "owns:\n" + self.BODY + "note: kept  # why\n"
+                     "derived_files:\n  - _dashboard/\n"):
+            with self.subTest(text=text):
+                self.assertEqual(yaml.safe_load(text)["owns"],
+                                 {"strategist": ["goals.md"]})
+                self.assertEqual(self.guard._owns_from_text(text, "x"),
+                                 {"strategist": ["goals.md"]})
+
+    def test_an_indent_under_a_scalar_key_never_yields_part_of_owns(self):
+        import yaml
+        for text in ("owns:\n  cfo:\n    - metrics.md\nversion: 2\n"
+                     + self.BODY,
+                     "owns:\n  cfo:\n    - metrics.md\n---\n"
+                     "owns:\n" + self.BODY):
+            with self.subTest(text=text):
+                with self.assertRaises(yaml.YAMLError):
+                    yaml.safe_load(text)
+                self.assertIsNone(self.guard._owns_from_text(text, "x"))
+
+    def test_malformed_content_inside_the_key_is_still_refused(self):
+        self.assertIsNone(self.guard._owns_from_text(
+            "version: 2\nowns:\n  strategist:\n    - [goals.md]\n", "x"))
+
 
 class TestDerivedFilesAreNotWritable(unittest.TestCase):
     """A derived path is denied to the agents that reach the ownership map.
@@ -728,6 +759,15 @@ class TestMapParityWithPyYAML(unittest.TestCase):
                     self.assertEqual(
                         read(lambda guard: guard.load_derived()),
                         tuple(data["derived_files"]))
+
+    def test_the_packaged_map_reads_without_pyyaml(self):
+        # No `import yaml` here: this must hold where PyYAML is absent.
+        with mock.patch.dict(os.environ,
+                             {"CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}):
+            owners = self._without_yaml(lambda guard: guard.load_ownership())
+            derived = self._without_yaml(lambda guard: guard.load_derived())
+        self.assertEqual(owners.get("goals.md"), "strategist")
+        self.assertIn("_dashboard/", derived)
 
     def test_an_overlay_matches_pyyaml(self):
         import yaml
