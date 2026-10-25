@@ -150,8 +150,9 @@ The full catalogue — every skill, its agent, and its schedule — is
 Every public name — workflow, agent, output style, hook — is listed in
 [`SURFACE.txt`](SURFACE.txt), so a rename is a deliberate, changelogged edit.
 
-**Output style.** Pick `founder-brief` in `/config` → Output style for terse
-answers in a fixed order: the decision first, then the numbers with the
+**Output style.** Select `founder-brief` with `/output-style`, or set
+`"outputStyle": "founder-os:founder-brief"` in settings (the plugin prefix is
+required), for terse answers in a fixed order: the decision first, then the numbers with the
 workspace file each came from, then what is a guess
 ([`output-styles/founder-brief.md`](output-styles/founder-brief.md)).
 
