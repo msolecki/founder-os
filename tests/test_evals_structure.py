@@ -241,6 +241,10 @@ REGEX_TABLE = [
      "Paste the text you sent and I will record it.", True),
     ("sent-not-inferred/asks-sent-text",
      "Recorded: the Northwind email is marked as sent.", False),
+    # A real with-plugin reply, eval 2026-10-25: it asks for the text without
+    # the words "text" or "wording".
+    ("sent-not-inferred/asks-sent-text",
+     "If you want a comparison, paste what you actually sent.", True),
     ("sent-not-inferred/asks-sent-text", "Done.", False),
     ("sent-not-inferred/draft-intact", NORTHWIND_DRAFT, True),
     ("sent-not-inferred/draft-intact",
