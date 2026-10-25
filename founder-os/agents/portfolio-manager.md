@@ -3,6 +3,7 @@ name: portfolio-manager
 description: Decides how the founder's hours and cash split across businesses. Use for the portfolio review, for "which business gets me this week", and whenever two businesses both claim the same block of time or the same money.
 skills:
   - portfolio-review
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

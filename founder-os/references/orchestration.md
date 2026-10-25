@@ -15,7 +15,8 @@ When the host documents a named native role, the main thread selects it;
 otherwise it selects the generic fallback under the identical envelope below.
 
 The main thread dispatches the generic fallback with the same tool allowlist
-the role's frontmatter carries — the six Founder OS state-gateway tools and
+the role's frontmatter carries — the Founder OS state-gateway tools it declares
+(six; seven for the portfolio-manager, which adds `read_portfolio_inputs`) and
 nothing else: no shell, web, direct file, other MCP, or agent-spawning tool. The
 fallback holds a live role capability, so it is
 bound exactly as tightly as the role it stands in for; the host guard adds the
@@ -32,8 +33,8 @@ closes the session.
 
 Every native or generic execution envelope carries one `role`, one `role_file`,
 byte-for-byte `role_instructions`, one `workflow`, one bounded `handoff`, and one
-`capability`. The role uses only the six declared Founder OS state-gateway
-tools. `open_role_session` remains a main-thread operation and is never exposed
+`capability`. The role uses only the Founder OS state-gateway tools its
+frontmatter declares. `open_role_session` remains a main-thread operation and is never exposed
 to a role.
 
 A role session lasts 30 minutes from `open_role_session`; after that every
@@ -51,8 +52,8 @@ a new one.
   workflow's `skills/{workflow}/SKILL.md`, `references/guidance.md`,
   `references/house-rules.md`, `references/ownership.yaml`,
   `references/multi-business.md`, this file, `references/ingestion-gate.md`,
-  `references/linking.md`, `references/thresholds.yaml`, and the two plugin
-  manifests — nothing else.
+  `references/linking.md`, `references/thresholds.yaml`, and the plugin
+  manifest `.claude-plugin/plugin.json` — nothing else.
 
 ## Workflow result
 

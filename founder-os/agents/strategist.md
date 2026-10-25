@@ -7,6 +7,7 @@ skills:
   - kill-or-continue
   - experiment
   - annual-review
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

@@ -6,6 +6,7 @@ skills:
   - outreach-draft
   - proposal-draft
   - win-loss-analysis
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

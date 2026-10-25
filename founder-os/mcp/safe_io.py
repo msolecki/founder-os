@@ -298,7 +298,7 @@ class SafeStateIO:
     ) -> Dict[str, object]:
         """Read one packaged file a role is entitled to, and nothing else.
 
-        The two plugin manifests are on the list because a role holds no file
+        The plugin manifest is on the list because a role holds no file
         tool: `founder-os-feedback` must quote the shipped version, and the only
         alternative left to it is the version it remembers from training.
         """

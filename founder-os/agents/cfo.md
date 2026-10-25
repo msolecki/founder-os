@@ -7,6 +7,7 @@ skills:
   - runway-forecast
   - profitability-analysis
   - rate-raise
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

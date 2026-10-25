@@ -5,6 +5,7 @@ skills:
   - red-team
   - assumption-audit
   - premortem
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity
