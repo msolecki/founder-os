@@ -121,7 +121,7 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         probe = load_probe_module()
         record = probe.format_pass_record(
             {
-                "version": "3.0.0",
+                "version": "3.1.0",
                 "initial_sha256": "a" * 64,
                 "persisted_sha256": "b" * 64,
                 "native": "PASS",
