@@ -37,8 +37,7 @@ def main():
         _emit_context(WINDOWS_UNSUPPORTED)
         return 0
     configured_root = (
-        os.environ.get("PLUGIN_ROOT")
-        or os.environ.get("CLAUDE_PLUGIN_ROOT")
+        os.environ.get("CLAUDE_PLUGIN_ROOT")
         or str(Path(__file__).resolve().parents[1])
     )
     root = Path(configured_root).expanduser().resolve()

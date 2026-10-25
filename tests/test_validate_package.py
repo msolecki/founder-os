@@ -1127,7 +1127,7 @@ class TestDerivedFiles(unittest.TestCase):
     def test_a_case_mismatched_derived_entry_still_covers_the_path(self):
         """The guard casefolds, so a map that does not is a map it disagrees with.
 
-        `hooks/ownership-guard.py:_derived_entry` reads `_Dashboard/` and
+        `mcp/ownership.py:derived_entry`, the guard's matcher, reads `_Dashboard/` and
         `_dashboard/snapshots/x.md` as the same directory and denies the write.
         Compared case-sensitively here, the same map shipped: the package said
         the path was owned state and the machine refused every write to it.

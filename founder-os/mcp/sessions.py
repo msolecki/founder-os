@@ -90,6 +90,10 @@ class RoleSessionStore:
         self._clock = clock
         self._ttl_seconds = ttl_seconds
         self._role_workflow_cache: Optional[Dict[str, Set[str]]] = None
+        # Hashes this process minted. A record on disk is not a capability
+        # unless this store issued it, so a forged file is refused and a
+        # restarted gateway ends every session the old process opened.
+        self._minted: Set[str] = set()
 
     def open(
         self,
@@ -134,6 +138,7 @@ class RoleSessionStore:
             "status": "open",
         }
         self._write_record(record)
+        self._minted.add(str(record["capability_hash"]))
         return capability
 
     def resolve(
@@ -170,6 +175,8 @@ class RoleSessionStore:
             raise RoleSessionError()
 
         capability_hash = self._capability_hash(capability)
+        if capability_hash not in self._minted:
+            raise RoleSessionError()
         path = self._record_path(capability_hash)
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
@@ -187,6 +194,10 @@ class RoleSessionStore:
             record["status"] = "expired"
             record["expired_at"] = now
             self._write_record(record)
+            raise RoleSessionError()
+        # `open` never sets expiry past now + ttl; a record that does was
+        # edited, and the documented 30 minutes must hold.
+        if expires_at > now + float(self._ttl_seconds):
             raise RoleSessionError()
         return record
 

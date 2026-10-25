@@ -222,7 +222,7 @@ def check_ownership_guard(installed_plugin, workspace_root):
     env = _hook_environment(
         installed_plugin,
         FOUNDER_OS_HOME=workspace_root,
-        PLUGIN_DATA=data_root,
+        CLAUDE_PLUGIN_DATA=data_root,
     )
     direct_payload = {
         "tool_name": "Write",
@@ -622,8 +622,7 @@ def check_mcp_lifecycle(installed_plugin, workspace_root):
     env = os.environ.copy()
     env["HOME"] = str(home_root)
     env["FOUNDER_OS_HOME"] = str(workspace_root)
-    env["PLUGIN_DATA"] = str(runtime_root / "plugin-data")
-    env.pop("CLAUDE_PLUGIN_DATA", None)
+    env["CLAUDE_PLUGIN_DATA"] = str(runtime_root / "plugin-data")
     command = _adapter_command(installed_plugin)
 
     with _McpClient(command, workspace_root.parent, env, host + "/MCP") as client:

@@ -61,7 +61,7 @@ Failures use one stable code and one recovery action:
 | Code | Meaning |
 |---|---|
 | `WORKSPACE_UNRESOLVED` | No unique business workspace; ask, then make no read or write. |
-| `ROLE_SESSION_INVALID` | Capability missing, expired, closed, forged, or mismatched; return to the main thread. |
+| `ROLE_SESSION_INVALID` | Capability missing, expired, closed, forged, mismatched, or minted before the gateway last restarted; return to the main thread. |
 | `PATH_OUTSIDE_WORKSPACE` | Path or symlink escaped the bounded root; refuse without guessing another path. |
 | `ROLE_NOT_OWNER` | The role does not own the target; hand off to the canonical owner. |
 | `STALE_WRITE` | The file changed since read; re-read, reconcile, then retry once. |
@@ -73,8 +73,18 @@ Failures use one stable code and one recovery action:
 `ownership-guard.py` runs for every tool call. Claude Code supplies
 `agent_type` on a subagent's call; a call carrying no identity marker at all is
 the founder's main thread. The guard and the gateway keep their state in
-`PLUGIN_DATA` (or `CLAUDE_PLUGIN_DATA`), and both fall back to
-`~/.founder-os/plugin-data`.
+`CLAUDE_PLUGIN_DATA`, and both fall back to `~/.founder-os/plugin-data`.
+
+The guard reads `references/ownership.yaml` and a workspace's
+`_local/ownership.yaml` with the gateway's own parser, `mcp/ownership.py`,
+loaded by path, so it enforces the same map with or without PyYAML installed.
+`owns:` and `derived_files:` are parsed independently, so a broken `owns:` does
+not switch the derived deny off. A map in a shape that parser does not accept
+(flow lists, tabs, other indents) is logged and ignored: less coverage, never a
+deny, and never a change to the role lockdown, which does not read the map.
+Guard, gateway and validator match paths with the same two functions
+(`owner_key`, `derived_entry`), casefolded: the guard denies `Goals.md` as
+`goals.md`, and the gateway grants a write only to the map's own spelling.
 
 For a known packaged role, the guard:
 
@@ -89,7 +99,10 @@ For a known packaged role, the guard:
    recognize;
 4. denies `open_role_session` to subagents so they cannot mint or elevate their
    own authority; and
-5. requires a live capability whose role matches that identity.
+5. requires a live capability whose role matches that identity — a persisted
+   session record whose expiry is no later than now plus the gateway's 30-minute
+   session TTL (the gateway also refuses any capability its own process did not
+   mint, which the guard, a separate process, cannot see).
 
 A generic fallback (`general-purpose`, `default`) may spend a live capability
 of any role. That gateway call binds the capability's role to the agent's

@@ -223,7 +223,7 @@ class TestSessionContextFailureVisibility(unittest.TestCase):
             (plugin_root / "references").mkdir()
             setup(plugin_root / "references" / "guidance.md")
             env = os.environ.copy()
-            env["PLUGIN_ROOT"] = str(plugin_root)
+            env["CLAUDE_PLUGIN_ROOT"] = str(plugin_root)
             result = subprocess.run(
                 [sys.executable, str(SESSION_HOOK)],
                 capture_output=True,

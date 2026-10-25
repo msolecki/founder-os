@@ -44,7 +44,8 @@ to a role.
 
 A role session lasts 30 minutes from `open_role_session`; after that every
 call on its capability returns `ROLE_SESSION_INVALID` and the main thread opens
-a new one.
+a new one. The gateway honours only capabilities its running process minted,
+so a gateway restart ends every open session the same way.
 
 - `read_state` answers per path. A file that does not exist comes back as
   `{path, exists: false, missing_sections}` — the headings a new file needs —
