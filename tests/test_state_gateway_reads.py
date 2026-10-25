@@ -203,6 +203,70 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 fallback_resolver.resolve(project).root,
             )
 
+    def test_an_unmatched_founder_os_home_is_its_own_resolution_error(self) -> None:
+        """The dashboard picks its business with this function, and must tell
+        "the variable points nowhere" apart from "nothing is configured"."""
+        from mcp import workspaces
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            alpha = root / "alpha"
+            beta = root / "beta"
+            alpha.mkdir()
+            beta.mkdir()
+            registry = {
+                "businesses": {
+                    "alpha": {"home": str(alpha), "status": "active"},
+                    "beta": {"home": str(beta), "status": "active"},
+                },
+            }
+            with self.assertRaises(workspaces.ConfiguredHomeUnmatched) as raised:
+                workspaces.select_workspace(
+                    registry, root, None, {"FOUNDER_OS_HOME": str(root / "x")})
+            self.assertIsInstance(raised.exception, WorkspaceResolutionError)
+            self.assertIn(str((root / "x").resolve()), str(raised.exception))
+            with self.assertRaises(WorkspaceResolutionError) as raised:
+                workspaces.select_workspace(registry, root, None, {})
+            self.assertNotIsInstance(
+                raised.exception, workspaces.ConfiguredHomeUnmatched)
+            self.assertEqual(
+                (beta.resolve(), "beta", "business"),
+                workspaces.select_workspace(
+                    registry, root, None, {"FOUNDER_OS_HOME": str(beta)}),
+            )
+
+    def test_the_registry_and_the_ownership_map_read_scalars_alike(self) -> None:
+        """One scalar grammar: a value one file accepts the other accepts too.
+
+        The registry took `"C:\\x"` literally where the map decoded escapes,
+        and the map took `'it''s'` and `[a]` where the registry refused them.
+        """
+        from mcp import ownership
+
+        accepted = {
+            "acme": "acme",
+            '"/x/biz"': "/x/biz",
+            "'/x/biz'": "/x/biz",
+            "/x/biz#2": "/x/biz#2",
+            '"## Last month\'s correction"': "## Last month's correction",
+        }
+        refused = ('""', "''", "'it''s'", '"a\\b"', '"a"b"', "[a]",
+                   "a{b}", '"open', "'open")
+        for raw, value in accepted.items():
+            with self.subTest(raw=raw):
+                self.assertEqual(value, ownership._parse_scalar(raw))
+                self.assertEqual(
+                    value,
+                    WorkspaceResolver._parse_registry(
+                        "default: " + raw + "\n")["default"],
+                )
+        for raw in refused:
+            with self.subTest(raw=raw):
+                with self.assertRaises(ownership.OwnershipError):
+                    ownership._parse_scalar(raw)
+                with self.assertRaises(WorkspaceResolutionError):
+                    WorkspaceResolver._parse_registry("default: " + raw + "\n")
+
     def test_explicit_slug_default_and_portfolio_select_the_intended_business(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

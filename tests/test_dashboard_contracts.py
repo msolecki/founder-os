@@ -115,9 +115,18 @@ class TestActiveBusinesses(unittest.TestCase):
         businesses, portfolio, paused = self.contracts.active_businesses(
             home=Path(tempfile.mkdtemp()), cwd=cwd, env={})
         self.assertEqual(len(businesses), 1)
-        self.assertEqual(businesses[0].home, cwd / "founder-os")
+        self.assertEqual(businesses[0].home, (cwd / "founder-os").resolve())
         self.assertIsNone(portfolio)
         self.assertEqual(paused, 0)
+
+    def test_no_registry_reads_founder_os_home_as_the_gateway_does(self):
+        """Relative to the working directory, like the gateway's resolver."""
+        cwd = Path(tempfile.mkdtemp())
+        (cwd / "elsewhere").mkdir()
+        businesses, _portfolio, _paused = self.contracts.active_businesses(
+            home=Path(tempfile.mkdtemp()), cwd=cwd,
+            env={"FOUNDER_OS_HOME": "elsewhere"})
+        self.assertEqual(businesses[0].home, (cwd / "elsewhere").resolve())
 
 
 class TestThresholds(unittest.TestCase):

@@ -10,14 +10,13 @@ import hashlib
 import heapq
 import json
 import os
-import re
 import secrets
 import stat
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Optional, Tuple
 
-from .ownership import heading_matches
+from .ownership import heading_matches, split_h2
 
 
 class SafeStateError(Exception):
@@ -399,54 +398,21 @@ class SafeStateIO:
         headings: Tuple[str, ...],
     ) -> Dict[str, str]:
         found: Dict[str, str] = {}
-        current: Optional[str] = None
-        body: List[str] = []
-        fence_character: Optional[str] = None
-        fence_length = 0
-
-        def finish() -> None:
-            nonlocal current, body
-            if current is not None:
-                if current in found:
-                    raise SafeStateError("STATE_IO_ERROR")
-                found[current] = "".join(body)
-            current = None
-            body = []
-
-        for line in content.splitlines(keepends=True):
-            stripped = line.rstrip("\r\n")
-            fence = re.match(r"^ {0,3}(`{3,}|~{3,})(?:[^`~].*)?$", stripped)
-            if fence_character is None and fence is not None:
-                marker = fence.group(1)
-                fence_character = marker[0]
-                fence_length = len(marker)
-            elif fence_character is not None and re.fullmatch(
-                r" {0,3}" + re.escape(fence_character)
-                + "{" + str(fence_length) + r",}\s*",
-                stripped,
-            ):
-                fence_character = None
-                fence_length = 0
-            elif fence_character is None:
-                match = re.fullmatch(r"## ([^\r\n]+)", stripped)
-                if match is not None:
-                    finish()
-                    # `## Close — 2026-07` is `## Close`, by the rule the
-                    # write path applies, so it is found under its name.
-                    current = next(
-                        (
-                            wanted for wanted in headings
-                            if heading_matches(
-                                stripped.rstrip(), "## " + wanted
-                            )
-                        ),
-                        None,
-                    )
-                    continue
-
-            if current is not None:
-                body.append(line)
-        finish()
+        for line, body in split_h2(content)[1]:
+            # `## Close — 2026-07` is `## Close`, by the rule the write path
+            # applies, so it is found under its name.
+            wanted = next(
+                (
+                    heading for heading in headings
+                    if heading_matches(line, "## " + heading)
+                ),
+                None,
+            )
+            if wanted is None:
+                continue
+            if wanted in found:
+                raise SafeStateError("STATE_IO_ERROR")
+            found[wanted] = body
         return found
 
     @staticmethod

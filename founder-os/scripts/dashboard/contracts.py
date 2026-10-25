@@ -125,9 +125,8 @@ def active_businesses(
     environment = dict(os.environ if env is None else env)
     registry = workspaces.load_registry(Path.home() if home is None else Path(home))
     if registry is None:
-        declared = environment.get("FOUNDER_OS_HOME")
-        base = Path(cwd or Path.cwd())
-        root = Path(declared).expanduser() if declared else base / "founder-os"
+        root = workspaces.select_workspace(
+            None, Path(cwd or Path.cwd()), None, environment)[0]
         return ((Business(slug="", home=root, status="active"),), None, 0)
 
     businesses = []

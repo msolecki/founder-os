@@ -57,7 +57,8 @@ Precedence, most explicit wins:
    it to `context-load`.
 2. **`FOUNDER_OS_HOME`** — set in the environment; each scheduled job carries
    its business's absolute home. The registry maps the path back to a slug for
-   display.
+   display. A value matching no registered home, or more than one, stops
+   here: the gateway and the dashboard both refuse rather than fall through.
 3. **Registry `default:`** — when nothing above says otherwise, and only while
    that business is `active`. A paused `default:` is ignored, not refused:
    with exactly one active business that one is used; with more than one, name

@@ -9,6 +9,22 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
+if __package__:
+    from .ownership import _parse_scalar
+else:
+    # ponytail: the ownership hook and the dashboard load this file by path,
+    # with no package to import from, so the sibling is loaded the same way.
+    # A real package for mcp/ would retire this branch.
+    import importlib.util
+
+    _spec = importlib.util.spec_from_file_location(
+        "_founder_os_workspaces_ownership",
+        Path(__file__).with_name("ownership.py"),
+    )
+    _ownership = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_ownership)
+    _parse_scalar = _ownership._parse_scalar
+
 
 _UNRESOLVED_CODE = "WORKSPACE_UNRESOLVED"
 _UNRESOLVED_ACTION = "Ask for the business; make no read or write"
@@ -22,6 +38,21 @@ class WorkspaceResolutionError(Exception):
         super().__init__(message)
         self.code = _UNRESOLVED_CODE
         self.action = _UNRESOLVED_ACTION
+
+
+class ConfiguredHomeUnmatched(WorkspaceResolutionError):
+    """`FOUNDER_OS_HOME` names no registered home, or more than one.
+
+    Its own class because it is the one ambiguity the founder set up
+    explicitly: the dashboard reports it rather than opening a business the
+    variable says they are not in.
+    """
+
+    def __init__(self, configured: Path, matches: int) -> None:
+        super().__init__(
+            "FOUNDER_OS_HOME=%s matches %d registered workspaces, not one"
+            % (configured, matches)
+        )
 
 
 @dataclass(frozen=True)
@@ -51,10 +82,11 @@ class WorkspaceResolver:
         try:
             project_root = Path(project_dir).resolve()
             registry = self._load_registry()
-            root, slug, workspace_kind = self._select_workspace(
+            root, slug, workspace_kind = select_workspace(
                 registry,
                 project_root,
                 business_slug,
+                self._env,
             )
         except WorkspaceResolutionError:
             raise
@@ -107,10 +139,11 @@ class WorkspaceResolver:
 
             if registry is None or binding.business_slug is None:
                 raise WorkspaceResolutionError()
-            root, slug, workspace_kind = self._select_workspace(
+            root, slug, workspace_kind = select_workspace(
                 registry,
                 binding.root,
                 binding.business_slug,
+                self._env,
             )
             if (
                 root != binding.root
@@ -148,81 +181,6 @@ class WorkspaceResolver:
             raise
         except (OSError, TypeError, ValueError, KeyError):
             raise WorkspaceResolutionError()
-
-    def _select_workspace(
-        self,
-        registry: Optional[dict[str, Any]],
-        project_root: Path,
-        requested_slug: Optional[str],
-    ) -> tuple[Path, Optional[str], str]:
-        if registry is None:
-            if requested_slug is not None:
-                raise WorkspaceResolutionError()
-            configured = self._env.get("FOUNDER_OS_HOME")
-            root = (
-                self._resolve_from_project(project_root, configured)
-                if configured
-                else (project_root / "founder-os").resolve()
-            )
-            return root, None, "single-business"
-
-        businesses = registry["businesses"]
-        portfolio = registry.get("portfolio")
-
-        if requested_slug is not None:
-            if requested_slug == "portfolio":
-                if portfolio is None:
-                    raise WorkspaceResolutionError()
-                return Path(portfolio).resolve(), "portfolio", "portfolio"
-            if not self._valid_slug(requested_slug):
-                raise WorkspaceResolutionError()
-            entry = businesses.get(requested_slug)
-            if entry is None:
-                raise WorkspaceResolutionError()
-            return Path(entry["home"]).resolve(), requested_slug, "business"
-
-        configured = self._env.get("FOUNDER_OS_HOME")
-        if configured:
-            configured_root = self._resolve_from_project(
-                project_root,
-                configured,
-            )
-            matches = [
-                slug
-                for slug, entry in businesses.items()
-                if Path(entry["home"]).resolve() == configured_root
-            ]
-            if portfolio is not None and Path(portfolio).resolve() == configured_root:
-                matches.append("portfolio")
-            if len(matches) != 1:
-                raise WorkspaceResolutionError()
-            matched_slug = matches[0]
-            return (
-                configured_root,
-                matched_slug,
-                "portfolio" if matched_slug == "portfolio" else "business",
-            )
-
-        default = registry.get("default")
-        # A paused default is no default: pausing is the documented first step
-        # before retiring a business, and it must not strand the others. The
-        # single-active rule below decides instead.
-        if default is not None and businesses[default]["status"] == "active":
-            return (
-                Path(businesses[default]["home"]).resolve(),
-                default,
-                "business",
-            )
-
-        active = [
-            slug
-            for slug, entry in businesses.items()
-            if entry["status"] == "active"
-        ]
-        if len(active) != 1:
-            raise WorkspaceResolutionError()
-        slug = active[0]
-        return Path(businesses[slug]["home"]).resolve(), slug, "business"
 
     @staticmethod
     def _resolve_from_project(project_root: Path, value: str) -> Path:
@@ -267,7 +225,7 @@ class WorkspaceResolver:
                     result["businesses"] = businesses
                     in_businesses = True
                 else:
-                    result[key] = cls._parse_scalar(value)
+                    result[key] = _parse_scalar(value, WorkspaceResolutionError)
                     in_businesses = False
                 continue
 
@@ -285,7 +243,7 @@ class WorkspaceResolver:
                 entry = businesses[current_slug]
                 if key not in _BUSINESS_KEYS or key in entry:
                     raise WorkspaceResolutionError()
-                entry[key] = cls._parse_scalar(value)
+                entry[key] = _parse_scalar(value, WorkspaceResolutionError)
                 continue
 
             raise WorkspaceResolutionError()
@@ -319,25 +277,6 @@ class WorkspaceResolver:
             ):
                 return value[:index].rstrip()
 
-        return value
-
-    @staticmethod
-    def _parse_scalar(value: str) -> str:
-        if not value:
-            raise WorkspaceResolutionError()
-
-        if value[0] in ("'", '"'):
-            quote = value[0]
-            if len(value) < 2 or value[-1] != quote:
-                raise WorkspaceResolutionError()
-            value = value[1:-1]
-            if not value or quote in value:
-                raise WorkspaceResolutionError()
-        elif any(character in value for character in "[]{}"):
-            raise WorkspaceResolutionError()
-
-        if "\x00" in value or "\n" in value or "\r" in value:
-            raise WorkspaceResolutionError()
         return value
 
     @classmethod
@@ -417,6 +356,89 @@ class WorkspaceResolver:
             and value != "portfolio"
             and _SLUG_PATTERN.fullmatch(value) is not None
         )
+
+
+def select_workspace(
+    registry: Optional[dict[str, Any]],
+    project_root: Path,
+    requested_slug: Optional[str],
+    env: Mapping[str, str],
+) -> tuple[Path, Optional[str], str]:
+    """The workspace a session means: the slug, then `FOUNDER_OS_HOME`, then
+    an active `default:`, then the only active business.
+
+    Module-level so the dashboard picks its business by the gateway's rule
+    rather than a copy of it.
+    """
+    if registry is None:
+        if requested_slug is not None:
+            raise WorkspaceResolutionError()
+        configured = env.get("FOUNDER_OS_HOME")
+        root = (
+            WorkspaceResolver._resolve_from_project(project_root, configured)
+            if configured
+            else (project_root / "founder-os").resolve()
+        )
+        return root, None, "single-business"
+
+    businesses = registry["businesses"]
+    portfolio = registry.get("portfolio")
+
+    if requested_slug is not None:
+        if requested_slug == "portfolio":
+            if portfolio is None:
+                raise WorkspaceResolutionError()
+            return Path(portfolio).resolve(), "portfolio", "portfolio"
+        if not WorkspaceResolver._valid_slug(requested_slug):
+            raise WorkspaceResolutionError()
+        entry = businesses.get(requested_slug)
+        if entry is None:
+            raise WorkspaceResolutionError()
+        return Path(entry["home"]).resolve(), requested_slug, "business"
+
+    configured = env.get("FOUNDER_OS_HOME")
+    if configured:
+        configured_root = WorkspaceResolver._resolve_from_project(
+            project_root,
+            configured,
+        )
+        matches = [
+            slug
+            for slug, entry in businesses.items()
+            if Path(entry["home"]).resolve() == configured_root
+        ]
+        if portfolio is not None and Path(portfolio).resolve() == configured_root:
+            matches.append("portfolio")
+        if len(matches) != 1:
+            raise ConfiguredHomeUnmatched(configured_root, len(matches))
+        matched_slug = matches[0]
+        return (
+            configured_root,
+            matched_slug,
+            "portfolio" if matched_slug == "portfolio" else "business",
+        )
+
+    default = registry.get("default")
+    # A paused default is no default: pausing is the documented first step
+    # before retiring a business, and it must not strand the others. The
+    # single-active rule below decides instead.
+    if default is not None and businesses[default]["status"] == "active":
+        return (
+            Path(businesses[default]["home"]).resolve(),
+            default,
+            "business",
+        )
+
+    active = [
+        slug
+        for slug, entry in businesses.items()
+        if entry["status"] == "active"
+    ]
+    if len(active) != 1:
+        raise WorkspaceResolutionError()
+    slug = active[0]
+    return Path(businesses[slug]["home"]).resolve(), slug, "business"
+
 
 
 def load_registry(home: Path) -> Optional[dict[str, Any]]:

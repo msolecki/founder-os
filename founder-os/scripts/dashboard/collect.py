@@ -12,12 +12,10 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Mapping, Optional, Tuple
+from typing import Dict, Mapping, Optional, Tuple
 
-_H1 = re.compile(r"^#\s+(.+?)\s*$")
-_H2 = re.compile(r"^(##\s+.+?)\s*$", re.M)
-_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
-_HEADING_SUFFIX = re.compile(r"\s+[—–-]\s+")
+from . import contracts
+
 _DATED_MEMBER = re.compile(r"\d{4}-\d{2}-\d{2}\.md$")
 
 # The workspace directory itself is conventionally `<project>/founder-os`, so
@@ -91,49 +89,28 @@ class Sources:
         return entry.title
 
 
-def _normalise_heading(raw: str) -> str:
-    return _HEADING_SUFFIX.split(raw.strip(), maxsplit=1)[0].strip()
-
-
-def _split_h2(text: str) -> Tuple[Dict[str, str], Dict[str, str], Optional[str]]:
+def _split_h2(text: str, declared: Tuple[str, ...] = ()
+              ) -> Tuple[Dict[str, str], Dict[str, str], Optional[str]]:
     """Every H2 body keyed by section name, each name's heading as written, and
     the file's `# ` title when one precedes the first section.
 
-    A heading may carry a dated suffix (`## Close — 2026-06`); the section name
-    is what is pinned, so the suffix is stripped for the key. It is not thrown
-    away: the second map holds the raw line, because for a dated close that
-    suffix is the only record of which month the section describes.
+    The scan and the suffix rule are the gateway's (`mcp/ownership.py`), so the
+    page finds a section exactly when the write path would accept it. A heading
+    carrying a dated suffix (`## Close — 2026-06`) is filed under the declared
+    name it matches; the second map keeps the raw line, because for a dated
+    close that suffix is the only record of which month the section describes.
+    A heading matching no declared name is kept under its own line, and of two
+    headings with one name the first is kept.
     """
+    ownership = contracts._load_sibling("ownership", "mcp/ownership.py")
     found: Dict[str, str] = {}
     raw: Dict[str, str] = {}
-    current: Optional[str] = None
-    body: List[str] = []
-    fence: Optional[str] = None
-    title: Optional[str] = None
-    for line in text.splitlines(keepends=True):
-        stripped = line.rstrip("\r\n")
-        marker = _FENCE.match(stripped)
-        if fence is None and marker:
-            fence = marker.group(1)[0]
-        elif fence is not None and marker and marker.group(1)[0] == fence:
-            fence = None
-        if fence is None and current is None and title is None:
-            named = _H1.match(stripped)
-            if named:
-                title = named.group(1)
-        if fence is None:
-            heading = _H2.match(stripped)
-            if heading:
-                if current is not None:
-                    found.setdefault(current, "".join(body))
-                current = _normalise_heading(heading.group(1))
-                raw.setdefault(current, heading.group(1))
-                body = []
-                continue
-        if current is not None:
-            body.append(line)
-    if current is not None:
-        found.setdefault(current, "".join(body))
+    title, sections = ownership.split_h2(text)
+    for line, body in sections:
+        key = next((name for name in declared
+                    if ownership.heading_matches(line, name)), line)
+        found.setdefault(key, body)
+        raw.setdefault(key, line)
     return found, raw, title
 
 
@@ -189,7 +166,7 @@ def collect(home: Path, view, slug: str = "") -> Sources:
                     relative = declared_path + item.name
                     text, digest, stamp = _read(item)
                     present, written, _title = (
-                        _split_h2(text) if text is not None else ({}, {}, None))
+                        _split_h2(text, headings) if text is not None else ({}, {}, None))
                     found.append(SourceFile(
                         path=relative, exists=True, readable=text is not None,
                         sha256=digest or "", mtime=stamp, sections=present,
@@ -209,7 +186,7 @@ def collect(home: Path, view, slug: str = "") -> Sources:
                 path=declared_path, exists=True, readable=False,
                 sha256=digest or "", mtime=stamp, sections={}, missing=headings)
             continue
-        present, written, title = _split_h2(text)
+        present, written, title = _split_h2(text, headings)
         files[declared_path] = SourceFile(
             path=declared_path, exists=True, readable=True, sha256=digest or "",
             mtime=stamp, sections=present,
