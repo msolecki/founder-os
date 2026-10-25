@@ -40,7 +40,8 @@ portfolio: /Users/x/.founder-os/portfolio   # scaffolded with the 2nd business
   workspace the cwd happens to resolve to" is how advice lands in the wrong
   company. It names a business, never the portfolio: `default: portfolio`
   makes the registry unreadable, because every business role would resolve to
-  a workspace it is refused in.
+  a workspace it is refused in. To fix it, delete the `default:` line or set it to
+  a business slug from `businesses:`; the portfolio is reached by naming it.
 - **`portfolio`** is a reserved selector, not a slug: no business may take it,
   and naming it (as the business in the invocation, or as the gateway's
   `business_slug`) selects the `portfolio:` workspace. Only the

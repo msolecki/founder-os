@@ -18,8 +18,8 @@ _BUSINESS_KEYS = frozenset({"home", "status"})
 
 
 class WorkspaceResolutionError(Exception):
-    def __init__(self) -> None:
-        super().__init__(_UNRESOLVED_CODE)
+    def __init__(self, message: str = _UNRESOLVED_CODE) -> None:
+        super().__init__(message)
         self.code = _UNRESOLVED_CODE
         self.action = _UNRESOLVED_ACTION
 
@@ -400,6 +400,11 @@ class WorkspaceResolver:
         # a slug was named. The portfolio is reached by naming it.
         if not isinstance(default, str):
             raise WorkspaceResolutionError()
+        if default == "portfolio":
+            raise WorkspaceResolutionError(
+                "businesses.yaml: default must name a business, not portfolio"
+                "; remove the line or name a business slug"
+            )
         if not cls._valid_slug(default):
             raise WorkspaceResolutionError()
         if default not in businesses:

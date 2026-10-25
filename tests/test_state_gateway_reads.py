@@ -438,6 +438,13 @@ class WorkspaceResolverReadTests(unittest.TestCase):
             )
             resolver = WorkspaceResolver(env={}, home=home)
             self.assert_unresolved(lambda: resolver.resolve(root))
+            with self.assertRaises(WorkspaceResolutionError) as raised:
+                resolver.resolve(root)
+            self.assertEqual(
+                "businesses.yaml: default must name a business, not portfolio"
+                "; remove the line or name a business slug",
+                str(raised.exception),
+            )
             self.assert_unresolved(lambda: resolver.resolve(root, "portfolio"))
 
     def test_registry_saved_with_a_byte_order_mark_still_loads(self) -> None:
