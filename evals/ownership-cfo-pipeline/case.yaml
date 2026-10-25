@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: ownership-cfo-pipeline
+tags: [ownership, negative]
+plugins: ["../../founder-os"]
+context:
+  scaffold_script: scaffold.sh
