@@ -38,8 +38,8 @@ def run_hook(payload):
 def run_hook_with_data(payload, data_root):
     env = {**os.environ,
            "FOUNDER_OS_HOME": str(PLUGIN_ROOT),
-           "PLUGIN_ROOT": str(PLUGIN_ROOT),
-           "PLUGIN_DATA": str(data_root)}
+           "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT),
+           "CLAUDE_PLUGIN_DATA": str(data_root)}
     return subprocess.run([sys.executable, str(GUARD_PATH)],
                           input=json.dumps(payload), capture_output=True,
                           text=True, env=env, cwd=str(REPO_ROOT))
@@ -67,17 +67,10 @@ class TestLazyYamlImport(unittest.TestCase):
 
         self.assertEqual(imported, [])
 
-    def test_yaml_loader_prefers_c_safe_loader(self):
-        guard = load_guard()
-        import yaml
-        class FakeLoader: pass
-        with mock.patch.object(yaml, "CSafeLoader", FakeLoader), \
-                mock.patch.object(yaml, "load", return_value={"owns": {}}) as load:
-            self.assertEqual(guard._yaml_load(yaml, "owns: {}\n"), {"owns": {}})
-        self.assertIs(load.call_args.kwargs["Loader"], FakeLoader)
-
 
 class TestOwnerOfCasefold(unittest.TestCase):
+    """The guard's owner lookup: the shared `owner_key`, casefolded."""
+
     BY_PATH = {
         "goals.md": "strategist",
         "drafts/outreach/": "pipeline-coach",
@@ -85,31 +78,59 @@ class TestOwnerOfCasefold(unittest.TestCase):
     }
 
     def setUp(self):
-        self.guard = load_guard()
+        self.matcher = load_guard()._ownership_module()
+
+    def owner_of(self, rel, by_path):
+        return by_path.get(self.matcher.owner_key(rel, by_path))
 
     def test_exact_match_still_works(self):
-        self.assertEqual(self.guard.owner_of("goals.md", self.BY_PATH),
+        self.assertEqual(self.owner_of("goals.md", self.BY_PATH),
                          "strategist")
 
     def test_file_case_variant_is_the_same_file(self):
-        self.assertEqual(self.guard.owner_of("Goals.md", self.BY_PATH),
+        self.assertEqual(self.owner_of("Goals.md", self.BY_PATH),
                          "strategist")
-        self.assertEqual(self.guard.owner_of("GOALS.MD", self.BY_PATH),
+        self.assertEqual(self.owner_of("GOALS.MD", self.BY_PATH),
                          "strategist")
 
     def test_directory_case_variant_is_the_same_directory(self):
         self.assertEqual(
-            self.guard.owner_of("Drafts/Outreach/2026-07-16-anna.md",
+            self.owner_of("Drafts/Outreach/2026-07-16-anna.md",
                                 self.BY_PATH),
             "pipeline-coach")
 
     def test_longest_match_survives_casefold(self):
         self.assertEqual(
-            self.guard.owner_of("DRAFTS/OUTREACH/x.md", self.BY_PATH),
+            self.owner_of("DRAFTS/OUTREACH/x.md", self.BY_PATH),
             "pipeline-coach")
 
     def test_uncovered_path_still_returns_none(self):
-        self.assertIsNone(self.guard.owner_of("scratch.md", self.BY_PATH))
+        self.assertIsNone(self.owner_of("scratch.md", self.BY_PATH))
+
+    def test_a_grant_needs_the_maps_spelling(self):
+        # One matcher, one case rule: the guard denies `Goals.md` as
+        # `goals.md`, and the gateway and validator, which grant, still
+        # refuse to hand anyone a second spelling of the file.
+        schema = self.matcher.OwnershipSchema.load(
+            PLUGIN_ROOT / "references" / "ownership.yaml")
+        owner = schema.owner_for("goals.md")
+        self.assertIsNotNone(owner)
+        self.assertIsNone(schema.owner_for("Goals.md"))
+        self.assertEqual(self.matcher.owner_key(
+            "Goals.md", ["goals.md"]), "goals.md")
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        try:
+            import validate_package
+        finally:
+            sys.path.pop(0)
+        from pathlib import PurePosixPath
+        by_path = {"goals.md": owner, "drafts/": "pipeline-coach"}
+        self.assertEqual(validate_package._owner_for(
+            by_path, PurePosixPath("goals.md")), owner)
+        self.assertIsNone(validate_package._owner_for(
+            by_path, PurePosixPath("Goals.md")))
+        self.assertEqual(validate_package._owner_for(
+            by_path, PurePosixPath("drafts/x.md")), "pipeline-coach")
 
 
 class TestHookIntegration(unittest.TestCase):
@@ -171,7 +192,7 @@ class TestAgentTypeFor(unittest.TestCase):
             self.assertIsNone(self.guard._mapped_agent_type("agent.a-1"))
 
     def test_missing_mapping_returns_none(self):
-        with mock.patch.dict(os.environ, {"PLUGIN_DATA": "/tmp/no-such-data"},
+        with mock.patch.dict(os.environ, {"CLAUDE_PLUGIN_DATA": "/tmp/no-such-data"},
                              clear=False):
             self.assertIsNone(self.guard._mapped_agent_type("agent.a-1"))
 
@@ -185,28 +206,39 @@ class TestAgentTypeFor(unittest.TestCase):
             (mapping / "agent.a-1.json").symlink_to(source)
             with mock.patch.dict(
                 os.environ,
-                {"PLUGIN_DATA": temp_dir},
+                {"CLAUDE_PLUGIN_DATA": temp_dir},
                 clear=False,
             ):
                 resolved = self.guard._mapped_agent_type("agent.a-1")
 
         self.assertIsNone(resolved)
 
-    def test_mapping_older_than_twenty_four_hours_is_not_trusted(self):
+    NOW = 1_800_000_000.0
+
+    def _mapping_aged(self, age):
         with tempfile.TemporaryDirectory() as temp_dir:
             mapping = Path(temp_dir) / "agent-types"
             mapping.mkdir()
             (mapping / "agent.old.json").write_text(
                 json.dumps(
-                    {"agent_type": "cfo", "recorded_at": time.time() - 86401}
+                    {"agent_type": "cfo", "recorded_at": self.NOW - age}
                 ),
                 encoding="utf-8",
             )
             with mock.patch.dict(
-                os.environ, {"PLUGIN_DATA": temp_dir}, clear=False
-            ):
-                resolved = self.guard._mapped_agent_type("agent.old")
-        self.assertIsNone(resolved)
+                os.environ, {"CLAUDE_PLUGIN_DATA": temp_dir}, clear=False
+            ), mock.patch.object(self.guard.time, "time",
+                                 return_value=self.NOW):
+                return self.guard._mapped_agent_type("agent.old")
+
+    def test_mapping_older_than_twenty_four_hours_is_not_trusted(self):
+        self.assertIsNone(self._mapping_aged(86401))
+
+    def test_mapping_exactly_twenty_four_hours_old_is_not_trusted(self):
+        self.assertIsNone(self._mapping_aged(86400))
+
+    def test_mapping_one_second_inside_the_ttl_is_trusted(self):
+        self.assertEqual(self._mapping_aged(86399), "cfo")
 
     def test_present_invalid_identity_markers_are_not_treated_as_main(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -232,10 +264,9 @@ class TestAgentTypeFor(unittest.TestCase):
 class TestOutboundGuard(unittest.TestCase):
     """House rule 0 at the tool layer — the half of the hook nothing covered.
 
-    The guard's own docstring calls check_outbound 'the only reason [Bash
-    routing-around] isn't trivial today'. A matcher typo there would have
-    shipped silently: every prior test exercised ownership, none exercised
-    outbound.
+    Driven through the hook as the runtime runs it, so the deny is pinned
+    where `main` makes it. A matcher typo there would have shipped silently:
+    every prior test exercised ownership, none exercised outbound.
     """
 
     def test_bash_by_subagent_is_denied(self):
@@ -322,10 +353,10 @@ class TestDerivedEntryMatching(unittest.TestCase):
     ENTRIES = ("_dashboard/",)
 
     def setUp(self):
-        self.guard = load_guard()
+        self.matcher = load_guard()._ownership_module()
 
-    def _entry(self, rel):
-        return self.guard._derived_entry(rel, self.ENTRIES)
+    def _entry(self, rel, entries=ENTRIES):
+        return self.matcher.derived_entry(rel, entries)
 
     def test_a_file_under_the_directory_matches(self):
         self.assertEqual(self._entry("_dashboard/notes.md"), "_dashboard/")
@@ -349,77 +380,84 @@ class TestDerivedEntryMatching(unittest.TestCase):
 
     def test_an_entry_written_without_its_slash_still_covers_the_tree(self):
         self.assertEqual(
-            self.guard._derived_entry("_dashboard/notes.md", ("_dashboard",)),
+            self._entry("_dashboard/notes.md", ("_dashboard",)),
             "_dashboard")
         self.assertIsNone(
-            self.guard._derived_entry("_dashboardish/x.md", ("_dashboard",)))
+            self._entry("_dashboardish/x.md", ("_dashboard",)))
 
     def test_no_entries_means_no_match(self):
-        self.assertIsNone(self.guard._derived_entry("_dashboard/notes.md", ()))
+        self.assertIsNone(self._entry("_dashboard/notes.md", ()))
 
 
-class TestDerivedFilesAreParsedWithoutPyYAML(unittest.TestCase):
-    """The no-PyYAML machines must run the same derived policy, not most of it."""
+class TestDerivedFilesAreParsedByThePackageParser(unittest.TestCase):
+    """`derived_files:` the guard cannot read is no derived path, not a deny."""
 
     def setUp(self):
         self.guard = load_guard()
-        self.text = (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
-            encoding="utf-8")
-
-    def test_fallback_parser_agrees_with_pyyaml_on_the_real_map(self):
-        import yaml
-        expected = tuple(yaml.safe_load(self.text)["derived_files"])
-        self.assertEqual(self.guard._parse_derived_without_yaml(self.text),
-                         expected)
-
-    def test_load_derived_without_pyyaml_matches_the_pyyaml_answer(self):
-        with mock.patch.object(self.guard, "yaml", None):
-            without = self.guard.load_derived()
-        self.assertEqual(without, self.guard.load_derived())
-        self.assertIn("_dashboard/", without)
 
     def test_an_absent_key_is_no_derived_paths_rather_than_an_error(self):
-        self.assertEqual(
-            self.guard._parse_derived_without_yaml("owns:\n  cfo:\n    - m.md\n"),
-            ())
+        self.assertEqual(self.guard._derived_from_text(
+            "owns:\n  cfo:\n    - m.md\n", "x"), ())
         self.assertEqual(self.guard._derived_from_text("owns: {}\n", "x"), ())
 
     def test_a_shape_it_does_not_understand_yields_no_deny(self):
-        self.assertEqual(
-            self.guard._parse_derived_without_yaml(
-                "derived_files:\n  nested:\n    - x\n"),
-            ())
-
-    def test_a_flow_sequence_is_read_the_way_pyyaml_reads_it(self):
-        import yaml
-        for text in ("derived_files: [_dashboard/]\n",
-                     'derived_files: ["_dashboard/"]\n',
-                     "derived_files: [_dashboard/, _cache/]\n",
-                     "derived_files: !!seq [_dashboard/]\n",
-                     "derived_files: [\n  _dashboard/,\n]\n",
-                     "owns:\n  cfo:\n    - m.md\nderived_files: [_dashboard/]\n"):
-            with self.subTest(text=text):
-                expected = tuple(yaml.safe_load(text)["derived_files"])
-                self.assertEqual(
-                    self.guard._parse_derived_without_yaml(text), expected)
-
-    def test_an_inline_shape_that_is_not_a_list_of_names_yields_no_deny(self):
-        # The other half of agreeing with PyYAML: a shape it turns into no
-        # strings must turn into no entries here either, or the machine without
-        # PyYAML denies paths the map never named.
-        for text in ("derived_files: _dashboard/\n",
+        for text in ("derived_files:\n  nested:\n    - x\n",
+                     "derived_files: _dashboard/\n",
                      "derived_files: {a: b}\n",
-                     "derived_files: [[_dashboard/]]\n",
-                     "derived_files: ['unterminated\n",
-                     "derived_files: [\n"):
+                     "derived_files: ['unterminated\n"):
             with self.subTest(text=text):
-                self.assertEqual(self.guard._parse_derived_without_yaml(text), ())
+                self.assertEqual(self.guard._derived_from_text(text, "x"), ())
 
-    def test_a_column_zero_sequence_is_read_too(self):
-        self.assertEqual(
-            self.guard._parse_derived_without_yaml(
-                "derived_files:\n- _dashboard/\nowns:\n  cfo:\n    - m.md\n"),
-            ("_dashboard/",))
+    def test_a_stray_column_zero_line_never_yields_part_of_owns(self):
+        # Cutting `owns:` at the stray line handed back cfo's entry and lost
+        # strategist's, so goals.md had no owner; PyYAML refuses both texts.
+        import yaml
+        for stray in ("\t- goals.md\n", "- goals.md\n"):
+            text = ("owns:\n  cfo:\n    - metrics.md\n" + stray +
+                    "  strategist:\n    - goals.md\n")
+            with self.subTest(stray=stray):
+                with self.assertRaises(yaml.YAMLError):
+                    yaml.safe_load(text)
+                self.assertIsNone(self.guard._owns_from_text(text, "x"))
+
+    def test_a_broken_owns_key_leaves_derived_files_readable(self):
+        text = ("derived_files:\n  - _dashboard/\n"
+                "owns:\n  - a list where the agents should be\n")
+        self.assertEqual(self.guard._derived_from_text(text, "x"),
+                         ("_dashboard/",))
+        self.assertIsNone(self.guard._owns_from_text(text, "x"))
+
+    BODY = "  strategist:\n    - goals.md\n"
+
+    def test_valid_yaml_around_the_key_still_yields_it(self):
+        # Each of these read as None, and the guard failed open for the file.
+        import yaml
+        for text in ("owns:  # the founder's own files\n" + self.BODY,
+                     "---\nowns:\n" + self.BODY,
+                     "version: 2\nowns:\n" + self.BODY,
+                     "owns:\n" + self.BODY + "note: kept  # why\n"
+                     "derived_files:\n  - _dashboard/\n"):
+            with self.subTest(text=text):
+                self.assertEqual(yaml.safe_load(text)["owns"],
+                                 {"strategist": ["goals.md"]})
+                self.assertEqual(self.guard._owns_from_text(text, "x"),
+                                 {"strategist": ["goals.md"]})
+
+    def test_yaml_it_refuses_around_the_key_is_refused_here_too(self):
+        import yaml
+        for text in ("owns:\n  cfo:\n    - metrics.md\nversion: 2\n"
+                     + self.BODY,
+                     "owns:\n  cfo:\n    - metrics.md\n---\n"
+                     "owns:\n" + self.BODY,
+                     "\towns:\n" + self.BODY):
+            with self.subTest(text=text):
+                with self.assertRaises(yaml.YAMLError):
+                    yaml.safe_load(text)
+                self.assertIsNone(self.guard._owns_from_text(text, "x"))
+
+    def test_malformed_content_inside_the_key_is_still_refused(self):
+        self.assertIsNone(self.guard._owns_from_text(
+            "version: 2\nowns:\n  strategist:\n    - [goals.md]\n", "x"))
 
 
 class TestDerivedFilesAreNotWritable(unittest.TestCase):
@@ -455,6 +493,8 @@ class TestDerivedFilesAreNotWritable(unittest.TestCase):
         (plugin / "references").mkdir()
         guard = plugin / "hooks" / "ownership-guard.py"
         shutil.copy(GUARD_PATH, guard)
+        (plugin / "mcp").mkdir()
+        shutil.copy(PLUGIN_ROOT / "mcp" / "ownership.py", plugin / "mcp")
         (plugin / "references" / "ownership.yaml").write_text(
             map_text, encoding="utf-8")
         ws = tmp / "ws"
@@ -491,11 +531,10 @@ class TestDerivedFilesAreNotWritable(unittest.TestCase):
         # The hook sees tools that name a path. A shell command names none, so
         # the message says which writes it is speaking about instead of
         # promising an absolute the mechanism does not deliver. "A file tool"
-        # was still a class wider than the mechanism: it reads three tools and
-        # hands every other one — MultiEdit on a host that ships it — no path
-        # at all, so the three are named.
+        # was still a class wider than the mechanism: it reads four tools and
+        # hands every other one no path at all, so the four are named.
         p = self._run(self.MAP, "_dashboard/notes.md")
-        for tool in ("Write", "Edit", "NotebookEdit"):
+        for tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
             self.assertIn("`%s`" % tool, p.stdout, tool)
         self.assertNotIn("with a file tool", p.stdout)
 
@@ -596,6 +635,17 @@ class TestDerivedFilesAreNotWritable(unittest.TestCase):
         p = self._run(self.MAP, "_dashboard/index.html", tool_name="Edit")
         self.assertIn("deny", p.stdout, p.stderr)
 
+    def test_multiedit_is_bound_like_edit(self):
+        # SEC-01: MultiEdit names its target the way Edit does; a host that
+        # still ships it must not get a path-free pass on any of the denies.
+        for rel, reason in (("_dashboard/index.html", "derived_files"),
+                            ("goals.md", "Hand off to"),
+                            ("_local/ownership.yaml", "local overlay")):
+            with self.subTest(rel=rel):
+                p = self._run(self.MAP, rel, tool_name="MultiEdit")
+                self.assertIn("deny", p.stdout, p.stderr)
+                self.assertIn(reason, p.stdout)
+
     def test_a_relative_path_resolves_against_the_session_cwd(self):
         p = self._run(
             self.MAP, None, tool_input={"file_path": "_dashboard/notes.md"})
@@ -658,44 +708,81 @@ class TestFailOpen(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
-class TestFallbackParser(unittest.TestCase):
-    """_parse_owns_without_yaml must agree with PyYAML on the real map —
-    otherwise the no-PyYAML machines run a different ownership policy."""
+class TestMapParityWithPyYAML(unittest.TestCase):
+    """The guard reads the maps the way PyYAML reads them — with or without it.
 
-    def setUp(self):
-        self.guard = load_guard()
-        self.text = (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
+    PyYAML is the oracle because it is what the guard used whenever it was
+    installed. The guard must reach the same `owns:` and `derived_files:`
+    answer for the packaged map and for an overlay, and reach it on a machine
+    where `import yaml` fails.
+    """
+
+    OVERLAY = (
+        "# founder's own files\n"
+        "owns:\n"
+        "  network-manager:\n"
+        "    - partners.md  # weekly\n"
+        "    - \"notes/partners/\"\n"
+        "  skills-mentor:\n"
+        "    - 'learning.md'\n"
+    )
+
+    @staticmethod
+    def _flatten(owns):
+        return {path.strip(): agent for agent, paths in owns.items()
+                for path in paths}
+
+    def _without_yaml(self, call):
+        real_import = builtins.__import__
+
+        def no_yaml(name, *args, **kwargs):
+            if name == "yaml" or name.startswith("yaml."):
+                raise ImportError("no PyYAML here")
+            return real_import(name, *args, **kwargs)
+
+        with mock.patch.dict(sys.modules, {"yaml": None}), \
+                mock.patch("builtins.__import__", side_effect=no_yaml):
+            return call(load_guard())
+
+    def test_the_packaged_map_matches_pyyaml(self):
+        import yaml
+        text = (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
             encoding="utf-8")
+        data = yaml.safe_load(text)
+        with mock.patch.dict(os.environ,
+                             {"CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}):
+            for label, read in (("with", lambda call: call(load_guard())),
+                                ("without", self._without_yaml)):
+                with self.subTest(pyyaml=label):
+                    self.assertEqual(
+                        read(lambda guard: guard.load_ownership()),
+                        self._flatten(data["owns"]))
+                    self.assertEqual(
+                        read(lambda guard: guard.load_derived()),
+                        tuple(data["derived_files"]))
 
-    def test_parses_the_real_map_identically_to_pyyaml(self):
+    def test_the_packaged_map_reads_without_pyyaml(self):
+        # No `import yaml` here: this must hold where PyYAML is absent.
+        with mock.patch.dict(os.environ,
+                             {"CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}):
+            owners = self._without_yaml(lambda guard: guard.load_ownership())
+            derived = self._without_yaml(lambda guard: guard.load_derived())
+        self.assertEqual(owners.get("goals.md"), "strategist")
+        self.assertIn("_dashboard/", derived)
+
+    def test_an_overlay_matches_pyyaml(self):
         import yaml
-        expected = yaml.safe_load(self.text)["owns"]
-        got = self.guard._parse_owns_without_yaml(self.text)
-        self.assertEqual(got, expected)
-
-    def test_load_ownership_without_pyyaml_matches_pyyaml_map(self):
-        import yaml
-        owns = yaml.safe_load(self.text)["owns"]
-        expected = {
-            path.strip(): agent
-            for agent, paths in owns.items()
-            for path in paths
-            if isinstance(path, str) and path.strip()
-        }
-        with mock.patch.object(self.guard, "yaml", None):
-            got = self.guard.load_ownership()
-        self.assertEqual(got, expected)
-
-    def test_garbage_returns_none_rather_than_a_guess(self):
-        self.assertIsNone(self.guard._parse_owns_without_yaml(
-            "owns:\n  - a list where an agent should be\n"))
-        self.assertIsNone(self.guard._parse_owns_without_yaml("no owns here\n"))
-
-    def test_same_indent_sequence_matches_pyyaml(self):
-        text = "owns:\n  strategist:\n  - goals.md\n  - metrics.md\n"
-        self.assertEqual(
-            self.guard._parse_owns_without_yaml(text),
-            {"strategist": ["goals.md", "metrics.md"]})
+        expected = self._flatten(yaml.safe_load(self.OVERLAY)["owns"])
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "_local").mkdir()
+            (Path(td) / "_local" / "ownership.yaml").write_text(
+                self.OVERLAY, encoding="utf-8")
+            for label, read in (("with", lambda call: call(load_guard())),
+                                ("without", self._without_yaml)):
+                with self.subTest(pyyaml=label):
+                    self.assertEqual(
+                        read(lambda guard: guard.local_ownership(td)),
+                        expected)
 
 
 class TestOwnershipHotPath(unittest.TestCase):
@@ -705,7 +792,33 @@ class TestOwnershipHotPath(unittest.TestCase):
                 mock.patch.object(guard, "workspace_roots", return_value=[] ) as roots:
             guard.check_ownership("cfo", "Write", {
                 "file_path": "/tmp/workspace/a.md"}, "/tmp/workspace")
-        roots.assert_called_once_with("/tmp/workspace")
+        roots.assert_called_once_with("/tmp/workspace", registry=False)
+
+    def test_an_in_root_write_does_not_load_the_registry(self):
+        # PERF-01: the registry costs an import of mcp/workspaces.py on every
+        # call, and a target under the primary roots cannot need it.
+        guard = load_guard()
+        with tempfile.TemporaryDirectory() as td:
+            ws = Path(td).resolve() / "founder-os"
+            ws.mkdir()
+            with mock.patch.dict(os.environ, {"FOUNDER_OS_HOME": str(ws)}), \
+                    mock.patch.object(guard, "_registry_roots",
+                                      return_value=[]) as registry:
+                guard.check_ownership("explore", "Write", {
+                    "file_path": str(ws / "scratch.md")}, td)
+                registry.assert_not_called()
+                guard.check_ownership("explore", "Write", {
+                    "file_path": str(Path(td) / "elsewhere.md")}, td)
+                registry.assert_called_once_with()
+
+    def test_a_main_thread_call_does_not_import_tempfile(self):
+        # PERF-03: tempfile is for binding a generic role and nothing else.
+        p = subprocess.run([sys.executable, "-X", "importtime", str(GUARD_PATH)],
+                           input=json.dumps({"tool_name": "Read"}),
+                           capture_output=True, text=True, cwd=str(REPO_ROOT))
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertIn("import time:", p.stderr)
+        self.assertNotIn("tempfile", p.stderr)
 
     def test_the_packaged_map_is_read_once_per_invocation(self):
         # PERF-002's discipline with a second consumer on it: `owns:` and
@@ -721,8 +834,7 @@ class TestOwnershipHotPath(unittest.TestCase):
         map_path.write_text(
             "derived_files:\n  - _dashboard/\n"
             "owns:\n  strategist:\n    - goals.md\n", encoding="utf-8")
-        with mock.patch.dict(os.environ, {"PLUGIN_ROOT": str(tmp),
-                                          "CLAUDE_PLUGIN_ROOT": str(tmp)}):
+        with mock.patch.dict(os.environ, {"CLAUDE_PLUGIN_ROOT": str(tmp)}):
             self.assertEqual(guard.load_ownership(), {"goals.md": "strategist"})
             map_path.write_text("owns:\n  strategist:\n    - goals.md\n",
                                 encoding="utf-8")
@@ -760,6 +872,52 @@ class TestWorkspaceRoots(unittest.TestCase):
             with mock.patch.dict(os.environ, {}, clear=True):
                 roots = guard.workspace_roots(td)
             self.assertIn(str((Path(td) / "founder-os").resolve()), roots)
+
+
+class TestLoadingMcpModulesByPath(unittest.TestCase):
+    def test_a_module_that_fails_to_run_is_not_left_registered(self):
+        guard = load_guard()
+        with mock.patch.dict(sys.modules):
+            with self.assertRaises(Exception):
+                guard._load_mcp_module("does-not-exist")
+            self.assertNotIn("_founder_os_guard_does-not-exist", sys.modules)
+
+    def test_workspaces_by_path_registers_its_ownership_sibling(self):
+        source = PLUGIN_ROOT / "mcp" / "workspaces.py"
+        name = "_founder_os_workspaces_ownership"
+
+        def load():
+            spec = importlib.util.spec_from_file_location("ws_by_path", source)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+            return module
+
+        with mock.patch.dict(sys.modules):
+            sys.modules.pop(name, None)
+            first = load()
+            self.assertIs(sys.modules[name], first._ownership)
+            self.assertIs(load()._ownership, first._ownership)
+
+
+class TestDoubledQuoteIsRefused(unittest.TestCase):
+    """CHANGELOG: `'it''s'` refuses the registry and voids the overlay."""
+
+    def test_the_overlay_is_ignored_and_the_registry_refused(self):
+        guard = load_guard()
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "_local").mkdir()
+            (Path(td) / "_local" / "ownership.yaml").write_text(
+                "owns:\n  local-agent:\n    - 'it''s.md'\n", encoding="utf-8")
+            self.assertEqual(guard.local_ownership(td), {})
+            home = Path(td) / "home"
+            (home / ".founder-os").mkdir(parents=True)
+            (home / ".founder-os" / "businesses.yaml").write_text(
+                "businesses:\n  acme:\n    home: '/x/it''s'\n"
+                "    status: active\n", encoding="utf-8")
+            with self.assertRaises(Exception) as caught:
+                guard._load_mcp_module("workspaces").load_registry(home)
+            self.assertEqual(caught.exception.code, "WORKSPACE_UNRESOLVED")
 
 
 class TestRegistryRoots(unittest.TestCase):
@@ -821,7 +979,7 @@ class TestRegistryRoots(unittest.TestCase):
                 "    status: active\n"
                 "portfolio: %s\n" % (acme, portfolio)))
             guard = load_guard()
-            with mock.patch.object(guard, "yaml", None), \
+            with mock.patch.dict(sys.modules, {"yaml": None}), \
                     mock.patch.dict(os.environ, {"HOME": str(home)}):
                 roots = guard._registry_roots()
             self.assertEqual(roots, [str(acme), str(portfolio)])
@@ -962,15 +1120,6 @@ class TestLocalOverlay(unittest.TestCase):
             r = self._write(ws, "cfo", "partners.md")
             self.assertIn("deny", r.stdout, r.stderr)
 
-    def test_overlay_is_honoured_without_pyyaml(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as td:
-            ws = self._workspace(Path(td), self.OVERLAY)
-            guard = load_guard()
-            with mock.patch.object(guard, "yaml", None):
-                self.assertEqual(guard.local_ownership(str(ws)),
-                                 {"partners.md": "network-manager"})
-
     def test_one_businesss_overlay_does_not_reach_another(self):
         import tempfile
         with tempfile.TemporaryDirectory() as td:
@@ -995,21 +1144,18 @@ class TestLocalOverlay(unittest.TestCase):
             self.assertIn("deny", also_denied.stdout, also_denied.stderr)
 
     def test_overlay_is_read_once_per_root(self):
+        # Stated as behaviour: an overlay rewritten between two reads in one
+        # invocation is not read again, so both answers come from one file.
         guard = load_guard()
-        calls = []
-        real = guard._owns_from_text
-
-        def counted(text, source):
-            calls.append(source)
-            return real(text, source)
-
         import tempfile
         with tempfile.TemporaryDirectory() as td:
             ws = self._workspace(Path(td), self.OVERLAY)
-            with mock.patch.object(guard, "_owns_from_text", counted):
-                guard.local_ownership(str(ws))
-                guard.local_ownership(str(ws))
-        self.assertEqual(len(calls), 1)
+            first = guard.local_ownership(str(ws))
+            (ws / "_local" / "ownership.yaml").write_text(
+                "owns:\n  cfo:\n    - other.md\n", encoding="utf-8")
+            second = guard.local_ownership(str(ws))
+        self.assertEqual(first, {"partners.md": "network-manager"})
+        self.assertEqual(second, first)
 
 
 class TestLocalMapIsNotAgentWritable(unittest.TestCase):
@@ -1217,7 +1363,7 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             guard = load_guard()
             with mock.patch.dict(
                 os.environ,
-                {"PLUGIN_DATA": temp_dir},
+                {"CLAUDE_PLUGIN_DATA": temp_dir},
                 clear=False,
             ), mock.patch.object(
                 guard.time,
@@ -1228,10 +1374,23 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
 
         self.assertIsNone(role)
 
+    def test_the_guard_caps_expiry_at_the_gateways_session_ttl(self):
+        sys.path.insert(0, str(PLUGIN_ROOT))
+        try:
+            from mcp.gateway import Gateway
+        finally:
+            sys.path.pop(0)
+        self.assertEqual(load_guard().SESSION_TTL_SECONDS,
+                         Gateway.DEFAULT_SESSION_TTL_SECONDS)
+
     def test_every_malformed_persisted_session_shape_is_denied(self):
         mutations = (
             ("closed", lambda record: record.update(status="closed")),
             ("expired", lambda record: record.update(expires_at=0)),
+            (
+                "expiry past the session ttl",
+                lambda record: record.update(expires_at=time.time() + 3600),
+            ),
             (
                 "wrong hash",
                 lambda record: record.update(capability_hash="0" * 64),
@@ -1564,7 +1723,7 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             data_root = Path(temp_dir) / ".founder-os" / "plugin-data"
             capability = self._issue_capability(data_root, role="cfo")
             env = {key: value for key, value in os.environ.items()
-                   if key not in ("PLUGIN_DATA", "CLAUDE_PLUGIN_DATA")}
+                   if key != "CLAUDE_PLUGIN_DATA"}
             env.update(HOME=temp_dir, FOUNDER_OS_HOME=str(PLUGIN_ROOT),
                        CLAUDE_PLUGIN_ROOT=str(PLUGIN_ROOT))
             result = subprocess.run(
@@ -1583,6 +1742,98 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             load_guard().ROLE_NAMES,
             {path.stem for path in (PLUGIN_ROOT / "agents").glob("*.md")},
         )
+
+    def test_session_fields_match_the_gateways_record(self):
+        # HOOK-06 — `_session_role` refuses any record whose keys differ, so a
+        # field the gateway adds would deny every role's gateway call.
+        sys.path.insert(0, str(PLUGIN_ROOT))
+        try:
+            from mcp import sessions
+        finally:
+            sys.path.pop(0)
+        self.assertEqual(load_guard().SESSION_FIELDS,
+                         sessions._BASE_RECORD_FIELDS)
+
+
+class TestGuardFilesAreNotAgentWritable(unittest.TestCase):
+    """SEC-02: the files that define the guard sit outside every workspace.
+
+    The plugin root, the plugin data root and the business registry are not
+    workspace files, so the outside-the-workspace allow used to cover them.
+    """
+
+    def _run(self, rel_or_path, agent_type="explore", tool_name="Edit"):
+        tmp = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, str(tmp), True)
+        ws, data, home = tmp / "ws", tmp / "data", tmp / "home"
+        for directory in (ws, data / "state-gateway", home / ".founder-os"):
+            directory.mkdir(parents=True)
+        target = {"plugin": PLUGIN_ROOT / "references" / "ownership.yaml",
+                  "hook": PLUGIN_ROOT / "hooks" / "ownership-guard.py",
+                  "agent": PLUGIN_ROOT / "agents" / "cfo.md",
+                  "session": data / "state-gateway" / ("0" * 64 + ".json"),
+                  "binding": data / "agent-types" / "agent.x.json",
+                  "registry": home / ".founder-os" / "businesses.yaml",
+                  "registry-link": tmp / "link.yaml",
+                  # SEC-06 — default APFS is case-insensitive: these name the
+                  # same files as `registry` and `plugin`.
+                  "registry-recased": home / ".Founder-OS" / "Businesses.YAML",
+                  "plugin-recased": Path(str(PLUGIN_ROOT).upper())
+                  / "REFERENCES" / "Ownership.yaml",
+                  "outside": tmp / "elsewhere.md"}[rel_or_path]
+        if rel_or_path == "registry-link":
+            target.symlink_to(home / ".founder-os" / "businesses.yaml")
+        env = {**os.environ, "FOUNDER_OS_HOME": str(ws), "HOME": str(home),
+               "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT),
+               "CLAUDE_PLUGIN_DATA": str(data)}
+        payload = {"tool_name": tool_name, "cwd": str(tmp),
+                   "tool_input": {"file_path": str(target)}}
+        if agent_type is not None:
+            payload["agent_type"] = agent_type
+        return subprocess.run([sys.executable, str(GUARD_PATH)],
+                              input=json.dumps(payload), capture_output=True,
+                              text=True, env=env, cwd=str(tmp))
+
+    def test_a_non_role_agent_may_not_write_a_guard_file(self):
+        for target in ("plugin", "hook", "agent", "session", "binding",
+                       "registry", "registry-link"):
+            for tool_name in ("Write", "Edit"):
+                with self.subTest(target=target, tool_name=tool_name):
+                    p = self._run(target, tool_name=tool_name)
+                    self.assertIn("deny", p.stdout, p.stderr)
+                    self.assertIn("defines the Founder OS guard", p.stdout)
+                    self.assertEqual(p.returncode, 0)
+
+    def test_a_re_cased_guard_file_is_denied(self):
+        for target in ("registry-recased", "plugin-recased"):
+            with self.subTest(target=target):
+                p = self._run(target, tool_name="Write")
+                self.assertIn("defines the Founder OS guard", p.stdout,
+                              p.stderr)
+                self.assertEqual(p.returncode, 0)
+
+    def test_a_re_cased_guard_file_leaves_the_main_thread_alone(self):
+        for target in ("registry-recased", "plugin-recased"):
+            with self.subTest(target=target):
+                p = self._run(target, agent_type=None)
+                self.assertEqual(p.stdout.strip(), "", p.stdout)
+                self.assertEqual(p.returncode, 0)
+
+    def test_a_generic_agent_is_denied_too(self):
+        p = self._run("session", agent_type="general-purpose", tool_name="Write")
+        self.assertIn("defines the Founder OS guard", p.stdout, p.stderr)
+
+    def test_the_main_thread_is_unaffected(self):
+        for target in ("plugin", "session", "registry"):
+            with self.subTest(target=target):
+                p = self._run(target, agent_type=None)
+                self.assertEqual(p.stdout.strip(), "", p.stdout)
+                self.assertEqual(p.returncode, 0)
+
+    def test_an_ordinary_path_outside_the_workspace_is_still_allowed(self):
+        p = self._run("outside", tool_name="Write")
+        self.assertEqual(p.stdout.strip(), "", p.stdout)
+        self.assertEqual(p.returncode, 0)
 
 
 class TestHostRuntimeShapes(unittest.TestCase):
@@ -1742,7 +1993,7 @@ class TestRuntimeShapeFailOpen(unittest.TestCase):
 
     def test_role_name_in_the_wrong_case_is_still_the_role(self):
         # Role-ness decides whether the lockdown applies at all, so a near
-        # miss has to resolve toward the restricted reading. `owner_of` is
+        # miss has to resolve toward the restricted reading. `owner_key` is
         # casefolded and APFS is too, so the alternative is an identity that
         # is "not a role" to the lockdown and the CFO to the ownership map.
         for agent_type in ("founder-os:CFO", "FOUNDER-OS:cfo", "Cfo"):

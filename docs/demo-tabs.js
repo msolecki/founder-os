@@ -36,10 +36,16 @@
       });
 
       tab.addEventListener('keydown', (event) => {
-        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        const last = tabs.length - 1;
+        const targets = {
+          ArrowLeft: (index + last) % tabs.length,
+          ArrowRight: (index + 1) % tabs.length,
+          Home: 0,
+          End: last,
+        };
+        if (!Object.hasOwn(targets, event.key)) return;
         event.preventDefault();
-        const direction = event.key === 'ArrowRight' ? 1 : -1;
-        const next = (index + direction + tabs.length) % tabs.length;
+        const next = targets[event.key];
         tabs[next].focus();
         tabs[next].click();
       });
@@ -49,8 +55,6 @@
       (tab) => tab.getAttribute('aria-selected') === 'true',
     );
     if (initialTab) selectPanel(initialTab.dataset.demo);
-
-    return { selectPanel };
   }
 
   return { initDemoTabs };

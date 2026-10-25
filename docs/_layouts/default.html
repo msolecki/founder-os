@@ -17,6 +17,7 @@
       --ink-soft: #526064;
       --line: rgba(18, 33, 39, 0.2);
       --orange: #f15a35;
+      --link: #ba351c;
       --code: rgba(18, 33, 39, 0.06);
     }
     @media (prefers-color-scheme: dark) {
@@ -27,6 +28,7 @@
         --ink-soft: #b5bfbf;
         --line: rgba(242, 238, 228, 0.2);
         --code: rgba(242, 238, 228, 0.08);
+        --link: var(--orange);
       }
     }
     * { box-sizing: border-box; }
@@ -42,19 +44,23 @@
     header strong a { font-weight: 700; }
     header nav { display: flex; gap: 14px; flex-wrap: wrap; font-size: 15px; }
     main { padding-top: 8px; padding-bottom: 48px; overflow-wrap: break-word; }
-    a { color: var(--orange); }
+    a { color: var(--link); }
+    .skip-link { position: absolute; left: 16px; top: -100px; padding: 8px 12px; color: var(--paper); background: var(--ink); }
+    .skip-link:focus { top: 8px; }
     h1, h2, h3 { line-height: 1.25; }
     pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
     code { background: var(--code); padding: 0.1em 0.3em; border-radius: 4px; }
     pre { background: var(--paper-strong); border: 1px solid var(--line); padding: 12px; overflow-x: auto; border-radius: 6px; }
     pre code { background: none; padding: 0; }
-    table { border-collapse: collapse; display: block; overflow-x: auto; }
+    .table-scroll { overflow-x: auto; }
+    table { border-collapse: collapse; }
     th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
     blockquote { margin: 0; padding-left: 14px; border-left: 3px solid var(--orange); color: var(--ink-soft); }
     footer { padding-bottom: 32px; color: var(--ink-soft); font-size: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header>
     <strong><a href="{{ '/' | relative_url }}">Founder OS</a></strong>
     <nav>
@@ -65,8 +71,8 @@
       <a href="{{ '/changelog.html' | relative_url }}">Changelog</a>
     </nav>
   </header>
-  <main>
-{{ content }}
+  <main id="main">
+{{ content | replace: '<table', '<div class="table-scroll"><table' | replace: '</table>', '</table></div>' }}
   </main>
   <footer>
     {% if page.last-verified %}Last verified {{ page.last-verified | date: "%Y-%m-%d" }} · {% endif %}<a href="https://github.com/msolecki/founder-os/blob/main/{% if page.source %}{{ page.source }}{% else %}docs/{{ page.path }}{% endif %}">Source</a>

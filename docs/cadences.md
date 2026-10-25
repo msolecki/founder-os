@@ -41,7 +41,8 @@ not edit schedules with `sed` or an interpolated shell command.
 - A sleeping macOS laptop uses per-cadence LaunchAgents. Calendar intervals
   run after wake when their scheduled time was missed.
 - A sleeping Linux machine uses persistent user systemd timers when available.
-  `Persistent=true` supplies catch-up behavior.
+  `Persistent=true` supplies catch-up behavior. User timers stop at logout
+  unless lingering is on (`loginctl enable-linger "$USER"`).
 - An always-on desktop or server may use the current user's crontab. Cron does
   not catch up after sleep: a missed 08:00 run is simply missed.
 - WSL normally has no durable always-running scheduler. Setup stops instead of
@@ -71,6 +72,15 @@ you chose, not its symlink target, so a package-manager upgrade does not
 strand the schedule. Cron, launchd, and systemd times are all derived from one
 cron table in the manager.
 
+Every unit also exports `FOUNDER_OS_CADENCE_WORKFLOW=<workflow>` beside
+`FOUNDER_OS_HOME`, quoted the same way. While it is set, the state gateway
+refuses `open_role_session` for any other workflow with
+`ROLE_SESSION_INVALID`, so text a scheduled run reads cannot steer it into
+another role's workflow. Set but empty still counts as a pin and refuses
+every workflow. The `smoke` command runs with the same pin. Units
+installed before the pin existed keep running unpinned until you preview and
+apply again.
+
 Scheduled sessions run without persisting their conversation transcripts. Durable decisions and receipts stay in the Founder OS workspace;
 recurring host transcripts do not accumulate separately.
 
@@ -95,7 +105,10 @@ If another process edits the crontab or selected unit files while you inspect
 the preview, apply stops. Before writing, it also recomputes the only valid
 artifacts from the manifest config and snapshot; a resealed but changed cron,
 plist, or unit is rejected. Existing manifest and backup paths are never
-overwritten.
+overwritten. If launchd or systemd refuses a unit, apply names it and the
+scheduler's error, then removes every unit of that identity — including units
+that ran before this apply — and names the snapshot backup from step 2 to
+restore the earlier ones from.
 
 Cron fences use exact identities: legacy `founder-os`, a business such as
 `founder-os:a`, sibling `founder-os:acme`, and `founder-os:portfolio` never
@@ -109,7 +122,12 @@ Every cadence receives its own append-only log under
 per-identity directories with mode `0700`, and cron, LaunchAgents, and systemd
 services all run with umask `077`. Setup then runs one exact host argv in a
 cron-like minimal environment. Authentication, missing flags, and
-workspace-access failures therefore surface immediately.
+workspace-access failures therefore surface immediately, with the host's own
+error. The smoke is a real run: it writes that day's brief and spends one
+workflow run of Claude usage. It stops after 10 minutes.
+
+Catch-up means late, not skipped: a laptop asleep at 08:00 runs the daily
+brief at the next wake or login, against that moment's state.
 
 `founder-os-doctor` detects a schedule that has gone quiet, but does not mutate
 the host scheduler.

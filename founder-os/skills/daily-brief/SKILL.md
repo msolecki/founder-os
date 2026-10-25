@@ -83,7 +83,8 @@ Read for one named section only:
   file the brief never opened. Not the effective rate, not the concentration, not
   the runway — those are the **CFO's** to narrate and reading them here is how a
   brief becomes a monthly close nobody asked for.
-- `pipeline.md` — anything with a next action dated today or overdue
+- `pipeline.md` — anything with a next action dated today or overdue, and the
+  `Win/loss pending:` counter in `## Last review`
 - `clients/<client>.md` `## Health` — the latest `Verdict:` line on each active
   engagement, **with its date**. `at-risk` or `failing` is rotting; `healthy`
   is not. That is `client-health`'s vocabulary and those are the only three
@@ -98,8 +99,13 @@ Read for one named section only:
   never have been taken.
 - `pipeline.md`, `content.md`, `network.md` and `metrics.md` `## Close` — the
   `Proposed:` lines, and nothing else; `goals.md` is read whole above, so the
-  quarterly's line arrives on its own. Step 0. (`## Close` was already open for
-  the receivables, so this widens nothing.)
+  quarterly's line arrives on its own. Step 0. (`## Close` was already open for the receivables, so this widens nothing.)
+- `week.md` `## Arithmetic` and `## Audit` — the `Proposed:` line a blocked
+  `week-plan` or `calendar-audit` leaves, and nothing else. Friday's audit line
+  lives only until `week-plan` rewrites the file at 08:30 on Monday, so the
+    08:00 Monday brief is the one that drains it.
+- `reviews/weekly/` — the newest review's `## Next week`, only when the
+  unattended Friday run left a `Proposed:` line there instead of an id.
 
 ## Beliefs
 
@@ -136,22 +142,24 @@ Read for one named section only:
    inbox emptied is seven of the founder's own sentences that now exist in no
    file, and `triage` reads them from here because the inbox no longer holds them.
 
-   Eight cadences produce obligations and none of them may write `queue.md` —
+   Eleven cadences produce obligations and none of them may write `queue.md` —
    `pipeline-review`,
-   `revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`, and
+   `revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`,
+   `week-plan`, `calendar-audit`, `runway-forecast`, and
    the three draft skills, `outreach-draft`, `proposal-draft` and `content-draft`.
-   All eight hand to the **Chief of Staff** by name. Five of them fire on a
+   All eleven hand to the **Chief of Staff** by name. Seven of them fire on a
    schedule, with nobody in the room to hand to; the three draft skills run with
    the founder present, so those the founder can hand over directly. **You are
    the Chief of Staff and this is the room.** Each leaves a `Proposed:` line in the
    section it owns; you read those sections; you take the item or you refuse it.
 
-   **Eight cadences, still five sections, no new file.** `outreach-draft` and
+   **Eleven cadences, no new file.** `outreach-draft` and
    `proposal-draft` propose into `pipeline.md`; `content-draft` proposes into
-   `content.md`. You already open both. This does not widen the `context-load`
-   exemption you run under, and that is not luck — the draft skills propose into
-   the file they already own precisely so that the brief's read set could stay
-   where it is. A draft skill that wanted a book of its own would have cost you the
+   `content.md`; `runway-forecast` proposes into `metrics.md` `## Close`. You
+   already open all three. `week-plan` and `calendar-audit` propose into
+   `week.md`, the only file they own, so their blocked runs widen the read set
+   by two named sections. The draft skills propose into the file they already
+   own precisely so that the brief's read set could stay where it is. A draft skill that wanted a book of its own would have cost you the
    exemption, and `context-load` step 5 is where that argument gets settled, not
    here.
 
@@ -168,7 +176,7 @@ Read for one named section only:
    again on Friday, and again on Monday, under three ids.
 
    **The queue item is not the only record, because the queue forgets.** `## Done`
-   is reaped after 30 days and `## Dropped` after 90, while a quarterly `Proposed:`
+   is reaped after 30 days (and its month's review, or at 60 days in any case) and `## Dropped` after 90, while a quarterly `Proposed:`
    line lives in `goals.md` for the whole quarter, and a refused proposal never
    reaches the queue at all. So every answer — taken or refused — is also a line
    under `Proposals answered:` in today's `## Triage`, keyed by the proposal's
@@ -182,7 +190,10 @@ Read for one named section only:
    fills `## Doing` to its cap of three, that is step 2's finding arriving early —
    say it there, not here.
 
-1. **Check yesterday's commitment, in `## Doing`.** Did it happen? If it did,
+1. **Check yesterday's commitment, in `## Doing`.** Did it happen? `queue.md`
+   answers, not a question: an id in `## Done` happened, an id still in
+   `## Doing` did not — unless the handoff carries the founder's word that it
+   did. If it did,
    close it — run `queue`, which will ask what it emits, because *follow up with
    Anna* resolving into *draft the proposal* is the moment that proposal either
    gets an id or gets forgotten. If it didn't and it's the third day running,
@@ -203,7 +214,9 @@ Read for one named section only:
    action, a client whose `Verdict:` is `at-risk` or `failing`, an invoice past
    terms, a client whose latest `Verdict:` is older than 45 days (`client-health`
    overdue — an unexamined client is not a healthy one, it is an unexamined
-   one), a `## Dead` deal whose `win/loss: pending` is older than 5 business days (the
+   one), a `Win/loss pending:` counter in `pipeline.md` `## Last review` whose oldest —
+   its `oldest <n> days` plus the days since that review's `Date:` — is past 5
+   business days (the
    lesson is expiring — `win-loss-analysis`'s own window is five business days), a
    `goals.md` bet or `Experiment:` line whose `Judgment date:` has passed with no
    verdict written (the **Strategist**'s `kill-or-continue` or `experiment` is

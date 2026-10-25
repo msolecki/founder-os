@@ -17,9 +17,14 @@ date on the number.
 
 ## When to use
 
-At the start of every cadence — daily brief, week plan, weekly review, monthly
-close, quarterly planning — and at the start of any session where an agent is
-about to make a claim about the business.
+At the start of every workflow, scheduled or not, whichever role runs it — every
+agent lists this skill beside `guardrails`, so a cadence that does not name it
+(`week-plan`, `monthly-review`, `quarterly-planning`, `revenue-review`,
+`pipeline-review`) still starts here. The skills that name it outright are
+`daily-brief`, `weekly-review`, `triage`, `queue`, `situation-review`,
+`strategic-evaluation`, `signal-check`, `pricing-strategy`, `portfolio-review`,
+`founder-os-doctor` and `skill-forge`. Also at the start of any session where an
+agent is about to make a claim about the business.
 
 Also whenever a session has been running long enough that a number was quoted
 earlier in the conversation. Re-read the file. "As we established above" is
@@ -35,7 +40,8 @@ Three files, always, in this order. The order is the point:
    currently being attempted, and what would end it.
 3. **`metrics.md`** — the numbers, and the date they were last true.
 
-Then, and only then, the one file your decision owns.
+Then, and only then, what your workflow's own `## Inputs` names — for most, the
+one file your decision owns.
 
 ## Steps
 
@@ -87,9 +93,11 @@ Then, and only then, the one file your decision owns.
    `read_state` returns it as `exists: false` beside the files that do exist.
    Report it as the empty input it is: *"no `pipeline.md` yet"*, not an error
    and not a gap to fill.
-5. **Stop loading.** At most one additional file, and only if the founder's
-   question is explicitly about it — so two files beyond the three, counting your
-   own. This is a rule with a cost attached: an agent holding every file in the
+5. **Stop loading.** Your workflow's `## Inputs` list is its read licence: read
+   what it names and nothing else. The cap below is the default for a workflow
+   whose `## Inputs` names nothing beyond the three and your own file — at most
+   one additional file, and only if the founder's question is explicitly about
+   it — so two files beyond the three, counting your own. This is a rule with a cost attached: an agent holding every file in the
    workspace does not become better informed, it becomes an averager —
    everything is a little bit relevant, nothing outranks anything, and the output
    is a summary of the workspace instead of a decision about it. The founder can
@@ -108,7 +116,10 @@ Then, and only then, the one file your decision owns.
    one.** It reads the three, its own `reviews/daily/`, `queue.md`, `pipeline.md`,
    `clients/` `## Health`, `offer.md` `## ICP` `### Not this`, `metrics.md`
    `## Close` (the receivable lines and the `Proposed:` lines, nothing else), and
-   the `Proposed:` line in `content.md` and `network.md`. That is well past the cap and it is
+   the `Proposed:` line in `content.md` and `network.md`, `week.md` `## Arithmetic`
+   and `## Audit` (the `Proposed:` line a blocked run leaves, nothing else), and
+   the newest `reviews/weekly/` `## Next week` when it holds a `Proposed:` line.
+   That is well past the cap and it is
    deliberate, because **the brief is the one cadence whose decision is the
    ranking across books.** Every other cadence answers a question inside one book
    — is this deal real, does this month clear, is this client dying — and for
@@ -141,7 +152,9 @@ Then, and only then, the one file your decision owns.
 
 ## Output
 
-No file. One line, first, before anything else:
+No file. One line, first, before anything else — this is the first-line rule that
+wins: the `founder-brief` decision line and an error receipt's user-impact line
+both come straight after it:
 
     Context: charter <date> | goals <quarter>, <N> bets | metrics close YYYY-MM (<N>d old)<, STALE if >30d>
 

@@ -133,14 +133,17 @@ is bookkeeping about it.
 The draft then goes to the founder to send. This skill does not send.
 
 **When the founder tells you what they actually sent, write it verbatim under
-`## Sent` — and hand the file to `voice-capture` (Brand Editor) by path.** That
+`## Sent` — and hand the file to `voice-capture` (Brand Editor) by path.** A
+report that arrives in a later session is recorded the same way, by this skill. That
 diff is the founder correcting you on their own name with a live deal at stake,
 and it is the best voice evidence this company will ever get.
 
 It no longer has to be caught in the moment. The draft is on disk, so the diff is
 `## Draft` against `## Sent` and `voice-capture` can compute it a week later. What
-still evaporates is the founder *saying* what they sent — ask, once, and if they
-do not answer, leave `## Sent` empty. An empty `## Sent` is a true statement about
+still evaporates is the founder *saying* what they sent — ask, once,
+through the receipt's **Your move:**; the answer arrives in a later session's
+handoff, and until it does, leave `## Sent` empty. An empty `## Sent` is a true
+statement about
 what you know. A guess at what they sent is a fabricated writing sample in the one
 file whose entire job is to hold real ones.
 

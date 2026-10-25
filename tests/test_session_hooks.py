@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -115,6 +116,73 @@ class TestDecisionNudge(HookCase):
         self.assertIn("founder-os:capture", msg)
         self.assertNotIn("SECRET-LINE", json.dumps(out))
         self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
+
+    def test_repeat_stops_resume_from_the_last_offset(self):
+        path = self.transcript(20)
+        self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
+        state = json.loads((self.data / "stop-nudge" / "s1.scan").read_text())
+        self.assertEqual(
+            {"offset": path.stat().st_size, "n": 20, "in_use": True}, state)
+        with path.open("a", encoding="utf-8") as f:
+            for _ in range(10):
+                f.write('{"type":"assistant","message":{"content":'
+                        '[{"type":"tool_use","name":"Read"}]}}\n')
+        out = self.run_hook(NUDGE, self.payload(path))
+        self.assertIn("30 tool calls",
+                      out["hookSpecificOutput"]["additionalContext"])
+
+    def test_a_partial_last_line_counts_but_is_rescanned(self):
+        path = self.transcript(29)
+        with path.open("a", encoding="utf-8") as f:
+            f.write('{"type":"assistant","message":{"content":'
+                    '[{"type":"tool_use","name":"Read"}]}}')
+        size = path.stat().st_size
+        # A nudge ends the session's scanning and drops its state, so the
+        # state is read from a Stop that stays below the threshold.
+        self.assertIsNone(self.run_hook(
+            NUDGE, self.payload(path), FOUNDER_OS_STOP_NUDGE_MIN="31"))
+        state = json.loads((self.data / "stop-nudge" / "s1.scan").read_text())
+        self.assertLess(state["offset"], size)
+        self.assertEqual(29, state["n"])
+        out = self.run_hook(NUDGE, self.payload(path))
+        self.assertIn("30 tool calls",
+                      out["hookSpecificOutput"]["additionalContext"])
+
+    def test_a_rewritten_transcript_is_rescanned_from_the_start(self):
+        stop_nudge = self.data / "stop-nudge"
+        stop_nudge.mkdir(parents=True)
+        (stop_nudge / "s1.scan").write_text(
+            json.dumps({"offset": 10 ** 9, "n": 0, "in_use": False}))
+        path = self.transcript(30)
+        self.assertIsNotNone(self.run_hook(NUDGE, self.payload(path)))
+
+    def test_stale_state_is_swept_without_a_nudge_and_scan_dropped_on_one(self):
+        stop_nudge = self.data / "stop-nudge"
+        stop_nudge.mkdir(parents=True)
+        old = time.time() - 9 * 86400
+        for name in ("s9", "s9.scan", "s9.scan.tmp"):
+            (stop_nudge / name).write_text("{}")
+            os.utime(stop_nudge / name, (old, old))
+        (stop_nudge / "s8.scan").write_text("{}")
+        self.assertIsNone(self.run_hook(NUDGE, self.payload(self.transcript(5))))
+        self.assertEqual({".swept", "s1.scan", "s8.scan"},
+                         {p.name for p in stop_nudge.iterdir()})
+        self.assertIsNotNone(
+            self.run_hook(NUDGE, self.payload(self.transcript(30))))
+        self.assertTrue((stop_nudge / "s1").exists())
+        self.assertFalse((stop_nudge / "s1.scan").exists())
+
+    def test_a_live_session_keeps_its_marker_past_the_sweep(self):
+        path = self.transcript(30)
+        self.assertIsNotNone(self.run_hook(NUDGE, self.payload(path)))
+        stop_nudge = self.data / "stop-nudge"
+        old = time.time() - 9 * 86400
+        os.utime(stop_nudge / "s1", (old, old))
+        os.utime(stop_nudge / ".swept", (old, old))
+        # The next Stop refreshes the marker; the sweep then leaves it.
+        self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
+        self.assertIsNone(self.run_hook(NUDGE, self.payload(path)))
+        self.assertTrue((stop_nudge / "s1").exists())
 
     def test_threshold_is_configurable(self):
         path = self.transcript(5)

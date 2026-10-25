@@ -39,14 +39,15 @@ In Claude Code, `/founder-os:dashboard`.
 | `slug` | The business to open first. On a multi-business install the page still contains every active business. A slug no readable active business answers to is refused, and so is a slug passed together with `--home`: nothing checks that the two agree, so the pair would file one workspace's numbers under the other's name. |
 | `--home PATH` | Read one workspace root directly and skip the registry. It stays skipped for everything that is read and rendered. With `--out` the registry's active roots are loaded for the refusal below and nothing else, so the page cannot land on a file an agent owns in a second registered business; a registry the parser rejects narrows that refusal back to this root rather than failing the run. |
 | `--out PATH` | Write the page — `index.html`, and nothing else — somewhere other than `_dashboard/`; the other three files in the table below are written where they always are. Refused, with nothing written, when the path resolves onto one `references/ownership.yaml` gives an agent, and when it resolves onto one of those three files. A rendered page is not state and may not land on top of it, and `snapshots.csv` is the series this same run just merged. |
-| `--json` | Print one business's facts to stdout and write nothing at all, in every configuration. Use this when the founder asks a question the page already answers. Where more than one business is readable it answers about the slug you passed; else the workspace `FOUNDER_OS_HOME` names, when that matches exactly one registered home; else the registry's `default:`. A `FOUNDER_OS_HOME` matching no registered home, or matching more than one, resolves nothing and does not fall through to `default:` — the more explicit setting pointing somewhere unknown is a reason to stop, not a reason to consult the vaguer one. With nothing resolved this mode refuses rather than filing one company's figures under another's name. The same three steps choose the business the page opens on, and — where the registry configures no portfolio root — the `_dashboard/` the page is written into. On the page, unlike here, resolving nothing is not a refusal: it opens the first readable business, because the page carries every one of them. |
+| `--json` | Print one business's facts to stdout and write nothing at all, in every configuration. Use this when the founder asks a question the page already answers. Where more than one business is readable it answers about the slug you passed; else the workspace `FOUNDER_OS_HOME` names, when that matches exactly one registered home; else the registry's `default:`. A `FOUNDER_OS_HOME` matching no registered home, or matching more than one, resolves nothing — on a one-business registry as on a larger one — and does not fall through to `default:` — the more explicit setting pointing somewhere unknown is a reason to stop, not a reason to consult the vaguer one. With nothing resolved this mode refuses rather than filing one company's figures under another's name. The same three steps, run by the gateway's own workspace selection, choose the business the page opens on, and — where the registry configures no portfolio root — the `_dashboard/` the page is written into. A `FOUNDER_OS_HOME` matching no single registered home is a refusal for the page too, with nothing written. Otherwise, on the page, unlike here, resolving nothing is not a refusal: it opens the first readable business, because the page carries every one of them. |
 | `--now YYYY-MM-DD` | The date the page treats as today. Defaults to the system clock, and is never inferred from file contents or timestamps. A date other than the system clock's today is a preview: the page is written and `facts.json` and `snapshots.csv` are left untouched, because the series is keyed by date and a preview would overwrite a real day's row, or plant a future one. |
 | `--open` | Open the finished page in the default browser. |
 | `--max-bytes N` | Refuse to write a page larger than N bytes. Defaults to 8 MiB. |
 
 Exit codes: `0` success. `2` nothing was resolved — no readable workspace, an
 unknown slug, a slug passed with `--home`, `--json` with nothing to say which
-business is meant, an unreadable registry, or a `--now` that is not an ISO date.
+business is meant, a `FOUNDER_OS_HOME` matching no single registered home, an
+unreadable registry, or a `--now` that is not an ISO date.
 `3` the page was not written. Three refusals return above the first write of
 any kind, so after those nothing at all changed: the page is over
 `--max-bytes`, `--out` names a path an agent owns, or `--out` names one of the
@@ -110,6 +111,9 @@ drawn over it is a chart of how often the script ran.
   total carry that stamp. `references/house-rules.md` allows such a figure to be
   written "but only carrying its tier", and the page is the surface most likely
   to be quoted back.
+  An amount marked `[DISREGARD]` is left out of the total and out of the
+  "N of M deals record no amount" count; the deal count beside them is still
+  every deal listed under `## Live`.
 - **It does not resolve a disagreement.** Where two files support two readings —
   a pipeline carrying more than one currency, say — the page shows both and names
   the field that would settle it.
@@ -125,3 +129,35 @@ file that settles those numbers; `queue` and `founder-os-doctor` cite the same
 file, and `check_thresholds` fails the build if either of those two states a
 limit without naming it, or if a sentence it has registered prints a number
 that file does not agree with.
+
+## Measuring a bet: `Counted from:`
+
+A bet's progress meter is drawn only when its block under `goals.md` `## Bets`
+carries one optional line naming where its count lives:
+
+```
+Counted from: <path> ## <Section> [| amount >= <number>] [| target <number>]
+```
+
+- `<path>` is a path the ownership map declares — a file such as `pipeline.md`,
+  or a directory such as `drafts/proposals/` — written with letters, digits and
+  `_ . / -` only.
+- `## <Section>` is the section counted. In a file, each list item or `###`
+  block in it is one thing. In a directory, each member whose section is present
+  and not `None.` is one thing, so `drafts/proposals/ ## Sent` counts the
+  proposals the founder has reported sending. A directory that exists and is
+  empty counts zero; one that was never created is "not recorded".
+- `| amount >= N` counts only entries whose amount is at least N — in a file the
+  `Amount:` line, else a heading carrying a currency marker; in a directory the
+  member's `Amount:` line only. One amount the reader cannot read makes the
+  whole count "not recorded", never a smaller number.
+- `| target N` is what the meter is drawn against. Without it the count appears
+  in the bet's numbers table and no meter is drawn.
+
+The two optional parts come in that order. A line outside this grammar is not
+read at all: the bet shows no progress, and a `counted-from-unreadable` finding
+is listed under `integrity` in `facts.json`. For example:
+
+```
+Counted from: pipeline.md ## Won | amount >= 15000 | target 3
+```

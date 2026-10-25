@@ -97,7 +97,7 @@ enforcing it on agents the founder writes.
 - Packaged entries are taken as-is.
 - A local entry whose path is not in the packaged map is added.
 - A local entry whose path **is** in the packaged map (compared case-folded,
-  same as `owner_of`) is dropped with a log line.
+  same as `owner_key` in `mcp/ownership.py`) is dropped with a log line.
 - An unreadable, unparseable, or wrongly-shaped overlay is ignored entirely
   and logged. It never produces a deny.
 - The overlay is read **per matched root**. Business A's overlay never applies
@@ -166,7 +166,7 @@ skill has the identical property, and the guard's own docstring says at length
 that it is not a security boundary. What the merged map actually buys:
 
 - a **local agent writing a local path with a direct file tool** (`Write`,
-  `Edit`, `NotebookEdit`) is checked against that path's local
+  `Edit`, `MultiEdit`, `NotebookEdit`) is checked against that path's local
   owner by the guard,
 - `founder-os-doctor` can check the whole thing statically, which is where the
   overlay's real validation lives,

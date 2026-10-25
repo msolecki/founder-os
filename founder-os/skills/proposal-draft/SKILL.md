@@ -144,13 +144,18 @@ The proposal document goes to the founder to send. This skill does not send, doe
 not sign, and does not invoice.
 
 **When the founder tells you what they actually sent, write it verbatim under
-`## Sent`, then hand the file to `voice-capture` (Brand Editor) by path.** A
+`## Sent`, add `Proposal sent: YYYY-MM-DD` — the date they report — under the
+deal in `pipeline.md` `## Live`, then hand the file to `voice-capture` (Brand
+Editor) by path.** A report that arrives in a later session is recorded the same
+way, by this skill, with `Proposal sent:` under the deal's entry in `## Live` or
+`## Won`, wherever it now sits. A
 proposal the founder rewrote before sending is the highest-stakes prose they
 produce, and the diff against `## Draft` is them correcting us with a deal on the
 table. It is also the founder's formal register, under pressure, with money on
 it, and `## Register` cannot be filled from cold outreach alone.
 
-Ask once. If they do not answer, leave `## Sent` empty — an empty `## Sent` is a
+Ask once, through the receipt's **Your move:** — the answer arrives in a later
+session's handoff. Until it does, leave `## Sent` empty — an empty `## Sent` is a
 true statement about what you know, and a guess at what they sent is a fabricated
 record of a contract.
 
@@ -164,9 +169,11 @@ Its structure, in order:
     6. Dates — start <from capacity-check>, delivery <date>
     7. This proposal expires YYYY-MM-DD. After that: <what changes>
 
-Record it in `pipeline.md` under `## Live`:
+Record it in `pipeline.md` under the prospect's entry in `## Live` — the standard
+block `pipeline-review` keeps, opened if the deal has none yet:
 
-    ### <Prospect> — proposal sent YYYY-MM-DD
+    ### <Prospect> — <offer> — <amount> — <stage>
+    Proposal drafted: YYYY-MM-DD
     Scope: <one line> | Price: <amount> (offer.md YYYY-MM-DD) | Expires: YYYY-MM-DD
     Exclusions — verbatim, the baseline scope-guard rules against:
     - <exclusion, in the words the client will read> → if requested: <change order at <rate> | separate engagement>
@@ -174,6 +181,9 @@ Record it in `pipeline.md` under `## Live`:
     - <exclusion> → if requested: <...>
     Start date confirmed with Delivery Lead: <yes | NO — do not send>
     Next action: <what the founder does> — YYYY-MM-DD
+
+`Proposal drafted:` is the day the file was written, not a send. The send date is
+`Proposal sent:`, and only the founder's report writes it — see `## Output`.
 
 **Write the exclusions out in full. Never a count.** This block is the handoff:
 when the deal closes, `pipeline-review` carries these lines into `## Won`, where

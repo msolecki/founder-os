@@ -210,6 +210,29 @@ def merge(path: Path, row: Mapping[str, str]) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     existing, extra = _existing_rows(target) if target.exists() else ({}, ())
     fields = FIELDS + extra
+
+    # The file sits in one workspace's `_dashboard/`, and `--home` runs file it
+    # under no slug while registry runs file it under the business's own. Where
+    # exactly one slug is on record, blank rows take it, so the same workspace
+    # on the same day is one row whichever way the command was invoked. Two
+    # distinct slugs are a real disagreement and are left as written.
+    named = {key[1] for key in existing if key[1]} | (
+        {row["business"]} if row.get("business") else set())
+    if len(named) == 1:
+        slug = named.pop()
+        row = dict(row, business=slug)
+        relabelled = {}
+        # Blank rows first, so a row already carrying the slug wins its day.
+        for (day, business), old in sorted(
+                existing.items(), key=lambda item: bool(item[0][1])):
+            kept = dict(old, business=slug)
+            # The blank row it replaces may hold a founder column this one
+            # lacks; the file cannot be rebuilt, so that value moves across.
+            dropped = relabelled.get((day, slug), {})
+            for field in extra:
+                kept[field] = kept.get(field) or dropped.get(field, "")
+            relabelled[(day, slug)] = kept
+        existing = relabelled
     cell = tuple(row.get(key, "") for key in _KEY)
     previous = existing.get(cell, {})
     merged = {field: row.get(field, "") for field in FIELDS}

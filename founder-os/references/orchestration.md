@@ -14,8 +14,14 @@ the one literal path `agents/{role}.md`.
 When the host documents a named native role, the main thread selects it;
 otherwise it selects the generic fallback under the identical envelope below.
 
+In a scheduled run, where the unit exports `FOUNDER_OS_CADENCE_WORKFLOW`,
+`open_role_session` accepts only that workflow and returns `ROLE_SESSION_INVALID`
+for any other, so the run cannot dispatch a delegation request to a different
+workflow.
+
 The main thread dispatches the generic fallback with the same tool allowlist
-the role's frontmatter carries — the six Founder OS state-gateway tools and
+the role's frontmatter carries — the Founder OS state-gateway tools it declares
+(six; seven for the portfolio-manager, which adds `read_portfolio_inputs`) and
 nothing else: no shell, web, direct file, other MCP, or agent-spawning tool. The
 fallback holds a live role capability, so it is
 bound exactly as tightly as the role it stands in for; the host guard adds the
@@ -32,13 +38,14 @@ closes the session.
 
 Every native or generic execution envelope carries one `role`, one `role_file`,
 byte-for-byte `role_instructions`, one `workflow`, one bounded `handoff`, and one
-`capability`. The role uses only the six declared Founder OS state-gateway
-tools. `open_role_session` remains a main-thread operation and is never exposed
+`capability`. The role uses only the Founder OS state-gateway tools its
+frontmatter declares. `open_role_session` remains a main-thread operation and is never exposed
 to a role.
 
 A role session lasts 30 minutes from `open_role_session`; after that every
 call on its capability returns `ROLE_SESSION_INVALID` and the main thread opens
-a new one.
+a new one. The gateway honours only capabilities its running process minted,
+so a gateway restart ends every open session the same way.
 
 - `read_state` answers per path. A file that does not exist comes back as
   `{path, exists: false, missing_sections}` — the headings a new file needs —
@@ -51,8 +58,11 @@ a new one.
   workflow's `skills/{workflow}/SKILL.md`, `references/guidance.md`,
   `references/house-rules.md`, `references/ownership.yaml`,
   `references/multi-business.md`, this file, `references/ingestion-gate.md`,
-  `references/linking.md`, `references/thresholds.yaml`, and the two plugin
-  manifests — nothing else.
+  `references/linking.md`, `references/thresholds.yaml`,
+  `references/extensibility.md`, `references/skill-template.md`, and the plugin
+  manifest `.claude-plugin/plugin.json` — nothing else. Anything a workflow needs
+  from outside the package and the workspace, such as the business registry, the
+  main thread reads and puts in the handoff.
 
 ## Workflow result
 
@@ -144,10 +154,10 @@ in a human-facing error receipt containing these five facts:
 | `WORKSPACE_UNRESOLVED` | Ask which business is active; perform no read or write. |
 | `ROLE_SESSION_INVALID` | Stop the role run and return control to the main thread. |
 | `PATH_OUTSIDE_WORKSPACE` | Refuse the path and name the resolved workspace boundary. |
-| `ROLE_NOT_OWNER` | Name the canonical owner and request one bounded handoff. |
+| `ROLE_NOT_OWNER` | Name the canonical owner and request one bounded handoff. A scheduled (cadence-pinned) run stops here instead: it cannot open the owner's workflow, so it reports the owner and leaves the handoff to the founder. |
 | `INVALID_DOCUMENT_STRUCTURE` | Preserve the file, name the structural mismatch, and route to the owner or doctor. |
 | `STALE_WRITE` | Re-read, reconcile deliberately, and retry once. |
-| `STATE_IO_ERROR` | Preserve the original file, stop, and surface the concrete recovery step. |
+| `STATE_IO_ERROR` | Preserve the original file, stop, and surface the concrete recovery step. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
 
 The first line must describe user impact. No error message may imply that a
 failed write was persisted. The raw code may follow as technical detail.

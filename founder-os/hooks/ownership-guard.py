@@ -12,19 +12,20 @@ role agrees with a native role identity.
 
 A subagent that is *not* one of the thirteen roles — a reviewer, an Explore
 pass, another plugin's agent — is not governed by the gateway lockdown. It is
-bound by three checks: no write under ``_local/``, no write under a path the
-map lists in ``derived_files:``, and no write to a file the ownership map gives
-someone else. Everything else it does is between it and the normal permission
+bound by four checks: no write under ``_local/``, no write under a path the
+map lists in ``derived_files:``, no write to a file the ownership map gives
+someone else, and no write to the files that define this guard — the plugin
+root, the plugin data root and ``~/.founder-os/businesses.yaml``. Everything else it does is between it and the normal permission
 system — until a *generic* agent (`general-purpose`, `default`) spends a role
 capability at the gateway. That binds the role to its identity
 (`_bind_generic_role`), and from that call on it gets the role lockdown.
 
-Those three bind **tools that name a path** — ``Write``, ``Edit``,
-``NotebookEdit``. They do not inspect a shell command, so a
+Those four bind **tools that name a path** — ``Write``, ``Edit``,
+``MultiEdit``, ``NotebookEdit``. They do not inspect a shell command, so a
 non-role subagent holding ``Bash`` can write anything its own permissions allow,
 and this hook will not be what stops it. That is the deliberate trade: the
 alternative, denying every unrecognized subagent every tool, locked reviewers
-and Explore passes out of unrelated repositories machine-wide. Read the three
+and Explore passes out of unrelated repositories machine-wide. Read the four
 checks as protection against an honest agent editing the wrong file, not as a
 boundary around a hostile one. A *role* is different — it holds no shell at all.
 
@@ -32,7 +33,8 @@ The hook remains defense in depth, not a security sandbox. Malformed hook input
 and calls without a subagent identity stay out of the founder's way. A known
 role, however, fails closed at the tool boundary described above.
 
-Python 3.9, stdlib + optional PyYAML for the retained ownership helpers.
+Python 3.9, stdlib only: the ownership map is read with the gateway's own
+parser, `mcp/ownership.py`, loaded by path (`_ownership_module`).
 """
 import hashlib
 import json
@@ -41,11 +43,7 @@ import os
 import re
 import stat
 import sys
-import tempfile
 import time
-
-_YAML_UNSET = object()
-yaml = _YAML_UNSET
 
 ROLE_NAMES = frozenset({
     "board-member", "brand-editor", "cfo", "chief-of-staff",
@@ -77,10 +75,11 @@ DIRECT_FILE_TOOLS = frozenset({
 # The tools `_tool_paths` can read a target path out of, in the order a deny
 # names them. Narrower than DIRECT_FILE_TOOLS, which is about a role touching
 # the filesystem at all: this is the set every ownership and derived deny is
-# actually speaking about. A path-naming tool missing from here — MultiEdit on
-# a host that ships it — hands the guard no path and is allowed, which is why
-# the derived deny names these three rather than claiming "a file tool".
-PATH_NAMING_TOOLS = ("Write", "Edit", "NotebookEdit")
+# actually speaking about. A path-naming tool missing from here hands the guard
+# no path and is allowed, which is why the derived deny names these rather than
+# claiming "a file tool". MultiEdit is no longer documented by Claude Code; it
+# stays listed so a host that still ships it is bound like Edit.
+PATH_NAMING_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
 MCP_TOOL = re.compile(r"^mcp__")
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 # Agent identities may carry a host namespace — `founder-os:cfo` on Claude
@@ -105,6 +104,9 @@ SESSION_FIELDS = frozenset({
     "correlation_id", "workflow", "expires_at", "status",
 })
 AGENT_MAPPING_TTL_SECONDS = 24 * 60 * 60
+# `mcp/gateway.py::Gateway.DEFAULT_SESSION_TTL_SECONDS`, pinned equal by
+# tests. A record expiring later than this from now was edited, not minted.
+SESSION_TTL_SECONDS = 1800
 
 # The founder's local overlay (references/extensibility.md). `_local/` is the
 # directory; the file below it is the additive half of the ownership map.
@@ -119,24 +121,8 @@ _LOCAL_CACHE = {}
 # The packaged map, keyed by the plugin root the search started from, under the
 # same discipline: `owns:` and `derived_files:` are two readers of one document.
 _PACKAGED_CACHE = {}
-
-
-def _get_yaml():
-    """Import PyYAML only on paths that need to parse YAML."""
-    global yaml
-    if yaml is _YAML_UNSET:
-        try:
-            import yaml as yaml_module
-        except ImportError:  # PyYAML is optional on strangers' machines.
-            yaml_module = None
-        yaml = yaml_module
-    return yaml
-
-
-def _yaml_load(yaml_module, text):
-    """Use LibYAML's C loader when installed, otherwise SafeLoader."""
-    loader = getattr(yaml_module, "CSafeLoader", yaml_module.SafeLoader)
-    return yaml_module.load(text, Loader=loader) or {}
+# `mcp/ownership.py`, once per process, or None when it would not load.
+_OWNERSHIP = []
 
 
 def log(msg):
@@ -169,132 +155,46 @@ def allow(why=None):
     sys.exit(0)
 
 
-def _parse_owns_without_yaml(text):
-    """Minimal parser for the `owns:` block, used only when PyYAML is missing.
+def _ownership_module():
+    """`mcp/ownership.py` loaded by path, or None.
 
-    Not a YAML parser and not trying to be. It understands exactly the shape
-    ownership.yaml has — a column-0 `owns:`, agents at one indent level, `- path`
-    items at the next — and returns None the moment it sees anything else, which
-    routes the caller to allow. A guess here would be a false deny, so it doesn't
-    guess.
-
-    This exists because PyYAML is not in the standard library. Without it the
-    guard would be a silent no-op on any machine whose python3 lacks the module,
-    which is most of them. Failing open is a decision; failing open invisibly
-    forever because of an import is an accident.
+    The gateway's parser is the guard's parser: two grammars for one map is
+    how the guard came to enforce one policy with PyYAML installed and another
+    without it. Fail-open, as for any map this guard cannot read: a module
+    that will not load costs coverage of the map, never a write. The role
+    lockdown does not read the map, so it stays closed either way.
     """
-    owns, agent, indents = {}, None, {}
-    in_block = False
-    for raw in text.split("\n"):
-        line = raw.split("#", 1)[0].rstrip() if not raw.lstrip().startswith("#") else ""
-        if not line.strip():
-            continue
-        indent = len(line) - len(line.lstrip())
-        if indent == 0:
-            if in_block:
-                break  # next top-level key ends the block
-            in_block = line.strip() == "owns:"
-            continue
-        if not in_block:
-            continue
-        body = line.strip()
-        if body.endswith(":") and not body.startswith("- "):
-            agent = body[:-1].strip()
-            indents["agent"] = indent
-            if not agent:
-                return None
-        elif body.startswith("- "):
-            if agent is None or indent < indents.get("agent", 0):
-                return None
-            owns.setdefault(agent, []).append(body[2:].strip().strip("'\""))
-        else:
-            return None  # something we don't understand — don't pretend we do
-    return owns or None
+    if not _OWNERSHIP:
+        try:
+            module = _load_mcp_module("ownership")
+        except Exception as e:  # noqa: BLE001 - coverage, never a write
+            log("could not load mcp/ownership.py (%s)" % e)
+            module = None
+        _OWNERSHIP.append(module)
+    return _OWNERSHIP[0]
 
 
-def _flow_entries(first, lines):
-    """A `derived_files: [a, b]` flow sequence as a tuple, or ().
+def _load_mcp_module(name):
+    """`<plugin>/mcp/<name>.py`, loaded by path; raises on any failure.
 
-    PyYAML accepts flow style and the packaged map does not use it, so a
-    fallback that read block style only would enforce less than the PyYAML path
-    on the very same document — the divergence `_parse_derived_without_yaml`
-    exists to prevent. `lines` is the shared iterator so a sequence written
-    across several lines is read whole; a tag (`!!seq [...]`) is dropped
-    because it says nothing about the shape.
+    The gateway's modules are the guard's single source for the map and the
+    registry, and the dashed `hooks/` directory is not a package that could
+    import them. Registered in `sys.modules`: dataclasses resolve by module.
     """
-    value = first.strip()
-    if value.startswith("!"):
-        value = value.split(None, 1)[1].strip() if " " in value else ""
-    if not value.startswith("["):
-        return ()
-    while "]" not in value:
-        nxt = next(lines, None)
-        if nxt is None:
-            return ()  # unterminated — a shape we don't understand
-        value += " " + nxt.strip()
-    items, buf, quote = [], [], None
-    for char in value[1:value.index("]")]:
-        if quote:
-            if char == quote:
-                quote = None
-            else:
-                buf.append(char)
-        elif char in "'\"":
-            quote = char
-        elif char == ",":
-            items.append("".join(buf).strip())
-            buf = []
-        else:
-            buf.append(char)
-    if quote:
-        return ()
-    items.append("".join(buf).strip())
-    if any(set("[]{}") & set(item) for item in items):
-        return ()  # nested or mapping — PyYAML would hand us no strings here
-    return tuple(item for item in items if item)
-
-
-def _parse_derived_without_yaml(text):
-    """Minimal parser for the top-level `derived_files:` sequence, or ().
-
-    Exists for the same reason `_parse_owns_without_yaml` does: without it, a
-    machine whose python3 lacks PyYAML would keep the ownership deny and
-    silently lose the derived one, which is the worst of the two states — a
-    guard that enforces most of its map is harder to notice than one that
-    enforces none of it.
-
-    Returns () for anything it does not recognize, including the key being
-    absent. That is an allow, and an allow is what a parser that is guessing
-    should produce.
-    """
-    entries, in_block = [], False
-    lines = iter(text.split("\n"))
-    for raw in lines:
-        line = raw.split("#", 1)[0].rstrip() if not raw.lstrip().startswith("#") else ""
-        if not line.strip():
-            continue
-        indent = len(line) - len(line.lstrip())
-        if indent == 0:
-            if in_block:
-                # A block sequence may sit at column 0 under its own key.
-                if line.startswith("- "):
-                    entries.append(line[2:].strip().strip("'\""))
-                    continue
-                break  # next top-level key ends the block
-            key, sep, value = line.partition(":")
-            if not sep or key.strip() != "derived_files":
-                continue
-            if value.strip():
-                return _flow_entries(value, lines)
-            in_block = True
-            continue
-        if not in_block:
-            continue
-        body = line.strip()
-        if not body.startswith("- "):
-            return ()  # a shape we don't understand — don't pretend we do
-        entries.append(body[2:].strip().strip("'\""))
-    return tuple(entry for entry in entries if entry)
+    import importlib.util
+    source = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "mcp", name + ".py")
+    spec = importlib.util.spec_from_file_location(
+        "_founder_os_guard_" + name, source)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        # A half-run module left registered is what the next load would get.
+        del sys.modules[spec.name]
+        raise
+    return module
 
 
 def _derived_from_text(text, source):
@@ -306,19 +206,11 @@ def _derived_from_text(text, source):
     guessing — an entry this function does not return is a path the guard
     treats as ordinary, which is exactly what it did before the key existed.
     """
-    yaml_module = _get_yaml()
-    if yaml_module is None:
-        return _parse_derived_without_yaml(text)
-    try:
-        data = _yaml_load(yaml_module, text)
-    except yaml_module.YAMLError as e:
-        log("%s is not valid YAML (%s)" % (source, e))
-        return ()
-    entries = data.get("derived_files") if isinstance(data, dict) else None
+    module = _ownership_module()
+    entries = module.read_key(text, "derived_files") if module else None
     if not isinstance(entries, list):
         return ()
-    return tuple(entry.strip().strip("'\"") for entry in entries
-                 if isinstance(entry, str) and entry.strip())
+    return tuple(entry for entry in entries if entry.strip())
 
 
 def _owns_from_text(text, source):
@@ -328,22 +220,13 @@ def _owns_from_text(text, source):
     the same shape by contract, and giving the overlay its own reader is how
     the two quietly stop agreeing about what a map is.
     """
-    yaml_module = _get_yaml()
-    if yaml_module is not None:
-        try:
-            data = _yaml_load(yaml_module, text)
-        except yaml_module.YAMLError as e:
-            log("%s is not valid YAML (%s)" % (source, e))
-            return None
-        owns = data.get("owns") if isinstance(data, dict) else None
-        if not isinstance(owns, dict):
-            log("%s has no usable 'owns:' map" % source)
-            return None
-        return owns
-    owns = _parse_owns_without_yaml(text)
-    if owns is None:
-        log("PyYAML missing and %s is not in the shape the fallback parser "
-            "understands" % source)
+    module = _ownership_module()
+    if module is None:
+        return None
+    owns = module.read_key(text, "owns")
+    if not isinstance(owns, dict):
+        log("%s has no usable 'owns:' map" % source)
+        return None
     return owns
 
 
@@ -424,7 +307,7 @@ def _read_packaged_map():
     one reader an owner list the other's derived list never saw. Per invocation,
     the same discipline `_LOCAL_CACHE` holds for the overlay (PERF-002).
     """
-    env_root = os.environ.get("PLUGIN_ROOT") or os.environ.get("CLAUDE_PLUGIN_ROOT")
+    env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
     if env_root in _PACKAGED_CACHE:
         return _PACKAGED_CACHE[env_root]
     roots = []
@@ -516,15 +399,7 @@ def _registry_roots():
                                        "businesses.yaml")):
         return []
     try:
-        import importlib.util
-        source = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "mcp", "workspaces.py")
-        spec = importlib.util.spec_from_file_location(
-            "_founder_os_guard_workspaces", source)
-        workspaces = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = workspaces  # dataclasses resolve by module
-        spec.loader.exec_module(workspaces)
-        registry = workspaces.load_registry(user_home)
+        registry = _load_mcp_module("workspaces").load_registry(user_home)
     except Exception as e:  # noqa: BLE001 - coverage, never a write
         log("could not read registry under %s (%s)" % (user_home, e))
         return []
@@ -536,7 +411,7 @@ def _registry_roots():
     return roots
 
 
-def workspace_roots(hook_cwd):
+def workspace_roots(hook_cwd, registry=True):
     """Candidate absolute workspace roots, best guess first.
 
     `FOUNDER_OS_HOME` or `./founder-os/` — but `./` needs a base, and the docs
@@ -548,7 +423,8 @@ def workspace_roots(hook_cwd):
     On a multi-business install the registry's roots are appended, so a write
     into *any* registered business workspace — or the portfolio workspace — is
     checked against the map, not only the workspace this session happens to be
-    homed on.
+    homed on. `registry=False` leaves them out, for a caller that adds them
+    only when a target is outside the primary roots (`check_ownership`).
     """
     bases = [os.environ.get("CLAUDE_PROJECT_DIR"), hook_cwd, os.getcwd()]
     home = os.environ.get("FOUNDER_OS_HOME")
@@ -564,7 +440,13 @@ def workspace_roots(hook_cwd):
         for b in bases:
             if b:
                 roots.append(os.path.join(b, leaf))
-    roots.extend(_registry_roots())
+    if registry:
+        roots.extend(_registry_roots())
+    return _expand_roots(roots)
+
+
+def _expand_roots(roots):
+    """Each root under its realpath and its literal spelling, deduplicated."""
     out = []
     for r in roots:
         for v in (os.path.realpath(r), os.path.normpath(os.path.abspath(r))):
@@ -607,64 +489,6 @@ def resolve_in_workspace(file_path, hook_cwd, roots=None):
     return (None, None)
 
 
-def owner_of(rel, by_path):
-    """Owner of a workspace-relative path, or None if the map doesn't cover it.
-
-    Entries are flat files (`goals.md`) or directories (`decisions/`,
-    `reviews/daily/`, `clients/`). Longest match wins, so a nested entry beats a
-    broader one that also matches.
-
-    An uncovered path returns None and is allowed. The map governs the files it
-    names; a scratch file someone dropped in the workspace has no owner to be
-    stolen from, and inventing one is how you block a founder's own note.
-
-    Comparison is case-folded: the workspace ships lowercase, but APFS is
-    case-insensitive by default, so `Goals.md` and `goals.md` are one file on a
-    Mac — matched exactly, the map is dodged by a shift key. On a case-sensitive
-    filesystem this can deny a legitimately distinct `Goals.md`; a workspace
-    that distinguishes files by case alone has worse problems than this deny.
-    """
-    best, best_owner = None, None
-    rel_cmp = rel.casefold()
-    for entry, agent in by_path.items():
-        entry_cmp = entry.casefold()
-        if entry.endswith("/"):
-            if not rel_cmp.startswith(entry_cmp):
-                continue
-        elif rel_cmp != entry_cmp:
-            continue
-        if best is None or len(entry) > len(best):
-            best, best_owner = entry, agent
-    return best_owner
-
-
-def _derived_entry(rel, derived):
-    """The `derived_files:` entry covering a workspace-relative path, or None.
-
-    Matched by path *segment*, never by string prefix: `_dashboard/` covers
-    `_dashboard` and everything under `_dashboard/`, and covers neither
-    `_dashboard_secrets.md` nor `_dashboardish/x.md`. A prefix test would deny
-    both of those, and a deny the founder cannot explain from the map is how a
-    guard stops being read as a map.
-
-    The trailing slash is stripped rather than required, because an entry that
-    lost it is a typo in the map and the safe reading of a typo in a deny list
-    is the broader one. Casefolded to agree with `owner_of` — a map dodged by a
-    shift key is not a map.
-
-    `rel` arrives from `resolve_in_workspace`, which has already realpath'd and
-    normalized it, so there is no `..` left here to walk out of the directory.
-    """
-    rel_cmp = rel.casefold()
-    for entry in derived:
-        entry_cmp = entry.casefold().rstrip("/")
-        if not entry_cmp:
-            continue
-        if rel_cmp == entry_cmp or rel_cmp.startswith(entry_cmp + "/"):
-            return entry
-    return None
-
-
 def _deny_tool(agent_type, tool_name, reason):
     deny(
         "Founder OS role boundary: `%s` may not use `%s`. %s\n\n"
@@ -685,7 +509,7 @@ def _role_of(agent_type):
     as ``<their-plugin>:cfo`` — that is their agent, and it must not inherit the
     founder's CFO authority at the gateway. It is a stranger, handled as one.
 
-    The bare segment is matched casefolded because `owner_of` is casefolded and
+    The bare segment is matched casefolded because `owner_key` is casefolded and
     the filesystem may be too: without this, ``founder-os:CFO`` would be "not a
     role" to the lockdown and the CFO to the ownership map at the same time.
     Role-ness decides whether the lockdown applies at all, so a near miss has
@@ -738,8 +562,7 @@ def _data_root():
     that gave up instead read no session the gateway had opened, and denied
     every role's gateway call as holding no live capability.
     """
-    return (os.environ.get("PLUGIN_DATA")
-            or os.environ.get("CLAUDE_PLUGIN_DATA")
+    return (os.environ.get("CLAUDE_PLUGIN_DATA")
             or os.path.join(os.path.expanduser("~"), ".founder-os",
                             "plugin-data"))
 
@@ -815,6 +638,7 @@ def _session_role(tool_input):
         or not isinstance(expires_at, (int, float))
         or not math.isfinite(float(expires_at))
         or now >= float(expires_at)
+        or float(expires_at) > now + SESSION_TTL_SECONDS
     ):
         return None
     return role
@@ -886,6 +710,7 @@ def _bind_generic_role(agent_type, tool_name, data, role):
         return
     if _mapped_agent_type(stem) == role:
         return
+    import tempfile  # only here: ~4 ms on every call for one rare write
     target_dir = os.path.join(_data_root(), "agent-types")
     temporary = None
     try:
@@ -907,16 +732,6 @@ def _bind_generic_role(agent_type, tool_name, data, role):
                 os.unlink(temporary)
             except OSError:
                 pass
-
-
-def check_outbound(agent_type, tool_name):
-    """Retained public helper for focused unit tests."""
-    if tool_name in OUTBOUND_TOOLS:
-        _deny_tool(
-            agent_type,
-            tool_name,
-            "House rule 0 says agents draft and the founder sends.",
-        )
 
 
 def _tool_paths(tool_name, tool_input):
@@ -1023,7 +838,8 @@ def check_derived(agent_type, rel, derived):
     why the deny text names the tools it reads rather than claiming the
     absolute. `check_local_map` judges both names the same way.
     """
-    entry = _derived_entry(rel, derived)
+    # Non-empty `derived` means `_ownership_module` loaded; it holds the matcher.
+    entry = _ownership_module().derived_entry(rel, derived) if derived else None
     if entry is None:
         return
     deny(
@@ -1041,12 +857,72 @@ def check_derived(agent_type, rel, derived):
     )
 
 
+def _spellings(file_path, hook_cwd):
+    """The realpath and the literal absolute spelling of a target, or []."""
+    if not os.path.isabs(file_path):
+        if not isinstance(hook_cwd, str) or not os.path.isabs(hook_cwd):
+            return []
+        file_path = os.path.join(hook_cwd, file_path)
+    return [os.path.realpath(file_path),
+            os.path.normpath(os.path.abspath(file_path))]
+
+
+def _under(target, roots):
+    return any(target == root or target.startswith(root.rstrip(os.sep) + os.sep)
+               for root in roots)
+
+
+def check_guard_files(agent_type, file_path, hook_cwd):
+    """No subagent rewrites the files that decide what this guard allows.
+
+    The packaged map, the role agents, these hooks (the plugin root), the
+    session and binding records (`_data_root()`) and the business registry
+    sit outside every workspace, so the ownership checks never see them and
+    the outside-the-workspace allow used to wave them through. A non-role
+    agent that can edit `references/ownership.yaml` or forge an
+    `agent-types/` record has no map. Same shape as `check_local_map`: not
+    grantable by an entry, and bound to the tools that name a path.
+    """
+    user_home = os.environ.get("HOME") or os.path.expanduser("~")
+    registry = os.path.join(user_home, ".founder-os", "businesses.yaml")
+    dirs = _expand_roots([
+        root for root in (
+            os.environ.get("CLAUDE_PLUGIN_ROOT"),
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            _data_root(),
+        ) if root])
+    # Casefolded on both sides: on a case-insensitive volume (default APFS)
+    # `~/.Founder-OS/businesses.yaml` is the registry. Folding only widens
+    # this deny, the same casefold-to-deny rule as `owner_key`.
+    dirs = [d.casefold() for d in dirs]
+    files = [f.casefold() for f in _expand_roots([registry])]
+    for target in _spellings(file_path, hook_cwd):
+        target = target.casefold()
+        if target in files or _under(target, dirs):
+            deny(
+                "`%s` is part of what defines the Founder OS guard — the "
+                "plugin, its session records or the business registry — and "
+                "no agent writes it with %s, including `%s`.\n\n"
+                "An agent that can edit the map or the records that bind it "
+                "does not have one, so this deny cannot be granted by an entry "
+                "in the ownership map.\n\n"
+                "(The founder can always make this edit themselves — this rule "
+                "is about agents.)" % (file_path, _path_naming_tools(), agent_type)
+            )
+
+
 def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
     paths = _tool_paths(tool_name, tool_input)
     if not paths:
         return
     derived = load_derived()
-    roots = workspace_roots(hook_cwd)
+    roots = workspace_roots(hook_cwd, registry=False)
+    # The registry loads `mcp/workspaces.py` (~20 ms), and only a target
+    # outside the primary roots can need it.
+    if any(not _under(target, roots) for file_path in paths
+           for target in _spellings(file_path, hook_cwd)):
+        roots += [root for root in _expand_roots(_registry_roots())
+                  if root not in roots]
     by_path = load_ownership()
     if by_path is None:
         # `derived_files:` has its own reader, and an `owns:` block this guard
@@ -1058,6 +934,7 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
         for file_path in paths:
             for rel in _workspace_rels(file_path, hook_cwd, roots):
                 check_derived(agent_type, rel, derived)
+            check_guard_files(agent_type, file_path, hook_cwd)
         allow("no ownership map — the guard is off, not strict")
     for file_path in paths:
         root, rel = resolve_in_workspace(file_path, hook_cwd, roots)
@@ -1067,7 +944,9 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
         for spelled_rel in _workspace_rels(file_path, hook_cwd, roots):
             check_local_map(agent_type, spelled_rel)
             check_derived(agent_type, spelled_rel, derived)
-        owner = owner_of(rel, merged_ownership(by_path, root))
+        # Casefolded (`owner_key`): this is a deny, so the broad reading.
+        merged = merged_ownership(by_path, root)
+        owner = merged.get(_ownership_module().owner_key(rel, merged))
         if owner is None:
             log("allow: %s has no owner in the map" % rel)
             continue
@@ -1084,6 +963,10 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
             "(The founder can always make this edit themselves — this rule is about "
             "agents.)" % (rel, owner, agent_type, owner)
         )
+    # After the workspace checks, so a workspace deny keeps its own reason
+    # when a development checkout makes the plugin root a workspace root too.
+    for file_path in paths:
+        check_guard_files(agent_type, file_path, hook_cwd)
 
 
 def agent_type_for(data):
@@ -1207,7 +1090,11 @@ def main():
             "less than the role is.",
         )
     if tool_name in OUTBOUND_TOOLS:
-        check_outbound(agent_type, tool_name)
+        _deny_tool(
+            agent_type,
+            tool_name,
+            "House rule 0 says agents draft and the founder sends.",
+        )
     if tool_name in DIRECT_FILE_TOOLS:
         _deny_tool(
             agent_type,

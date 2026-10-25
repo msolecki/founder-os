@@ -40,8 +40,7 @@ def main():
     if source and source.group(1) != "startup":
         return 0
 
-    root = (os.environ.get("PLUGIN_ROOT")
-            or os.environ.get("CLAUDE_PLUGIN_ROOT")
+    root = (os.environ.get("CLAUDE_PLUGIN_ROOT")
             or os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     with open(os.path.join(root, ".claude-plugin", "plugin.json"),
               encoding="utf-8") as f:

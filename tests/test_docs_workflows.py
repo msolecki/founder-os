@@ -1,5 +1,6 @@
 """Contract tests for the dependency-free workflow catalogue landing section."""
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -382,7 +383,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertIn(
             'class="hero-stats reveal" role="group" aria-label=', HTML)
         self.assertIn(
-            'class="multi-diagram" role="img" aria-label=', HTML)
+            'class="multi-diagram" role="group" aria-label=', HTML)
         self.assertIn(
             'class="multi-principles" role="group" aria-label=', HTML)
 
@@ -568,6 +569,8 @@ class WorkflowLibraryContractTest(unittest.TestCase):
 
     def test_controllers_execute_the_approved_interactions(self):
         if shutil.which("node") is None:
+            if os.environ.get("CI"):
+                self.fail("node required in CI for docs/index.html behavior tests")
             self.skipTest("node required for docs/index.html behavior tests")
         behavior_test = REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
         result = subprocess.run(
@@ -592,7 +595,7 @@ class WorkflowLibraryContractTest(unittest.TestCase):
         self.assertEqual(len(panel_tags), 3)
         self.assertTrue(all(" hidden" not in tag for tag in panel_tags))
         self.assertEqual(sum("is-active" in tag for tag in panel_tags), 1)
-        self.assertEqual(sum('tabindex="-1"' in tag for tag in panel_tags), 3)
+        self.assertEqual(sum('tabindex="0"' in tag for tag in panel_tags), 3)
         self.assertRegex(compact, r"\.demo-tabs \{[^}]*display: none")
         self.assertRegex(compact, r"\.js \.demo-tabs \{[^}]*display: flex")
         self.assertRegex(compact, r"\.js \.demo-panel \{[^}]*display: none")

@@ -147,6 +147,12 @@ def _money(amount: float) -> str:
     return "{:,.0f}".format(amount)
 
 
+def _priced(symbol: Optional[str], amount: float) -> str:
+    """`$18,000`, or `PLN 15,000`: a code is a word and needs its space."""
+    symbol = symbol or ""
+    return "%s%s%s" % (symbol, " " if symbol.isalpha() else "", _money(amount))
+
+
 def _entry_amount(entry) -> parse.Value:
     """What an entry records as its amount, or a Value carrying no number.
 
@@ -172,19 +178,29 @@ def _entry_amount(entry) -> parse.Value:
 # and prints it bare is where the tier comes off, on the surface most likely to
 # be quoted back: `references/ingestion-gate.md` calls a flattering number
 # guilty until validated, and the whole file exists to stop exactly this.
-_TIERED = re.compile(r"\[(VALIDATE|DISREGARD)\]")
+_TIERED = re.compile(r"\[VALIDATE\]")
+# `ingestion-gate.md` says a DISREGARD claim never enters the workspace at all,
+# so one that did is not counted: it is kept out of the total and named.
+_DISREGARDED = re.compile(r"\[DISREGARD\]")
+# `Coverage: 3× against a $15,000 gap` — the ratio that leads the line.
+_COVERAGE = re.compile(r"^\s*(\d+(?:[.,]\d+)?)\s*[×xX]")
 
 
-def _tier_note(values, cite: str) -> Tuple[Fact, ...]:
+def _tier_note(values, cite: str, disregarded: int = 0) -> Tuple[Fact, ...]:
     """A note naming how much of a total is not yet validated, or nothing."""
     counted = [item for item in values if item.number is not None]
     tiered = [item for item in counted if _TIERED.search(item.raw or "")]
-    if not tiered:
+    notes = []
+    if tiered:
+        notes.append(
+            "%d of %d amounts here carry [VALIDATE] and are counted in this "
+            "total" % (len(tiered), len(counted)))
+    if disregarded:
+        notes.append(
+            "%d marked [DISREGARD], left out of this total" % disregarded)
+    if not notes:
         return ()
-    return (text_fact(
-        "live_unvalidated",
-        "%d of %d amounts here carry [VALIDATE] and are counted in this total"
-        % (len(tiered), len(counted)), cite),)
+    return (text_fact("live_unvalidated", "; ".join(notes), cite),)
 
 
 # An amount with no marker beside it is not "the same currency as the others" —
@@ -216,6 +232,12 @@ def build_pipeline(sources, today: date) -> Panel:
                    unlistable("overdue_count", live_cite)),
             citations=citations)
     values = [_entry_amount(entry) for entry in entries]
+    disregarded = sum(
+        1 for item in values if _DISREGARDED.search(item.raw or ""))
+    # The admitted deals: the denominator of every "no amount" note below.
+    # `live_count` stays the deals listed, DISREGARD included.
+    values = [item for item in values
+              if not _DISREGARDED.search(item.raw or "")]
 
     # Everything below the amount is counted first, because none of it depends
     # on the currency. A panel that refuses to sum two currencies and then also
@@ -228,20 +250,26 @@ def build_pipeline(sources, today: date) -> Panel:
 
     coverage_raw = parse.parse_field(
         sources.section("pipeline.md", "## Last review") or "", "Coverage")
+    # The ratio, not money: `parse_money` skips `3x` and reads the gap instead.
+    ratio = _COVERAGE.match(coverage_raw or "")
     coverage = (
-        number_fact("coverage", parse.parse_money(coverage_raw).number,
+        number_fact("coverage", float(ratio.group(1).replace(",", ".")),
                     coverage_raw, review_cite)
-        if coverage_raw and parse.parse_money(coverage_raw).number is not None
-        else unknown("coverage", review_cite))
+        if ratio else unknown("coverage", review_cite))
     counted = (
         number_fact("live_count", len(entries), str(len(entries)), live_cite),
         number_fact("overdue_count", overdue, str(overdue), live_cite),
         coverage,
-    ) + _tier_note(values, live_cite)
+    ) + _tier_note(values, live_cite, disregarded)
 
     priced = [item for item in values if item.number is not None]
     currencies = sorted({item.currency or _UNMARKED for item in priced})
+    unread = len(values) - len(priced)
     if len(currencies) > 1:
+        # A deal with no amount belongs to no currency, so every reading is
+        # short of it and says so, as the single-currency total does.
+        excluded = (" — excludes %d of %d deals that record no amount"
+                    % (unread, len(values)) if unread else "")
         readings = tuple(
             Reading(
                 label=symbol or _UNMARKED_LABEL,
@@ -249,9 +277,9 @@ def build_pipeline(sources, today: date) -> Panel:
                     "live_amount", sum(
                         item.number for item in priced
                         if (item.currency or _UNMARKED) == symbol),
-                    "%s%s" % (symbol, _money(sum(
+                    _priced(symbol, sum(
                         item.number for item in priced
-                        if (item.currency or _UNMARKED) == symbol))),
+                        if (item.currency or _UNMARKED) == symbol)) + excluded,
                     live_cite, currency=symbol or None))
             for symbol in currencies)
         settle = (
@@ -267,7 +295,6 @@ def build_pipeline(sources, today: date) -> Panel:
             settle_with=settle)
 
     symbol = (currencies[0] if currencies else None) or None
-    unread = len(entries) - len(priced)
     if unread:
         # A sum of the deals that happened to carry a price, printed beside a
         # count of all of them, is a smaller number than the pipeline wearing
@@ -275,14 +302,17 @@ def build_pipeline(sources, today: date) -> Panel:
         amount = unknown(
             "live_amount", live_cite,
             "%s — %d of %d deals record no amount"
-            % (NOT_RECORDED, unread, len(entries)))
+            % (NOT_RECORDED, unread, len(values)))
     elif priced:
         total = sum(item.number for item in priced)
         amount = number_fact(
-            "live_amount", total, "%s%s" % (symbol or "", _money(total)),
+            "live_amount", total, _priced(symbol, total),
             live_cite, currency=symbol)
+    elif disregarded:
+        # Every amount here was DISREGARD: nothing admitted is not a $0.
+        amount = unknown("live_amount", live_cite)
     else:
-        amount = number_fact("live_amount", 0, "%s0" % (symbol or ""), live_cite)
+        amount = number_fact("live_amount", 0, _priced(symbol, 0), live_cite)
 
     facts = (amount,) + counted
     return Panel(id="pipeline", title="Pipeline", status=panel_status(facts),
@@ -304,7 +334,7 @@ class CountSpec:
 
 
 def parse_counted_from(raw: Optional[str]) -> Optional[CountSpec]:
-    """The closed grammar from spec §9, or None.
+    """The closed grammar `docs/dashboard.md` documents, or None.
 
     Closed on purpose. A grammar that falls back to best effort is a grammar that
     silently reports the wrong number for a bet the founder is about to judge.
@@ -584,8 +614,11 @@ _HANDED_OVER = re.compile(r"^\+\s*(?P<count>\d+)\b", re.M)
 def _rotting_count(body: str) -> Optional[float]:
     """Printed items plus the remainder the brief says it withheld."""
     handed = _HANDED_OVER.search(body)
-    entries = parse.split_entries(
-        _HANDED_OVER.sub("", body) if handed else body)
+    # The whole `+7 more …` line goes, not just its count: its prose remainder
+    # alone is not a list, and a sole handed-over line then read as None.
+    entries = parse.split_entries("".join(
+        line for line in body.splitlines(keepends=True)
+        if not _HANDED_OVER.match(line)))
     if entries is None:
         return None
     return float(len(entries) + (int(handed.group("count")) if handed else 0))
@@ -609,7 +642,14 @@ def _triage_count(body: str) -> Optional[float]:
 
 def build_brief(sources, today: date) -> Panel:
     cite = "reviews/daily/"
-    newest = sources.newest_member("reviews/daily/")
+    # `triage` may create today's file holding only `## Triage`, so the newest
+    # dated file that carries a brief is the brief; the newest file is the
+    # fallback when none does.
+    written = [member for member in sources.members.get(cite) or ()
+               if member.readable
+               and parse.parse_iso_date(Path(member.path).stem) is not None
+               and (member.sections.get("## The one thing") or "").strip()]
+    newest = written[-1] if written else sources.newest_member(cite)
     if newest is None or not newest.readable:
         return Panel(id="brief", title="Today", status=STATUS_MISSING,
                      facts=(unknown("one_thing", cite),), citations=(cite,))
@@ -641,7 +681,7 @@ def build_brief(sources, today: date) -> Panel:
                  facts=tuple(facts), citations=(cite,))
 
 
-def build_signals(sources):
+def build_signals(sources, today: Optional[date] = None, thresholds=None):
     cite = "metrics.md ## Signals"
     body = sources.section("metrics.md", "## Signals")
     if body is None:
@@ -706,6 +746,19 @@ def build_signals(sources):
     else:
         count = number_fact("signal_count", len(signals), str(len(signals)), cite)
     facts = [count]
+    # Six-week-old readings look exactly like this week's, so the `Read:` date
+    # signal-check writes is their age, and past the limit the age says stale.
+    read = parse.parse_iso_date(parse.parse_field(body, "Read"))
+    if today is not None and read is not None:
+        age = (today - read).days
+        stale = (thresholds or {}).get("signals", {}).get("stale_days")
+        facts.append(number_fact("signals_age_days", age, "%d days" % age, cite))
+        if stale is not None and age > stale:
+            facts.append(text_fact(
+                "signals_stale", "stale — read more than %g days ago" % stale,
+                cite))
+    else:
+        facts.append(unknown("signals_age_days", cite))
     for signal in signals:
         facts.append(number_fact(
             "signal.%s" % signal.name, signal.value,
@@ -760,9 +813,12 @@ def build_week(sources, today: date):
         blocks.append(Block(day=cells[0], hours=hours, title=cells[2],
                             serves=cells[3]))
 
+    # Keyed by the bet's id, not the cell as written: `B1 — Make the sprint
+    # default` and `B1` are one bet. The cell itself stays on the block.
     per_bet = {}
     for block in blocks:
-        per_bet[block.serves] = per_bet.get(block.serves, 0.0) + (block.hours or 0.0)
+        key = _bet_key(block.serves)[0]
+        per_bet[key] = per_bet.get(key, 0.0) + (block.hours or 0.0)
     for key in sorted(per_bet):
         facts.append(number_fact("planned.%s" % key, round(per_bet[key], 2),
                                  "%gh" % round(per_bet[key], 2), blocks_cite))
@@ -849,6 +905,17 @@ def build_cash(sources, today: date) -> Panel:
             close_cite))
     else:
         facts.append(unknown("close_age_days", close_cite))
+    # The runway is recalculated on its own clock, so it carries its own age:
+    # `Last calculated:` where the example writes it, else the `as of` date
+    # runway-forecast puts in the heading.
+    calculated = (parse.parse_iso_date(parse.parse_field(runway, "Last calculated"))
+                  or parse.parse_iso_date(sources.heading("metrics.md", "## Runway")))
+    if calculated is not None:
+        age = (today - calculated).days
+        facts.append(number_fact("runway_age_days", age, "%d days" % age,
+                                 runway_cite))
+    else:
+        facts.append(unknown("runway_age_days", runway_cite))
     return Panel(id="cash", title="Cash and rate",
                  status=panel_status(tuple(facts)), facts=tuple(facts),
                  citations=(close_cite, runway_cite))
@@ -894,7 +961,8 @@ def build_queue(sources, thresholds) -> Panel:
 
 def build_facts(sources, today: date, generated: str, thresholds) -> Facts:
     bets_panel, bets, bet_findings = build_bets(sources, today)
-    signals_panel, signals, signal_findings = build_signals(sources)
+    signals_panel, signals, signal_findings = build_signals(
+        sources, today, thresholds)
     week_panel, blocks = build_week(sources, today)
     panels = {
         "brief": build_brief(sources, today),

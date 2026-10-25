@@ -203,6 +203,70 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 fallback_resolver.resolve(project).root,
             )
 
+    def test_an_unmatched_founder_os_home_is_its_own_resolution_error(self) -> None:
+        """The dashboard picks its business with this function, and must tell
+        "the variable points nowhere" apart from "nothing is configured"."""
+        from mcp import workspaces
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            alpha = root / "alpha"
+            beta = root / "beta"
+            alpha.mkdir()
+            beta.mkdir()
+            registry = {
+                "businesses": {
+                    "alpha": {"home": str(alpha), "status": "active"},
+                    "beta": {"home": str(beta), "status": "active"},
+                },
+            }
+            with self.assertRaises(workspaces.ConfiguredHomeUnmatched) as raised:
+                workspaces.select_workspace(
+                    registry, root, None, {"FOUNDER_OS_HOME": str(root / "x")})
+            self.assertIsInstance(raised.exception, WorkspaceResolutionError)
+            self.assertIn(str((root / "x").resolve()), str(raised.exception))
+            with self.assertRaises(WorkspaceResolutionError) as raised:
+                workspaces.select_workspace(registry, root, None, {})
+            self.assertNotIsInstance(
+                raised.exception, workspaces.ConfiguredHomeUnmatched)
+            self.assertEqual(
+                (beta.resolve(), "beta", "business"),
+                workspaces.select_workspace(
+                    registry, root, None, {"FOUNDER_OS_HOME": str(beta)}),
+            )
+
+    def test_the_registry_and_the_ownership_map_read_scalars_alike(self) -> None:
+        """One scalar grammar: a value one file accepts the other accepts too.
+
+        The registry took `"C:\\x"` literally where the map decoded escapes,
+        and the map took `'it''s'` and `[a]` where the registry refused them.
+        """
+        from mcp import ownership
+
+        accepted = {
+            "acme": "acme",
+            '"/x/biz"': "/x/biz",
+            "'/x/biz'": "/x/biz",
+            "/x/biz#2": "/x/biz#2",
+            '"## Last month\'s correction"': "## Last month's correction",
+        }
+        refused = ('""', "''", "'it''s'", '"a\\b"', '"a"b"', "[a]",
+                   "a{b}", '"open', "'open")
+        for raw, value in accepted.items():
+            with self.subTest(raw=raw):
+                self.assertEqual(value, ownership._parse_scalar(raw))
+                self.assertEqual(
+                    value,
+                    WorkspaceResolver._parse_registry(
+                        "default: " + raw + "\n")["default"],
+                )
+        for raw in refused:
+            with self.subTest(raw=raw):
+                with self.assertRaises(ownership.OwnershipError):
+                    ownership._parse_scalar(raw)
+                with self.assertRaises(WorkspaceResolutionError):
+                    WorkspaceResolver._parse_registry("default: " + raw + "\n")
+
     def test_explicit_slug_default_and_portfolio_select_the_intended_business(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -414,6 +478,58 @@ class WorkspaceResolverReadTests(unittest.TestCase):
                 resolver = WorkspaceResolver(env={}, home=home)
                 self.assert_unresolved(lambda: resolver.resolve(root))
 
+
+    def test_registry_refuses_default_portfolio(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            alpha = root / "alpha"
+            portfolio = root / "portfolio"
+            alpha.mkdir()
+            portfolio.mkdir()
+            write_registry(
+                home,
+                "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        f"    home: {alpha.as_posix()}",
+                        "    status: active",
+                        f"portfolio: {portfolio.as_posix()}",
+                        "default: portfolio",
+                    )
+                ),
+            )
+            resolver = WorkspaceResolver(env={}, home=home)
+            self.assert_unresolved(lambda: resolver.resolve(root))
+            with self.assertRaises(WorkspaceResolutionError) as raised:
+                resolver.resolve(root)
+            self.assertEqual(
+                "businesses.yaml: default must name a business, not portfolio"
+                "; remove the line or name a business slug",
+                str(raised.exception),
+            )
+            self.assert_unresolved(lambda: resolver.resolve(root, "portfolio"))
+
+    def test_registry_saved_with_a_byte_order_mark_still_loads(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            alpha = root / "alpha"
+            alpha.mkdir()
+            write_registry(
+                home,
+                "\ufeff" + "\n".join(
+                    (
+                        "businesses:",
+                        "  alpha:",
+                        f"    home: {alpha.as_posix()}",
+                        "    status: active",
+                    )
+                ),
+            )
+            binding = WorkspaceResolver(env={}, home=home).resolve(root)
+            self.assertEqual("alpha", binding.business_slug)
 
     def test_a_paused_default_falls_back_to_the_one_active_business(self) -> None:
         """Pausing is the documented first step before retiring a business.
@@ -1082,6 +1198,8 @@ class SafeStateIOTests(unittest.TestCase):
             "ingestion-gate.md",
             "linking.md",
             "thresholds.yaml",
+            "extensibility.md",
+            "skill-template.md",
         ):
             (references / name).write_text(name + "\n", encoding="utf-8")
         (self.workspace / "state.md").write_bytes(b"state bytes\n")
@@ -1374,6 +1492,9 @@ class SafeStateIOTests(unittest.TestCase):
             "references/ingestion-gate.md",
             "references/linking.md",
             "references/thresholds.yaml",
+            # The doctor checks the founder's overlay against these.
+            "references/extensibility.md",
+            "references/skill-template.md",
             ".claude-plugin/plugin.json",
         )
         for path in allowed:
@@ -1518,6 +1639,18 @@ class SafeStateIOTests(unittest.TestCase):
         self.assertEqual(["metrics.md#Runway"], payload["missing"])
         self.assertEqual(
             [("Bets", "Alpha\n"), ("Close", "Booked: 10\n")],
+            [(item["heading"], item["content"]) for item in payload["sections"]],
+        )
+
+    def test_a_bare_h2_marker_opens_no_section(self) -> None:
+        """The old `safe_io` scanner wanted text after `## `; `split_h2` must
+        too, or a stray `## ` cuts the section above it short."""
+        (self.workspace / "goals.md").write_text(
+            "# Goals\n## Bets\nAlpha\n## \nStill bets\n", encoding="utf-8"
+        )
+        payload = self.io().read_fixed_sections({"goals.md": ("Bets",)})
+        self.assertEqual(
+            [("Bets", "Alpha\n## \nStill bets\n")],
             [(item["heading"], item["content"]) for item in payload["sections"]],
         )
 
@@ -2095,8 +2228,9 @@ class GatewayPortfolioReadTests(unittest.TestCase):
             },
         )
         self.assertTrue(extra_paths["isError"], extra_paths)
+        # An unknown argument is a bad argument on every tool (MCP-05).
         self.assertEqual(
-            "ROLE_SESSION_INVALID",
+            "STATE_IO_ERROR",
             extra_paths["structuredContent"]["error"]["code"],
         )
 

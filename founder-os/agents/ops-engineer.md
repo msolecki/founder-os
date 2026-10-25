@@ -5,6 +5,7 @@ skills:
   - automation-audit
   - tool-stack-review
   - founder-os-feedback
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

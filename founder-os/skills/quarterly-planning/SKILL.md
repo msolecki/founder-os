@@ -28,7 +28,7 @@ against numbers that are not in yet: two bets are pending, the close has not
 landed, and the founder marks them won because the week has been going well.
 A quarter you judge before it ends is a quarter you judge on mood, and this
 skill's whole argument is that "never measured" is the most damning verdict
-available. Wait the four days. Judge the finished thing.
+available. Judge the finished thing, once its close is in.
 
 Never mid-quarter. A new opportunity mid-quarter is `bet-sizing`, and an
 underperforming bet mid-quarter is `kill-or-continue` — neither is a reason to
@@ -38,6 +38,16 @@ suggestions.
 If `metrics.md` has no close for the quarter's final month, stop and hand to the
 **CFO** — the same rule `monthly-review` runs on. Step 1 has nothing to settle
 verdicts with and the rest of this skill is built on step 1.
+
+**That is the usual day-1 scheduled run, and stopping still writes.**
+`revenue-review` fires at 09:00 with nobody in the room and often leaves the close
+blocked. Attended or not, write `reviews/quarterly/YYYY-Qn.md` with exactly
+`blocked — no <YYYY-MM> close in metrics.md; the CFO's revenue-review comes first`
+as the body of `## Last quarter's verdicts` and the other sections empty, do not
+replace `goals.md`'s bets, and add one line under `goals.md` `## Bets`, above the
+bet blocks, replacing any earlier `Proposed: run /quarterly-planning` line:
+`Proposed: run /quarterly-planning once the <YYYY-MM> close is in metrics.md — bet: none`.
+The brief drains it; the quarter is judged when the close is there.
 
 ## First-run branch
 
@@ -74,6 +84,7 @@ On the complete path, write one `### Bet` under `goals.md` `## Bets`:
     Cap: stop at <supplied hours> h or <supplied cash cap>, or <judgment date> — whichever comes first
     If wrong: <what is lost, concretely> — reversible in <time>
     Kill if: <metric> is below <numeric threshold> on <date>
+    Counted from: <path> ## <Section> | amount >= <n> | target <n>   (optional; grammar in docs/dashboard.md)
 
 `Opened:` is the run date. `Judgment date:` is the supplied 90-day horizon —
 exactly 90 days after `Opened:` — and each line carries the bare date and
@@ -101,6 +112,7 @@ making the absent history explicit:
 Never create wins, losses or a never-measured count. Skip recurring Steps 1, 2
 and 7 because there is no record. Step 6 still applies to a complete answer.
 Future quarter plans must return to the recurring path: verdict every prior bet
+that is due (step 1 carries a not-yet-due one forward)
 and run `red-team` before writing. "Never mid-quarter" governs reopening a
 plan, not creating the first one. Here, "partial-quarter" means opened partway
 through the current calendar quarter: preserve the supplied 90-day judgment
@@ -145,6 +157,13 @@ Read first, in order — house rule 1:
    and the most damning one: it means the bet shipped without a threshold, and
    the quarter therefore produced no information. Count how many. That count is
    the honest score of last quarter's planning, not the wins.
+
+   **A bet not yet due is the one exception, and it is not a skipped verdict.** A
+   bet whose `Judgment date:` is after today — the first-run bet's 90-day horizon
+   can cross the quarter — stays in `goals.md` unchanged, is listed under
+   `## Last quarter's verdicts` as `<bet> — not yet due — due YYYY-MM-DD`, and
+   counts toward step 3's cap. Step 2's rollover does not apply: its date is
+   written, and the run after that date verdicts it.
 2. **Catch the silent rollover.** Any bet appearing in two consecutive quarters
    without a verdict was never a bet. It may be re-bet — explicitly, with a new
    threshold and a new date — but it does not get to continue by inertia.
@@ -223,6 +242,7 @@ Replace `goals.md` with this quarter's bets:
     Cap: stop at <hours> h or <cash>, or <date> — whichever comes first
     If wrong: <what is lost, concretely> — reversible in <time>
     Kill if: <metric> is below <value> on <date>
+    Counted from: <path> ## <Section> | amount >= <n> | target <n>   (optional; grammar in docs/dashboard.md)
 
 Carry every open `Experiment:` line forward under the bet it serves, or under
 `## Bets` when its bet was closed — the experiment is still open, and its
@@ -261,7 +281,8 @@ blocked` line leaves `goals.md` with the rest of the old `## Bets`):
 
 ## Guardrails
 
-Never carry a bet forward without a verdict. Re-betting is allowed; drifting is
+Never carry a bet forward without a verdict — or, for a bet not yet due (step 1),
+its `due YYYY-MM-DD`. Re-betting is allowed; drifting is
 not, and the difference is a date.
 
 Never write a bet whose kill condition is a feeling. "Kill if it isn't working"

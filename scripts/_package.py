@@ -6,7 +6,8 @@ import yaml
 SYSTEM_SKILLS = {"founder-os-init", "founder-os-doctor", "context-load",
                  "guardrails", "state-integrity", "ingestion-gate",
                  "setup-cadences", "skill-forge", "dashboard"}
-UNIVERSAL_SKILLS = {"guardrails", "state-integrity", "ingestion-gate"}
+UNIVERSAL_SKILLS = {"guardrails", "state-integrity", "ingestion-gate",
+                    "context-load"}
 # Skills that belong to no agent by design, because running them as a subagent
 # is denied by construction. setup-cadences edits the founder's crontab;
 # skill-forge writes `_local/` and installs outside the workspace, and the

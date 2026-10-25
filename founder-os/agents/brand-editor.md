@@ -6,6 +6,7 @@ skills:
   - voice-capture
   - content-draft
   - audience-research
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

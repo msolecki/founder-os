@@ -61,20 +61,47 @@ Failures use one stable code and one recovery action:
 | Code | Meaning |
 |---|---|
 | `WORKSPACE_UNRESOLVED` | No unique business workspace; ask, then make no read or write. |
-| `ROLE_SESSION_INVALID` | Capability missing, expired, closed, forged, or mismatched; return to the main thread. |
+| `ROLE_SESSION_INVALID` | Capability missing, expired, closed, forged, mismatched, or minted before the gateway last restarted; return to the main thread. |
 | `PATH_OUTSIDE_WORKSPACE` | Path or symlink escaped the bounded root; refuse without guessing another path. |
 | `ROLE_NOT_OWNER` | The role does not own the target; hand off to the canonical owner. |
 | `STALE_WRITE` | The file changed since read; re-read, reconcile, then retry once. |
 | `INVALID_DOCUMENT_STRUCTURE` | Required headings or lifecycle shape are absent; a flat file carries exactly the headings `ownership.yaml` declares for it, in that order and no others; a directory member carries an ordered subset of its directory's declared vocabulary, each heading at most once and none undeclared (a ` — <suffix>` after a declared name is allowed in both). A read reports `missing_sections` — the declared headings the file does not carry in position — before the write is attempted. |
-| `STATE_IO_ERROR` | A bounded filesystem operation failed; preserve the original and surface the error. |
+| `STATE_IO_ERROR` | A bounded filesystem operation failed; preserve the original and surface the error. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
 
 ## What the host guard does
 
 `ownership-guard.py` runs for every tool call. Claude Code supplies
 `agent_type` on a subagent's call; a call carrying no identity marker at all is
 the founder's main thread. The guard and the gateway keep their state in
-`PLUGIN_DATA` (or `CLAUDE_PLUGIN_DATA`), and both fall back to
-`~/.founder-os/plugin-data`.
+`CLAUDE_PLUGIN_DATA`, and both fall back to `~/.founder-os/plugin-data`.
+
+The guard reads `references/ownership.yaml` and a workspace's
+`_local/ownership.yaml` with the gateway's own parser, `mcp/ownership.py`,
+loaded by path, so it enforces the same map with or without PyYAML installed.
+`owns:` and `derived_files:` are parsed independently, so a broken `owns:` does
+not switch the derived deny off. The grammar the guard reads, for both files
+(`read_key`):
+
+- `owns:` and `derived_files:` as column-0 block keys, optionally followed by a
+  ` #` comment;
+- under `owns:`, `  agent:` at two spaces and `    - path` at four; under
+  `derived_files:`, `  - path` at two;
+- each value bare (no `[`, `]`, `{`, `}`; a ` #` comment after it is dropped)
+  or quoted with `'` or `"` at both ends, holding neither its own quote mark
+  nor, in double quotes, a backslash — no escape is ever decoded, so `'it''s'`
+  is refused.
+
+What it ignores: blank and comment lines, one leading `---`, every other
+top-level key with its block, and every other top-level `key: scalar` line
+(`version: 2`). What makes it ignore the key it asked for: anything else inside
+that key's block (tabs, other indents, flow lists, a value written inline as
+`owns: {}`, a duplicate), a column-0 line that is no key, an indented line
+under a scalar key, or a second `---`. A key it cannot read is logged and
+ignored: less coverage, never a deny, and never a change to the role lockdown,
+which does not read the map.
+Guard, gateway and validator match paths with the same two functions
+(`owner_key`, `derived_entry`), casefolded: the guard denies `Goals.md` as
+`goals.md`, and the gateway grants a write only to the map's own spelling.
 
 For a known packaged role, the guard:
 
@@ -89,7 +116,10 @@ For a known packaged role, the guard:
    recognize;
 4. denies `open_role_session` to subagents so they cannot mint or elevate their
    own authority; and
-5. requires a live capability whose role matches that identity.
+5. requires a live capability whose role matches that identity — a persisted
+   session record whose expiry is no later than now plus the gateway's 30-minute
+   session TTL (the gateway also refuses any capability its own process did not
+   mint, which the guard, a separate process, cannot see).
 
 A generic fallback (`general-purpose`, `default`) may spend a live capability
 of any role. That gateway call binds the capability's role to the agent's
@@ -106,8 +136,10 @@ dispatches the fallback with the role's gateway-only tool allowlist
 instructions are what bind it.
 
 Any other subagent — a reviewer, an Explore pass, a `_local/agents/` agent —
-is held only to the ownership, `_local/` and derived-file denies, and only for
-tools that name a path. Its `Bash` and web tools are its own permission
+is held only to the ownership, `_local/` and derived-file denies plus a deny on
+the files that define the guard (the plugin root, the plugin data directory and
+`~/.founder-os/businesses.yaml`), and only for tools that name a path
+(`Write`, `Edit`, `MultiEdit`, `NotebookEdit`). Its `Bash` and web tools are its own permission
 settings' business, and the gateway refuses it every capability-bound call.
 
 Malformed hook input or a call with no resolvable subagent identity stays out

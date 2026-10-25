@@ -68,6 +68,10 @@ and this one answers a different question entirely.
 
    A week's honest score is a number out of five, and the number is usually lower
    than the feeling.
+
+   Then score last week's `## Next week` commitment the same way — its id, or the
+   id the brief gave the item it took `from: reviews/weekly/<week>`, in `## Done`
+   or not. It is a week-scale item, so it is its own line, not a sixth day.
 2. **Apply the hit-rate rule.** Below 3/5 for two consecutive weeks, the
    problem is not the week — it is that the one thing is being chosen wrong.
    Say which: too big for a day, or not actually the founder's to do. Do not
@@ -124,6 +128,11 @@ and this one answers a different question entirely.
    it and you will not have to have the conversation — the file will have had it
    for you.
 
+   **Unattended, propose it instead.** The Friday 16:00 run has nobody to commit.
+   Write `## Next week` as
+   `Proposed: <one commitment, and how Friday will know> — bet: <B<n> | none>` and
+   queue nothing; the Monday brief drains it.
+
 ## Output
 
 Append to `reviews/weekly/YYYY-Www.md`:
@@ -131,6 +140,7 @@ Append to `reviews/weekly/YYYY-Www.md`:
     # YYYY-Www
     ## Committed vs done
     <N>/5 — <one line per miss, no reasons attached>
+    Last week's commitment: [q-MMDDx] <done | missed> | none
     Queue: doing <n>/3 | queued <n>/15 | blocked <n> | aged out this sweep <n> | bet:none <n>/<n>
     Signals: <the one that moved, or "all three inside range" — read YYYY-MM-DD>
     ## Days per bet
@@ -138,7 +148,7 @@ Append to `reviews/weekly/YYYY-Www.md`:
     ## The pattern
     <what the last four weeks say, not what this week says>
     ## Next week
-    [q-MMDDx] <one commitment, and how Friday will know>
+    [q-MMDDx] <one commitment, and how Friday will know> | Proposed: <…> — bet: <B<n> | none>
 
 ## Guardrails
 

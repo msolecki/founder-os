@@ -10,13 +10,13 @@ import hashlib
 import heapq
 import json
 import os
-import re
 import secrets
 import stat
+import time
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Optional, Tuple
 
-from .ownership import heading_matches
+from .ownership import heading_matches, split_h2
 
 
 class SafeStateError(Exception):
@@ -37,6 +37,7 @@ class SafeStateError(Exception):
 
 
 class SafeStateIO:
+    WRITE_LOCK_TIMEOUT_SECONDS = 5.0
     _FORBIDDEN = "[]{}?\\"
 
     def __init__(
@@ -298,7 +299,7 @@ class SafeStateIO:
     ) -> Dict[str, object]:
         """Read one packaged file a role is entitled to, and nothing else.
 
-        The two plugin manifests are on the list because a role holds no file
+        The plugin manifest is on the list because a role holds no file
         tool: `founder-os-feedback` must quote the shipped version, and the only
         alternative left to it is the version it remembers from training.
         """
@@ -315,6 +316,9 @@ class SafeStateIO:
             "references/ingestion-gate.md",
             "references/linking.md",
             "references/thresholds.yaml",
+            # The doctor's overlay checks are judged against these two.
+            "references/extensibility.md",
+            "references/skill-template.md",
             ".claude-plugin/plugin.json",
         }
         if workflow is not None:
@@ -394,54 +398,21 @@ class SafeStateIO:
         headings: Tuple[str, ...],
     ) -> Dict[str, str]:
         found: Dict[str, str] = {}
-        current: Optional[str] = None
-        body: List[str] = []
-        fence_character: Optional[str] = None
-        fence_length = 0
-
-        def finish() -> None:
-            nonlocal current, body
-            if current is not None:
-                if current in found:
-                    raise SafeStateError("STATE_IO_ERROR")
-                found[current] = "".join(body)
-            current = None
-            body = []
-
-        for line in content.splitlines(keepends=True):
-            stripped = line.rstrip("\r\n")
-            fence = re.match(r"^ {0,3}(`{3,}|~{3,})(?:[^`~].*)?$", stripped)
-            if fence_character is None and fence is not None:
-                marker = fence.group(1)
-                fence_character = marker[0]
-                fence_length = len(marker)
-            elif fence_character is not None and re.fullmatch(
-                r" {0,3}" + re.escape(fence_character)
-                + "{" + str(fence_length) + r",}\s*",
-                stripped,
-            ):
-                fence_character = None
-                fence_length = 0
-            elif fence_character is None:
-                match = re.fullmatch(r"## ([^\r\n]+)", stripped)
-                if match is not None:
-                    finish()
-                    # `## Close — 2026-07` is `## Close`, by the rule the
-                    # write path applies, so it is found under its name.
-                    current = next(
-                        (
-                            wanted for wanted in headings
-                            if heading_matches(
-                                stripped.rstrip(), "## " + wanted
-                            )
-                        ),
-                        None,
-                    )
-                    continue
-
-            if current is not None:
-                body.append(line)
-        finish()
+        for line, body in split_h2(content)[1]:
+            # `## Close — 2026-07` is `## Close`, by the rule the write path
+            # applies, so it is found under its name.
+            wanted = next(
+                (
+                    heading for heading in headings
+                    if heading_matches(line, "## " + heading)
+                ),
+                None,
+            )
+            if wanted is None:
+                continue
+            if wanted in found:
+                raise SafeStateError("STATE_IO_ERROR")
+            found[wanted] = body
         return found
 
     @staticmethod
@@ -554,6 +525,9 @@ class SafeStateIO:
         before_sha256: Optional[str] = None
 
         try:
+            # One lock file per written file name, left beside it on purpose:
+            # unlinking it would let a second writer lock a fresh inode while
+            # the first still holds the old one. Hidden, empty, and harmless.
             lock_name = ".founder-os-write-{0}.lock".format(
                 hashlib.sha256(target_name.encode("utf-8")).hexdigest()
             )
@@ -572,7 +546,17 @@ class SafeStateIO:
                 or lock_info.st_nlink != 1
             ):
                 raise SafeStateError("STATE_IO_ERROR")
-            fcntl.flock(lock_descriptor, fcntl.LOCK_EX)
+            # Bounded: a writer that never lets go must fail this write, not
+            # freeze the single-threaded server for every role.
+            deadline = time.monotonic() + self.WRITE_LOCK_TIMEOUT_SECONDS
+            while True:
+                try:
+                    fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise SafeStateError("STATE_IO_ERROR")
+                    time.sleep(0.05)
             lock_path_info = os.stat(
                 lock_name,
                 dir_fd=parent_descriptor,

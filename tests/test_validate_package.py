@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import validate_package as V
 
 
-UNIVERSALS = ["guardrails", "state-integrity", "ingestion-gate"]
+UNIVERSALS = ["guardrails", "state-integrity", "ingestion-gate", "context-load"]
 DEFAULT_TOOLS = (
     "mcp__plugin_founder-os_founder-os-state__resolve_workspace, "
     "mcp__plugin_founder-os_founder-os-state__list_state, "
@@ -281,6 +281,12 @@ class TestAgents(ValidatorTestCase):
         self.assertIn("agents/cfo.md: must list universal skill 'state-integrity'",
                       self.check(V.check_agents))
 
+    def test_missing_context_load_is_caught(self):
+        self.write_agent("cfo", skills=[s for s in UNIVERSALS
+                                        if s != "context-load"])
+        self.assertIn("agents/cfo.md: must list universal skill 'context-load'",
+                      self.check(V.check_agents))
+
     def test_name_not_matching_filename_is_caught(self):
         self.write_agent("cfo", name="CFO", skills=list(UNIVERSALS))
         self.assertIn("agents/cfo.md: name 'CFO' does not match the filename",
@@ -480,7 +486,7 @@ class TestRoleSkillExclusivity(ValidatorTestCase):
             self.check(V.check_role_skill_exclusivity))
 
     def test_universal_skills_are_exempt_from_exclusivity(self):
-        # Both fixture agents hold all three universals; that is the design.
+        # Both fixture agents hold every universal; that is the design.
         self.assertEqual(self.check(V.check_role_skill_exclusivity), [])
 
 
@@ -773,6 +779,22 @@ class TestCheckHooks(unittest.TestCase):
         real = Path(__file__).resolve().parents[1] / "founder-os"
         self.assertEqual(V.check_hooks(real, {}), [])
 
+    def test_every_script_a_hook_command_runs_must_exist_and_compile(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": ".*", "hooks": []}],
+            "Stop": [{"hooks": [
+                {"type": "command", "timeout": 5, "command":
+                    'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/nudge.py"'},
+                {"type": "command", "timeout": 5, "command":
+                    'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/broken.py"'}]}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        write(self.root / "hooks" / "broken.py", "def broken(:\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertIn("hooks/nudge.py: missing", errs)
+        self.assertTrue(
+            any(e.startswith("hooks/broken.py: does not compile") for e in errs),
+            errs)
+
     def test_invalid_regex_matcher_is_an_error_not_a_crash(self):
         write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
             "PreToolUse": [{"matcher": "([", "hooks": []}]}}))
@@ -806,6 +828,25 @@ class TestCheckHooks(unittest.TestCase):
         write(guidance, "x" * (V.HOOK_OUTPUT_CAP - V.HOOK_OUTPUT_ROOM + 1))
         errs = V.check_hooks(self.root, {})
         self.assertTrue(any("hook output cap" in e for e in errs), errs)
+
+
+class TestCheckVersionSites(unittest.TestCase):
+    def setUp(self):
+        self.repo = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.repo, ignore_errors=True)
+        self.root = self.repo / "founder-os"
+        write(self.root / ".claude-plugin" / "plugin.json",
+              json.dumps({"name": "founder-os", "version": "1.0.0"}))
+
+    def test_a_fixture_without_the_bump_script_is_skipped(self):
+        self.assertEqual([], V.check_version_sites(self.root, {}))
+
+    def test_a_checkout_without_the_bump_script_fails(self):
+        (self.repo / ".git").mkdir()
+        errs = V.check_version_sites(self.root, {})
+        self.assertEqual(1, len(errs), errs)
+        self.assertTrue(errs[0].startswith("scripts/bump_version.py: missing"),
+                        errs)
 
 
 class TestCheckSurface(unittest.TestCase):
@@ -863,13 +904,13 @@ class TestReadmeCounts(ValidatorTestCase):
               "| Agents  | %d    |\n| Skills  | %d    |\n")
 
     def test_matching_counts_are_clean(self):
-        # Fixture: 2 agents, 4 skills (3 universals + daily-brief), no
+        # Fixture: 2 agents, 5 skills (4 universals + daily-brief), no
         # setup-cadences so the cadence row is not required.
-        write(self.root / "README.md", self.README % (2, 4))
+        write(self.root / "README.md", self.README % (2, 5))
         self.assertEqual(self.check(V.check_readme_counts), [])
 
     def test_stale_agent_count_is_caught(self):
-        write(self.root / "README.md", self.README % (12, 4))
+        write(self.root / "README.md", self.README % (12, 5))
         errs = self.check(V.check_readme_counts)
         self.assertTrue(any("claims 12 agents, the package has 2" in e
                             for e in errs), errs)
@@ -879,11 +920,11 @@ class TestReadmeCounts(ValidatorTestCase):
               "# X\n\n| Content | Count |\n|---|---|\n"
               "| Agents | 2 |\n| Skills | 2 |\n")
         errs = self.check(V.check_readme_counts)
-        self.assertTrue(any("claims 2 skills, the package has 4" in e
+        self.assertTrue(any("claims 2 skills, the package has 5" in e
                             for e in errs), errs)
 
     def test_missing_cadence_row_is_caught_when_cadence_exists(self):
-        write(self.root / "README.md", self.README % (2, 4))
+        write(self.root / "README.md", self.README % (2, 5))
         self.write_skill("setup-cadences", body="## Steps\n\n1. Go.\n")
         errs = self.check(V.check_readme_counts)
         self.assertTrue(any("no 'Cadences' row" in e for e in errs), errs)
@@ -892,7 +933,7 @@ class TestReadmeCounts(ValidatorTestCase):
         self.assertEqual(self.check(V.check_readme_counts), [])
 
     def test_document_count_drift_is_caught(self):
-        write(self.root / "README.md", self.README % (2, 4))
+        write(self.root / "README.md", self.README % (2, 5))
         write(self.tmp / "docs" / "README.md",
               "Founder OS adds 12 agents, 48 workflows, and 9 optional cadences.")
         errs = self.check(V.check_readme_counts)
@@ -1092,7 +1133,7 @@ class TestDerivedFiles(unittest.TestCase):
     def test_a_case_mismatched_derived_entry_still_covers_the_path(self):
         """The guard casefolds, so a map that does not is a map it disagrees with.
 
-        `hooks/ownership-guard.py:_derived_entry` reads `_Dashboard/` and
+        `mcp/ownership.py:derived_entry`, the guard's matcher, reads `_Dashboard/` and
         `_dashboard/snapshots/x.md` as the same directory and denies the write.
         Compared case-sensitively here, the same map shipped: the package said
         the path was owned state and the machine refused every write to it.
@@ -1199,6 +1240,13 @@ class TestThresholdsCheck(unittest.TestCase):
         self.assertIn("restates queue.doing_days as 5", errs[0])
         self.assertIn("says 55", errs[0])
 
+    def test_the_done_ceiling_raised_only_in_the_yaml_fails(self):
+        root = self.mutated_package()
+        self.retune(root, "done_ceiling_days: 60", "done_ceiling_days: 90")
+        errs = V.check_thresholds(root, {})
+        self.assertEqual(len(errs), 1, errs)
+        self.assertIn("restates queue.done_ceiling_days as 60", errs[0])
+
     def test_a_number_no_python_reads_is_pinned_too(self):
         """`briefs` is prose on both ends — no code reads it, no unit test can.
 
@@ -1304,10 +1352,11 @@ class TestThresholdsCheck(unittest.TestCase):
         root = self.mutated_package()
         (root / "skills" / "signal-check" / "SKILL.md").unlink()
         errs = V.check_thresholds(root, {})
-        self.assertEqual(len(errs), 2, errs)
+        self.assertEqual(len(errs), 3, errs)
         self.assertTrue(all("skills/signal-check/SKILL.md" in e for e in errs),
                         errs)
-        self.assertTrue(all("signals.cap" in e for e in errs), errs)
+        self.assertEqual(sum("signals.cap" in e for e in errs), 2, errs)
+        self.assertEqual(sum("signals.stale_days" in e for e in errs), 1, errs)
 
     def test_a_value_the_runtime_reader_rejects_is_an_error_here(self):
         """The yaml is read the way `contracts.load_thresholds` reads it.

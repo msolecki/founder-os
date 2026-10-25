@@ -71,6 +71,27 @@ def _run_gateway(*messages: object) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _run_gateway_bytes(payload: bytes) -> subprocess.CompletedProcess[str]:
+    """Like `_run_gateway`, for input text mode cannot carry (invalid UTF-8)."""
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(PACKAGE_ROOT)
+    environment["PYTHONIOENCODING"] = "utf-8"
+    completed = subprocess.run(
+        [sys.executable, str(ENTRYPOINT)],
+        cwd=REPOSITORY_ROOT,
+        env=environment,
+        input=payload + b"\n",
+        capture_output=True,
+        check=False,
+    )
+    return subprocess.CompletedProcess(
+        completed.args,
+        completed.returncode,
+        completed.stdout.decode("utf-8"),
+        completed.stderr.decode("utf-8", errors="replace"),
+    )
+
+
 class ProtocolServerContractTests(unittest.TestCase):
     def setUp(self) -> None:
         sys.path.insert(0, str(PACKAGE_ROOT))
@@ -230,6 +251,24 @@ class StdioGatewayContractTests(unittest.TestCase):
         self.assertEqual(responses[0]["error"]["code"], -32700)
         self.assertTrue(completed.stderr.strip())
 
+    def test_bad_lines_cost_a_parse_error_and_the_next_request_is_served(self) -> None:
+        cases = {
+            "deep nesting": b"[" * 100000,
+            "invalid utf-8": b"\xff\xfe\xfd",
+        }
+        for label, bad_line in cases.items():
+            with self.subTest(case=label):
+                completed = _run_gateway_bytes(
+                    bad_line + b"\n" + _line(_request(2, "ping")).encode()
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                responses = [
+                    json.loads(line) for line in completed.stdout.splitlines()
+                ]
+                self.assertEqual(-32700, responses[0]["error"]["code"])
+                self.assertIsNone(responses[0]["id"])
+                self.assertEqual({"jsonrpc": "2.0", "id": 2, "result": {}}, responses[1])
+
     def test_lifecycle_blocks_tools_until_initialized_and_rejects_reinitialize(self) -> None:
         completed = _run_gateway(
             _request(1, "tools/list"),
@@ -267,9 +306,21 @@ class StdioGatewayContractTests(unittest.TestCase):
         )
         responses = [json.loads(line) for line in completed.stdout.splitlines()]
         self.assertEqual(-32602, responses[1]["error"]["code"])
-        self.assertEqual(-32602, responses[2]["error"]["code"])
+        # MCP allows a pagination cursor; one page holds every tool.
+        self.assertEqual(8, len(responses[2]["result"]["tools"]))
         self.assertEqual(8, len(responses[3]["result"]["tools"]))
         self.assertEqual(-32602, responses[4]["error"]["code"])
+
+    def test_tools_list_refuses_a_non_string_cursor_and_other_params(self) -> None:
+        completed = _run_gateway(
+            _initialize(1),
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            _request(2, "tools/list", {"cursor": 7}),
+            _request(3, "tools/list", {"cursor": "x", "extra": True}),
+        )
+        responses = [json.loads(line) for line in completed.stdout.splitlines()]
+        self.assertEqual(-32602, responses[1]["error"]["code"])
+        self.assertEqual(-32602, responses[2]["error"]["code"])
 
     def test_notification_method_sent_as_request_receives_an_error(self) -> None:
         completed = _run_gateway(

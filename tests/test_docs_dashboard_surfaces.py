@@ -8,9 +8,11 @@ than against the sentence a reviewer remembers writing.
 
 import ast
 import importlib.util
+import os
 import re
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -535,18 +537,28 @@ class DashboardFlagTable(unittest.TestCase):
     def test_the_json_row_says_an_unmatched_home_resolves_nothing(self):
         """`FOUNDER_OS_HOME` does not fall through to `default:`.
 
-        `configured_business` returns out of the branch it enters when the
-        variable is set, and that branch never reads `default`, so a variable
-        matching no registered home — or more than one — resolves nothing. A
-        row that chains the two with "else" tells a founder whose variable
-        points at an unregistered path that they get the registry's default.
-        They get exit 2.
+        The dashboard chooses with the gateway's `select_workspace`, which
+        returns out of the branch it enters when the variable is set, and that
+        branch never reads `default`, so a variable matching no registered home
+        — or more than one — resolves nothing. A row that chains the two with
+        "else" tells a founder whose variable points at an unregistered path
+        that they get the registry's default. They get exit 2.
         """
-        chooser = _cli_function("configured_business")
+        self.assertEqual(
+            [], [child for child in ast.walk(_cli_function("configured_business"))
+                 if isinstance(child, ast.Constant)
+                 and child.value == "FOUNDER_OS_HOME"],
+            "the dashboard reads the variable itself again")
+        source = (PLUGIN_ROOT / "mcp" / "workspaces.py").read_text(
+            encoding="utf-8")
+        chooser = next(
+            node for node in ast.parse(source).body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "select_workspace")
         branch = next(
             node for node in chooser.body
             if isinstance(node, ast.If)
-            and any(isinstance(child, ast.Name) and child.id == "declared"
+            and any(isinstance(child, ast.Name) and child.id == "configured"
                     for child in ast.walk(node.test)))
         self.assertIsInstance(
             branch.body[-1], ast.Return,
@@ -639,10 +651,14 @@ class CommandsIndexRow(unittest.TestCase):
         index said "each active business", which promises files for a business
         the run prints a skip line about and never touches.
         """
-        skipped = [node.value for node in ast.walk(_cli_function("main"))
-                   if isinstance(node, ast.Constant)
-                   and isinstance(node.value, str) and "charter.md" in node.value]
-        self.assertTrue(skipped, "the run no longer filters on charter.md")
+        with tempfile.TemporaryDirectory() as empty:
+            run = subprocess.run(
+                [sys.executable, str(DASHBOARD_CLI_PATH.parent),
+                 "--home", empty, "--now", "2026-07-20"],
+                capture_output=True, text=True)
+            self.assertEqual(os.listdir(empty), [])
+        self.assertIn("no charter.md", run.stderr,
+                      "the run no longer filters on charter.md")
         text = COMMANDS_PATH.read_text(encoding="utf-8")
         found = re.search(r"^\|\s*`/dashboard`\s*\|(.+?)\|\s*$", text, re.M)
         self.assertIsNotNone(found, "docs/commands.md has no /dashboard row")

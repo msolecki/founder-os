@@ -475,8 +475,9 @@ test('workflow controller executes every approved state transition', () => {
     assert.equal(workflowSearch.value, '');
     assert.equal(workflowCount.textContent, `${SKILL_COUNT} of ${SKILL_COUNT} workflows`);
     assert.equal(
-      workflowGroups.every((group) => !group.hidden && !group.open),
+      workflowGroups.every((group) => !group.hidden && group.open),
       true,
+      '"Show all" opens every group',
     );
   });
 });
@@ -535,6 +536,34 @@ test('demo tabs synchronize panels and wrap arrow-key navigation', () => {
 
     tabs[0].listeners.keydown({ key: 'ArrowLeft', preventDefault() {} });
     assertSelected('friday');
+  });
+});
+
+test('demo tabs jump to the first and last tab with Home and End', () => {
+  runDemoController(({ tabs, panels }) => {
+    function assertSelected(name) {
+      for (const tab of tabs) {
+        assert.equal(tab.getAttribute('aria-selected'), String(tab.dataset.demo === name));
+      }
+      for (const panel of panels) {
+        assert.equal(panel.hidden, panel.dataset.panel !== name);
+      }
+    }
+
+    let prevented = false;
+    tabs[0].listeners.keydown({ key: 'End', preventDefault() { prevented = true; } });
+    assert.equal(prevented, true);
+    assert.equal(tabs[2].focused, true);
+    assertSelected('friday');
+
+    tabs[2].listeners.keydown({ key: 'Home', preventDefault() {} });
+    assert.equal(tabs[0].focused, true);
+    assertSelected('today');
+
+    prevented = false;
+    tabs[0].listeners.keydown({ key: 'Enter', preventDefault() { prevented = true; } });
+    assert.equal(prevented, false);
+    assertSelected('today');
   });
 });
 

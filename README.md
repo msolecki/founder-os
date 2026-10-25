@@ -186,7 +186,7 @@ button.
    security sandbox. A known role cannot use direct file tools, shell, web, an
    unknown MCP server, or a capability belonging to another role. Malformed
    non-role hook traffic does not grant role state authority.
-4. **Run time, weeks later** — `founder-os-doctor`: 20 checks against a real
+4. **Run time, weeks later** — `founder-os-doctor`: 19 checks against a real
    workspace (missing files, section drift, stale metrics, broken links,
    undrained inbox, rotting queue, briefs nobody acts on, …).
 
@@ -264,8 +264,9 @@ CI (`.github/workflows/ci.yml`) runs all six on every push and PR.
 
 One agent = one decision no other agent can make — that's the test every
 existing agent had to pass. The exact role-callable `founder-os-state` allowlist,
-the shared sibling/delegation contract, the four mandated headings, the three
-universal skills (`guardrails`, `state-integrity`, `ingestion-gate`), and an
+the shared sibling/delegation contract, the four mandated headings, the four
+universal skills (`guardrails`, `state-integrity`, `ingestion-gate`,
+`context-load`), and an
 entry in `ownership.yaml` if it owns anything. Owning nothing must be a
 decision, not an omission — the board-member is the worked example.
 

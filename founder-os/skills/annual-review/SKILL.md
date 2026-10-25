@@ -28,9 +28,11 @@ Read first — house rule 1:
 
 - `decisions/` — every entry from the last twelve months. This is the review.
   Everything else is context.
-- `metrics.md` — the numbers that settle whether each falsifier fired
-- `reviews/monthly/` — used for exactly one thing, in step 4: checking whether
-  the empty months were actually empty
+- `reviews/monthly/` — used for exactly two things: the `## Decisions`
+  `revisits (90d+)` lines, which are the year's falsifier history (step 2), and,
+  in step 5, checking whether the empty months were actually empty
+- `metrics.md` — the current close, which settles only the falsifiers no monthly
+  review has revisited yet. It holds one month; it is not the year's history
 
 Do not read the year's `reviews/weekly/`. They record what happened, which is
 what this skill is deliberately not scoring.
@@ -59,7 +61,10 @@ what this skill is deliberately not scoring.
    in the founder's information state at the time, which is the only state in
    which their reasoning can be fairly judged.
 2. **For each, check the falsifier.** It named an observable, a threshold, and a
-   date. Did it fire? Settle it with a number from `metrics.md`, not a memory.
+   date. Did it fire? Settle it from the `revisits (90d+)` line in
+   `reviews/monthly/` that answered it — held, fired-and-ignored or overtaken,
+   checked against that month's close — and, for a decision no review has
+   revisited yet, with a number from today's `metrics.md`. Never a memory.
 3. **Score every decision into one of four quadrants — process, then outcome.**
    Judge the process on what was knowable at the time, never on what you now
    know.

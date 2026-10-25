@@ -18,7 +18,7 @@ Monthly, per active engagement. Immediately when a client goes quiet mid-project
 or an invoice slips. Before every renewal conversation, never during one.
 
 **And on the day a deal is won — this is the engagement intake.** `pipeline-review`
-leaves `Proposed: open clients/<client-slug>.md with a client-health baseline`
+leaves `Proposed: run /client-health baseline for [[<client-slug>]]`
 under the deal in `pipeline.md` `## Won`, and the brief queues it to you. If
 `clients/<client-slug>.md` does not exist yet, create it with a create-only write:
 `# <Client>` and a first `## Health` entry, every signal at its starting value,

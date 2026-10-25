@@ -25,6 +25,7 @@ from typing import Callable, Dict, Mapping, Optional, Sequence, Tuple
 
 
 MANIFEST_VERSION = 2
+SMOKE_TIMEOUT_SECONDS = 600
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 BEGIN_MARKER = re.compile(
     br"^# BEGIN (founder-os(?::[A-Za-z0-9][A-Za-z0-9._-]*)?)"
@@ -47,7 +48,6 @@ class Cadence:
 
 @dataclass(frozen=True)
 class CadenceConfig:
-    host: str
     binary: Path
     workspace: Path
     workdir: Path
@@ -55,8 +55,6 @@ class CadenceConfig:
     slug: Optional[str]
 
     def __post_init__(self) -> None:
-        if self.host != "claude":
-            raise CadenceError("host must be claude")
         for value in (
             self.binary,
             self.workspace,
@@ -153,11 +151,13 @@ def _cron_command(config: CadenceConfig, workflow: str) -> str:
     argv = " ".join(quote(value) for value in host_argv(config, workflow))
     return (
         "cd {workdir} && umask 077 && "
-        "PATH={path} FOUNDER_OS_HOME={workspace} {argv} >> {log} 2>&1"
+        "PATH={path} FOUNDER_OS_HOME={workspace} "
+        "FOUNDER_OS_CADENCE_WORKFLOW={workflow} {argv} >> {log} 2>&1"
     ).format(
         workdir=quote(str(config.workdir)),
         path=quote(_host_path(config)),
         workspace=quote(str(config.workspace)),
+        workflow=quote(workflow),
         argv=argv,
         log=quote(str(_log_path(config, workflow))),
     )
@@ -324,6 +324,7 @@ def render_launchd(config: CadenceConfig) -> Dict[str, bytes]:
             "ProgramArguments": list(host_argv(config, cadence.workflow)),
             "EnvironmentVariables": {
                 "FOUNDER_OS_HOME": str(config.workspace),
+                "FOUNDER_OS_CADENCE_WORKFLOW": cadence.workflow,
                 "PATH": _host_path(config, system=True),
             },
             "WorkingDirectory": str(config.workdir),
@@ -388,7 +389,8 @@ def render_systemd(config: CadenceConfig) -> Dict[str, bytes]:
             "[Unit]\nDescription=Founder OS {workflow}\n\n"
             "[Service]\nType=oneshot\nUMask=0077\n"
             "WorkingDirectory={workdir}\n"
-            "Environment={environment}\nEnvironment={path}\n"
+            "Environment={environment}\nEnvironment={pin}\n"
+            "Environment={path}\n"
             "ExecStart={command}\n"
             "StandardOutput={log}\nStandardError={log}\n"
         ).format(
@@ -396,6 +398,9 @@ def render_systemd(config: CadenceConfig) -> Dict[str, bytes]:
             workdir=_systemd_bare(str(config.workdir)),
             environment=_systemd_quote(
                 "FOUNDER_OS_HOME=" + str(config.workspace)
+            ),
+            pin=_systemd_quote(
+                "FOUNDER_OS_CADENCE_WORKFLOW=" + cadence.workflow
             ),
             path=_systemd_quote("PATH=" + _host_path(config)),
             command=command,
@@ -491,7 +496,6 @@ def _verify_seal(document: Mapping[str, object]) -> None:
 
 def _config_document(config: CadenceConfig) -> Dict[str, object]:
     return {
-        "host": config.host,
         "binary": str(config.binary),
         "workspace": str(config.workspace),
         "workdir": str(config.workdir),
@@ -503,18 +507,14 @@ def _config_document(config: CadenceConfig) -> Dict[str, object]:
 def _config_from_document(value: object) -> CadenceConfig:
     if not isinstance(value, dict):
         raise CadenceError("manifest config is invalid")
-    if set(value) != {
-        "host",
-        "binary",
-        "workspace",
-        "workdir",
-        "log_root",
-        "slug",
-    }:
+    # Manifests from 3.0 and earlier carry "host": "claude"; still decode them.
+    keys = {"binary", "workspace", "workdir", "log_root", "slug"}
+    if set(value) not in (keys, keys | {"host"}) or value.get(
+        "host", "claude"
+    ) != "claude":
         raise CadenceError("manifest config is invalid")
     try:
         return CadenceConfig(
-            host=value["host"],
             binary=Path(value["binary"]),
             workspace=Path(value["workspace"]),
             workdir=Path(value["workdir"]),
@@ -927,6 +927,29 @@ def apply(
     directory.mkdir(parents=True, exist_ok=True)
     for name, content in artifacts.items():
         _atomic_write(directory / name, content)
+    def fail(message: str, result: object) -> None:
+        # Roll back the whole identity: a half-loaded set runs some cadences
+        # and silently skips the rest.  That removes units which ran before
+        # this apply too; the snapshot backup keeps them for a manual restore.
+        stderr = getattr(result, "stderr", "")
+        if isinstance(stderr, str) and stderr.strip():
+            message += ": " + stderr.strip()[-500:]
+        identity = config.slug if config.slug is not None else "founder-os"
+        try:
+            remove(config, str(scheduler), identity, backup_path.parent,
+                   runner=runner)
+        except CadenceError as error:
+            raise CadenceError(
+                "%s; rollback failed (%s): run `remove --identity %s`, then "
+                "restore the earlier units from %s"
+                % (message, error, identity, backup_path)
+            )
+        raise CadenceError(
+            "%s; removed every unit of identity %s, including any that ran "
+            "before this apply: restore those from %s"
+            % (message, identity, backup_path)
+        )
+
     if scheduler == "launchd":
         domain = "gui/" + str(os.getuid())
         for name in sorted(artifacts):
@@ -934,20 +957,17 @@ def apply(
             _run(runner, ("launchctl", "bootout", domain + "/" + label))
             result = _run(runner, ("launchctl", "bootstrap", domain, str(directory / name)))
             if getattr(result, "returncode", None) != 0:
-                raise CadenceError("launchd bootstrap failed")
+                fail("launchd bootstrap failed for " + label, result)
     elif scheduler == "systemd":
-        if getattr(
-            _run(runner, ("systemctl", "--user", "daemon-reload")),
-            "returncode",
-            None,
-        ) != 0:
-            raise CadenceError("systemd daemon-reload failed")
+        result = _run(runner, ("systemctl", "--user", "daemon-reload"))
+        if getattr(result, "returncode", None) != 0:
+            fail("systemd daemon-reload failed", result)
         timers = sorted(name for name in artifacts if name.endswith(".timer"))
         result = _run(
             runner, ("systemctl", "--user", "enable", "--now", *timers)
         )
         if getattr(result, "returncode", None) != 0:
-            raise CadenceError("systemd timer enable failed")
+            fail("systemd timer enable failed for " + " ".join(timers), result)
 
 
 def remove(
@@ -1030,27 +1050,34 @@ def remove(
     return backup
 
 
-def smoke(
-    config: CadenceConfig,
-    workflow: str,
-    *,
-    runner: Callable[..., object] = subprocess.run,
-) -> None:
+def smoke(config: CadenceConfig, workflow: str) -> None:
     environment = {
         "HOME": str(Path.home()),
         "PATH": _host_path(config),
         "FOUNDER_OS_HOME": str(config.workspace),
+        "FOUNDER_OS_CADENCE_WORKFLOW": workflow,
     }
-    result = runner(
-        list(host_argv(config, workflow)),
-        cwd=str(config.workdir),
-        env=environment,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if getattr(result, "returncode", None) != 0:
-        raise CadenceError("cadence smoke failed")
+    try:
+        result = subprocess.run(
+            list(host_argv(config, workflow)),
+            cwd=str(config.workdir),
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=SMOKE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        # A hung login or permission prompt must not block setup forever.
+        raise CadenceError(
+            "cadence smoke timed out after %d seconds" % SMOKE_TIMEOUT_SECONDS
+        )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()[-2000:]
+        raise CadenceError(
+            "cadence smoke failed (exit %d)%s"
+            % (result.returncode, ": " + detail if detail else "")
+        )
 
 
 def _write_json(
@@ -1079,7 +1106,6 @@ def _read_json(path: Path) -> Dict[str, object]:
 def _add_config_arguments(
     parser: argparse.ArgumentParser, *, scheduler: bool = True
 ) -> None:
-    parser.add_argument("--host", choices=("claude",), required=True)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("--workdir", type=Path, required=True)
@@ -1104,7 +1130,6 @@ def _config_from_args(
     ):
         raise CadenceError("host binary is not an executable file")
     return CadenceConfig(
-        host=args.host,
         binary=binary,
         workspace=args.workspace.resolve(),
         workdir=args.workdir.resolve(),

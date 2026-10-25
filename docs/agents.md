@@ -51,9 +51,9 @@ or that agrees with the CEO, is decoration.
 
 Each agent below lists the decision it owns, the workspace files it may write
 (from [`ownership.yaml`](../founder-os/references/ownership.yaml)), and its role
-skills. Every agent *also* holds the three universal system skills —
-`guardrails`, `state-integrity`, `ingestion-gate` — omitted from the lists below
-for brevity. Full command descriptions are in [`commands.md`](commands.md).
+skills. Every agent *also* holds the four universal system skills —
+`guardrails`, `state-integrity`, `ingestion-gate`, `context-load` — omitted
+from the lists below for brevity. Full command descriptions are in [`commands.md`](commands.md).
 
 ### Chief of Staff
 - **Decides:** what deserves the founder's attention right now, and who handles
@@ -67,7 +67,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 - **Notes:** the default entry point and the role that decides routing. It
   returns the canonical delegation request; the main thread executes it.
   `queue.md` is the state between a cadence that produces an obligation and the
-  day it is done or dropped — eight cadences *propose* into it, only this agent
+  day it is done or dropped — eleven cadences *propose* into it, only this agent
   writes it. Owns the retrospectives but not the numbers: it narrates what the
   CFO's `metrics.md` means, never restating a number it did not read.
 
@@ -133,7 +133,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 
 ### Network Manager
 - **Decides:** who to talk to, and when to follow up.
-- **Owns:** `network.md`.
+- **Owns:** `network.md`, `drafts/network/`.
 - **Skills:** `relationship-map`, `follow-up-sweep`.
 - **Notes:** owns the identity of every *person* — `network.md` `## Map` is the
   definition a `[[slug]]` for a person resolves to (people have no file).

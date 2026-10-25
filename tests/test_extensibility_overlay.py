@@ -176,15 +176,17 @@ class DoctorIsWhereOverlayValidationLives(unittest.TestCase):
         _, cls.body = parse_frontmatter(DOCTOR)
         cls.checks = cls.body.split("## The checks", 1)[1].split("\n## Steps", 1)[0]
 
-    def test_all_six_overlay_checks_are_declared(self):
+    def test_all_five_overlay_checks_are_declared(self):
         for check in ("Overlay unreadable",
                       "Overlay claims a packaged path",
                       "Overlay incoherent",
                       "Local agent overreaches",
-                      "Local skill off template",
-                      "Installed copy drift"):
+                      "Local skill off template"):
             with self.subTest(check=check):
                 self.assertIn("**%s**" % check, self.checks)
+        # The doctor runs as a role, and the gateway serves it nothing under
+        # ~/.claude/skills/; skill-forge checks the installed copy instead.
+        self.assertNotIn("**Installed copy drift**", self.checks)
 
     def test_the_inputs_admit_this_is_the_only_validation_the_overlay_gets(self):
         inputs = norm(self.body.split("## Inputs", 1)[1].split("\n##", 1)[0])

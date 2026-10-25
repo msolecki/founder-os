@@ -1,6 +1,6 @@
 """The series is a series only if the same day twice is one row.
 
-`scripts/traffic_snapshot.py` learned this against the GitHub Traffic API: a
+A traffic series learned this against the GitHub Traffic API: a
 dated file that appends produces two answers for one day, and a chart drawn over
 it is a chart of how often the script ran. Merge by key, and write nothing for a
 value that was not read — an empty cell says "we did not look", a zero says the
@@ -196,6 +196,44 @@ class TestMerge(unittest.TestCase):
         snapshots.merge(path, dict(row, business="nordwind"))
         rows = _rows(path)
         self.assertEqual(len(rows), 2)
+
+    def test_a_home_run_and_a_registry_run_on_one_day_are_one_row(self):
+        """`--home` files the row under no slug, the registry under its own."""
+        row = snapshots.row_from(example_facts())
+        for first, second in (("", "studio-north"), ("studio-north", "")):
+            with self.subTest(first=first, second=second):
+                path = self._path()
+                snapshots.merge(path, dict(row, date="2026-07-19",
+                                           business=""))
+                snapshots.merge(path, dict(row, business=first))
+                snapshots.merge(path, dict(row, business=second,
+                                           queue_doing="2"))
+                rows = _rows(path)
+                self.assertEqual(
+                    [(r["date"], r["business"]) for r in rows],
+                    [("2026-07-19", "studio-north"),
+                     ("2026-07-20", "studio-north")])
+                self.assertEqual(rows[1]["queue_doing"], "2")
+
+    def test_relabelling_keeps_a_founder_column_only_the_blank_row_had(self):
+        path = self._path()
+        header = ",".join(list(snapshots.FIELDS) + ["note", "tag"])
+        cells = {field: "" for field in snapshots.FIELDS}
+        blank = dict(cells, date="2026-07-19")
+        named = dict(cells, date="2026-07-19", business="studio-north")
+        path.write_text("\n".join([
+            header,
+            ",".join([blank[f] for f in snapshots.FIELDS] + ["paid VAT", "x"]),
+            ",".join([named[f] for f in snapshots.FIELDS] + ["", "kept"]),
+        ]) + "\n", encoding="utf-8")
+        snapshots.merge(path, {"date": "2026-07-20",
+                               "business": "studio-north"})
+        rows = _rows(path)
+        self.assertEqual([(r["date"], r["business"]) for r in rows],
+                         [("2026-07-19", "studio-north"),
+                          ("2026-07-20", "studio-north")])
+        self.assertEqual(rows[0]["note"], "paid VAT")
+        self.assertEqual(rows[0]["tag"], "kept")
 
     def test_rows_stay_sorted_by_date_then_business(self):
         path = self._path()

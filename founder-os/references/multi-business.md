@@ -38,18 +38,27 @@ portfolio: /Users/x/.founder-os/portfolio   # scaffolded with the 2nd business
 - **`default:`** is what an unqualified session works on. With one active
   business it is redundant; with two it is mandatory, because "whichever
   workspace the cwd happens to resolve to" is how advice lands in the wrong
-  company.
+  company. It names a business, never the portfolio: `default: portfolio`
+  makes the registry unreadable, because every business role would resolve to
+  a workspace it is refused in. To fix it, delete the `default:` line or set it to
+  a business slug from `businesses:`; the portfolio is reached by naming it.
+- **`portfolio`** is a reserved selector, not a slug: no business may take it,
+  and naming it (as the business in the invocation, or as the gateway's
+  `business_slug`) selects the `portfolio:` workspace. Only the
+  Portfolio Manager may open a session there.
 
 ## How a session picks a business
 
 Precedence, most explicit wins:
 
 1. **Named in the invocation** — `/founder-os:daily-brief acme`, or the
-   founder says "for acme" in the session. Every cadence accepts the slug as its first argument and passes
+   founder says "for acme" in the session; `portfolio` names the portfolio
+   workspace. Every cadence accepts the slug as its first argument and passes
    it to `context-load`.
 2. **`FOUNDER_OS_HOME`** — set in the environment; each scheduled job carries
    its business's absolute home. The registry maps the path back to a slug for
-   display.
+   display. A value matching no registered home, or more than one, stops
+   here: the gateway and the dashboard both refuse rather than fall through.
 3. **Registry `default:`** — when nothing above says otherwise, and only while
    that business is `active`. A paused `default:` is ignored, not refused:
    with exactly one active business that one is used; with more than one, name
@@ -57,6 +66,12 @@ Precedence, most explicit wins:
 4. **No registry** — the classic single-business resolution: `FOUNDER_OS_HOME`
    or `./founder-os/`. This is every install before the registry existed, and
    it keeps working untouched.
+
+A role never reads the registry: the gateway serves it neither the file nor
+any other workspace. A workflow that needs it — `portfolio-review` ranking the
+active businesses, `founder-os-doctor` checking the portfolio — gets the active
+slugs (and, for the doctor, the portfolio facts it checks) from the main
+thread in the handoff.
 
 `context-load` step 0 applies this order and **stamps the business into the
 context line** — `Context: [acme] charter <date> | …` — so the founder sees

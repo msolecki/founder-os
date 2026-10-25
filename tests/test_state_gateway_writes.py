@@ -6,9 +6,11 @@ import os
 from pathlib import Path
 import sys
 import stat
+import subprocess
 import tempfile
 import textwrap
 import threading
+import time
 import unittest
 from unittest import mock
 
@@ -20,7 +22,7 @@ if str(PACKAGE_ROOT) not in sys.path:
 from mcp.gateway import Gateway
 from mcp.ownership import OwnershipError, OwnershipSchema
 from mcp.safe_io import SafeStateIO
-from mcp.sessions import JournalError, RoleSessionStore
+from mcp.sessions import JournalError, RoleSessionError, RoleSessionStore
 from mcp.workspaces import WorkspaceResolver
 
 
@@ -516,6 +518,12 @@ class StateGatewayWriteTests(unittest.TestCase):
         self.data_root = self.base / "plugin-data"
         self.home = self.base / "home"
         self.clock_value = 1_700_000_000.25
+        # Any set value, even empty, pins the gateway: a run started from a
+        # cadence unit must not leak its pin into these tests.
+        environment = mock.patch.dict(os.environ)
+        environment.start()
+        self.addCleanup(environment.stop)
+        os.environ.pop("FOUNDER_OS_CADENCE_WORKFLOW", None)
 
         for role in ROLES:
             agent = self.package / "agents" / (role + ".md")
@@ -824,6 +832,55 @@ class StateGatewayWriteTests(unittest.TestCase):
                 self.assertTrue(response["isError"], response)
         self.assertFalse((self.workspace / "metrics.md").exists())
 
+    def test_a_session_record_this_gateway_did_not_mint_is_refused(self):
+        # SEC-03: a well-formed record on disk is not a capability. One left
+        # by an earlier gateway process (a restart) and one written by hand
+        # are both refused, and neither file is rewritten.
+        earlier_process = RoleSessionStore(
+            data_root=self.data_root,
+            packaged_root=self.package,
+            clock=lambda: self.clock_value,
+            ttl_seconds=300,
+        )
+        earlier = earlier_process.open(
+            self.binding.workspace_id, "cfo", "corr-earlier",
+            "revenue-review", "business",
+        )
+        earlier_process.resolve(earlier)
+        record_path = self.sessions._record_path(
+            self.sessions._capability_hash(earlier))
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        forged = "forged-capability-" + "x" * 32
+        forged_hash = self.sessions._capability_hash(forged)
+        forged_path = self.sessions._record_path(forged_hash)
+        forged_path.write_text(json.dumps(dict(
+            record, capability_hash=forged_hash)), encoding="utf-8")
+        for label, capability, path in (("restart", earlier, record_path),
+                                        ("forged", forged, forged_path)):
+            with self.subTest(label):
+                before = path.read_bytes()
+                with self.assertRaises(RoleSessionError):
+                    self.sessions.resolve(capability)
+                response = self._write(
+                    capability, "metrics.md", _metrics(), create_only=True)
+                self.assertTrue(response["isError"], response)
+                self.assertEqual(before, path.read_bytes())
+        self.assertFalse((self.workspace / "metrics.md").exists())
+
+    def test_an_expiry_past_the_session_ttl_is_refused(self):
+        capability = self._open("cfo", correlation_id="corr-ttl-cap")
+        self.sessions.resolve(capability)  # now + ttl exactly is the TTL
+        record_path = self.sessions._record_path(
+            self.sessions._capability_hash(capability))
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        record["expires_at"] = self.clock_value + 300 + 1
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        with self.assertRaises(RoleSessionError):
+            self.sessions.resolve(capability)
+        response = self._write(
+            capability, "metrics.md", _metrics(), create_only=True)
+        self.assertTrue(response["isError"], response)
+
     def test_strategist_cannot_write_metrics_and_is_handed_to_canonical_owner(self):
         capability = self._open("strategist", correlation_id="corr-denial")
         secret_content = _metrics(close="SECRET_DENIAL_CONTENT")
@@ -921,6 +978,62 @@ class StateGatewayWriteTests(unittest.TestCase):
                     code="STATE_IO_ERROR",
                     action="Preserve the original file and surface the error",
                 )
+
+    def test_a_path_the_journal_cannot_hold_keeps_its_real_refusal(self):
+        capability = self._open("cfo")
+        for path in ("metrics\x00.md", "   ", "\ud800.md"):
+            with self.subTest(path=repr(path)):
+                response = self._write(
+                    capability, path, _metrics(), create_only=True
+                )
+                self._assert_error(response, code="PATH_OUTSIDE_WORKSPACE")
+
+    def test_create_only_false_beside_a_valid_hash_is_accepted(self):
+        capability = self._open("cfo")
+        created = self._write(
+            capability, "metrics.md", _metrics(), create_only=True
+        )
+        self.assertFalse(created["isError"], created)
+        replaced = self._write(
+            capability,
+            "metrics.md",
+            _metrics(close="Booked: 11"),
+            expected_sha256=created["structuredContent"]["after_sha256"],
+            create_only=False,
+        )
+        self.assertFalse(replaced["isError"], replaced)
+        not_a_bool = self._write(
+            capability,
+            "metrics.md",
+            _metrics(),
+            expected_sha256=replaced["structuredContent"]["after_sha256"],
+            create_only=0,
+        )
+        self._assert_error(not_a_bool, code="STATE_IO_ERROR")
+
+    def test_an_unknown_argument_is_one_bad_argument_code_on_every_tool(self):
+        capability = self._open("cfo")
+        calls = {
+            "resolve_workspace": {"project_dir": str(self.base)},
+            "open_role_session": {
+                "workspace_id": self.binding.workspace_id,
+                "role": "cfo",
+                "correlation_id": "corr",
+                "workflow": "revenue-review",
+            },
+            "list_state": {"capability": capability, "pattern": "*.md"},
+            "close_role_session": {"capability": capability},
+        }
+        for name, arguments in calls.items():
+            with self.subTest(tool=name):
+                response = self._call(name, dict(arguments, foo=1))
+                self._assert_error(response, code="STATE_IO_ERROR")
+
+    def test_a_relative_project_dir_is_refused(self):
+        response = self._call(
+            "resolve_workspace", {"project_dir": "projects/primary"}
+        )
+        self._assert_error(response, code="WORKSPACE_UNRESOLVED")
 
     def test_write_failures_use_only_approved_fail_closed_codes(self):
         capability = self._open("cfo")
@@ -1128,6 +1241,104 @@ class StateGatewayWriteTests(unittest.TestCase):
         archive.mkdir()
         with self.assertRaises(JournalError):
             self.sessions.preflight_journal()
+
+    def test_a_held_journal_lock_fails_the_write_instead_of_freezing(self):
+        capability = self._open("cfo")
+        os.close(self.sessions.preflight_journal())  # creates the journal
+        holder = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "import fcntl, sys, time\n"
+                "handle = open(sys.argv[1], 'a')\n"
+                "fcntl.flock(handle, fcntl.LOCK_EX)\n"
+                "print('locked', flush=True)\n"
+                "time.sleep(60)\n",
+                str(self.data_root / "operations.jsonl"),
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            self.assertEqual("locked", holder.stdout.readline().strip())
+            self.sessions.JOURNAL_LOCK_TIMEOUT_SECONDS = 0.3
+            started = time.monotonic()
+            response = self._write(
+                capability, "metrics.md", _metrics(), create_only=True
+            )
+            self.assertLess(time.monotonic() - started, 5)
+        finally:
+            holder.kill()
+            holder.wait()
+            holder.stdout.close()
+        self._assert_error(response, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "metrics.md").exists())
+
+    def test_a_held_write_lock_fails_the_write_instead_of_freezing(self):
+        capability = self._open("cfo")
+        lock = self.workspace / (
+            ".founder-os-write-"
+            + hashlib.sha256(b"metrics.md").hexdigest()
+            + ".lock"
+        )
+        holder = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "import fcntl, sys, time\n"
+                "handle = open(sys.argv[1], 'a')\n"
+                "fcntl.flock(handle, fcntl.LOCK_EX)\n"
+                "print('locked', flush=True)\n"
+                "time.sleep(60)\n",
+                str(lock),
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            self.assertEqual("locked", holder.stdout.readline().strip())
+            with mock.patch.object(SafeStateIO, "WRITE_LOCK_TIMEOUT_SECONDS", 0.3):
+                started = time.monotonic()
+                response = self._write(
+                    capability, "metrics.md", _metrics(), create_only=True
+                )
+                self.assertLess(time.monotonic() - started, 5)
+        finally:
+            holder.kill()
+            holder.wait()
+            holder.stdout.close()
+        self._assert_error(response, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "metrics.md").exists())
+
+    def test_an_oversized_final_status_is_refused(self):
+        capability = self._open("cfo")
+        response = self._call(
+            "close_role_session",
+            {"capability": capability, "final_status": "x" * 100_000},
+        )
+        self._assert_error(response, code="ROLE_SESSION_INVALID")
+
+    def test_an_oversized_session_record_is_pruned_by_age(self):
+        self.data_root.mkdir(parents=True, exist_ok=True)
+        oversized = self.data_root / ("a" * 64 + ".json")
+        oversized.write_text("x" * 100_000, encoding="utf-8")
+        old = self.clock_value - RoleSessionStore.SESSION_RETENTION_SECONDS - 1
+        os.utime(oversized, (old, old))
+        self._open("cfo")
+        self.assertFalse(oversized.exists())
+
+    def test_a_far_future_session_record_is_pruned_by_its_age(self):
+        # MCP-13 — retention keyed only off `expires_at` kept this forever.
+        self._open("cfo")
+        (record_path,) = self.data_root.glob("*.json")
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        record["expires_at"] = self.clock_value + 50 * 365 * 24 * 60 * 60
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        old = (self.clock_value - RoleSessionStore.SESSION_RETENTION_SECONDS
+               - 300 - 1)  # 300: the store's ttl
+        os.utime(record_path, (old, old))
+        self._open("strategist")
+        self.assertFalse(record_path.exists())
 
     def test_concurrent_journal_preflights_are_serialized(self):
         first = self.sessions.preflight_journal()
@@ -1427,6 +1638,105 @@ class StateGatewayWriteTests(unittest.TestCase):
         self._assert_journal_shape(event)
         self.assertNotIn("prompt", json.dumps(event).lower())
         self.assertNotIn(capability, json.dumps(event))
+
+    def test_a_cadence_pinned_gateway_opens_only_its_scheduled_workflow(self):
+        """A scheduled run cannot be steered into another role's workflow."""
+        with mock.patch.dict(
+            os.environ, {"FOUNDER_OS_CADENCE_WORKFLOW": "daily-brief"}
+        ):
+            self._open("chief-of-staff")
+            for role in ("cfo", "strategist"):
+                with self.subTest(role=role):
+                    response = self._call(
+                        "open_role_session",
+                        {
+                            "workspace_id": self.binding.workspace_id,
+                            "role": role,
+                            "correlation_id": "corr-" + role,
+                            "workflow": ROLE_WORKFLOWS[role],
+                        },
+                    )
+                    self._assert_error(response, code="ROLE_SESSION_INVALID")
+        self._open("cfo")
+
+    def test_an_empty_cadence_pin_refuses_every_workflow(self):
+        """Set-but-empty is a pin that matches nothing, not an unpinned run."""
+        with mock.patch.dict(os.environ, {"FOUNDER_OS_CADENCE_WORKFLOW": ""}):
+            for role in ("chief-of-staff", "cfo"):
+                with self.subTest(role=role):
+                    response = self._call(
+                        "open_role_session",
+                        {
+                            "workspace_id": self.binding.workspace_id,
+                            "role": role,
+                            "correlation_id": "corr-" + role,
+                            "workflow": ROLE_WORKFLOWS[role],
+                        },
+                    )
+                    self._assert_error(response, code="ROLE_SESSION_INVALID")
+
+    def test_a_gateway_started_with_the_cadence_pin_refuses_another_workflow(self):
+        project = self.base / "projects" / "scheduled"
+        (project / "founder-os").mkdir(parents=True)
+        environment = {
+            key: value for key, value in os.environ.items()
+            if not key.startswith(("FOUNDER_OS_", "PLUGIN_DATA", "CLAUDE_PLUGIN"))
+        }
+        environment.update(
+            HOME=str(self.home),
+            PLUGIN_DATA=str(self.data_root),
+            PYTHONPATH=str(PACKAGE_ROOT),
+            FOUNDER_OS_CADENCE_WORKFLOW="daily-brief",
+        )
+        server = subprocess.Popen(
+            [sys.executable, str(PACKAGE_ROOT / "mcp" / "founder_os_state.py")],
+            env=environment,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        self.addCleanup(server.stdout.close)
+        self.addCleanup(server.wait, 10)
+        self.addCleanup(server.stdin.close)
+
+        def send(message):
+            server.stdin.write(json.dumps(message) + "\n")
+            server.stdin.flush()
+            if "id" in message:
+                return json.loads(server.stdout.readline())
+
+        def call(request_id, name, arguments):
+            return send({
+                "jsonrpc": "2.0", "id": request_id, "method": "tools/call",
+                "params": {"name": name, "arguments": arguments},
+            })["result"]
+
+        send({
+            "jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25", "capabilities": {},
+                "clientInfo": {"name": "cadence-pin-test", "version": "1.0"},
+            },
+        })
+        send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+        resolved = call(2, "resolve_workspace", {"project_dir": str(project)})
+        self.assertFalse(resolved["isError"], resolved)
+        workspace_id = resolved["structuredContent"]["workspace_id"]
+        opened = call(3, "open_role_session", {
+            "workspace_id": workspace_id, "role": "chief-of-staff",
+            "correlation_id": "cadence", "workflow": "daily-brief",
+        })
+        self.assertFalse(opened["isError"], opened)
+        refused = call(4, "open_role_session", {
+            "workspace_id": workspace_id, "role": "cfo",
+            "correlation_id": "cadence", "workflow": "revenue-review",
+        })
+        self.assertTrue(refused["isError"], refused)
+        self.assertEqual(
+            "ROLE_SESSION_INVALID",
+            refused["structuredContent"]["error"]["code"],
+        )
 
 
 if __name__ == "__main__":

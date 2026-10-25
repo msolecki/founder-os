@@ -53,6 +53,7 @@ map does not own.
 | `clients/` | delivery-lead | `## Scope`, `## Health`, `## Retro` |
 | `clients/_capacity.md` | delivery-lead | `## Capacity` |
 | `network.md` | network-manager | `## Map`, `## Not in the map`, `## Sweep` |
+| `drafts/network/` | network-manager | `## Draft`, `## Provenance`, `## Sent` |
 | `skills.md` | skills-mentor | `## Gap`, `## Hypotheses`, `## Learning plan` |
 | `content.md` | brand-editor | `## Plan`, `## Shipped`, `## Drafts`, `## Audience` |
 | `voice.md` | brand-editor | `## Samples`, `## Tells`, `## Never`, `## Register` |
@@ -95,15 +96,15 @@ Every other file answers *what is true*; the queue answers *what is
 outstanding* — the state between a cadence that produces an obligation and the
 day it is done or dropped. It has a cap (`## Doing` holds at most three), an
 expiry (an item nobody started in 15 working days is dropped, with a reason), and
-one owner. **Eight cadences propose into it** — `pipeline-review`,
-`revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`, and
-the three draft skills — but only the Chief of Staff writes it. A queue that only
+one owner. **Eleven cadences propose into it** — `pipeline-review`,
+`revenue-review`, `content-plan`, `quarterly-planning`, `follow-up-sweep`,
+`week-plan`, `calendar-audit`, `runway-forecast`, and the three draft skills — but only the Chief of Staff writes it. A queue that only
 grows is a to-do list, and you already have one of those.
 
 Every taken item carries `from: <file> <date>` (the proposal it came from) so
 tomorrow's brief can see a proposal was already answered and leave it alone.
 
-### `drafts/{outreach,proposals,content}/` — bodies, and what was sent
+### `drafts/{outreach,proposals,content,network}/` — bodies, and what was sent
 
 Each draft file has `## Draft` (the body the founder is about to send),
 `## Provenance` (where its claims came from, the founder-only reader), and
@@ -112,8 +113,8 @@ only place in the workspace where the founder's own edit to the machine's draft
 survives the session, and `voice-capture` reads exactly that diff.
 
 **House rule 0 is untouched by this.** A body on disk is not a sent body.
-`## Sent` is written only when the founder *reports* what went out — no agent may
-fill it in, and no agent may infer it from `## Draft`.
+`## Sent` is written only by the directory's owner, verbatim, from the founder's
+*report* of what went out — no agent infers it from `## Draft`.
 
 ### `decisions/` — why, not just what
 

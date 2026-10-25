@@ -174,8 +174,8 @@ proposal and post downstream quotes `## ICP` as though it were current. The stam
 is what makes it possible to notice the trigger expired.
 
 Narrowing the ICP is material and irreversible in practice — it changes what
-gets sold, published, and pursued for a quarter. Log it via `decision-log`
-(Chief of Staff), including what would change your mind.
+gets sold, published, and pursued for a quarter. Return a `/decision-log` request to the **Chief of Staff**, who owns
+`decisions/`, including what would change your mind.
 
 ## Guardrails
 

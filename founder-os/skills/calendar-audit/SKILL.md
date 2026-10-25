@@ -61,7 +61,10 @@ Read first, in order — house rule 1:
    it reaches you only when the founder supplies it in the session. The Friday
    15:00 scheduled run has nobody to supply it. Then write exactly
    `blocked — needs founder input: last week's calendar, planned vs actual hours`
-   as the whole body of `## Audit` and stop. Never estimate the hours: an
+   as the body of `## Audit`, followed by one line
+   `Proposed: run /calendar-audit with last week's calendar for YYYY-Www — bet: none`,
+   and stop. The Monday 08:00 `daily-brief` drains it, before `week-plan`
+   rewrites the file at 08:30. Never estimate the hours: an
    invented audit feeds `## Ledger`, `signal-check` and `energy-audit`, and every
    one of them would quote it as fact.
 2. **Account for every hour.** Assign each actual hour to a planned block or to
@@ -91,7 +94,7 @@ Read first, in order — house rule 1:
 Fill the `## Audit` section of `week.md` — the file `week-plan` wrote on Monday.
 Change nothing else in that file; `week-plan` rewrites it and carries the ledger
 forward. Without the calendar (step 1), the section's whole body is the one
-`blocked — needs founder input: …` line.
+`blocked — needs founder input: …` line and its `Proposed:` line.
 
     ## Audit
     Planned <h> / actual <h> · unplanned <h> (<n>% of the week)

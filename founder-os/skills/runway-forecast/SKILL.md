@@ -36,7 +36,7 @@ into revenue?
 | `burn unknown` | `Runway: UNKNOWN` | Write no band and no cliff date; hand the real-burn evidence gap to the Chief of Staff for the queue. |
 | `pipeline unknown` | `Pipeline-discounted runway: UNKNOWN` | Never zero-fill pipeline and write no optimism gap; the honest runway remains valid when cash and burn exist. |
 
-Replace only `metrics.md` `## Runway` with:
+Replace `metrics.md` `## Runway` with:
 
     ## Runway — as of YYYY-MM-DD
     Source: founder onboarding, YYYY-MM-DD
@@ -49,8 +49,16 @@ Replace only `metrics.md` `## Runway` with:
     Band: <computed from honest runway, or UNKNOWN>
     Consequence: <band action, or resolve the blocking cash/burn input>
     Tax reserve: UNKNOWN unless supplied; runway is before any tax reserve
-    Proposed: <missing cash or burn evidence> — bet: none | none
     Handed to: Chief of Staff for queue intake
+
+When cash or burn is unknown, also add one line at the end of `metrics.md`
+`## Close` — the section `daily-brief` drains; it reads only `## Close` in this
+file, so a line under `## Runway` would never reach the queue:
+
+    Proposed: resolve <cash on hand | real monthly burn> for the runway — bet: none
+
+The next close replaces `## Close` and the line with it; the brief has drained it
+every weekday morning before then.
 
 Divide only when cash is known and real monthly burn is strictly positive. A
 verified zero burn has no finite runway or cash-zero cliff at the current state;

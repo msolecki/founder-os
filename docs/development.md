@@ -101,7 +101,7 @@ ownership claim the agent doesn't have.
 ## Adding an agent
 
 1. Create `founder-os/agents/<slug>.md`. Frontmatter: `name` (= filename),
-   `description`, `skills:` (must include the three universal ones), `tools:` (an
+   `description`, `skills:` (must include the four universal ones), `tools:` (an
    explicit allowlist — never omit it, and never an outbound tool).
 2. Body: the four mandated headings, in order.
 3. If it owns files, add them under `owns:` in `ownership.yaml`, ensure each is in
@@ -177,55 +177,11 @@ Under `tests/`:
   script runs on it.
 - `test_feedback_channels.py` — the issue templates, and the pin that keeps
   their workflow dropdown equal to the skills directory.
-- `test_traffic_snapshot.py` — the traffic series' dedup and its
-  automation rule, and the snapshot workflow's branch and permission contract.
 
 Run `python3 scripts/smoke_installed_copy.py` for the clean-copy lifecycle and
 `python3 -m unittest discover -s tests` for the complete Python suite. The smoke
 starts the copied gateway over stdio and uses local subprocesses only; it does
 not invoke an LLM or make network calls.
-
-## Repository traffic — the `metrics` branch
-
-The GitHub Traffic API keeps fourteen days and then the data is gone.
-`.github/workflows/traffic-snapshot.yml` runs weekly and on
-`workflow_dispatch`, and turns that sliding window into a series.
-
-**The series is not on `main`, and that is the whole design constraint.** This
-repository is also the plugin marketplace, so every commit on the default branch
-reaches every installed copy at the next `/plugin marketplace update`. Fifty-two
-commits a year of analytics inside the product package is bandwidth the founder's
-users pay for. The workflow writes to an orphan branch called `metrics`, which
-shares no history with `main` and never merges into it. **It creates the branch
-itself on the first run**, so there is nothing to set up by hand.
-
-- `metrics/traffic.csv` — one row per day, keyed by date:
-  `date,clones_count,clones_uniques,views_count,views_uniques,stars,forks,issues_opened,automation_suspected`.
-  Reading the same day twice updates the row; the API's most recent day is
-  always partial, so today's numbers are corrected by tomorrow's run rather than
-  duplicated. `issues_opened` counts issues only — `type:issue` in the search
-  query, because the REST `open_issues_count` field counts pull requests too —
-  and a quiet day inside the window is `0` rather than blank, since blank means
-  unmeasured and the difference is the whole point of the column.
-- `metrics/referrers-YYYY-MM-DD.csv`, `metrics/paths-YYYY-MM-DD.csv` — whole
-  snapshots. They describe overlapping fourteen-day windows with no way to
-  subtract one from another, so they are photographs and not a series.
-
-To read it:
-
-```bash
-git fetch origin metrics && git switch metrics
-python3 scripts/traffic_report.py metrics/traffic.csv
-```
-
-**Report unique cloners, never `count`.** A clone count includes
-`actions/checkout` on this repo's own CI and a re-clone from every
-`/plugin marketplace update`. The measured case: 2026-08-12 recorded 41 clones
-and zero unique views. `automation_suspected` flags exactly that shape — no
-unique viewer, more than ten clones — and `traffic_report.py` drops those days
-from the trend rather than zeroing them, because zero would claim a quiet day
-and the truth is that we do not know. None of these numbers are users. They are
-machines that cloned a repository, and some of them are ours.
 
 ## Releasing
 

@@ -1,7 +1,10 @@
 # The numbers the workflows enforce, in one place because they are read in more
 # than one. `queue` states the caps and clocks the Friday sweep applies;
-# `founder-os-doctor` reports against the same numbers; the dashboard draws them
-# as the denominator on a meter. Three readers of a number written down once.
+# `founder-os-doctor` reports against the same `queue` numbers and the `briefs`
+# window; `signal-check` states `signals.cap`. The dashboard reads only
+# `queue.doing_cap` and `queue.queued_cap`, as the denominators on its Queue
+# meters, and `signals.stale_days`, to mark a signal stale; every other key is
+# read by the skills alone.
 #
 # A cap changed here changes every reader. A cap changed in a SKILL.md and not
 # here is the drift this file exists to make impossible, and `check_thresholds`
@@ -12,8 +15,10 @@ queue:
   doing_days: 5
   queued_days: 21
   blocked_days: 14
+  done_ceiling_days: 60
 signals:
   cap: 3
+  stale_days: 14
 briefs:
   window: 10
   acted_one_in: 5

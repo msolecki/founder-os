@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import json
+import re
 from pathlib import Path
-from typing import AbstractSet, Dict, List, Optional, Tuple
+from typing import AbstractSet, Callable, Dict, Iterable, List, Optional, Tuple
 
 
 _REQUIRED_TOP_LEVEL_KEYS = {
@@ -18,6 +18,8 @@ _REQUIRED_TOP_LEVEL_KEYS = {
 # written before this key existed must keep loading unchanged.
 _TOP_LEVEL_KEYS = _REQUIRED_TOP_LEVEL_KEYS | {"derived_files"}
 _LIST_KEYS = {"workspace_files", "portfolio_files", "derived_files"}
+# A plain top-level key `read_key` may skip when it carries a scalar.
+_TOP_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_-]*\Z")
 
 
 class OwnershipError(Exception):
@@ -51,8 +53,10 @@ class OwnershipError(Exception):
 def heading_matches(actual_heading: str, required_heading: str) -> bool:
     """`## Close — 2026-07` is `## Close`: the name is pinned, the suffix is not.
 
-    Shared with `safe_io`, so a heading the write accepts is a heading the
-    portfolio read finds.
+    The one suffix rule, shared with `safe_io` and the dashboard, so a heading
+    the write accepts is a heading every read finds. Only an em dash separates
+    a suffix: every shipped skill writes ` — `, and `## Close - 2026-07` is a
+    different heading here, not `## Close`.
     """
     if actual_heading == required_heading:
         return True
@@ -63,33 +67,103 @@ def heading_matches(actual_heading: str, required_heading: str) -> bool:
     )
 
 
+def split_h2(content: str) -> Tuple[Optional[str], List[Tuple[str, str]]]:
+    """The `# ` title above the first H2, and every H2 line with its body.
+
+    The one scanner for the write check, the gateway's section read and the
+    dashboard: three scanners disagreed about where a fence closes, so a
+    heading the write accepted could be one a read never found. A fence opens
+    on three or more backticks or tildes indented at most three spaces, info
+    string or not, and closes only on a run of the same character at least as
+    long with nothing after it. A bare `## ` opens nothing: a heading has text.
+    Heading lines are returned `rstrip()`ed and in file order, duplicates
+    included: each caller owns its duplicate policy.
+    """
+    title: Optional[str] = None
+    sections: List[Tuple[str, str]] = []
+    current: Optional[str] = None
+    body: List[str] = []
+    fence_character: Optional[str] = None
+    fence_length = 0
+    for line in content.splitlines(keepends=True):
+        stripped = line.rstrip("\r\n")
+        candidate = stripped.lstrip(" ")
+        if (
+            len(stripped) - len(candidate) <= 3
+            and candidate[:1] in ("`", "~")
+        ):
+            character = candidate[0]
+            run_length = len(candidate) - len(candidate.lstrip(character))
+            if fence_character is None and run_length >= 3:
+                fence_character = character
+                fence_length = run_length
+            elif (
+                fence_character == character
+                and run_length >= fence_length
+                and not candidate[run_length:].strip()
+            ):
+                fence_character = None
+                fence_length = 0
+        elif (
+            fence_character is None
+            and stripped.startswith("## ")
+            and stripped[3:].strip()
+        ):
+            if current is not None:
+                sections.append((current, "".join(body)))
+            current = stripped.rstrip()
+            body = []
+            continue
+        elif (
+            fence_character is None
+            and current is None
+            and title is None
+            and stripped.startswith("# ")
+        ):
+            title = stripped[2:].strip() or None
+        if current is not None:
+            body.append(line)
+    if current is not None:
+        sections.append((current, "".join(body)))
+    return title, sections
+
+
 def _schema_error() -> OwnershipError:
     return OwnershipError("STATE_IO_ERROR")
 
 
-def _parse_scalar(raw: str) -> str:
+def _parse_scalar(
+    raw: str,
+    error: Callable[[], Exception] = _schema_error,
+) -> str:
+    """One YAML scalar, for this map and for the business registry alike.
+
+    The grammar is the stricter of the two parsers it replaced, on every axis:
+    a quoted value is quoted at both ends with the same mark and holds neither
+    that mark nor, in double quotes, a backslash, so no escape is ever
+    decoded; an unquoted value holds no flow brackets; no value is empty or
+    spans a line. Nothing the package ships or its tests write needed more.
+    `error` builds the caller's own refusal.
+    """
     value = raw.strip()
-    if not value:
-        raise _schema_error()
-    if value.startswith('"'):
-        try:
-            decoded = json.loads(value)
-        except (TypeError, ValueError):
-            raise _schema_error()
-        if not isinstance(decoded, str) or not decoded:
-            raise _schema_error()
-        return decoded
-    if value.startswith("'"):
-        if len(value) < 2 or not value.endswith("'"):
-            raise _schema_error()
-        decoded = value[1:-1].replace("''", "'")
-        if not decoded:
-            raise _schema_error()
-        return decoded
-    if " #" in value:
-        value = value.split(" #", 1)[0].rstrip()
-    if not value or value in {"[]", "{}"}:
-        raise _schema_error()
+    if value[:1] in ("'", '"'):
+        quote = value[0]
+        inner = value[1:-1]
+        if (
+            len(value) < 2
+            or value[-1] != quote
+            or quote in inner
+            or (quote == '"' and "\\" in inner)
+        ):
+            raise error()
+        value = inner
+    else:
+        if " #" in value:
+            value = value.split(" #", 1)[0].rstrip()
+        if any(character in value for character in "[]{}"):
+            raise error()
+    if not value or "\x00" in value or "\n" in value or "\r" in value:
+        raise error()
     return value
 
 
@@ -197,34 +271,52 @@ def _validate_requested_path(value: str) -> str:
     return value
 
 
-def _derived_segments(value: str) -> Tuple[str, ...]:
-    return tuple(part.casefold() for part in value.split("/") if part)
+def owner_key(path: str, keys: Iterable[str]) -> Optional[str]:
+    """The `owns:` entry that governs a workspace-relative path, or None.
 
+    The one owner matcher: the guard, the gateway and the validator all call
+    it. An entry is a file (`goals.md`) or a directory (`decisions/`), and the
+    longest match wins, so `drafts/outreach/` beats `drafts/`.
 
-def _is_derived(derived_files: List[str], value: str) -> bool:
-    """Is `value` a derived path, or a path inside a derived directory?
-
-    A `derived_files:` entry ending in `/` names a directory, and comparing the
-    two lists as sets read that slash as part of a filename: `_dashboard/` was
-    refused as owned state and `_dashboard/snapshots/` was accepted one segment
-    down, with `owner_for("_dashboard/snapshots/x.md")` then answering with a
-    role.
-
-    Matched by segment, casefolded, and with the trailing slash optional rather
-    than required, because `hooks/ownership-guard.py:_derived_entry` is what
-    decides at write time and that is the rule it applies. A map this loader
-    accepts and the guard reads as derived hands an agent an owner for a path it
-    will then be refused: with `_Dashboard/` declared derived,
-    `_dashboard/snapshots/` was owned here and denied there. Broad is the safe
-    direction for a deny list, and `_dashboardx/` is a different first segment,
-    so it stays outside.
+    The case rule is casefolding, everywhere. APFS is case-insensitive by
+    default, so `Goals.md` *is* `goals.md` on a Mac and an exact match lets a
+    shift key dodge the map. For a deny — the guard — the casefolded answer is
+    used as is: the stricter reading, and on a case-sensitive filesystem it can
+    refuse a distinct `Goals.md`, which a workspace that tells files apart by
+    case alone has earned. A *grant* — the gateway's write, the validator's
+    `expected_persistence` check — also requires the path to start with the
+    entry spelled as the map spells it, so the gateway never writes a second
+    `Goals.md` beside `goals.md` on Linux. Broad to refuse, exact to allow.
     """
-    parts = _derived_segments(value)
-    for entry in derived_files:
-        prefix = _derived_segments(entry)
+    folded = path.casefold()
+    best: Optional[str] = None
+    for key in keys:
+        entry = key.casefold()
+        if folded.startswith(entry) if key.endswith("/") else folded == entry:
+            if best is None or len(key) > len(best):
+                best = key
+    return best
+
+
+def derived_entry(path: str, derived: Iterable[str]) -> Optional[str]:
+    """The `derived_files:` entry covering `path`, or None.
+
+    The one derived-path matcher, for the guard's write-time deny, this
+    loader's refusal of an owned derived path, and the validator's joins.
+    Matched by path *segment*, never by string prefix: `_dashboard/` covers
+    `_dashboard` and everything under it, and covers neither
+    `_dashboard_secrets.md` nor `_dashboardish/x.md`. Casefolded like
+    `owner_key`, and the trailing slash is optional rather than required: an
+    entry that lost it is a typo, and the safe reading of a typo in a deny list
+    is the broader one. With `_Dashboard/` declared derived, a loader that
+    compared exactly owned `_dashboard/snapshots/` and the guard denied it.
+    """
+    parts = [part.casefold() for part in path.split("/") if part]
+    for entry in derived:
+        prefix = [part.casefold() for part in entry.split("/") if part]
         if prefix and parts[:len(prefix)] == prefix:
-            return True
-    return False
+            return entry
+    return None
 
 
 def load_document(path: Path) -> Dict[str, object]:
@@ -244,6 +336,64 @@ def load_document(path: Path) -> Dict[str, object]:
         raise _schema_error()
     parsed.setdefault("derived_files", [])
     return parsed
+
+
+def read_key(contents: str, key: str) -> Optional[object]:
+    """One top-level key of a map, parsed with `_parse_subset`, or None.
+
+    For the write-time guard, which reads the packaged map and a founder's
+    `_local/` overlay (`owns:` only) and must not need PyYAML to do it. Each key
+    is cut out and parsed alone, so a broken `owns:` cannot take
+    `derived_files:` down with it — the guard runs the derived deny on both
+    sides of its `owns:` bail. Around the requested block this read is looser
+    than `_parse_subset`, so valid YAML the founder wrote does not switch the
+    guard off: a ` #` comment after a `key:`, a leading `---`, and other
+    top-level `key: scalar` lines are accepted, and other keys are skipped.
+    Inside the block `_parse_subset` decides. A column-0 line that is none of
+    these, an indented line under a scalar key, a second `---` or the requested
+    key written inline fails the whole read, never a truncated block. None
+    means absent or not in this grammar, and the guard fails open on it;
+    `load_document` stays the strict whole-map read.
+    """
+    block: List[str] = []
+    inside = False
+    scalar = False
+    seen_key = False
+    for line in contents.splitlines():
+        if line[:1] in ("", " ", "#"):
+            if scalar and line.strip() and not line.lstrip().startswith("#"):
+                # PyYAML refuses this or folds it into the scalar; either
+                # way it is not a line of the block below the key.
+                return None
+            if inside:
+                block.append(line)
+            continue
+        if "\t" in line:
+            return None
+        stripped = line.split(" #", 1)[0].strip()
+        if stripped == "---" and not seen_key:
+            continue
+        name, separator, value = stripped.partition(": ")
+        if stripped.endswith(":") and stripped.count(":") == 1:
+            name, scalar = stripped[:-1], False
+        elif separator and value.strip() and _TOP_KEY.match(name):
+            if name == key:
+                return None
+            scalar = True
+        else:
+            # Not a key: `_parse_subset` refuses the whole map here, and
+            # cutting the block short would hand back part of `owns:`.
+            return None
+        seen_key = True
+        inside = name == key and not scalar
+        if inside:
+            block.append(name + ":")
+    if not block:
+        return None
+    try:
+        return _parse_subset("\n".join(block)).get(key)
+    except OwnershipError:
+        return None
 
 
 class OwnershipSchema:
@@ -307,7 +457,7 @@ class OwnershipSchema:
             _validate_owned_path(derived_path)
         if len(set(derived_files)) != len(derived_files):
             raise _schema_error()
-        if any(_is_derived(derived_files, owned_path) for owned_path in all_files):
+        if any(derived_entry(owned_path, derived_files) for owned_path in all_files):
             raise _schema_error()
 
         owners: Dict[str, str] = {}
@@ -358,16 +508,9 @@ class OwnershipSchema:
 
     def _matching_key(self, relative_path: str) -> Optional[str]:
         path = _validate_requested_path(relative_path)
-        matches = []
-        for owned_path in self._owners:
-            if owned_path.endswith("/"):
-                if path.startswith(owned_path):
-                    matches.append(owned_path)
-            elif path == owned_path:
-                matches.append(owned_path)
-        if not matches:
-            return None
-        return max(matches, key=len)
+        match = owner_key(path, self._owners)
+        # A grant: the path must spell the entry as the map does (`owner_key`).
+        return match if match is not None and path.startswith(match) else None
 
     def owner_for(self, relative_path: str) -> Optional[str]:
         match = self._matching_key(relative_path)
@@ -493,41 +636,7 @@ class OwnershipSchema:
 
     @staticmethod
     def _headings(content: str) -> List[str]:
-        actual = []
-        fence_character = None
-        fence_length = 0
-        for line in content.splitlines():
-            candidate = line.lstrip(" ")
-            indentation = len(line) - len(candidate)
-            if (
-                indentation <= 3
-                and candidate
-                and candidate[0] in {chr(96), "~"}
-            ):
-                character = candidate[0]
-                run_length = len(candidate) - len(
-                    candidate.lstrip(character)
-                )
-                remainder = candidate[run_length:]
-                if fence_character is None and run_length >= 3:
-                    fence_character = character
-                    fence_length = run_length
-                    continue
-                if (
-                    fence_character == character
-                    and run_length >= fence_length
-                    and not remainder.strip()
-                ):
-                    fence_character = None
-                    fence_length = 0
-                    continue
-            if (
-                fence_character is None
-                and line.startswith("## ")
-                and not line.startswith("### ")
-            ):
-                actual.append(line.rstrip())
-        return actual
+        return [heading for heading, _body in split_h2(content)[1]]
 
     def validate_document(self, relative_path: str, content: str) -> None:
         if not isinstance(content, str):

@@ -60,19 +60,18 @@ makes. Project decisions behind several of them are in
   file tool. One known gap is tracked in [`backlog.md`](backlog.md): an
   unexpected exception exits 0 even on a role path.
 
-## Missing PyYAML or an unreadable overlay means less coverage, not a deny
+## An unreadable map or overlay means less coverage, not a deny
 
-- **Where:** `_parse_owns_without_yaml`, `_derived_from_text`,
+- **Where:** `_ownership_module`, `_derived_from_text`,
   `local_ownership` and `_registry_roots` in
   `founder-os/hooks/ownership-guard.py`
 - **Looks like:** a guard that quietly guards less when a file is broken.
 - **Why it is deliberate:** PyYAML is not in the standard library, so the
-  guard carries a minimal parser for the one shape `ownership.yaml` has and
-  returns "no map" on anything else rather than guessing. An overlay
+  guard reads the map with the gateway's stdlib parser (`mcp/ownership.py`)
+  and returns "no map" on anything it does not accept rather than guessing. An overlay
   (`_local/ownership.yaml`) or a business registry it cannot read costs
-  coverage; a false deny costs the founder a write. The code comments say so
-  ("Failing open is a decision; failing open invisibly forever because of an
-  import is an accident").
+  coverage; a false deny costs the founder a write. Each unread map is logged
+  to the hook's stderr, so the lost coverage is visible in debug mode.
 - **Breaks if changed:** a broken overlay or registry would block writes
   machine-wide. The one exception is `derived_files:`: the derived deny still
   runs when `owns:` cannot be parsed.
@@ -84,7 +83,7 @@ makes. Project decisions behind several of them are in
 - **Looks like:** a hole — a reviewer subagent with `Bash` can write any file
   its own permissions allow.
 - **Why it is deliberate:** the ownership checks bind tools that name a path
-  (`Write`, `Edit`, `NotebookEdit`). Denying every unrecognized subagent every
+  (`Write`, `Edit`, `MultiEdit`, `NotebookEdit`). Denying every unrecognized subagent every
   tool "locked reviewers and Explore passes out of unrelated repositories
   machine-wide". Roles are different: they hold no shell at all.
 - **Breaks if changed:** every non-Founder-OS subagent on the machine loses
@@ -107,20 +106,6 @@ makes. Project decisions behind several of them are in
   missing from its `--help`; dropping it because help does not list it removes
   the 50-turn bound (`founder-os/skills/setup-cadences/SKILL.md`, step 1, warns
   against exactly this).
-
-## Traffic history lives on an orphan `metrics` branch
-
-- **Where:** `.github/workflows/traffic-snapshot.yml`;
-  [`development.md`](development.md)
-- **Looks like:** analytics data missing from `main`, and a branch with no
-  shared history.
-- **Why it is deliberate:** this repository is also the plugin marketplace.
-  Every commit on `main` reaches every installed copy at the next
-  `/plugin marketplace update`, and a weekly analytics commit is bandwidth the
-  founder's users pay for. The workflow creates the orphan branch on its first
-  run and never merges it.
-- **Breaks if changed:** merging `metrics` into `main`, or writing the series
-  there, ships analytics inside the product package.
 
 ## Count checks skip the landing page
 

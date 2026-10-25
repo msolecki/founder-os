@@ -4,6 +4,7 @@ description: Surface everyone past their contact interval and give each one a re
 metadata:
   writes:
     - network.md
+    - drafts/network/
 ---
 
 # Follow-up Sweep
@@ -120,7 +121,8 @@ Read first, in order — house rule 1:
    off-voice message learns nothing; someone who knows them hears that something
    is off, cannot name it, and files the whole reconnect as insincere — which
    costs the relationship rather than the reply.
-8. **Apply the two-touch rule.** Two unanswered touches → stop, drop the
+8. **Apply the two-touch rule.** Two touches the founder reported sending
+   (`## Sent` filled in `drafts/network/`) with no reply they have reported → stop, drop the
    interval to annual, and note it. Chasing is what turns a network into an
    ex-network. The non-reply is information; it is not an invitation to try
    harder.
@@ -157,10 +159,27 @@ Read first, in order — house rule 1:
 
 ## Output
 
-The messages go to the founder to send. This skill does not send.
+**Write each message body to `drafts/network/YYYY-MM-DD-<person-slug>.md`, in
+full, before you show it** — create-only, one file per person, with the same three
+headings as every draft directory:
 
-**If the founder edits one before sending, ask for the sent version and hand it to
-`voice-capture` (Brand Editor) — the same day.** That diff is the founder
+    # <Person> — reconnect — YYYY-MM-DD
+
+    ## Draft
+    <the message, verbatim, exactly as the founder would send it>
+
+    ## Provenance
+    Person: [[<person-slug>]]
+
+    ## Sent
+
+`## Sent` stays empty until the founder reports what went out. The messages go to
+the founder to send. This skill does not send, and a scheduled run with nobody in
+the room has nothing to report: the bodies wait on disk for the founder.
+
+**When the founder reports what they sent — in this session or any later one —
+write it verbatim under that file's `## Sent` and hand the file to
+`voice-capture` (Brand Editor) by path, the same day.** That diff is the founder
 correcting you on their own name with a live deal at stake, and it is the best
 voice evidence this company will ever get. It also evaporates fastest: by
 tomorrow the founder remembers only that they "tweaked it a bit". You do not
@@ -179,12 +198,16 @@ entries forward unchanged:
 
     ## Sweep
     ### YYYY-MM-DD
-    Due: <n> | Sent: <n>/5 | Deferred to <date>: <n> | Excluded (live deal): <n>
+    Due: <n> | Drafted: <n>/5 | Deferred to <date>: <n> | Excluded (live deal): <n>
     Proposed: <the giving the founder committed to> — bet: <B<n> | none> | none
 
-    | person | days over | the real thing given | ask | sent | reply |
-    |--------|-----------|----------------------|-----|------|-------|
-    | <name> | <n> | <the specific thing> | <none | the one ask> | YYYY-MM-DD | |
+    | person | days over | the real thing given | ask | draft |
+    |--------|-----------|----------------------|-----|-------|
+    | <name> | <n> | <the specific thing> | <none | the one ask> | [[YYYY-MM-DD-<person-slug>]] |
+
+The sweep entry records what was drafted, never what was sent: no count of sends
+and no send date, because the founder has not reported one when this runs. What
+went out lives in each draft's `## Sent`, written only from the founder's report.
 
 **`Proposed:` is how step 10's handoff survives a Friday 14:00 with nobody in the
 room.** This cadence fires on a schedule and the Chief of Staff is not there to
@@ -194,7 +217,8 @@ is nothing, which is most weeks; an absent line and a cadence that forgot look
 identical to the brief.
 
 Update each swept person's `last real contact` and `next contact` in `## Map`
-only when the founder confirms it went out. A sweep row is not contact; a
+only when the founder reports it went out, in the same write as that draft's
+`## Sent`. A sweep row is not contact; a
 conversation is.
 
 ## Guardrails

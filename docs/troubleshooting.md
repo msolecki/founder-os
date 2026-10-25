@@ -69,11 +69,11 @@ whether the founder must act. A failed write is never described as persisted.
 | `ROLE_NOT_OWNER` | The canonical owner is named and receives one bounded handoff. |
 | `INVALID_DOCUMENT_STRUCTURE` | The original file is preserved; fix the mismatch with its owner or `/founder-os-doctor`. |
 | `STALE_WRITE` | Re-read, reconcile the concurrent change, and retry once. |
-| `STATE_IO_ERROR` | Preserve the original, stop, and follow the concrete recovery step shown. |
+| `STATE_IO_ERROR` | Preserve the original, stop, and follow the concrete recovery step shown. Also every tool's code for a bad or unknown argument: fix the call, do not retry it unchanged. |
 
 ## `/founder-os-doctor` — what it checks
 
-The doctor runs 20 health checks. Each has a threshold; it reports only the ones
+The doctor runs 19 health checks. Each has a threshold; it reports only the ones
 that trip and stays quiet about the rest (a screen of green trains you to skim). It diagnoses the
 whole workspace first, then reports ranked by *what is producing wrong advice
 right now*.
@@ -99,7 +99,6 @@ right now*.
 | **Overlay incoherent** | A local path with no owner or two owners, or a local skill writing a path its agent doesn't own — the last one denies every time that skill runs. | `/skill-forge` |
 | **Local agent overreaches** | A `_local/agents/*.md` omits `tools:` or names an outbound tool. The guard does not deny it: the role lockdown binds the thirteen packaged roles and a generic fallback that has spent a role capability, and a local agent is neither. A granted `Bash` or `WebFetch` is live; only the gateway still refuses it, because it holds no role capability. | `/skill-forge` |
 | **Local skill off template** | A `_local/skills/*/SKILL.md` has no `## Beliefs` (or fewer than 3, or after `## Steps`), or a slug without the `local-` prefix / colliding with a packaged one. | `/skill-forge` |
-| **Installed copy drift** | A local skill is missing from `~/.claude/skills/`, or the installed copy differs from `_local/`. Never synced automatically — the doctor can't tell which side is intended. | `/skill-forge` |
 
 **What the doctor will *not* repair:** the link, inbox, brief-not-acted-on,
 cadence, queue, and every overlay check. `_local/` is your map, and a doctor
@@ -233,7 +232,7 @@ user-systemd timers; cron is the always-on fallback and does not catch up after
 sleep.
 
 **Do I need PyYAML?** The installed gateway and hooks keep dependency-light
-ownership readers, including the packaged fallback parser. Repository
+ownership readers: the guard and the gateway share one stdlib parser. Repository
 development and the full package validator install PyYAML. Missing PyYAML does
 not turn a role capability into permission to write an unknown owner.
 

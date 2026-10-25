@@ -142,16 +142,6 @@ class TestDeclaredForTheRoot(unittest.TestCase):
             self.assertNotIn(path, sources.files, path)
         self.assertIn("charter.md", sources.files)
 
-    def test_the_portfolio_root_is_asked_for_exactly_its_own_files(self):
-        root = Path(tempfile.mkdtemp()) / "portfolio"
-        root.mkdir()
-        (root / "portfolio.md").write_text(
-            "# Portfolio\n\n## Allocation\n\nacme 60%\n", encoding="utf-8")
-        sources = collect.collect(root, self.view, portfolio=True)
-        self.assertIn("acme 60%", sources.section("portfolio.md", "## Allocation"))
-        for path in self.view.workspace_files:
-            self.assertNotIn(path, sources.files, path)
-
 
 class TestWorkspaceName(unittest.TestCase):
     def _workspace(self, *parts):
@@ -178,6 +168,75 @@ class TestWorkspaceName(unittest.TestCase):
             encoding="utf-8")
         sources = collect.collect(root, contracts.load_ownership())
         self.assertEqual(sources.name, "Why Consulting")
+
+
+class TestOneScannerForWriteReadAndPage(unittest.TestCase):
+    """The write check, the gateway's section read and the page agree.
+
+    Three scanners disagreed: the dashboard closed a four-backtick fence on a
+    three-backtick line inside it and took `## Close - x` for `## Close`, so the
+    page reported sections the write path refuses and missed ones it accepts.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(PLUGIN_ROOT))
+        from mcp.ownership import OwnershipError, OwnershipSchema
+        from mcp.safe_io import SafeStateError, SafeStateIO
+        cls.OwnershipError = OwnershipError
+        cls.SafeStateError = SafeStateError
+        cls.schema = OwnershipSchema.load(
+            PLUGIN_ROOT / "references" / "ownership.yaml")
+        cls.extract = staticmethod(SafeStateIO._extract_h2_sections)
+        cls.declared = contracts.load_ownership().sections["metrics.md"]
+
+    def seen(self, text):
+        written = self.schema._headings(text)
+        found = self.extract(
+            text, tuple(heading[3:] for heading in self.declared))
+        page, _raw, _title = collect._split_h2(text, self.declared)
+        return written, found, page
+
+    def test_fences_hide_the_same_headings_from_all_three(self):
+        text = (
+            "# Metrics\n\n"
+            "## Close — 2026-07\nBooked: 1\n\n"
+            "```py`x\n## Runway\n```\n\n"
+            "## Runway\nreal\n\n"
+            "````md\n```\n## Profitability\n````\n\n"
+            "## Profitability\nreal\n\n"
+            "~~~\n## Rate\n~~~\n"
+            "## Rate\nreal\n\n"
+            "## Signals\nreal\n"
+        )
+        written, found, page = self.seen(text)
+        self.assertEqual(written, ["## Close — 2026-07", "## Runway",
+                                   "## Profitability", "## Rate", "## Signals"])
+        self.schema.validate_document("metrics.md", text)
+        self.assertEqual(sorted(found),
+                         sorted(heading[3:] for heading in self.declared))
+        self.assertEqual(sorted(page), sorted(self.declared))
+        for heading in self.declared:
+            self.assertEqual(found[heading[3:]], page[heading])
+        self.assertTrue(page["## Runway"].startswith("real"))
+        self.assertIn("## Profitability\n````", page["## Runway"])
+
+    def test_a_duplicate_heading_is_refused_on_write_and_read_kept_first_on_page(self):
+        text = ("## Close — 2026-07\nfirst\n## Runway\nr\n## Profitability\n"
+                "p\n## Rate\nr\n## Signals\ns\n## Close — 2026-08\nsecond\n")
+        with self.assertRaises(self.OwnershipError):
+            self.schema.validate_document("metrics.md", text)
+        with self.assertRaises(self.SafeStateError):
+            self.extract(text, ("Close",))
+        page = collect._split_h2(text, self.declared)[0]
+        self.assertEqual(page["## Close"], "first\n")
+
+    def test_only_an_em_dash_separates_a_heading_suffix(self):
+        for separator in (" - ", " – "):
+            text = "## Close%s2026-07\nBooked: 1\n" % separator
+            _written, found, page = self.seen(text)
+            self.assertNotIn("Close", found)
+            self.assertNotIn("## Close", page)
 
 
 if __name__ == "__main__":

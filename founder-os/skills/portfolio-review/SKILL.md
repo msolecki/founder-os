@@ -29,7 +29,10 @@ against nothing; that file already exists and it is called `reviews/weekly/`.
 ## Inputs
 
 - `~/.founder-os/businesses.yaml` — the registry: which businesses exist,
-  which are active. If it is missing or lists one business, stop (see above).
+  which are active. The gateway does not serve it to you: the main thread reads
+  it and hands you the active slugs, which are the `business_slug` values
+  `read_portfolio_inputs` takes. If the handoff names no registry or one
+  active business, stop (see above).
 - `portfolio.md` — your own file: last week's split, last review's verdict.
 - Per active business, exactly two reads, **sections not files**:
   `goals.md` `## Bets` (what is being attempted and its kill conditions) and
@@ -62,8 +65,8 @@ against nothing; that file already exists and it is called `reviews/weekly/`.
 
 ## Steps
 
-1. **Load the registry, then `portfolio.md`.** If the registry lists one active
-   business, stop per *When to use*. Stamp what you read and how old it was —
+1. **Take the registry from the handoff, then read `portfolio.md`.** If the
+   handoff lists one active business, stop per *When to use*. Stamp what you read and how old it was —
    `context-load` rules apply across workspaces exactly as within one. No
    `portfolio.md` yet means this is the first review: you create it, with a
    create-only write, in this run's Output — nobody scaffolds it for you.

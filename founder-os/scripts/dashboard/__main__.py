@@ -13,9 +13,10 @@ import json
 import os
 import sys
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Iterable, List, Mapping, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 # `python3 <plugin>/scripts/dashboard` runs this file as a top-level module with
 # no parent, where a relative import raises. Putting the package's parent on the
@@ -155,40 +156,51 @@ def _workspaces():
 def configured_business(live: Iterable):
     """The business the founder has already named elsewhere, or None.
 
-    `--json` answers about exactly one business, so before refusing to guess it
-    applies the precedence references/multi-business.md states and the gateway
-    implements: the slug in the invocation, then `FOUNDER_OS_HOME`, then the
+    Chosen by the gateway's own `select_workspace`, so the page and `--json`
+    apply the precedence references/multi-business.md states by the code that
+    implements it: the slug in the invocation, then `FOUNDER_OS_HOME`, then the
     registry's `default:`. A founder who set either of those has already
-    answered the question the refusal asks.
+    answered the question the refusal asks. A choice that is not one of the
+    readable active businesses (the portfolio root, a paused business) names
+    none of them.
 
-    A `FOUNDER_OS_HOME` matching no single registered home resolves nothing
-    rather than falling through to `default:`, which is how the gateway reads
-    the same ambiguity: the more explicit setting pointing somewhere unknown is
-    a reason to stop, not a reason to consult the vaguer one.
+    A `FOUNDER_OS_HOME` matching no single registered home raises
+    `ConfiguredHomeUnmatched` rather than falling through to `default:` or to
+    the first business, which is how the gateway reads the same ambiguity: the
+    more explicit setting pointing somewhere unknown is a reason to stop, not a
+    reason to consult the vaguer one.
     """
     candidates = list(live)
-    declared = os.environ.get("FOUNDER_OS_HOME")
-    if declared:
-        root = Path(declared).expanduser().resolve()
-        matches = [item for item in candidates if item.home.resolve() == root]
-        return matches[0] if len(matches) == 1 else None
     workspaces = _workspaces()
     try:
         registry = workspaces.load_registry(Path.home())
+        root, _slug, _kind = workspaces.select_workspace(
+            registry, Path.cwd(), None, os.environ)
+    except workspaces.ConfiguredHomeUnmatched:
+        raise
     except workspaces.WorkspaceResolutionError:
         return None
-    default = (registry or {}).get("default")
-    if not default:
-        return None
     for item in candidates:
-        if item.slug == default:
+        if item.home.resolve() == root:
             return item
     return None
 
 
-def _real_today() -> date:
-    """The machine's date. Its own function so a test can say which day it is."""
-    return datetime.now().date()
+def _real_today(zone: Optional[str] = None,
+                now: Optional[datetime] = None) -> date:
+    """Today in the charter's `## Timezone` when it names a valid zone, else the
+    machine's date. Its own function so a test can say which day it is.
+
+    A founder in Auckland running at 23:00 UTC is already a day ahead, and an
+    overdue count drawn on the machine's date is a day behind their own.
+    """
+    instant = now or datetime.now(timezone.utc)
+    if zone:
+        try:
+            return instant.astimezone(ZoneInfo(zone)).date()
+        except (KeyError, ValueError):  # ZoneInfoNotFoundError is a KeyError
+            pass
+    return instant.astimezone().date()
 
 
 def _today(raw: Optional[str]) -> date:
@@ -264,16 +276,27 @@ def main(argv: Optional[List[str]] = None) -> int:
                    ", ".join(business.slug or "(unnamed)" for business in live)))
             return EXIT_UNRESOLVED
         selected = named[0]
-    elif len(live) > 1:
+    elif not args.home:
         # FOUNDER_OS_HOME and `default:` answer "which business" for the page
         # too, not only for --json: `selected` is the workspace the page is
         # written into and the view that opens. Consulting them only under
         # --json left the page landing in the alphabetically first business's
         # `_dashboard/` on a registry whose one configured answer named another.
-        configured = configured_business(live)
+        try:
+            configured = configured_business(live)
+        except _workspaces().ConfiguredHomeUnmatched as error:
+            # The gateway refuses this session outright; opening the first
+            # business instead writes a page into a workspace the founder's
+            # most explicit setting says they are not in.
+            sys.stderr.write(
+                "%s. Readable: %s. Point it at one of them or unset it; "
+                "nothing was written.\n"
+                % (error,
+                   ", ".join(business.slug or "(unnamed)" for business in live)))
+            return EXIT_UNRESOLVED
         if configured is not None:
             selected = configured
-        elif args.json:
+        elif args.json and len(live) > 1:
             # The page carries every business, so with nothing configured it
             # can stay silent about which one the founder meant and open the
             # first. One JSON envelope cannot: picking the alphabetically first
@@ -295,7 +318,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     chosen_facts = None
     for business in live:
         sources = collect.collect(business.home, view, slug=business.slug)
-        facts = analyze.build_facts(sources, today, generated, thresholds)
+        day = today if args.now else _real_today(sources.timezone)
+        facts = analyze.build_facts(sources, day, generated, thresholds)
         payloads.append((business, facts))
         if business is selected:
             chosen_facts = facts
@@ -366,7 +390,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     # series and the envelope beside it are kept to days that happened.
     # Only an explicit `--now` can be a preview: without one, a run that
     # crosses midnight would otherwise skip persisting its own day.
-    real = _real_today()
+    real = _real_today(chosen_facts.business.get("timezone"))
     preview = args.now is not None and today != real
 
     updated = []

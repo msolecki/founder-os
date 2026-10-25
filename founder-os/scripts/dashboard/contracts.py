@@ -51,9 +51,9 @@ class OwnershipView:
     owners: Mapping[str, str]
 
 
-def load_ownership(path: Optional[Path] = None) -> OwnershipView:
+def load_ownership() -> OwnershipView:
     ownership = _load_sibling("ownership", "mcp/ownership.py")
-    target = Path(path) if path else plugin_root() / "references" / "ownership.yaml"
+    target = plugin_root() / "references" / "ownership.yaml"
     document = ownership.load_document(target)
     owners = {}
     for role, paths in document["owns"].items():
@@ -125,9 +125,8 @@ def active_businesses(
     environment = dict(os.environ if env is None else env)
     registry = workspaces.load_registry(Path.home() if home is None else Path(home))
     if registry is None:
-        declared = environment.get("FOUNDER_OS_HOME")
-        base = Path(cwd or Path.cwd())
-        root = Path(declared).expanduser() if declared else base / "founder-os"
+        root = workspaces.select_workspace(
+            None, Path(cwd or Path.cwd()), None, environment)[0]
         return ((Business(slug="", home=root, status="active"),), None, 0)
 
     businesses = []

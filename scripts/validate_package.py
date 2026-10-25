@@ -491,35 +491,29 @@ def check_workspace_files_complete(root, agents):
     return errs
 
 
-def _derived_segments(value):
-    return tuple(part.casefold() for part in PurePosixPath(str(value)).parts)
+def _ownership_matchers():
+    """`founder-os/mcp/ownership.py`, loaded by path, for its two matchers.
+
+    The guard, the gateway and this validator share `owner_key` and
+    `derived_entry`, so a map this check accepts is a map the guard reads the
+    same way. Loaded from this repository, not from `root`, because a test
+    fixture package carries a map and no `mcp/`.
+    """
+    module = sys.modules.get("_founder_os_validator_ownership")
+    if module is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "_founder_os_validator_ownership",
+            Path(__file__).resolve().parents[1] / "founder-os" / "mcp"
+            / "ownership.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules[spec.name] = module
+    return module
 
 
 def _under_derived(derived, path):
-    """Is `path` the derived entry, or inside it?
-
-    A `derived_files:` entry ending in `/` names a directory, and exact string
-    equality reads it as a file with a slash in its name: `_dashboard/` matched,
-    `_dashboard/snapshots/` did not, so a path one segment down walked through
-    all three joins below. Compare segments instead, the rule `_owner_for`
-    already applies to an ownership prefix — `_dashboard/` covers
-    `_dashboard/today.html` and does not cover `_dashboardx/today.html`.
-
-    Casefolded, and the trailing slash is read as decoration rather than
-    required, because `hooks/ownership-guard.py:_derived_entry` is the rule that
-    decides at write time and that is what it does. Three matchers for one map
-    meant a map this check accepted could be a map the guard denies: with
-    `_Dashboard/` declared derived, `_dashboard/snapshots/` passed here and was
-    refused on the founder's machine. The deny list is the place to be broad —
-    an entry that lost its slash is a typo, and the safe reading of a typo in a
-    deny list is the one that still covers the directory.
-    """
-    candidate = _derived_segments(path)
-    for entry in derived:
-        prefix = _derived_segments(entry)
-        if prefix and candidate[:len(prefix)] == prefix:
-            return True
-    return False
+    return _ownership_matchers().derived_entry(str(path), derived) is not None
 
 
 def check_derived_files(root, agents):
@@ -606,9 +600,18 @@ _THRESHOLD_RESTATEMENTS = {
     "queue.blocked_days": (
         ("skills/queue/SKILL.md", r"(\S+) days from `blocked`"),
     ),
+    "queue.done_ceiling_days": (
+        ("skills/queue/SKILL.md", r"in any case at (\S+) days"),
+    ),
     "signals.cap": (
         ("skills/signal-check/SKILL.md", r"(\w+) is the cap"),
         ("skills/signal-check/SKILL.md", r"Cap at ([a-z]+)"),
+    ),
+    "signals.stale_days": (
+        ("skills/signal-check/SKILL.md",
+         r"older than (\S+) days is reported as stale"),
+        ("skills/weekly-review/SKILL.md",
+         r"`Read:` date is more than (\S+) days old"),
     ),
     "briefs.window": (
         ("skills/founder-os-doctor/SKILL.md",
@@ -663,11 +666,11 @@ def _parse_thresholds(text):
             continue
         indent, key, value = match.groups()
         if not indent:
-            # The reader resets a group it meets again, so a second `queue:`
-            # silently drops every key above it there while passing here.
+            # The reader refuses a group it meets again, so a second `queue:`
+            # that passed here would stop the dashboard from loading at all.
             if key in groups:
                 errs.append("references/thresholds.yaml: '%s' is declared twice "
-                            "— the dashboard keeps only the last one" % key)
+                            "— the dashboard refuses to load it" % key)
             current = key
             groups.append(key)
             if value:
@@ -981,7 +984,7 @@ HOOK_OUTPUT_ROOM = 1024
 
 
 def check_hooks(root, agents):
-    """Validate matcher coverage and compile the identity-boundary hook.
+    """Validate matcher coverage and compile every hook script.
 
     A typo in the matcher or a syntax error in the guard ships silently today:
     every other check validates prose and map, and the one layer that acts at
@@ -1051,14 +1054,23 @@ def check_hooks(root, agents):
                         "for the hook prefix and notice under Claude Code's "
                         "%d-character hook output cap"
                         % (size, HOOK_OUTPUT_CAP))
-    guard = root / "hooks" / "ownership-guard.py"
-    if not guard.exists():
-        errs.append("hooks/ownership-guard.py: missing")
-    else:
+    # The guard is required outright; every other script is required because
+    # a hook command runs it, and a missing or broken one fails only at runtime.
+    scripts = {"ownership-guard.py"}
+    for entries in hooks.values():
+        for entry in entries or []:
+            for hook in entry.get("hooks") or []:
+                scripts.update(re.findall(r"hooks/([\w.-]+\.py)",
+                                          str(hook.get("command", ""))))
+    for name in sorted(scripts):
+        script = root / "hooks" / name
+        if not script.exists():
+            errs.append("hooks/%s: missing" % name)
+            continue
         try:
-            compile(guard.read_text(encoding="utf-8"), str(guard), "exec")
+            compile(script.read_text(encoding="utf-8"), str(script), "exec")
         except SyntaxError as e:
-            errs.append("hooks/ownership-guard.py: does not compile (%s)" % e)
+            errs.append("hooks/%s: does not compile (%s)" % (name, e))
     return errs
 
 
@@ -1124,6 +1136,11 @@ def check_version_sites(root, agents):
     repo = root.parent
     bump = repo / "scripts" / "bump_version.py"
     manifest = root / ".claude-plugin" / "plugin.json"
+    if not bump.exists() and (repo / ".git").exists():
+        # A checkout is the repo, not a fixture: a missing script is the
+        # finding, not a reason to skip the check that reads it.
+        return ["scripts/bump_version.py: missing, so no version site is "
+                "checked"]
     if not (bump.exists() and manifest.exists()):
         return errs
     try:
@@ -1533,20 +1550,10 @@ def _safe_state_path(value):
 
 
 def _owner_for(ownership, path):
-    matches = []
-    for prefix, owner in ownership.items():
-        raw_prefix = str(prefix)
-        prefix_path = PurePosixPath(raw_prefix)
-        parts = prefix_path.parts
-        is_owned = (
-            path == prefix_path
-            if not raw_prefix.endswith("/")
-            else len(path.parts) > len(parts)
-            and path.parts[:len(parts)] == parts
-        )
-        if is_owned:
-            matches.append((len(parts), owner))
-    return max(matches)[1] if matches else None
+    """The owner the gateway would grant `path` to (`owner_key`, exact spelling)."""
+    value = path.as_posix()
+    key = _ownership_matchers().owner_key(value, ownership)
+    return ownership[key] if key is not None and value.startswith(key) else None
 
 
 def delegation_request_errors(package_root, agents, request,

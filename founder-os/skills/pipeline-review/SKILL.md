@@ -81,7 +81,9 @@ Read first, in order — house rule 1:
    Move a deal to `## Won` only when the file already records it signed.
 4. **Ask the question that ends the argument: if this prospect said no
    tomorrow, would you be surprised?** If the founder would not be surprised, it
-   is already a no and the only thing missing is the writing down.
+   is already a no and the only thing missing is the writing down. The main thread
+   asks it before dispatch and passes each answer in the handoff; a deal the
+   handoff carries no answer for takes the unattended rule above.
 5. **Move every failed entry to `## Dead` with a cause.** Not "went quiet" —
    what specifically was the last thing that happened, and who went quiet first.
    Each entry in `## Dead` is an input to `win-loss-analysis`; a cause of "went
@@ -91,7 +93,8 @@ Read first, in order — house rule 1:
    deal must leave `## Live` — it is not a prospect any more — and it must not
    leave `pipeline.md`, because the exclusions `proposal-draft` wrote are the
    only written boundary on the engagement that just started. Copy the
-   `Exclusions:` lines across exactly as they are. Do not summarise them, do not
+   `Exclusions:` lines across exactly as they are, and the `Proposal sent:` line,
+   which only the founder's report ever wrote. Do not summarise them, do not
    count them, do not decide three of them no longer apply. Then hand the
    engagement to the **Delivery Lead** through the file, not the room: this
    cadence runs at 10:00 on a Thursday with nobody in it, so the won entry
@@ -106,9 +109,10 @@ Read first, in order — house rule 1:
    diligence on eight zombies produces a ninth real one. This number is the
    reason the killing matters: an honest short pipeline is what sends the
    founder to go get more.
-8. **Name founder latency.** Median days from first call to proposal sent across
-   the live list. Over three days, that is the review's finding, regardless of
-   what any prospect said. `win-loss-analysis` runs the same median over the
+8. **Name founder latency.** Median days from first call to `Proposal sent:` across
+   the live list — the founder's reported send, never `Proposal drafted:`; a deal
+   with no `Proposal sent:` yet is not in the median. Over three days, that is
+   the review's finding, regardless of what any prospect said. `win-loss-analysis` runs the same median over the
    quarter's closed deals — that is the same rule on a different population, and
    this one is the leading indicator of it.
 9. **Propose what this file cannot hold to the Chief of Staff.** Every surviving
@@ -143,11 +147,18 @@ Read first, in order — house rule 1:
 Write to `pipeline.md`. Rewrite `## Live`; **append** to `## Won` and `## Dead`;
 replace `## Last review`.
 
+**One field in `## Dead` is not append-only.** A line whose prospect now has a
+`### <Prospect> — lost …` block under `## Win/loss` has `win/loss: pending`
+rewritten to `win/loss: done`, and nothing else in the line changes. It is
+arithmetic over this file, so the unattended run does it too, and
+`Win/loss pending:` counts only the lines still `pending` after it.
+
 **Rewriting `## Live` carries every surviving deal's other lines forward
 verbatim.** `outreach-draft` and `proposal-draft` keep their own lines under the
-same `### <Prospect>` block — `Outreach:`, `Touch:`, `Last reply:`, and any
-`Proposed:` the brief has not drained yet. The template below is the lines this
-skill owns, not the whole block: drop one of theirs and the fourth-touch rule
+same `### <Prospect>` block — `Outreach:`, `Touch:`, `Last reply:`, the lines
+`proposal-draft` wrote (`Proposal drafted:`, `Proposal sent:`, `Scope:`, the
+exclusions, the start-date line), and any `Proposed:` the brief has not drained
+yet. The template below is the lines this skill owns, not the whole block: drop one of theirs and the fourth-touch rule
 never fires, or a draft made at 08:00 loses its send obligation before Friday's
 brief can take it.
 
@@ -158,12 +169,12 @@ brief can take it.
     Next action: <what the FOUNDER does> — YYYY-MM-DD
     Stage basis: <what they did that puts it here> (per <speaker>, <channel>, <date>)
     Last contact: YYYY-MM-DD | In pipeline since: YYYY-MM-DD | Re-dated: <n>×
-    <every Outreach: / Touch: / Last reply: / Proposed: line already under this deal, unchanged>
+    <every Outreach: / Touch: / Last reply: / Proposal drafted: / Proposal sent: / Scope: / exclusion / start-date / Proposed: line already under this deal, unchanged>
 
     ## Won
     ### <Client> — won YYYY-MM-DD — <amount> — <offer>
     Proposal sent: YYYY-MM-DD
-    Proposed: open clients/<client-slug>.md with a client-health baseline — bet: <B<n> | none>
+    Proposed: run /client-health baseline for [[<client-slug>]] — bet: <B<n> | none>
     Exclusions — verbatim from the signed proposal, scope-guard's baseline:
     - <exclusion> → if requested: <change order at <rate> | separate engagement>
     Engagement: <live | closed YYYY-MM-DD>
@@ -235,7 +246,7 @@ selling is over, and deleting one does not tidy the file — it silently removes
 the only written boundary on an engagement that is still running, and nobody
 finds out until a client asks for something in week five and `scope-guard` has
 nothing to rule against. Mark an engagement `closed` when it ends, and drop its
-`Proposed: open clients/…` line once the client file exists. Leave everything
+`Proposed: run /client-health baseline …` line once the client file exists. Leave everything
 else there.
 
 Do not write `clients/` when a deal closes — hand the won deal to the **Delivery

@@ -37,7 +37,7 @@ Native and generic execution use the byte-identical packaged role under
 ## Steps
 
 1. Resolve the business through `context-load`.
-2. Ask only missing questions, one at a time, with a hard cap of four: What decision must be made? What real options exist? Why now? What happens if nothing changes?
+2. Take the answers from the handoff. The main thread asks the founder only the missing ones before dispatch, one at a time, with a hard cap of four: What decision must be made? What real options exist? Why now? What happens if nothing changes? This session has one return and cannot ask; a question the handoff leaves unanswered is missing state in the carried answer, not a question to the founder.
 3. Reduce the situation to one decision sentence.
 4. Select exactly one owner from the Chief of Staff routing table, then exactly one workflow that owner holds in its agent file's `skills:` list.
 5. If it is material, hard to reverse, and crosses two or more decision domains, route to `/strategic-evaluation`.

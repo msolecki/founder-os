@@ -890,7 +890,7 @@
     }
 
     .decision-steps span {
-      color: var(--orange);
+      color: var(--lime);
       font-size: 0.68rem;
       font-weight: 900;
       letter-spacing: 0.1em;
@@ -974,6 +974,10 @@
 
     .trust-summary {
       background: var(--lime);
+    }
+
+    .trust-summary :focus-visible {
+      outline-color: var(--ink);
     }
 
     .summary-grid {
@@ -2863,6 +2867,16 @@
       color: var(--ink);
     }
 
+    .decision-loop .eyebrow,
+    .workflow-library .eyebrow,
+    .safety .eyebrow {
+      color: #aebcb8;
+    }
+
+    .multi-business .eyebrow {
+      color: var(--ink);
+    }
+
     .closing h2 em {
       color: var(--white);
       font-family: Georgia, "Times New Roman", serif;
@@ -3488,7 +3502,7 @@
               <a class="button button-light" href="#install">Install Founder OS</a>
             </div>
             <p class="micro-proof"><span class="dot" aria-hidden="true"></span> Founder OS 3.0.0 · 57 workflows · Local Markdown · No automatic sending · Explicit ownership · No hidden actions</p>
-            <div class="proof-links" aria-label="Product resources">
+            <div class="proof-links" role="group" aria-label="Product resources">
               <a href="#requirements-summary">Free and MIT-licensed · requirements</a>
               <a href="https://github.com/msolecki/founder-os">View source on GitHub</a>
             </div>
@@ -3506,7 +3520,7 @@
               <button class="demo-tab" id="tab-friday" type="button" role="tab" aria-selected="false" aria-controls="panel-friday" tabindex="-1" data-demo="friday">Friday</button>
             </div>
 
-            <div class="demo-panel is-active" id="panel-today" role="tabpanel" aria-labelledby="tab-today" tabindex="-1" data-panel="today">
+            <div class="demo-panel is-active" id="panel-today" role="tabpanel" aria-labelledby="tab-today" tabindex="0" data-panel="today">
               <p class="demo-label">08:00 / Daily brief</p>
               <h2>The one thing that matters today</h2>
               <p class="demo-meta"><span>BET: B1 — premium sprint</span><span>OWNER: founder</span></p>
@@ -3518,7 +3532,7 @@
               </ul>
             </div>
 
-            <div class="demo-panel" id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" tabindex="-1" data-panel="pipeline">
+            <div class="demo-panel" id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" tabindex="0" data-panel="pipeline">
               <p class="demo-label">Thursday / Pipeline review</p>
               <h2>Every deal gets a next move or leaves</h2>
               <p class="demo-meta"><span>2 ACTIVE</span><span>1 OVERDUE</span></p>
@@ -3530,7 +3544,7 @@
               </ul>
             </div>
 
-            <div class="demo-panel" id="panel-friday" role="tabpanel" aria-labelledby="tab-friday" tabindex="-1" data-panel="friday">
+            <div class="demo-panel" id="panel-friday" role="tabpanel" aria-labelledby="tab-friday" tabindex="0" data-panel="friday">
               <p class="demo-label">16:00 / Weekly review</p>
               <h2>The week scored by what actually happened</h2>
               <p class="demo-meta"><span>2/3 SHIPPED</span><span>PATTERN: DELIVERY DISPLACES PROOF</span></p>
@@ -3605,7 +3619,7 @@
           </aside>
         </div>
 
-        <div class="state-trace reveal" aria-label="Trace one commitment across the Studio North workspace">
+        <div class="state-trace reveal" role="group" aria-label="Trace one commitment across the Studio North workspace">
           <a class="trace-step" href="#sample-goals" data-workspace-open="goals"><span>goals.md</span><strong>B1 · premium sprint</strong></a>
           <a class="trace-step" href="#sample-queue" data-workspace-open="queue"><span>queue.md</span><strong>q-0720a · proposal</strong></a>
           <a class="trace-step" href="#sample-week" data-workspace-open="week"><span>week.md</span><strong>Mon · 09:00–11:30</strong></a>
@@ -3621,7 +3635,7 @@
 
           <div class="workspace-browser-body">
             <nav class="workspace-sidebar" aria-label="Studio North sample files">
-              <div class="workspace-sidebar-head"><strong>Studio North</strong><span>7 of 11 files</span></div>
+              <div class="workspace-sidebar-head"><strong>Studio North</strong><span>7 of 13 files</span></div>
               <ul class="workspace-file-list">
                 <li><a class="workspace-file" href="#sample-daily" data-workspace-file="daily" data-workspace-open="daily" aria-controls="sample-daily" aria-current="true"><span class="file-icon">01</span><span>reviews/daily/2026-07-20.md</span></a></li>
                 <li><a class="workspace-file" href="#sample-queue" data-workspace-file="queue" data-workspace-open="queue" aria-controls="sample-queue"><span class="file-icon">02</span><span>queue.md</span></a></li>
@@ -3631,7 +3645,7 @@
                 <li><a class="workspace-file" href="#sample-metrics" data-workspace-file="metrics" data-workspace-open="metrics" aria-controls="sample-metrics"><span class="file-icon">06</span><span>metrics.md</span></a></li>
                 <li><a class="workspace-file" href="#sample-decision" data-workspace-file="decision" data-workspace-open="decision" aria-controls="sample-decision"><span class="file-icon">07</span><span>decisions/2026-07-18-raised-sprint-floor.md</span></a></li>
               </ul>
-              <a class="workspace-source-link" href="https://github.com/msolecki/founder-os/tree/main/examples/studio-north">Browse all 11 source files →</a>
+              <a class="workspace-source-link" href="https://github.com/msolecki/founder-os/tree/main/examples/studio-north">Browse all 13 source files →</a>
             </nav>
 
             <div class="workspace-view">
@@ -3935,18 +3949,18 @@
           <p class="eyebrow">Fit</p>
           <h2 class="section-title">Built for an operating founder, not an <span class="serif">empty company.</span></h2>
         </div>
-        <div class="fit-grid">
-          <article class="fit-card reveal"><h3>Founder OS fits if…</h3><ul><li>you run a solo service business with live clients, prospects, revenue, or commitments,</li><li>you work in Claude Code and own sales and delivery yourself,</li><li>your decisions are scattered across chats, notes, and memory.</li></ul></article>
-          <article class="fit-card reveal"><h3>Do not install it if…</h3><ul><li>you expect it to invent a pre-idea business,</li><li>you need a shared CRM, team dashboard, or autonomous operator,</li><li>you want tax, legal, medical, or investment advice.</li></ul></article>
-        </div>
+        <p class="section-copy reveal">It works on a business that already has clients, prospects, revenue, or commitments. <a href="#fit">See who it is for, and who should not install it →</a></p>
       </div>
     </section>
 
     <section class="section requirements" id="requirements-summary">
       <div class="container">
         <div class="requirements-head reveal">
-          <div><p class="eyebrow">Before you install</p><h2 class="section-title">What you need. What it <span class="serif">costs.</span></h2></div>
-          <p class="section-copy">Founder OS is free and MIT-licensed. It needs Claude Code plus Python 3.9+ for the local state gateway and host hooks. PyYAML is needed only for development, tests, and package validation.</p>
+          <div><p class="eyebrow">Before you install</p><h2 class="section-title">Free, local, and <span class="serif">MIT-licensed.</span></h2></div>
+          <div>
+            <p class="section-copy">Founder OS is free and MIT-licensed. It needs Claude Code plus Python 3.9+ for the local state gateway and host hooks. PyYAML is needed only for development, tests, and package validation.</p>
+            <a class="button button-orange" href="#requirements">See the full requirements <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
         </div>
       </div>
     </section>
@@ -4010,7 +4024,7 @@
             </div>
 
             <div class="workflow-groups" id="workflow-groups">
-          <details class="workflow-group" data-workflow-group data-category="focus" data-search="chief of staff attention priorities routing reviews queue" open>
+          <details class="workflow-group" data-workflow-group data-category="focus" data-search="chief of staff attention priorities routing reviews queue">
             <summary>
               <span class="workflow-group-number">01</span>
               <span class="workflow-group-title"><strong>Chief of Staff</strong><small>Attention, reviews, decisions, and the live queue.</small></span>
@@ -4430,7 +4444,7 @@
             </div>
 
             <div class="reveal">
-              <div class="multi-diagram" role="img" aria-label="Multi-business architecture: a registry routes each session to an isolated business workspace, while the portfolio layer compares only time and cash allocation">
+              <div class="multi-diagram" role="group" aria-label="Multi-business architecture: a registry routes each session to an isolated business workspace, while the portfolio layer compares only time and cash allocation">
                 <div class="registry-card">
                   <span aria-hidden="true">01</span>
                   <div>
@@ -4446,14 +4460,14 @@
                   <article class="business-card">
                     <div class="business-card-head"><strong>Studio North</strong><span class="business-slug">studio</span></div>
                     <p>Its own operating state and its own scheduled rhythm.</p>
-                    <div class="business-files" aria-label="Example Studio North files">
+                    <div class="business-files" role="group" aria-label="Example Studio North files">
                       <span>goals.md</span><span>metrics.md</span><span>pipeline.md</span><span>clients/</span>
                     </div>
                   </article>
                   <article class="business-card">
                     <div class="business-card-head"><strong>Field Notes</strong><span class="business-slug">field-notes</span></div>
                     <p>A separate history. No shared prospects, numbers, or obligations.</p>
-                    <div class="business-files" aria-label="Example Field Notes files">
+                    <div class="business-files" role="group" aria-label="Example Field Notes files">
                       <span>goals.md</span><span>metrics.md</span><span>pipeline.md</span><span>clients/</span>
                     </div>
                   </article>
@@ -4485,7 +4499,7 @@
 
     <section class="section ownership" id="memory">
       <div class="container ownership-grid">
-        <div class="ownership-map reveal" aria-label="Shared business state diagram">
+        <div class="ownership-map reveal" role="group" aria-label="Shared business state diagram">
           <div class="map-orbit" aria-hidden="true"></div>
           <div class="map-core">Your business state</div>
           <span class="map-node">goals.md</span>
@@ -4541,8 +4555,9 @@
           <article class="fit-card reveal">
             <h3>Founder OS fits if…</h3>
             <ul>
-              <li>you run a company of one or a small service business where every decision lands with you,</li>
+              <li>you run a company of one or a small service business with live clients, prospects, revenue, or commitments, and every decision lands with you,</li>
               <li>you work in Claude Code and want every conversation to build shared business state,</li>
+              <li>your decisions are scattered across chats, notes, and memory,</li>
               <li>you need a rhythm across pipeline, delivery, money, and focus,</li>
               <li>you run multiple businesses and need to divide resources honestly.</li>
             </ul>
@@ -4553,7 +4568,9 @@
               <li>you want an autonomous bot that sends messages and moves money for you,</li>
               <li>you refuse to maintain any business state in files,</li>
               <li>you need a full CRM with a shared dashboard for a large team,</li>
-              <li>you want an assistant that validates every decision without pushing back.</li>
+              <li>you expect it to invent a business that does not exist yet,</li>
+              <li>you want an assistant that validates every decision without pushing back,</li>
+              <li>you want tax, legal, medical, or investment advice.</li>
             </ul>
           </article>
         </div>
@@ -4585,8 +4602,8 @@
           </article>
           <article class="requirement">
             <span>Optional</span>
-            <h3>cron for schedules</h3>
-            <p>Manual workflows need no cron. Scheduled cadences run only while your machine and cron service are on.</p>
+            <h3>A user scheduler</h3>
+            <p>launchd, user systemd, or cron runs cadences. Manual workflows need none. Cron jobs run only while your machine is on; launchd and persistent user systemd timers catch up after sleep.</p>
           </article>
           <article class="requirement">
             <span>Price</span>

@@ -105,6 +105,12 @@ def _ago(fact) -> str:
     return "%s ago" % escape(_age(fact))
 
 
+def _passed(fact) -> bool:
+    """A countdown whose date is already behind today."""
+    return (fact is not None and fact.known and fact.number is not None
+            and fact.number < 0)
+
+
 def _brief(facts) -> str:
     panel = facts.panels.get("brief")
     return ('<section class="brief">'
@@ -152,8 +158,11 @@ def _bets(facts) -> str:
         if bet.verdict:
             verdict = "<p><b>%s</b> — %s</p>" % (
                 escape(bet.verdict.title()), escape(bet.verdict_line or ""))
-        countdown = ("" if bet.verdict == "killed"
-                     else "<p>Judged in %s</p>" % fact_html(days))
+        # A date that has passed is overdue, not "in -33 days".
+        countdown = (
+            "" if bet.verdict == "killed"
+            else "<p>Judgment overdue by %d days</p>" % -days.number
+            if _passed(days) else "<p>Judged in %s</p>" % fact_html(days))
         # The kill condition is the other half of the bet's contract, and the
         # days left on a dated one are already counted in the panel's facts.
         kill = ""
@@ -161,7 +170,9 @@ def _bets(facts) -> str:
             to_kill = _find(panel, "%s.days_to_kill" % bet.key)
             kill = "<p>Kill condition: %s%s</p>" % (
                 escape(bet.kill),
-                " (%s left)" % fact_html(to_kill) if to_kill else "")
+                " (kill date passed %d days ago)" % -to_kill.number
+                if _passed(to_kill)
+                else " (%s left)" % fact_html(to_kill) if to_kill else "")
         blocks.append(
             '<article class="bet"><div><span class="chip chip-bet-%d">%s</span> '
             "<b>%s</b></div><p>%s</p>%s%s%s%s%s</article>"
@@ -249,7 +260,15 @@ def _signals(facts) -> str:
     # The analyzer already refuses to count them and says how many; the panel's
     # note is where that reaches the reader.
     count = _find(panel, "signal_count")
-    note = "" if count is None or count.known else count.display
+    # The `Read:` date is the only thing that tells this week's readings from
+    # six weeks' old ones, so its age and any stale marker ride in the note.
+    age = _find(panel, "signals_age_days")
+    stale = _find(panel, "signals_stale")
+    note = " · ".join(part for part in (
+        "" if count is None or count.known else count.display,
+        "" if age is None else "read %s ago" % _age(age) if age.known
+        else "read date %s" % age.display,
+        stale.display if stale is not None else "") if part)
     return _panel("Signals", note, "".join(cards) + _numbers(
         "Show the numbers", headers, rows), panel)
 
@@ -277,7 +296,7 @@ def _week(facts) -> str:
         for index, item in enumerate(planned):
             segments.append((item.number / total,
                              "var(--bet-%d)" % (index % 2 + 1),
-                             "%s %gh" % (item.key.split(".")[1], item.number),
+                             "%s %gh" % (item.key[len("planned."):], item.number),
                              False))
     body = (charts.track(segments, tall=True) if segments else
             '<p class="unknown">not recorded</p>')
@@ -340,7 +359,8 @@ def _queue(facts) -> str:
 
 def _cash(facts) -> str:
     panel = facts.panels.get("cash")
-    keys = (("runway_months", "Runway (months)"), ("effective_rate", "Effective rate"),
+    keys = (("runway_months", "Runway (months)"), ("runway_age_days", "Runway age"),
+            ("effective_rate", "Effective rate"),
             ("collected", "Collected"), ("booked", "Booked"),
             ("cash_on_hand", "Cash on hand"), ("close_age_days", "Close age"))
     body = "".join(

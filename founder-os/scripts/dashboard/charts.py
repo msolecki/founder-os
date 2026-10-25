@@ -39,8 +39,8 @@ def point_at(index: int, value: float, count: int, ceiling: float,
 
 
 def sparkline(values: Sequence[float], low: Optional[float],
-              high: Optional[float], colour: str, label: str,
-              width: int = 160, height: int = 52) -> str:
+              high: Optional[float], colour: str, label: str) -> str:
+    width, height = 160, 52
     if not values:
         return ""
     ceiling = domain_max(values, high)

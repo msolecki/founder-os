@@ -6,6 +6,7 @@ skills:
   - scope-guard
   - client-health
   - delivery-retro
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity
