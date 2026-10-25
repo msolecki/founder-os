@@ -1,3 +1,10 @@
+---
+title: "Cadences and scheduling"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Cadences and scheduling
 
 Founder OS can run ten recurring workflows per business and one conditional

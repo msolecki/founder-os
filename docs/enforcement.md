@@ -1,3 +1,10 @@
+---
+title: "Ownership and enforcement"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Ownership and enforcement
 
 "Every file has exactly one owner" and "no agent sends" are not promises left

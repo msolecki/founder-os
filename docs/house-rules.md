@@ -1,3 +1,10 @@
+---
+title: "House rules"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-07-31
+---
+
 # House rules
 
 Seven rules every agent in the company obeys. They are not style preferences —

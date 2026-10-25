@@ -1418,6 +1418,39 @@ def check_surface(root, agents):
     return errs
 
 
+def check_docs_frontmatter(root, agents):
+    """Every `docs/*.md` page says what it is, who owns it and when it was
+    last checked against the code.
+
+    A page with no date reads as current forever, which is how a doc goes
+    stale without anyone noticing. `last-verified` must be a real date; a page
+    nobody re-checked carries the date of its last substantive change instead.
+    Skipped when the site is absent, which is every test fixture.
+    """
+    from datetime import date
+
+    errs = []
+    site = root.parent / "docs"
+    for page in sorted(site.glob("*.md")) if site.is_dir() else []:
+        name = "docs/" + page.name
+        try:
+            data, _ = parse_frontmatter(page)
+        except (ValueError, yaml.YAMLError) as error:
+            errs.append("%s: no readable frontmatter (%s)"
+                        % (name, str(error).splitlines()[0]))
+            continue
+        if not str(data.get("title") or "").strip():
+            errs.append("%s: frontmatter has no title" % name)
+        if data.get("status") not in ("current", "draft", "deprecated"):
+            errs.append("%s: status must be current, draft or deprecated"
+                        % name)
+        if not str(data.get("owner") or "").strip():
+            errs.append("%s: frontmatter has no owner" % name)
+        if not isinstance(data.get("last-verified"), date):
+            errs.append("%s: last-verified is not a YYYY-MM-DD date" % name)
+    return errs
+
+
 CHECKS = [check_plugin, check_host_adapters, check_agents,
           check_agent_tools, check_one_level_orchestration,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
@@ -1425,7 +1458,7 @@ CHECKS = [check_plugin, check_host_adapters, check_agents,
           check_workspace_files_complete, check_skill_writes,
           check_sections, check_capture_contract, check_beliefs, check_hooks,
           check_readme_counts, check_docs_parity,
-          check_version_sites, check_surface]
+          check_version_sites, check_surface, check_docs_frontmatter]
 
 
 def run_checks(root):

@@ -1,3 +1,11 @@
+---
+title: "Founder OS Trust Center"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+permalink: /trust-notes.html
+---
+
 # Founder OS Trust Center
 
 Founder OS is one product on Claude Code. The host adapter changes discovery; it
@@ -55,6 +63,12 @@ site's own origin and the pages' own inline blocks, so a third-party tag could
 not load even if one were added by accident. The inline allowance is what the
 two small blocks on the landing page need; it grants nothing to another origin,
 which is the claim this section is making.
+
+The Markdown guides, this page among them, are rendered to HTML by Jekyll when
+the site is built. They use no theme, because GitHub's default one loads a
+script from another origin, and they load no script at all. They carry no
+`Content-Security-Policy` of their own; the landing page and the Trust Center
+do.
 
 What does exist is what exists for any hosted page: GitHub serves the request
 and keeps its own server-side logs, and the repository's owner can see the

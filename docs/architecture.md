@@ -1,3 +1,10 @@
+---
+title: "Architecture"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Architecture
 
 How the machine works end to end. If [`concepts.md`](concepts.md) is the idea,
@@ -100,11 +107,15 @@ founder os/                     ← repo root (marketplace + source)
 │   ├── README.md               ← product philosophy
 │   ├── agents/*.md             ← 13 agents (role definitions)
 │   ├── skills/<name>/SKILL.md  ← 57 skills (workflows)
+│   ├── SURFACE.txt             ← every public name; the validator diffs it
 │   ├── hooks/                  ← session-context.py, ownership-guard.py,
+│   │                             version-notice.py, decision-nudge.py,
 │   │                             hooks.json
+│   ├── output-styles/          ← founder-brief
 │   ├── mcp/                    ← eight-tool local state gateway
 │   ├── scripts/cadence_manager.py ← safe local scheduler manager
 │   ├── scripts/dashboard/      ← the `/dashboard` renderer (package)
+│   ├── scripts/skill_usage.py  ← read-only per-workflow usage from local history
 │   ├── references/             ← guidance.md (injected into every session),
 │   │                             house-rules, ownership.yaml, thresholds.yaml,
 │   │                             linking, orchestration, multi-business,

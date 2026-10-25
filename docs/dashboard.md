@@ -1,3 +1,10 @@
+---
+title: "The dashboard"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # The dashboard
 
 `/dashboard` reads a Founder OS workspace and writes one self-contained HTML

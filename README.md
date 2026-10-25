@@ -149,7 +149,7 @@ The full recovery branches are in
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (the expected inventory; init scaffolds the Chief of Staff's entries, each other owner creates its own on first write), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
 | Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Reads the Claude Code `agent_type`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the local gateway. |
-| Validator | `scripts/validate_package.py` | 21 build-time checks (below). CI runs it on every push. |
+| Validator | `scripts/validate_package.py` | 22 build-time checks (below). CI runs it on every push. |
 | Cadences | `founder-os/scripts/cadence_manager.py` | Previews, snapshots, and safely applies ten jobs per business plus one conditional portfolio job through cron, launchd, or persistent user systemd. Exact identities prevent sibling schedules from being overwritten. |
 | Local overlay | `founder-os/references/extensibility.md` | Per-business extension without a fork: `$FOUNDER_OS_HOME/_local/` may **add** a file, skill or agent and can never reassign or remove one the package ships. Merged into the guard's map per workspace; validated by `founder-os-doctor`, because a build-time validator cannot see a stranger's workspace. Forged by `/skill-forge`, whose commonest correct answer is "a packaged agent already owns this decision". |
 | Multi-business | `founder-os/references/multi-business.md` | One workspace per business + a registry (`~/.founder-os/businesses.yaml`) + a portfolio workspace. The hook resolves all registered roots; `context-load` step 0 picks the business before any file opens. |
@@ -174,10 +174,10 @@ button.
 
 ### Enforcement is layered, deliberately
 
-1. **Build time** — `scripts/validate_package.py`: 21 build-time checks cover
+1. **Build time** — `scripts/validate_package.py`: 22 build-time checks cover
    the manifest and gateway adapter, strict frontmatter and tools, one-level sibling
    orchestration, ownership/section joins, beliefs, hooks, public counts, and
-   the reference pages' membership against the package.
+   the reference pages' membership and frontmatter against the package.
 2. **State access** — the local `founder-os-state` gateway is the authoritative
    write boundary. Role reads require a live role capability; write uncertainty
    fails closed with one of seven stable error codes, and successful writes use
@@ -217,15 +217,19 @@ founder-os/                       # the plugin (what gets installed)
                                   # thresholds.yaml, ingestion-gate, linking,
                                   # multi-business
   images/                         # org chart (mermaid + png)
-scripts/validate_package.py       # build-time validator (21 checks)
+scripts/validate_package.py       # build-time validator (22 checks)
 scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it
 tests/                            # validator mutations + hook subprocess + registry roots
 CHANGELOG.md                      # what shipped in each version
 ```
 
-GitHub Pages serves `docs/index.html` as the public landing page. The remaining
-Markdown files under `docs/` are the linked documentation hub and are not a
-second landing-page index.
+GitHub Pages serves `docs/index.html` as the public landing page.
+`.github/workflows/pages.yml` builds `docs/` with Jekyll: the remaining Markdown
+files are the linked documentation hub, rendered as pages beside it, and
+`CHANGELOG.md` is copied in as the changelog page. Deliberate settings that look
+like defects are in [`docs/pitfalls.md`](docs/pitfalls.md), the project's
+decision log is [`docs/decisions.md`](docs/decisions.md), and known follow-ups
+are in [`docs/backlog.md`](docs/backlog.md).
 
 ## Development
 
