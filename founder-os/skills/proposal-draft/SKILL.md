@@ -147,7 +147,8 @@ not sign, and does not invoice.
 `## Sent`, add `Proposal sent: YYYY-MM-DD` — the date they report — under the
 deal in `pipeline.md` `## Live`, then hand the file to `voice-capture` (Brand
 Editor) by path.** A report that arrives in a later session is recorded the same
-way, by this skill. A
+way, by this skill, with `Proposal sent:` under the deal's entry in `## Live` or
+`## Won`, wherever it now sits. A
 proposal the founder rewrote before sending is the highest-stakes prose they
 produce, and the diff against `## Draft` is them correcting us with a deal on the
 table. It is also the founder's formal register, under pressure, with money on
