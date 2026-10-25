@@ -14,6 +14,11 @@ the one literal path `agents/{role}.md`.
 When the host documents a named native role, the main thread selects it;
 otherwise it selects the generic fallback under the identical envelope below.
 
+In a scheduled run, where the unit exports `FOUNDER_OS_CADENCE_WORKFLOW`,
+`open_role_session` accepts only that workflow and returns `ROLE_SESSION_INVALID`
+for any other, so the run cannot dispatch a delegation request to a different
+workflow.
+
 The main thread dispatches the generic fallback with the same tool allowlist
 the role's frontmatter carries — the Founder OS state-gateway tools it declares
 (six; seven for the portfolio-manager, which adds `read_portfolio_inputs`) and

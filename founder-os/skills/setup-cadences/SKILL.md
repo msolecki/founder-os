@@ -65,7 +65,10 @@ Do not schedule `monthly-review` or `annual-review`. Do not schedule
 - Unattended permission is a narrow capability, not trust in the whole host.
   Claude receives only the Founder OS MCP tool pattern. The run needs only the
   local `founder-os-state` MCP server, so a run without a shell or the web
-  loses nothing and an injected instruction cannot reach the network.
+  loses nothing and an injected instruction cannot reach the network. Each
+  unit also exports `FOUNDER_OS_CADENCE_WORKFLOW=<workflow>`, and while it is
+  set the gateway opens a role session for that workflow only, so an injected
+  instruction cannot switch the run to another role's workflow either.
 - Exact identity beats prefix matching. `a`, `acme`, `portfolio`, and the
   legacy unslugged fence are four different schedules.
 

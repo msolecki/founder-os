@@ -101,8 +101,9 @@ class CadenceManagerTests(unittest.TestCase):
             "PATH=" + str(config.binary.parent) + ":/usr/bin:/bin",
         )
         self.assertEqual(tokens[7], "FOUNDER_OS_HOME=" + str(config.workspace))
+        self.assertEqual(tokens[8], "FOUNDER_OS_CADENCE_WORKFLOW=daily-brief")
         self.assertEqual(
-            tuple(tokens[8:]), self.manager.host_argv(config, "daily-brief")
+            tuple(tokens[9:]), self.manager.host_argv(config, "daily-brief")
         )
         self.assertNotIn("/bin/sh -c", block)
 
@@ -204,6 +205,45 @@ class CadenceManagerTests(unittest.TestCase):
             'work $;(tree)/founder-os"',
             service,
         )
+
+    def test_every_rendered_unit_pins_its_own_workflow(self):
+        # The gateway refuses any other workflow while the pin is set.
+        for slug in ("a", "portfolio"):
+            config = self.config(slug=slug)
+            cadences = self.manager._cadences(config)
+            block = self.manager.render_cron_blocks(config, "2026-08-01")
+            launchd = self.manager.render_launchd(config)
+            systemd = self.manager.render_systemd(config)
+            for cadence in cadences:
+                workflow = cadence.workflow
+                with self.subTest(slug=slug, workflow=workflow):
+                    line = next(
+                        line for line in block.splitlines()
+                        if line.startswith(cadence.cron + " ")
+                        and "/founder-os:" + workflow + " " in line
+                    )
+                    self.assertIn(
+                        "FOUNDER_OS_CADENCE_WORKFLOW=" + workflow, shlex.split(
+                            line.split(None, 5)[5].split(" >> ", 1)[0]
+                        ),
+                    )
+                    stem = self.manager._unit_stem(config, workflow)
+                    plist = plistlib.loads(launchd[stem + ".plist"])
+                    self.assertEqual(
+                        workflow,
+                        plist["EnvironmentVariables"][
+                            "FOUNDER_OS_CADENCE_WORKFLOW"
+                        ],
+                    )
+                    self.assertIn(
+                        'Environment="FOUNDER_OS_CADENCE_WORKFLOW='
+                        + workflow + '"\n',
+                        systemd[stem + ".service"].decode(),
+                    )
+            self.assertEqual(
+                len(cadences),
+                block.count("FOUNDER_OS_CADENCE_WORKFLOW="),
+            )
 
     def test_launchd_weekdays_match_cron_weekdays(self):
         self.assertEqual(
@@ -367,6 +407,17 @@ class CadenceManagerTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 self.manager.CadenceError, r"exit 3\): not logged in"
             ):
+                self.manager.smoke(config, "daily-brief")
+
+    def test_smoke_runs_with_the_units_workflow_pin(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = self.smoke_config(
+                Path(temporary),
+                '[ "$FOUNDER_OS_CADENCE_WORKFLOW" = portfolio-review ] || '
+                "{ echo unpinned >&2; exit 4; }\n",
+            )
+            self.manager.smoke(config, "portfolio-review")
+            with self.assertRaisesRegex(self.manager.CadenceError, "unpinned"):
                 self.manager.smoke(config, "daily-brief")
 
     def test_legacy_manifest_config_with_host_still_decodes(self):
@@ -656,7 +707,9 @@ class CadenceManagerTests(unittest.TestCase):
             for line in service.splitlines():
                 if line.startswith(("Environment=", "ExecStart=")):
                     self.assertNotRegex(line, r"(?<!%)%(?!%)", line)
-                    self.assertIn("%%", line)
+                    # The workflow pin carries no path, so no percent.
+                    if "FOUNDER_OS_CADENCE_WORKFLOW=" not in line:
+                        self.assertIn("%%", line)
 
     def test_systemd_remove_stops_before_deleting_when_disable_fails(self):
         with tempfile.TemporaryDirectory() as temporary:

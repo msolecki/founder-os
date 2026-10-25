@@ -1571,6 +1571,90 @@ class StateGatewayWriteTests(unittest.TestCase):
         self.assertNotIn("prompt", json.dumps(event).lower())
         self.assertNotIn(capability, json.dumps(event))
 
+    def test_a_cadence_pinned_gateway_opens_only_its_scheduled_workflow(self):
+        """A scheduled run cannot be steered into another role's workflow."""
+        with mock.patch.dict(
+            os.environ, {"FOUNDER_OS_CADENCE_WORKFLOW": "daily-brief"}
+        ):
+            self._open("chief-of-staff")
+            for role in ("cfo", "strategist"):
+                with self.subTest(role=role):
+                    response = self._call(
+                        "open_role_session",
+                        {
+                            "workspace_id": self.binding.workspace_id,
+                            "role": role,
+                            "correlation_id": "corr-" + role,
+                            "workflow": ROLE_WORKFLOWS[role],
+                        },
+                    )
+                    self._assert_error(response, code="ROLE_SESSION_INVALID")
+        with mock.patch.dict(os.environ, {"FOUNDER_OS_CADENCE_WORKFLOW": ""}):
+            self._open("cfo")
+
+    def test_a_gateway_started_with_the_cadence_pin_refuses_another_workflow(self):
+        project = self.base / "projects" / "scheduled"
+        (project / "founder-os").mkdir(parents=True)
+        environment = {
+            key: value for key, value in os.environ.items()
+            if not key.startswith(("FOUNDER_OS_", "PLUGIN_DATA", "CLAUDE_PLUGIN"))
+        }
+        environment.update(
+            HOME=str(self.home),
+            PLUGIN_DATA=str(self.data_root),
+            PYTHONPATH=str(PACKAGE_ROOT),
+            FOUNDER_OS_CADENCE_WORKFLOW="daily-brief",
+        )
+        server = subprocess.Popen(
+            [sys.executable, str(PACKAGE_ROOT / "mcp" / "founder_os_state.py")],
+            env=environment,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        self.addCleanup(server.stdout.close)
+        self.addCleanup(server.wait, 10)
+        self.addCleanup(server.stdin.close)
+
+        def send(message):
+            server.stdin.write(json.dumps(message) + "\n")
+            server.stdin.flush()
+            if "id" in message:
+                return json.loads(server.stdout.readline())
+
+        def call(request_id, name, arguments):
+            return send({
+                "jsonrpc": "2.0", "id": request_id, "method": "tools/call",
+                "params": {"name": name, "arguments": arguments},
+            })["result"]
+
+        send({
+            "jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25", "capabilities": {},
+                "clientInfo": {"name": "cadence-pin-test", "version": "1.0"},
+            },
+        })
+        send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+        resolved = call(2, "resolve_workspace", {"project_dir": str(project)})
+        self.assertFalse(resolved["isError"], resolved)
+        workspace_id = resolved["structuredContent"]["workspace_id"]
+        opened = call(3, "open_role_session", {
+            "workspace_id": workspace_id, "role": "chief-of-staff",
+            "correlation_id": "cadence", "workflow": "daily-brief",
+        })
+        self.assertFalse(opened["isError"], opened)
+        refused = call(4, "open_role_session", {
+            "workspace_id": workspace_id, "role": "cfo",
+            "correlation_id": "cadence", "workflow": "revenue-review",
+        })
+        self.assertTrue(refused["isError"], refused)
+        self.assertEqual(
+            "ROLE_SESSION_INVALID",
+            refused["structuredContent"]["error"]["code"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
