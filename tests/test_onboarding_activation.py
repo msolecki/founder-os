@@ -1615,7 +1615,7 @@ class WrittenTemplateContract(unittest.TestCase):
         body = self.body("pipeline-review")
         self.assertNotIn("Delivery Lead notified", body)
         self.assertIn(
-            "    Proposed: open clients/<client-slug>.md with a client-health baseline",
+            "    Proposed: run /client-health baseline for [[<client-slug>]]",
             body,
         )
         self.assertIn("engagement intake", self.body("client-health"))

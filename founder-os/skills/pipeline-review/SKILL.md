@@ -174,7 +174,7 @@ brief can take it.
     ## Won
     ### <Client> — won YYYY-MM-DD — <amount> — <offer>
     Proposal sent: YYYY-MM-DD
-    Proposed: open clients/<client-slug>.md with a client-health baseline — bet: <B<n> | none>
+        Proposed: run /client-health baseline for [[<client-slug>]] — bet: <B<n> | none>
     Exclusions — verbatim from the signed proposal, scope-guard's baseline:
     - <exclusion> → if requested: <change order at <rate> | separate engagement>
     Engagement: <live | closed YYYY-MM-DD>
@@ -246,7 +246,7 @@ selling is over, and deleting one does not tidy the file — it silently removes
 the only written boundary on an engagement that is still running, and nobody
 finds out until a client asks for something in week five and `scope-guard` has
 nothing to rule against. Mark an engagement `closed` when it ends, and drop its
-`Proposed: open clients/…` line once the client file exists. Leave everything
+`Proposed: run /client-health baseline …` line once the client file exists. Leave everything
 else there.
 
 Do not write `clients/` when a deal closes — hand the won deal to the **Delivery
