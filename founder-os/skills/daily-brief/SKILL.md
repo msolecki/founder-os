@@ -172,7 +172,7 @@ Read for one named section only:
    again on Friday, and again on Monday, under three ids.
 
    **The queue item is not the only record, because the queue forgets.** `## Done`
-   is reaped after 30 days and `## Dropped` after 90, while a quarterly `Proposed:`
+   is reaped after 30 days (and its month's review) and `## Dropped` after 90, while a quarterly `Proposed:`
    line lives in `goals.md` for the whole quarter, and a refused proposal never
    reaches the queue at all. So every answer — taken or refused — is also a line
    under `Proposals answered:` in today's `## Triage`, keyed by the proposal's
