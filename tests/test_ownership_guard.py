@@ -1775,6 +1775,11 @@ class TestGuardFilesAreNotAgentWritable(unittest.TestCase):
                   "binding": data / "agent-types" / "agent.x.json",
                   "registry": home / ".founder-os" / "businesses.yaml",
                   "registry-link": tmp / "link.yaml",
+                  # SEC-06 — default APFS is case-insensitive: these name the
+                  # same files as `registry` and `plugin`.
+                  "registry-recased": home / ".Founder-OS" / "Businesses.YAML",
+                  "plugin-recased": Path(str(PLUGIN_ROOT).upper())
+                  / "REFERENCES" / "Ownership.yaml",
                   "outside": tmp / "elsewhere.md"}[rel_or_path]
         if rel_or_path == "registry-link":
             target.symlink_to(home / ".founder-os" / "businesses.yaml")
@@ -1798,6 +1803,21 @@ class TestGuardFilesAreNotAgentWritable(unittest.TestCase):
                     self.assertIn("deny", p.stdout, p.stderr)
                     self.assertIn("defines the Founder OS guard", p.stdout)
                     self.assertEqual(p.returncode, 0)
+
+    def test_a_re_cased_guard_file_is_denied(self):
+        for target in ("registry-recased", "plugin-recased"):
+            with self.subTest(target=target):
+                p = self._run(target, tool_name="Write")
+                self.assertIn("defines the Founder OS guard", p.stdout,
+                              p.stderr)
+                self.assertEqual(p.returncode, 0)
+
+    def test_a_re_cased_guard_file_leaves_the_main_thread_alone(self):
+        for target in ("registry-recased", "plugin-recased"):
+            with self.subTest(target=target):
+                p = self._run(target, agent_type=None)
+                self.assertEqual(p.stdout.strip(), "", p.stdout)
+                self.assertEqual(p.returncode, 0)
 
     def test_a_generic_agent_is_denied_too(self):
         p = self._run("session", agent_type="general-purpose", tool_name="Write")

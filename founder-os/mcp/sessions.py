@@ -649,6 +649,13 @@ class RoleSessionStore:
                         terminal_at = float(record["closed_at"])
                     else:
                         terminal_at = float(record["expired_at"])
+                    # The record's own timestamps are file content; a forged
+                    # far-future one must not keep it forever. A record is
+                    # never live past its last write plus the ttl.
+                    terminal_at = min(
+                        terminal_at,
+                        float(info.st_mtime) + float(self._ttl_seconds),
+                    )
                 else:
                     terminal_at = float(info.st_mtime)
                 if now < terminal_at + self.SESSION_RETENTION_SECONDS:

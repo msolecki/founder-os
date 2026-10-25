@@ -267,8 +267,9 @@ class Gateway:
         # A scheduled run has no founder present: text it reads must not steer
         # it into another role's workflow. No scheduled skill opens a second
         # workflow unattended (quarterly-planning step 7 stops before red-team).
+        # Set but empty is still a pin, one no workflow matches: it fails closed.
         pinned = os.environ.get("FOUNDER_OS_CADENCE_WORKFLOW")
-        if pinned and workflow != pinned:
+        if pinned is not None and workflow != pinned:
             raise RoleSessionError()
         binding = self._resolver.get(workspace_id)
         capability = self._sessions.open(
