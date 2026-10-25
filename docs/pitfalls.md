@@ -83,7 +83,7 @@ makes. Project decisions behind several of them are in
 - **Looks like:** a hole — a reviewer subagent with `Bash` can write any file
   its own permissions allow.
 - **Why it is deliberate:** the ownership checks bind tools that name a path
-  (`Write`, `Edit`, `NotebookEdit`). Denying every unrecognized subagent every
+  (`Write`, `Edit`, `MultiEdit`, `NotebookEdit`). Denying every unrecognized subagent every
   tool "locked reviewers and Explore passes out of unrelated repositories
   machine-wide". Roles are different: they hold no shell at all.
 - **Breaks if changed:** every non-Founder-OS subagent on the machine loses

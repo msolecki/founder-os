@@ -166,7 +166,7 @@ skill has the identical property, and the guard's own docstring says at length
 that it is not a security boundary. What the merged map actually buys:
 
 - a **local agent writing a local path with a direct file tool** (`Write`,
-  `Edit`, `NotebookEdit`) is checked against that path's local
+  `Edit`, `MultiEdit`, `NotebookEdit`) is checked against that path's local
   owner by the guard,
 - `founder-os-doctor` can check the whole thing statically, which is where the
   overlay's real validation lives,
