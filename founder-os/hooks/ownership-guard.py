@@ -188,7 +188,12 @@ def _load_mcp_module(name):
         "_founder_os_guard_" + name, source)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        # A half-run module left registered is what the next load would get.
+        del sys.modules[spec.name]
+        raise
     return module
 
 

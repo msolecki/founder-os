@@ -17,12 +17,22 @@ else:
     # A real package for mcp/ would retire this branch.
     import importlib.util
 
-    _spec = importlib.util.spec_from_file_location(
-        "_founder_os_workspaces_ownership",
-        Path(__file__).with_name("ownership.py"),
-    )
-    _ownership = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_ownership)
+    import sys
+
+    _name = "_founder_os_workspaces_ownership"
+    _ownership = sys.modules.get(_name)
+    if _ownership is None:
+        # Registered before it runs, as `dashboard/contracts._load_sibling`
+        # does: `dataclass` resolves annotations through `sys.modules`.
+        _spec = importlib.util.spec_from_file_location(
+            _name, Path(__file__).with_name("ownership.py"))
+        _ownership = importlib.util.module_from_spec(_spec)
+        sys.modules[_name] = _ownership
+        try:
+            _spec.loader.exec_module(_ownership)
+        except BaseException:
+            del sys.modules[_name]
+            raise
     _parse_scalar = _ownership._parse_scalar
 
 
@@ -438,7 +448,6 @@ def select_workspace(
         raise WorkspaceResolutionError()
     slug = active[0]
     return Path(businesses[slug]["home"]).resolve(), slug, "business"
-
 
 
 def load_registry(home: Path) -> Optional[dict[str, Any]]:

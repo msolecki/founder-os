@@ -873,6 +873,32 @@ class TestWorkspaceRoots(unittest.TestCase):
             self.assertIn(str((Path(td) / "founder-os").resolve()), roots)
 
 
+class TestLoadingMcpModulesByPath(unittest.TestCase):
+    def test_a_module_that_fails_to_run_is_not_left_registered(self):
+        guard = load_guard()
+        with mock.patch.dict(sys.modules):
+            with self.assertRaises(Exception):
+                guard._load_mcp_module("does-not-exist")
+            self.assertNotIn("_founder_os_guard_does-not-exist", sys.modules)
+
+    def test_workspaces_by_path_registers_its_ownership_sibling(self):
+        source = PLUGIN_ROOT / "mcp" / "workspaces.py"
+        name = "_founder_os_workspaces_ownership"
+
+        def load():
+            spec = importlib.util.spec_from_file_location("ws_by_path", source)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+            return module
+
+        with mock.patch.dict(sys.modules):
+            sys.modules.pop(name, None)
+            first = load()
+            self.assertIs(sys.modules[name], first._ownership)
+            self.assertIs(load()._ownership, first._ownership)
+
+
 class TestRegistryRoots(unittest.TestCase):
     """Multi-business: the registry's workspace roots are guarded too.
 
