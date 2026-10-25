@@ -1219,6 +1219,42 @@ class StateGatewayWriteTests(unittest.TestCase):
         self._assert_error(response, code="STATE_IO_ERROR")
         self.assertFalse((self.workspace / "metrics.md").exists())
 
+    def test_a_held_write_lock_fails_the_write_instead_of_freezing(self):
+        capability = self._open("cfo")
+        lock = self.workspace / (
+            ".founder-os-write-"
+            + hashlib.sha256(b"metrics.md").hexdigest()
+            + ".lock"
+        )
+        holder = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "import fcntl, sys, time\n"
+                "handle = open(sys.argv[1], 'a')\n"
+                "fcntl.flock(handle, fcntl.LOCK_EX)\n"
+                "print('locked', flush=True)\n"
+                "time.sleep(60)\n",
+                str(lock),
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            self.assertEqual("locked", holder.stdout.readline().strip())
+            with mock.patch.object(SafeStateIO, "WRITE_LOCK_TIMEOUT_SECONDS", 0.3):
+                started = time.monotonic()
+                response = self._write(
+                    capability, "metrics.md", _metrics(), create_only=True
+                )
+                self.assertLess(time.monotonic() - started, 5)
+        finally:
+            holder.kill()
+            holder.wait()
+            holder.stdout.close()
+        self._assert_error(response, code="STATE_IO_ERROR")
+        self.assertFalse((self.workspace / "metrics.md").exists())
+
     def test_an_oversized_final_status_is_refused(self):
         capability = self._open("cfo")
         response = self._call(

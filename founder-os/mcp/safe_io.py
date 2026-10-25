@@ -13,6 +13,7 @@ import os
 import re
 import secrets
 import stat
+import time
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Optional, Tuple
 
@@ -37,6 +38,7 @@ class SafeStateError(Exception):
 
 
 class SafeStateIO:
+    WRITE_LOCK_TIMEOUT_SECONDS = 5.0
     _FORBIDDEN = "[]{}?\\"
 
     def __init__(
@@ -578,7 +580,17 @@ class SafeStateIO:
                 or lock_info.st_nlink != 1
             ):
                 raise SafeStateError("STATE_IO_ERROR")
-            fcntl.flock(lock_descriptor, fcntl.LOCK_EX)
+            # Bounded: a writer that never lets go must fail this write, not
+            # freeze the single-threaded server for every role.
+            deadline = time.monotonic() + self.WRITE_LOCK_TIMEOUT_SECONDS
+            while True:
+                try:
+                    fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise SafeStateError("STATE_IO_ERROR")
+                    time.sleep(0.05)
             lock_path_info = os.stat(
                 lock_name,
                 dir_fd=parent_descriptor,
