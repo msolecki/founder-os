@@ -80,10 +80,12 @@ def scan(projects):
                 if not isinstance(record, dict):
                     continue
                 # A resumed or forked session repeats earlier lines.
+                # A record with no uuid cannot be a repeat we can recognise.
                 uuid = record.get("uuid")
-                if uuid in seen:
-                    continue
-                seen.add(uuid)
+                if isinstance(uuid, str):
+                    if uuid in seen:
+                        continue
+                    seen.add(uuid)
                 day = str(record.get("timestamp", ""))[:10]
                 try:
                     datetime.date.fromisoformat(day)

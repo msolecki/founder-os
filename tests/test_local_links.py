@@ -68,6 +68,15 @@ class LocalLinkCheckerTest(unittest.TestCase):
             ["docs/source.md:1: missing target 'docs/missing.md'"],
         )
 
+    def test_jekyll_templates_are_not_checked_but_pages_still_are(self):
+        write(self.root, "docs/_layouts/default.html",
+              '<a href="{{ \'/x.html\' | relative_url }}">x</a>\n')
+        write(self.root, "docs/page.html", '<a href="gone.html">x</a>\n')
+        self.assertEqual(
+            self.check("docs/_layouts/default.html", "docs/page.html"),
+            ["docs/page.html:1: missing target 'docs/gone.html'"],
+        )
+
     def test_missing_anchor_has_literal_target_diagnostic(self):
         write(self.root, "docs/source.md", "[Missing](target.md#absent)\n")
         write(self.root, "docs/target.md", "# Present\n")

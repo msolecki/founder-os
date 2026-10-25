@@ -166,10 +166,14 @@ def tracked_paths(root):
 def check_links(root, tracked):
     root = Path(root).resolve()
     tracked = sorted({_relative_path(root, item) for item in tracked})
+    # docs/_layouts/ and any other Jekyll underscore directory holds Liquid
+    # templates, not pages: their hrefs are `{{ … | relative_url }}` until the
+    # site is built, and Jekyll never publishes the directory itself.
     documents = [
         relative for relative in tracked
         if Path(relative).suffix.lower() in DOCUMENT_SUFFIXES
         and (root / relative).is_file()
+        and not relative.startswith("docs/_")
     ]
     errors = []
     indexes = {}

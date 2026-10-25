@@ -66,6 +66,18 @@ class TestSkillUsage(unittest.TestCase):
         self.assertNotIn("spec", used)
         self.assertFalse(any("SECRET" in name for name in used))
 
+    def test_records_without_a_uuid_are_each_counted(self):
+        project = self.config / "projects" / "-Users-x-other"
+        project.mkdir(parents=True)
+        lines = [tool_use(None, self.recent, "Skill", skill="founder-os:capture")
+                 for _ in range(2)]
+        for line in lines:
+            del line["uuid"]
+        (project / "c.jsonl").write_text(
+            "\n".join(json.dumps(r) for r in lines) + "\n", encoding="utf-8")
+        self.assertEqual(U.scan(self.config / "projects")["capture"],
+                         [self.recent, self.recent])
+
     def test_report_rows_never_used_and_gone(self):
         used = U.scan(self.config / "projects")
         text = U.report(used, {"daily-brief", "triage", "capture"}, {"cfo"},
