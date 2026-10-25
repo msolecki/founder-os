@@ -67,16 +67,6 @@ class TestLazyYamlImport(unittest.TestCase):
 
         self.assertEqual(imported, [])
 
-    def test_yaml_loader_prefers_c_safe_loader(self):
-        guard = load_guard()
-        import yaml
-        class FakeLoader: pass
-        with mock.patch.object(yaml, "CSafeLoader", FakeLoader), \
-                mock.patch.object(yaml, "load", return_value={"owns": {}}) as load:
-            self.assertEqual(guard._yaml_load(yaml, "owns: {}\n"), {"owns": {}})
-        self.assertIs(load.call_args.kwargs["Loader"], FakeLoader)
-
-
 class TestOwnerOfCasefold(unittest.TestCase):
     BY_PATH = {
         "goals.md": "strategist",
@@ -368,68 +358,31 @@ class TestDerivedEntryMatching(unittest.TestCase):
         self.assertIsNone(self.guard._derived_entry("_dashboard/notes.md", ()))
 
 
-class TestDerivedFilesAreParsedWithoutPyYAML(unittest.TestCase):
-    """The no-PyYAML machines must run the same derived policy, not most of it."""
+class TestDerivedFilesAreParsedByThePackageParser(unittest.TestCase):
+    """`derived_files:` the guard cannot read is no derived path, not a deny."""
 
     def setUp(self):
         self.guard = load_guard()
-        self.text = (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
-            encoding="utf-8")
-
-    def test_fallback_parser_agrees_with_pyyaml_on_the_real_map(self):
-        import yaml
-        expected = tuple(yaml.safe_load(self.text)["derived_files"])
-        self.assertEqual(self.guard._parse_derived_without_yaml(self.text),
-                         expected)
-
-    def test_load_derived_without_pyyaml_matches_the_pyyaml_answer(self):
-        with mock.patch.object(self.guard, "yaml", None):
-            without = self.guard.load_derived()
-        self.assertEqual(without, self.guard.load_derived())
-        self.assertIn("_dashboard/", without)
 
     def test_an_absent_key_is_no_derived_paths_rather_than_an_error(self):
-        self.assertEqual(
-            self.guard._parse_derived_without_yaml("owns:\n  cfo:\n    - m.md\n"),
-            ())
+        self.assertEqual(self.guard._derived_from_text(
+            "owns:\n  cfo:\n    - m.md\n", "x"), ())
         self.assertEqual(self.guard._derived_from_text("owns: {}\n", "x"), ())
 
     def test_a_shape_it_does_not_understand_yields_no_deny(self):
-        self.assertEqual(
-            self.guard._parse_derived_without_yaml(
-                "derived_files:\n  nested:\n    - x\n"),
-            ())
-
-    def test_a_flow_sequence_is_read_the_way_pyyaml_reads_it(self):
-        import yaml
-        for text in ("derived_files: [_dashboard/]\n",
-                     'derived_files: ["_dashboard/"]\n',
-                     "derived_files: [_dashboard/, _cache/]\n",
-                     "derived_files: !!seq [_dashboard/]\n",
-                     "derived_files: [\n  _dashboard/,\n]\n",
-                     "owns:\n  cfo:\n    - m.md\nderived_files: [_dashboard/]\n"):
-            with self.subTest(text=text):
-                expected = tuple(yaml.safe_load(text)["derived_files"])
-                self.assertEqual(
-                    self.guard._parse_derived_without_yaml(text), expected)
-
-    def test_an_inline_shape_that_is_not_a_list_of_names_yields_no_deny(self):
-        # The other half of agreeing with PyYAML: a shape it turns into no
-        # strings must turn into no entries here either, or the machine without
-        # PyYAML denies paths the map never named.
-        for text in ("derived_files: _dashboard/\n",
+        for text in ("derived_files:\n  nested:\n    - x\n",
+                     "derived_files: _dashboard/\n",
                      "derived_files: {a: b}\n",
-                     "derived_files: [[_dashboard/]]\n",
-                     "derived_files: ['unterminated\n",
-                     "derived_files: [\n"):
+                     "derived_files: ['unterminated\n"):
             with self.subTest(text=text):
-                self.assertEqual(self.guard._parse_derived_without_yaml(text), ())
+                self.assertEqual(self.guard._derived_from_text(text, "x"), ())
 
-    def test_a_column_zero_sequence_is_read_too(self):
-        self.assertEqual(
-            self.guard._parse_derived_without_yaml(
-                "derived_files:\n- _dashboard/\nowns:\n  cfo:\n    - m.md\n"),
-            ("_dashboard/",))
+    def test_a_broken_owns_key_leaves_derived_files_readable(self):
+        text = ("derived_files:\n  - _dashboard/\n"
+                "owns:\n  - a list where the agents should be\n")
+        self.assertEqual(self.guard._derived_from_text(text, "x"),
+                         ("_dashboard/",))
+        self.assertIsNone(self.guard._owns_from_text(text, "x"))
 
 
 class TestDerivedFilesAreNotWritable(unittest.TestCase):
@@ -465,6 +418,8 @@ class TestDerivedFilesAreNotWritable(unittest.TestCase):
         (plugin / "references").mkdir()
         guard = plugin / "hooks" / "ownership-guard.py"
         shutil.copy(GUARD_PATH, guard)
+        (plugin / "mcp").mkdir()
+        shutil.copy(PLUGIN_ROOT / "mcp" / "ownership.py", plugin / "mcp")
         (plugin / "references" / "ownership.yaml").write_text(
             map_text, encoding="utf-8")
         ws = tmp / "ws"
@@ -678,44 +633,72 @@ class TestFailOpen(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
-class TestFallbackParser(unittest.TestCase):
-    """_parse_owns_without_yaml must agree with PyYAML on the real map —
-    otherwise the no-PyYAML machines run a different ownership policy."""
+class TestMapParityWithPyYAML(unittest.TestCase):
+    """The guard reads the maps the way PyYAML reads them — with or without it.
 
-    def setUp(self):
-        self.guard = load_guard()
-        self.text = (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
+    PyYAML is the oracle because it is what the guard used whenever it was
+    installed. The guard must reach the same `owns:` and `derived_files:`
+    answer for the packaged map and for an overlay, and reach it on a machine
+    where `import yaml` fails.
+    """
+
+    OVERLAY = (
+        "# founder's own files\n"
+        "owns:\n"
+        "  network-manager:\n"
+        "    - partners.md  # weekly\n"
+        "    - \"notes/partners/\"\n"
+        "  skills-mentor:\n"
+        "    - 'learning.md'\n"
+    )
+
+    @staticmethod
+    def _flatten(owns):
+        return {path.strip(): agent for agent, paths in owns.items()
+                for path in paths}
+
+    def _without_yaml(self, call):
+        real_import = builtins.__import__
+
+        def no_yaml(name, *args, **kwargs):
+            if name == "yaml" or name.startswith("yaml."):
+                raise ImportError("no PyYAML here")
+            return real_import(name, *args, **kwargs)
+
+        with mock.patch.dict(sys.modules, {"yaml": None}), \
+                mock.patch("builtins.__import__", side_effect=no_yaml):
+            return call(load_guard())
+
+    def test_the_packaged_map_matches_pyyaml(self):
+        import yaml
+        text = (PLUGIN_ROOT / "references" / "ownership.yaml").read_text(
             encoding="utf-8")
+        data = yaml.safe_load(text)
+        with mock.patch.dict(os.environ,
+                             {"CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}):
+            for label, read in (("with", lambda call: call(load_guard())),
+                                ("without", self._without_yaml)):
+                with self.subTest(pyyaml=label):
+                    self.assertEqual(
+                        read(lambda guard: guard.load_ownership()),
+                        self._flatten(data["owns"]))
+                    self.assertEqual(
+                        read(lambda guard: guard.load_derived()),
+                        tuple(data["derived_files"]))
 
-    def test_parses_the_real_map_identically_to_pyyaml(self):
+    def test_an_overlay_matches_pyyaml(self):
         import yaml
-        expected = yaml.safe_load(self.text)["owns"]
-        got = self.guard._parse_owns_without_yaml(self.text)
-        self.assertEqual(got, expected)
-
-    def test_load_ownership_without_pyyaml_matches_pyyaml_map(self):
-        import yaml
-        owns = yaml.safe_load(self.text)["owns"]
-        expected = {
-            path.strip(): agent
-            for agent, paths in owns.items()
-            for path in paths
-            if isinstance(path, str) and path.strip()
-        }
-        with mock.patch.object(self.guard, "yaml", None):
-            got = self.guard.load_ownership()
-        self.assertEqual(got, expected)
-
-    def test_garbage_returns_none_rather_than_a_guess(self):
-        self.assertIsNone(self.guard._parse_owns_without_yaml(
-            "owns:\n  - a list where an agent should be\n"))
-        self.assertIsNone(self.guard._parse_owns_without_yaml("no owns here\n"))
-
-    def test_same_indent_sequence_matches_pyyaml(self):
-        text = "owns:\n  strategist:\n  - goals.md\n  - metrics.md\n"
-        self.assertEqual(
-            self.guard._parse_owns_without_yaml(text),
-            {"strategist": ["goals.md", "metrics.md"]})
+        expected = self._flatten(yaml.safe_load(self.OVERLAY)["owns"])
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "_local").mkdir()
+            (Path(td) / "_local" / "ownership.yaml").write_text(
+                self.OVERLAY, encoding="utf-8")
+            for label, read in (("with", lambda call: call(load_guard())),
+                                ("without", self._without_yaml)):
+                with self.subTest(pyyaml=label):
+                    self.assertEqual(
+                        read(lambda guard: guard.local_ownership(td)),
+                        expected)
 
 
 class TestOwnershipHotPath(unittest.TestCase):
@@ -866,7 +849,7 @@ class TestRegistryRoots(unittest.TestCase):
                 "    status: active\n"
                 "portfolio: %s\n" % (acme, portfolio)))
             guard = load_guard()
-            with mock.patch.object(guard, "yaml", None), \
+            with mock.patch.dict(sys.modules, {"yaml": None}), \
                     mock.patch.dict(os.environ, {"HOME": str(home)}):
                 roots = guard._registry_roots()
             self.assertEqual(roots, [str(acme), str(portfolio)])
@@ -1006,15 +989,6 @@ class TestLocalOverlay(unittest.TestCase):
             ws = self._workspace(Path(td), "workspace_files:\n  - partners.md\n")
             r = self._write(ws, "cfo", "partners.md")
             self.assertIn("deny", r.stdout, r.stderr)
-
-    def test_overlay_is_honoured_without_pyyaml(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as td:
-            ws = self._workspace(Path(td), self.OVERLAY)
-            guard = load_guard()
-            with mock.patch.object(guard, "yaml", None):
-                self.assertEqual(guard.local_ownership(str(ws)),
-                                 {"partners.md": "network-manager"})
 
     def test_one_businesss_overlay_does_not_reach_another(self):
         import tempfile

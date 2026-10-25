@@ -33,7 +33,8 @@ The hook remains defense in depth, not a security sandbox. Malformed hook input
 and calls without a subagent identity stay out of the founder's way. A known
 role, however, fails closed at the tool boundary described above.
 
-Python 3.9, stdlib + optional PyYAML for the retained ownership helpers.
+Python 3.9, stdlib only: the ownership map is read with the gateway's own
+parser, `mcp/ownership.py`, loaded by path (`_ownership_module`).
 """
 import hashlib
 import json
@@ -43,9 +44,6 @@ import re
 import stat
 import sys
 import time
-
-_YAML_UNSET = object()
-yaml = _YAML_UNSET
 
 ROLE_NAMES = frozenset({
     "board-member", "brand-editor", "cfo", "chief-of-staff",
@@ -120,24 +118,8 @@ _LOCAL_CACHE = {}
 # The packaged map, keyed by the plugin root the search started from, under the
 # same discipline: `owns:` and `derived_files:` are two readers of one document.
 _PACKAGED_CACHE = {}
-
-
-def _get_yaml():
-    """Import PyYAML only on paths that need to parse YAML."""
-    global yaml
-    if yaml is _YAML_UNSET:
-        try:
-            import yaml as yaml_module
-        except ImportError:  # PyYAML is optional on strangers' machines.
-            yaml_module = None
-        yaml = yaml_module
-    return yaml
-
-
-def _yaml_load(yaml_module, text):
-    """Use LibYAML's C loader when installed, otherwise SafeLoader."""
-    loader = getattr(yaml_module, "CSafeLoader", yaml_module.SafeLoader)
-    return yaml_module.load(text, Loader=loader) or {}
+# `mcp/ownership.py`, once per process, or None when it would not load.
+_OWNERSHIP = []
 
 
 def log(msg):
@@ -170,132 +152,30 @@ def allow(why=None):
     sys.exit(0)
 
 
-def _parse_owns_without_yaml(text):
-    """Minimal parser for the `owns:` block, used only when PyYAML is missing.
+def _ownership_module():
+    """`mcp/ownership.py` loaded by path, or None.
 
-    Not a YAML parser and not trying to be. It understands exactly the shape
-    ownership.yaml has — a column-0 `owns:`, agents at one indent level, `- path`
-    items at the next — and returns None the moment it sees anything else, which
-    routes the caller to allow. A guess here would be a false deny, so it doesn't
-    guess.
-
-    This exists because PyYAML is not in the standard library. Without it the
-    guard would be a silent no-op on any machine whose python3 lacks the module,
-    which is most of them. Failing open is a decision; failing open invisibly
-    forever because of an import is an accident.
+    The gateway's parser is the guard's parser: two grammars for one map is
+    how the guard came to enforce one policy with PyYAML installed and another
+    without it. Fail-open, as for any map this guard cannot read: a module
+    that will not load costs coverage of the map, never a write. The role
+    lockdown does not read the map, so it stays closed either way.
     """
-    owns, agent, indents = {}, None, {}
-    in_block = False
-    for raw in text.split("\n"):
-        line = raw.split("#", 1)[0].rstrip() if not raw.lstrip().startswith("#") else ""
-        if not line.strip():
-            continue
-        indent = len(line) - len(line.lstrip())
-        if indent == 0:
-            if in_block:
-                break  # next top-level key ends the block
-            in_block = line.strip() == "owns:"
-            continue
-        if not in_block:
-            continue
-        body = line.strip()
-        if body.endswith(":") and not body.startswith("- "):
-            agent = body[:-1].strip()
-            indents["agent"] = indent
-            if not agent:
-                return None
-        elif body.startswith("- "):
-            if agent is None or indent < indents.get("agent", 0):
-                return None
-            owns.setdefault(agent, []).append(body[2:].strip().strip("'\""))
-        else:
-            return None  # something we don't understand — don't pretend we do
-    return owns or None
-
-
-def _flow_entries(first, lines):
-    """A `derived_files: [a, b]` flow sequence as a tuple, or ().
-
-    PyYAML accepts flow style and the packaged map does not use it, so a
-    fallback that read block style only would enforce less than the PyYAML path
-    on the very same document — the divergence `_parse_derived_without_yaml`
-    exists to prevent. `lines` is the shared iterator so a sequence written
-    across several lines is read whole; a tag (`!!seq [...]`) is dropped
-    because it says nothing about the shape.
-    """
-    value = first.strip()
-    if value.startswith("!"):
-        value = value.split(None, 1)[1].strip() if " " in value else ""
-    if not value.startswith("["):
-        return ()
-    while "]" not in value:
-        nxt = next(lines, None)
-        if nxt is None:
-            return ()  # unterminated — a shape we don't understand
-        value += " " + nxt.strip()
-    items, buf, quote = [], [], None
-    for char in value[1:value.index("]")]:
-        if quote:
-            if char == quote:
-                quote = None
-            else:
-                buf.append(char)
-        elif char in "'\"":
-            quote = char
-        elif char == ",":
-            items.append("".join(buf).strip())
-            buf = []
-        else:
-            buf.append(char)
-    if quote:
-        return ()
-    items.append("".join(buf).strip())
-    if any(set("[]{}") & set(item) for item in items):
-        return ()  # nested or mapping — PyYAML would hand us no strings here
-    return tuple(item for item in items if item)
-
-
-def _parse_derived_without_yaml(text):
-    """Minimal parser for the top-level `derived_files:` sequence, or ().
-
-    Exists for the same reason `_parse_owns_without_yaml` does: without it, a
-    machine whose python3 lacks PyYAML would keep the ownership deny and
-    silently lose the derived one, which is the worst of the two states — a
-    guard that enforces most of its map is harder to notice than one that
-    enforces none of it.
-
-    Returns () for anything it does not recognize, including the key being
-    absent. That is an allow, and an allow is what a parser that is guessing
-    should produce.
-    """
-    entries, in_block = [], False
-    lines = iter(text.split("\n"))
-    for raw in lines:
-        line = raw.split("#", 1)[0].rstrip() if not raw.lstrip().startswith("#") else ""
-        if not line.strip():
-            continue
-        indent = len(line) - len(line.lstrip())
-        if indent == 0:
-            if in_block:
-                # A block sequence may sit at column 0 under its own key.
-                if line.startswith("- "):
-                    entries.append(line[2:].strip().strip("'\""))
-                    continue
-                break  # next top-level key ends the block
-            key, sep, value = line.partition(":")
-            if not sep or key.strip() != "derived_files":
-                continue
-            if value.strip():
-                return _flow_entries(value, lines)
-            in_block = True
-            continue
-        if not in_block:
-            continue
-        body = line.strip()
-        if not body.startswith("- "):
-            return ()  # a shape we don't understand — don't pretend we do
-        entries.append(body[2:].strip().strip("'\""))
-    return tuple(entry for entry in entries if entry)
+    if not _OWNERSHIP:
+        source = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "mcp", "ownership.py")
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "_founder_os_guard_ownership", source)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+        except Exception as e:  # noqa: BLE001 - coverage, never a write
+            log("could not load %s (%s)" % (source, e))
+            module = None
+        _OWNERSHIP.append(module)
+    return _OWNERSHIP[0]
 
 
 def _derived_from_text(text, source):
@@ -307,19 +187,11 @@ def _derived_from_text(text, source):
     guessing — an entry this function does not return is a path the guard
     treats as ordinary, which is exactly what it did before the key existed.
     """
-    yaml_module = _get_yaml()
-    if yaml_module is None:
-        return _parse_derived_without_yaml(text)
-    try:
-        data = _yaml_load(yaml_module, text)
-    except yaml_module.YAMLError as e:
-        log("%s is not valid YAML (%s)" % (source, e))
-        return ()
-    entries = data.get("derived_files") if isinstance(data, dict) else None
+    module = _ownership_module()
+    entries = module.read_key(text, "derived_files") if module else None
     if not isinstance(entries, list):
         return ()
-    return tuple(entry.strip().strip("'\"") for entry in entries
-                 if isinstance(entry, str) and entry.strip())
+    return tuple(entry for entry in entries if entry.strip())
 
 
 def _owns_from_text(text, source):
@@ -329,22 +201,13 @@ def _owns_from_text(text, source):
     the same shape by contract, and giving the overlay its own reader is how
     the two quietly stop agreeing about what a map is.
     """
-    yaml_module = _get_yaml()
-    if yaml_module is not None:
-        try:
-            data = _yaml_load(yaml_module, text)
-        except yaml_module.YAMLError as e:
-            log("%s is not valid YAML (%s)" % (source, e))
-            return None
-        owns = data.get("owns") if isinstance(data, dict) else None
-        if not isinstance(owns, dict):
-            log("%s has no usable 'owns:' map" % source)
-            return None
-        return owns
-    owns = _parse_owns_without_yaml(text)
-    if owns is None:
-        log("PyYAML missing and %s is not in the shape the fallback parser "
-            "understands" % source)
+    module = _ownership_module()
+    if module is None:
+        return None
+    owns = module.read_key(text, "owns")
+    if not isinstance(owns, dict):
+        log("%s has no usable 'owns:' map" % source)
+        return None
     return owns
 
 

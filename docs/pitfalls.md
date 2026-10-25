@@ -60,19 +60,18 @@ makes. Project decisions behind several of them are in
   file tool. One known gap is tracked in [`backlog.md`](backlog.md): an
   unexpected exception exits 0 even on a role path.
 
-## Missing PyYAML or an unreadable overlay means less coverage, not a deny
+## An unreadable map or overlay means less coverage, not a deny
 
-- **Where:** `_parse_owns_without_yaml`, `_derived_from_text`,
+- **Where:** `_ownership_module`, `_derived_from_text`,
   `local_ownership` and `_registry_roots` in
   `founder-os/hooks/ownership-guard.py`
 - **Looks like:** a guard that quietly guards less when a file is broken.
 - **Why it is deliberate:** PyYAML is not in the standard library, so the
-  guard carries a minimal parser for the one shape `ownership.yaml` has and
-  returns "no map" on anything else rather than guessing. An overlay
+  guard reads the map with the gateway's stdlib parser (`mcp/ownership.py`)
+  and returns "no map" on anything it does not accept rather than guessing. An overlay
   (`_local/ownership.yaml`) or a business registry it cannot read costs
-  coverage; a false deny costs the founder a write. The code comments say so
-  ("Failing open is a decision; failing open invisibly forever because of an
-  import is an accident").
+  coverage; a false deny costs the founder a write. Each unread map is logged
+  to the hook's stderr, so the lost coverage is visible in debug mode.
 - **Breaks if changed:** a broken overlay or registry would block writes
   machine-wide. The one exception is `derived_files:`: the derived deny still
   runs when `owns:` cannot be parsed.

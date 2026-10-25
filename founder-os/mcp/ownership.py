@@ -246,6 +246,31 @@ def load_document(path: Path) -> Dict[str, object]:
     return parsed
 
 
+def read_key(contents: str, key: str) -> Optional[object]:
+    """One top-level key of a map, parsed with `_parse_subset`, or None.
+
+    For the write-time guard, which reads the packaged map and a founder's
+    `_local/` overlay (`owns:` only) and must not need PyYAML to do it. Each key
+    is cut out and parsed alone, so a broken `owns:` cannot take
+    `derived_files:` down with it — the guard runs the derived deny on both
+    sides of its `owns:` bail. None means absent or not in this grammar, and
+    the guard fails open on it; `load_document` stays the strict whole-map read.
+    """
+    block: List[str] = []
+    inside = False
+    for line in contents.splitlines():
+        if line[:1] not in ("", " ", "#"):
+            inside = line.split(":", 1)[0] == key
+        if inside:
+            block.append(line)
+    if not block:
+        return None
+    try:
+        return _parse_subset("\n".join(block)).get(key)
+    except OwnershipError:
+        return None
+
+
 class OwnershipSchema:
     def __init__(
         self,

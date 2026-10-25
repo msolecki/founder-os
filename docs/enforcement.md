@@ -73,8 +73,15 @@ Failures use one stable code and one recovery action:
 `ownership-guard.py` runs for every tool call. Claude Code supplies
 `agent_type` on a subagent's call; a call carrying no identity marker at all is
 the founder's main thread. The guard and the gateway keep their state in
-`PLUGIN_DATA` (or `CLAUDE_PLUGIN_DATA`), and both fall back to
-`~/.founder-os/plugin-data`.
+`CLAUDE_PLUGIN_DATA`, and both fall back to `~/.founder-os/plugin-data`.
+
+The guard reads `references/ownership.yaml` and a workspace's
+`_local/ownership.yaml` with the gateway's own parser, `mcp/ownership.py`,
+loaded by path, so it enforces the same map with or without PyYAML installed.
+`owns:` and `derived_files:` are parsed independently, so a broken `owns:` does
+not switch the derived deny off. A map in a shape that parser does not accept
+(flow lists, tabs, other indents) is logged and ignored: less coverage, never a
+deny, and never a change to the role lockdown, which does not read the map.
 
 For a known packaged role, the guard:
 

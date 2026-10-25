@@ -232,7 +232,7 @@ user-systemd timers; cron is the always-on fallback and does not catch up after
 sleep.
 
 **Do I need PyYAML?** The installed gateway and hooks keep dependency-light
-ownership readers, including the packaged fallback parser. Repository
+ownership readers: the guard and the gateway share one stdlib parser. Repository
 development and the full package validator install PyYAML. Missing PyYAML does
 not turn a role capability into permission to write an unknown owner.
 
