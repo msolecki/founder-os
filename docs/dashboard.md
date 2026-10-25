@@ -111,6 +111,9 @@ drawn over it is a chart of how often the script ran.
   total carry that stamp. `references/house-rules.md` allows such a figure to be
   written "but only carrying its tier", and the page is the surface most likely
   to be quoted back.
+  An amount marked `[DISREGARD]` is left out of the total and out of the
+  "N of M deals record no amount" count; the deal count beside them is still
+  every deal listed under `## Live`.
 - **It does not resolve a disagreement.** Where two files support two readings —
   a pipeline carrying more than one currency, say — the page shows both and names
   the field that would settle it.
