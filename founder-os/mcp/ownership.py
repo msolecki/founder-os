@@ -271,14 +271,20 @@ def read_key(contents: str, key: str) -> Optional[object]:
     `_local/` overlay (`owns:` only) and must not need PyYAML to do it. Each key
     is cut out and parsed alone, so a broken `owns:` cannot take
     `derived_files:` down with it — the guard runs the derived deny on both
-    sides of its `owns:` bail. None means absent or not in this grammar, and
+    sides of its `owns:` bail. A column-0 line that is not a key fails the
+    whole read, never a truncated block. None means absent or not in this grammar, and
     the guard fails open on it; `load_document` stays the strict whole-map read.
     """
     block: List[str] = []
     inside = False
     for line in contents.splitlines():
         if line[:1] not in ("", " ", "#"):
-            inside = line.split(":", 1)[0] == key
+            stripped = line.strip()
+            if not stripped.endswith(":") or stripped.count(":") != 1:
+                # Not a key: `_parse_subset` refuses the whole map here, and
+                # cutting the block short would hand back part of `owns:`.
+                return None
+            inside = stripped[:-1] == key
         if inside:
             block.append(line)
     if not block:

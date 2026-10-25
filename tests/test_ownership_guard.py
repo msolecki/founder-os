@@ -408,6 +408,18 @@ class TestDerivedFilesAreParsedByThePackageParser(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(self.guard._derived_from_text(text, "x"), ())
 
+    def test_a_stray_column_zero_line_never_yields_part_of_owns(self):
+        # Cutting `owns:` at the stray line handed back cfo's entry and lost
+        # strategist's, so goals.md had no owner; PyYAML refuses both texts.
+        import yaml
+        for stray in ("\t- goals.md\n", "- goals.md\n"):
+            text = ("owns:\n  cfo:\n    - metrics.md\n" + stray +
+                    "  strategist:\n    - goals.md\n")
+            with self.subTest(stray=stray):
+                with self.assertRaises(yaml.YAMLError):
+                    yaml.safe_load(text)
+                self.assertIsNone(self.guard._owns_from_text(text, "x"))
+
     def test_a_broken_owns_key_leaves_derived_files_readable(self):
         text = ("derived_files:\n  - _dashboard/\n"
                 "owns:\n  - a list where the agents should be\n")
