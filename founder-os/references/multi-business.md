@@ -65,6 +65,12 @@ Precedence, most explicit wins:
    or `./founder-os/`. This is every install before the registry existed, and
    it keeps working untouched.
 
+A role never reads the registry: the gateway serves it neither the file nor
+any other workspace. A workflow that needs it — `portfolio-review` ranking the
+active businesses, `founder-os-doctor` checking the portfolio — gets the active
+slugs (and, for the doctor, the portfolio facts it checks) from the main
+thread in the handoff.
+
 `context-load` step 0 applies this order and **stamps the business into the
 context line** — `Context: [acme] charter <date> | …` — so the founder sees
 which company is being advised before they read the advice. With more than one

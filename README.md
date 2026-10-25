@@ -186,7 +186,7 @@ button.
    security sandbox. A known role cannot use direct file tools, shell, web, an
    unknown MCP server, or a capability belonging to another role. Malformed
    non-role hook traffic does not grant role state authority.
-4. **Run time, weeks later** — `founder-os-doctor`: 20 checks against a real
+4. **Run time, weeks later** — `founder-os-doctor`: 19 checks against a real
    workspace (missing files, section drift, stale metrics, broken links,
    undrained inbox, rotting queue, briefs nobody acts on, …).
 

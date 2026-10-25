@@ -51,8 +51,11 @@ a new one.
   workflow's `skills/{workflow}/SKILL.md`, `references/guidance.md`,
   `references/house-rules.md`, `references/ownership.yaml`,
   `references/multi-business.md`, this file, `references/ingestion-gate.md`,
-  `references/linking.md`, `references/thresholds.yaml`, and the two plugin
-  manifests — nothing else.
+  `references/linking.md`, `references/thresholds.yaml`,
+  `references/extensibility.md`, `references/skill-template.md`, and the two
+  plugin manifests — nothing else. Anything a workflow needs from outside the
+  package and the workspace, such as the business registry, the main thread
+  reads and puts in the handoff.
 
 ## Workflow result
 

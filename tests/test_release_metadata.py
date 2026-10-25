@@ -202,7 +202,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "skills": 57,
             "cadences": 11,
             "validator": 22,
-            "doctor": 20,
+            "doctor": 19,
         })
 
         expected_markers = {

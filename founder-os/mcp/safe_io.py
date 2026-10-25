@@ -315,6 +315,9 @@ class SafeStateIO:
             "references/ingestion-gate.md",
             "references/linking.md",
             "references/thresholds.yaml",
+            # The doctor's overlay checks are judged against these two.
+            "references/extensibility.md",
+            "references/skill-template.md",
             ".claude-plugin/plugin.json",
         }
         if workflow is not None:

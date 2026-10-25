@@ -44,11 +44,17 @@ Monthly, and immediately after any of these:
   that file's contract needs has to run here — weeks later, on real state, at a
   moment nobody chose. That is worse than build time and it is the only option
   available; say so in the report rather than implying the overlay was vetted.
-- `~/.founder-os/businesses.yaml`, if it exists — the multi-business registry.
-  It scopes the run: **you doctor one workspace per run**, the one resolved by
-  `context-load` step 0, and the portfolio check below is the one place you
-  look outside it. No registry, no portfolio check — a single-business install
-  has nothing there to be sick.
+- The multi-business registry (`~/.founder-os/businesses.yaml`), **as the main
+  thread hands it to you** — the gateway serves neither the registry nor the
+  portfolio workspace to this session. The handoff carries the active slugs
+  and, when there are two or more, whether the portfolio workspace and
+  `portfolio.md` exist, the headings `portfolio.md` carries, and the date of
+  its newest `## Review` entry. It scopes the run: **you doctor one workspace
+  per run**, the one resolved by `context-load` step 0, and the portfolio check
+  below is the one place you look outside it — through those handed facts,
+  never a read. No registry, no portfolio check — a single-business install
+  has nothing there to be sick. A handoff that says nothing about the registry
+  is a gap: report the portfolio check as not run, never as passed.
 
 **You have no shell, and the cadence checks are the place that hurts.** The
 schedule lives in the founder's scheduler, on their host, and you cannot read it.
@@ -86,7 +92,6 @@ a health report that lists a screen of green checks trains the founder to skim i
 | **Overlay incoherent** | A path in the overlay's `workspace_files:` or `sections:` has no `owns:` entry; or two local agents claim one path; or a local skill's `metadata.writes` names a path its agent does not own | The three joins `scripts/validate_package.py` runs against the package, run here against the overlay. The third is the one nothing else catches: `agent -> skill` and `file -> owner` can both be right while `skill -> file` is wrong, and the result is a local skill that produces a deny every time it runs. Report each join that failed. |
 | **Local agent overreaches** | A file in `_local/agents/` omits `tools:`, or names `Bash`, `WebFetch`, `WebSearch`, `Agent`, or an `mcp__*` tool | Omitting `tools:` inherits everything, including Bash. **You are the only check that reads this rule.** The guard's `check_outbound` denies outbound tools to the thirteen packaged roles; a local agent is not one of them, so the role lockdown never applies to it and a granted `Bash` is a capability the founder really has. The gateway still refuses it — no role capability, no `founder-os-state` call — but nothing stops the shell. Report the tool by name and say plainly that it is live, not pending a mid-run denial. House rule 0 binds every packaged role; it cannot bind an agent the founder wrote, which is why this finding is theirs to act on. |
 | **Local skill off template** | A file in `_local/skills/` is missing `## Beliefs`, carries fewer than 3 belief bullets, places them after `## Steps`, or its slug lacks the `local-` prefix or collides with a packaged skill | The template's bar does not lapse because the founder is the author — a local skill with no beliefs is the generic advisor with a custom name on it, which is the thing this package exists not to be. The slug rules are collision insurance: a packaged skill added upstream next year must not silently shadow one they wrote this year. |
-| **Installed copy drift** | A skill in `_local/skills/` has no installed copy under `~/.claude/skills/`, or the copy differs from its source | Uninstalled means a workflow exists and the host cannot run it; diverged means the founder edited a copy the doctor cannot vouch for. Report the path and hand to `/skill-forge`; **never sync them yourself** — you cannot tell which side is intended. |
 | **Queue rotting** | `## Doing` holds more than its cap, `## Queued` more than its cap, or any item sits past its own clock — the caps and the clocks are in `references/thresholds.yaml` (`queue.doing_cap`, `queue.queued_cap`, `queue.queued_days`, `queue.blocked_days`, `queue.doing_days`), and that file is the only place they are written down | The caps and clocks are enforced by `queue` and the Friday sweep in `weekly-review` is the only thing that enforces them. If the sweep stalls, the queue bloats into the graveyard `queue` warns about and nothing else notices — every other check reads state some cadence maintains, and this is the state the missing cadence was maintaining. Report the counts and the oldest offender; hand to the **Chief of Staff**. Never drop items yourself — the drop rule wants a reason written, and that is the sweep's job, not yours. |
 
 ## Steps

@@ -1127,6 +1127,8 @@ class SafeStateIOTests(unittest.TestCase):
             "ingestion-gate.md",
             "linking.md",
             "thresholds.yaml",
+            "extensibility.md",
+            "skill-template.md",
         ):
             (references / name).write_text(name + "\n", encoding="utf-8")
         (self.workspace / "state.md").write_bytes(b"state bytes\n")
@@ -1419,6 +1421,9 @@ class SafeStateIOTests(unittest.TestCase):
             "references/ingestion-gate.md",
             "references/linking.md",
             "references/thresholds.yaml",
+            # The doctor checks the founder's overlay against these.
+            "references/extensibility.md",
+            "references/skill-template.md",
             ".claude-plugin/plugin.json",
         )
         for path in allowed:
