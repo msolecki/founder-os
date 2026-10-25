@@ -443,12 +443,13 @@ class TestDerivedFilesAreParsedByThePackageParser(unittest.TestCase):
                 self.assertEqual(self.guard._owns_from_text(text, "x"),
                                  {"strategist": ["goals.md"]})
 
-    def test_an_indent_under_a_scalar_key_never_yields_part_of_owns(self):
+    def test_yaml_it_refuses_around_the_key_is_refused_here_too(self):
         import yaml
         for text in ("owns:\n  cfo:\n    - metrics.md\nversion: 2\n"
                      + self.BODY,
                      "owns:\n  cfo:\n    - metrics.md\n---\n"
-                     "owns:\n" + self.BODY):
+                     "owns:\n" + self.BODY,
+                     "\towns:\n" + self.BODY):
             with self.subTest(text=text):
                 with self.assertRaises(yaml.YAMLError):
                     yaml.safe_load(text)

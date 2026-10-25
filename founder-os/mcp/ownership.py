@@ -368,6 +368,8 @@ def read_key(contents: str, key: str) -> Optional[object]:
             if inside:
                 block.append(line)
             continue
+        if "\t" in line:
+            return None
         stripped = line.split(" #", 1)[0].strip()
         if stripped == "---" and not seen_key:
             continue
