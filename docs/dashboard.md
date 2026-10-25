@@ -125,3 +125,35 @@ file that settles those numbers; `queue` and `founder-os-doctor` cite the same
 file, and `check_thresholds` fails the build if either of those two states a
 limit without naming it, or if a sentence it has registered prints a number
 that file does not agree with.
+
+## Measuring a bet: `Counted from:`
+
+A bet's progress meter is drawn only when its block under `goals.md` `## Bets`
+carries one optional line naming where its count lives:
+
+```
+Counted from: <path> ## <Section> [| amount >= <number>] [| target <number>]
+```
+
+- `<path>` is a path the ownership map declares — a file such as `pipeline.md`,
+  or a directory such as `drafts/proposals/` — written with letters, digits and
+  `_ . / -` only.
+- `## <Section>` is the section counted. In a file, each list item or `###`
+  block in it is one thing. In a directory, each member whose section is present
+  and not `None.` is one thing, so `drafts/proposals/ ## Sent` counts the
+  proposals the founder has reported sending. A directory that exists and is
+  empty counts zero; one that was never created is "not recorded".
+- `| amount >= N` counts only entries whose amount is at least N — in a file the
+  `Amount:` line, else a heading carrying a currency marker; in a directory the
+  member's `Amount:` line only. One amount the reader cannot read makes the
+  whole count "not recorded", never a smaller number.
+- `| target N` is what the meter is drawn against. Without it the count appears
+  in the bet's numbers table and no meter is drawn.
+
+The two optional parts come in that order. A line outside this grammar is not
+read at all: the bet shows no progress, and a `counted-from-unreadable` finding
+is listed under `integrity` in `facts.json`. For example:
+
+```
+Counted from: pipeline.md ## Won | amount >= 15000 | target 3
+```

@@ -610,6 +610,12 @@ _THRESHOLD_RESTATEMENTS = {
         ("skills/signal-check/SKILL.md", r"(\w+) is the cap"),
         ("skills/signal-check/SKILL.md", r"Cap at ([a-z]+)"),
     ),
+    "signals.stale_days": (
+        ("skills/signal-check/SKILL.md",
+         r"older than (\S+) days is reported as stale"),
+        ("skills/weekly-review/SKILL.md",
+         r"`Read:` date is more than (\S+) days old"),
+    ),
     "briefs.window": (
         ("skills/founder-os-doctor/SKILL.md",
          r"(\S+)\+ files in `reviews/daily/`"),
