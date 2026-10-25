@@ -1,8 +1,7 @@
 # Founder OS — Documentation
 
 Founder OS is for a solo service founder using
-[Claude Code](https://code.claude.com/docs) or
-[Codex](https://developers.openai.com/codex/plugins/build). Describe one
+[Claude Code](https://code.claude.com/docs). Describe one
 situation or run the `situation-review` workflow; it routes a source-linked decision into a
 local Markdown workspace. Behind that first path are **13 agents, 57 skills, 11
 optional cadences**, one owner per file, an authoritative local state gateway,
@@ -27,7 +26,7 @@ built to prevent.
 | See how the machine actually works | [`architecture.md`](architecture.md) |
 | Know which agent owns which decision | [`agents.md`](agents.md) |
 | Find the right command | [`commands.md`](commands.md) |
-| Understand data boundaries and host parity | [`trust.md`](trust.md) |
+| Understand data boundaries and the host | [`trust.md`](trust.md) |
 
 ## Operating it
 
@@ -56,7 +55,7 @@ built to prevent.
 
 - **[`architecture.md`](architecture.md)** — plugin layout, the shared
   eight-tool state gateway, sibling orchestration, generated files, and
-  dual-host adapters.
+  the host adapter.
 - **[`enforcement.md`](enforcement.md)** — the ownership map, authoritative
   gateway, host-hook defense, build validator, and security-boundary limits.
 - **[`development.md`](development.md)** — how to add a skill or an agent, every

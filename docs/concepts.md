@@ -88,7 +88,7 @@ mechanism.
 skills, a tool allowlist, and (for most) a set of workspace files.
 
 **Skill** — a workflow in `founder-os/skills/<name>/SKILL.md`, invoked as
-`/founder-os:<name>` in Claude Code or `$founder-os:<name>` in Codex. There are
+`/founder-os:<name>` in Claude Code. There are
 57 skills. A *role skill* belongs to one agent; a *system
 skill* is cross-cutting; a *standalone skill* is run directly by the founder.
 

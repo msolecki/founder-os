@@ -1,8 +1,7 @@
 # Troubleshooting & FAQ
 
-Claude Code invokes packaged workflows as `/founder-os:<name>`; Codex uses
-`$founder-os:<name>`. Short names below identify the workflow, not a
-cross-host command syntax.
+Claude Code invokes packaged workflows as `/founder-os:<name>`. Short names
+below identify the workflow.
 
 The first tool for anything that looks wrong is `founder-os-doctor`. It
 diagnoses workspace rot and **reports before it repairs anything** — it proposes
@@ -93,7 +92,7 @@ right now*.
 | **Overlay incoherent** | A local path with no owner or two owners, or a local skill writing a path its agent doesn't own — the last one denies every time that skill runs. | `/skill-forge` |
 | **Local agent overreaches** | A `_local/agents/*.md` omits `tools:` or names an outbound tool. The guard does not deny it: the role lockdown binds the thirteen packaged roles and a generic fallback that has spent a role capability, and a local agent is neither. A granted `Bash` or `WebFetch` is live; only the gateway still refuses it, because it holds no role capability. | `/skill-forge` |
 | **Local skill off template** | A `_local/skills/*/SKILL.md` has no `## Beliefs` (or fewer than 3, or after `## Steps`), or a slug without the `local-` prefix / colliding with a packaged one. | `/skill-forge` |
-| **Installed copy drift** | A local skill is missing from `~/.claude/skills/` or `~/.codex/skills/`, or either installed copy differs from `_local/`. Never synced automatically — the doctor can't tell which side is intended. | `/skill-forge` |
+| **Installed copy drift** | A local skill is missing from `~/.claude/skills/`, or the installed copy differs from `_local/`. Never synced automatically — the doctor can't tell which side is intended. | `/skill-forge` |
 
 **What the doctor will *not* repair:** the link, inbox, brief-not-acted-on,
 cadence, queue, and every overlay check. `_local/` is your map, and a doctor
@@ -180,10 +179,10 @@ Three things to know before you use it:
   hold the overlay to the contract run at diagnosis time, on your machine,
   weeks later. Run the doctor after forging anything.
 - **A local skill needs installing to be runnable.** `_local/` is the source of
-  truth; Claude Code and Codex load cached copies from `~/.claude/skills/` and
-  `~/.codex/skills/`. `/skill-forge` names both exact paths and asks before
-  writing them — same as `setup-cadences` with scheduler state — and the doctor
-  reports when either copy drifts apart.
+  truth; Claude Code loads the installed copy from `~/.claude/skills/`.
+  `/skill-forge` names the exact path and asks before writing it — same as
+  `setup-cadences` with scheduler state — and the doctor reports when the copy
+  drifts apart.
 
 The full contract, including the merge rules and what the overlay deliberately
 does *not* enforce, is
@@ -217,7 +216,7 @@ current session. Packaged roles have no browser, shell, direct file tool, or
 external MCP tool; their only MCP surface is the bounded local state gateway.
 
 **Is my data sent anywhere?** Workspace files stay on your machine. The prompts
-and context you send through Claude Code or Codex remain governed by that
+and context you send through Claude Code remain governed by that
 environment's data-handling terms — that is separate from Founder OS. Founder OS
 does not claim offline operation or zero transmission by the host environment.
 

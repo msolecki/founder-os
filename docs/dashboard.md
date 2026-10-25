@@ -25,7 +25,7 @@ from.
 python3 <plugin>/scripts/dashboard [slug] [--open] [--out PATH] [--now YYYY-MM-DD]
 ```
 
-In Claude Code, `/founder-os:dashboard`; in Codex, `$founder-os:dashboard`.
+In Claude Code, `/founder-os:dashboard`.
 
 | Flag | What it does |
 |---|---|

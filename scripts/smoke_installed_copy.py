@@ -71,9 +71,9 @@ def _hook_environment(plugin_root, **overrides):
     return env
 
 
-def _run_hook(hook_path, payload, env, cwd, label, arguments=()):
+def _run_hook(hook_path, payload, env, cwd, label):
     result = subprocess.run(
-        [sys.executable, str(hook_path), *arguments],
+        [sys.executable, str(hook_path)],
         input=json.dumps(payload),
         capture_output=True,
         text=True,
@@ -207,44 +207,6 @@ def _issue_installed_capability(installed_plugin, data_root, role):
     return result.stdout.strip()
 
 
-MAIN_AGENT_TYPE = "__founder_os_main__"
-
-
-def _record_installed_turn(installed_plugin, data_root, workspace_root, turn_id,
-                           role, event="SubagentStart"):
-    """Run the copied recorder hook instead of injecting agent_type.
-
-    Both registrations go through here. The main-turn one is not decoration:
-    if it is dropped, renamed, or loses its flag, every tool call on the
-    founder's own Codex turn is denied as an unresolved role — and the smoke
-    used to report PASS through all three.
-    """
-    hook_path = Path(installed_plugin) / "hooks" / "record-agent.py"
-    env = _hook_environment(installed_plugin, PLUGIN_DATA=data_root)
-    flag = ("--event",
-            "user-prompt" if event == "UserPromptSubmit" else "subagent-start")
-    payload = {"hook_event_name": event, "turn_id": turn_id}
-    if event != "UserPromptSubmit":
-        payload["agent_type"] = role
-    label = "%s/%s" % (event, role)
-    result = _run_hook(
-        hook_path, payload, env, workspace_root, label, arguments=flag,
-    )
-    _empty_allow_output(result, label)
-    mapping = Path(data_root) / "agent-types" / (turn_id + ".json")
-    try:
-        recorded = json.loads(mapping.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        raise SmokeFailure("%s did not persist turn mapping" % label) from exc
-    if (
-        not isinstance(recorded, dict)
-        or set(recorded) != {"agent_type", "recorded_at"}
-        or recorded.get("agent_type") != role
-        or not isinstance(recorded.get("recorded_at"), (int, float))
-    ):
-        raise SmokeFailure("%s persisted the wrong role" % label)
-
-
 def check_ownership_guard(installed_plugin, workspace_root):
     """Check gateway allow, direct/elevation/mismatch deny, and main allow."""
     installed_plugin = Path(installed_plugin)
@@ -252,16 +214,6 @@ def check_ownership_guard(installed_plugin, workspace_root):
     workspace_root.mkdir(parents=True, exist_ok=True)
     data_root = workspace_root / ".plugin-data"
     data_root.mkdir()
-    turns = {"cfo": "installed-cfo-turn", "strategist": "installed-strategist-turn"}
-    for role, turn_id in turns.items():
-        _record_installed_turn(
-            installed_plugin, data_root, workspace_root, turn_id, role
-        )
-    main_turn = "installed-main-turn"
-    _record_installed_turn(
-        installed_plugin, data_root, workspace_root, main_turn,
-        MAIN_AGENT_TYPE, event="UserPromptSubmit",
-    )
     capability = _issue_installed_capability(
         installed_plugin, data_root, "cfo"
     )
@@ -281,7 +233,8 @@ def check_ownership_guard(installed_plugin, workspace_root):
     gateway_allowed = _run_hook(
         guard_path,
         {
-            "turn_id": turns["cfo"],
+            "agent_type": "cfo",
+            "agent_id": "installed-cfo-agent",
             "tool_name": "mcp__founder-os-state__read_state",
             "cwd": str(workspace_root),
             "tool_input": {
@@ -325,7 +278,7 @@ def check_ownership_guard(installed_plugin, workspace_root):
     )
     direct_denied = _run_hook(
         guard_path,
-        {**direct_payload, "turn_id": turns["cfo"]},
+        {**direct_payload, "agent_type": "cfo"},
         env,
         workspace_root,
         "gateway/direct-file-denied",
@@ -340,7 +293,7 @@ def check_ownership_guard(installed_plugin, workspace_root):
     wrong_role = _run_hook(
         guard_path,
         {
-            "turn_id": turns["strategist"],
+            "agent_type": "strategist",
             "tool_name": "mcp__founder-os-state__read_state",
             "cwd": str(workspace_root),
             "tool_input": {
@@ -355,7 +308,7 @@ def check_ownership_guard(installed_plugin, workspace_root):
     elevation = _run_hook(
         guard_path,
         {
-            "turn_id": turns["cfo"],
+            "agent_type": "cfo",
             "tool_name": "mcp__founder-os-state__open_role_session",
             "cwd": str(workspace_root),
             "tool_input": {"role": "cfo"},
@@ -370,24 +323,6 @@ def check_ownership_guard(installed_plugin, workspace_root):
         env,
         workspace_root,
         "gateway/main-thread",
-    )
-    # The Codex shape of the same thing: a turn the recorder mapped to the
-    # reserved main identity is the founder, and the founder holds every tool.
-    recorded_main_thread = _run_hook(
-        guard_path,
-        {**direct_payload, "turn_id": main_turn},
-        env,
-        workspace_root,
-        "gateway/recorded-main-thread",
-    )
-    # And the identity is reserved in the other direction: supplied directly it
-    # is a role naming the founder's own capability, which is a denial.
-    claimed_main_thread = _run_hook(
-        guard_path,
-        {**direct_payload, "agent_type": MAIN_AGENT_TYPE},
-        env,
-        workspace_root,
-        "gateway/claimed-main-thread",
     )
     # Claude Code runtime shapes: the host namespaces the subagent identity
     # (`founder-os:cfo`) and wraps the plugin server's tool names
@@ -453,7 +388,6 @@ def check_ownership_guard(installed_plugin, workspace_root):
         ("claude_namespaced_elevation", claude_namespaced_elevation),
         ("wrong_role", wrong_role),
         ("elevation", elevation),
-        ("claimed_main_thread", claimed_main_thread),
     ):
         output = _json_output(result, "gateway/" + label)
         if output.get("hookSpecificOutput", {}).get(
@@ -482,10 +416,6 @@ def check_ownership_guard(installed_plugin, workspace_root):
         "main_thread": _empty_allow_output(
             main_thread, "gateway/main-thread"
         ),
-        "recorded_main_thread": _empty_allow_output(
-            recorded_main_thread, "gateway/recorded-main-thread"
-        ),
-        "recorded_turns": set(turns) | {MAIN_AGENT_TYPE},
     }
 
 
@@ -610,23 +540,15 @@ class _McpClient:
 
 def _adapter_command(installed_plugin, host):
     installed_plugin = Path(installed_plugin).resolve()
-    if host == "claude":
-        manifest_path = installed_plugin / ".mcp.json"
-        root_variable = "${CLAUDE_PLUGIN_ROOT}"
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            server = manifest["mcpServers"]["founder-os-state"]
-        except (OSError, ValueError, KeyError, TypeError) as exc:
-            raise SmokeFailure("Claude installed adapter is unreadable") from exc
-    elif host == "codex":
-        manifest_path = installed_plugin / ".codex-plugin" / "plugin.json"
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            server = manifest["mcpServers"]["founder-os-state"]
-        except (OSError, ValueError, KeyError, TypeError) as exc:
-            raise SmokeFailure("Codex installed adapter is unreadable") from exc
-    else:
+    if host != "claude":
         raise SmokeFailure("unknown installed adapter: %s" % host)
+    manifest_path = installed_plugin / ".mcp.json"
+    root_variable = "${CLAUDE_PLUGIN_ROOT}"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        server = manifest["mcpServers"]["founder-os-state"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise SmokeFailure("Claude installed adapter is unreadable") from exc
 
     if (
         not isinstance(server, dict)
@@ -636,16 +558,10 @@ def _adapter_command(installed_plugin, host):
         or not isinstance(server["args"][0], str)
     ):
         raise SmokeFailure("%s installed adapter has an invalid command" % host)
-    argument = server["args"][0]
-    if host == "claude":
-        argument = argument.replace(root_variable, str(installed_plugin))
-        if root_variable in argument:
-            raise SmokeFailure("Claude installed adapter root did not expand")
-        entry = Path(argument).resolve()
-    else:
-        if server.get("cwd") != ".":
-            raise SmokeFailure("Codex installed adapter must use plugin cwd")
-        entry = (installed_plugin / argument).resolve()
+    argument = server["args"][0].replace(root_variable, str(installed_plugin))
+    if root_variable in argument:
+        raise SmokeFailure("Claude installed adapter root did not expand")
+    entry = Path(argument).resolve()
     try:
         entry.relative_to(installed_plugin)
     except ValueError as exc:
@@ -961,10 +877,9 @@ def run_smoke(repo_root=REPO_ROOT, hook_plugin_root=None):
             )
             check_session_context_warning(installed, temp_root)
             check_ownership_guard(installed, temp_root / "guard-workspace")
-            for host in ("claude", "codex"):
-                check_mcp_lifecycle(
-                    installed, temp_root / (host + "-workspace"), host
-                )
+            check_mcp_lifecycle(
+                installed, temp_root / "claude-workspace", "claude"
+            )
             check_package_tools(repo_root, installed)
     finally:
         assert_tree_unchanged(source_plugin, source_before)

@@ -5,8 +5,8 @@ this is the wiring.
 
 ## The package is a plugin
 
-Founder OS ships as a Claude Code plugin (and a Codex plugin — see
-[Dual-host](#dual-host-claude-code--codex)). It is installed from this
+Founder OS ships as a Claude Code plugin (see
+[The host](#the-host-claude-code)). It is installed from this
 repository, which is **both the plugin marketplace and the source repo**:
 
 ```
@@ -15,16 +15,13 @@ repository, which is **both the plugin marketplace and the source repo**:
 /founder-os:founder-os-init
 ```
 
-Codex uses `codex plugin marketplace add`, `codex plugin add`, and
-`$founder-os:founder-os-init`; see [`getting-started.md`](getting-started.md).
-
 There is no server, no account, and no subscription of its own. It runs inside
-your existing Claude Code or Codex environment; host plans and usage stay
+your existing Claude Code environment; host plans and usage stay
 separate.
 
 ## Activation path
 
-The first-run architecture is outcome-first. One host-specific
+The first-run architecture is outcome-first. One
 `founder-os-init` invocation orchestrates the complete path and the same skill
 resumes it after a failure:
 
@@ -51,7 +48,7 @@ A valid `reviews/daily/YYYY-MM-DD.md` has all four required headings from
 malformed, or wrong-path file never reaches `Activation complete`.
 
 Workspace files stay on your machine. Prompts and context sent through Claude
-Code or Codex remain subject to that environment's data-handling terms; local
+Code remain subject to that environment's data-handling terms; local
 Markdown state is not a claim that the host operates offline.
 
 ## Workflow results and receipts
@@ -99,14 +96,12 @@ founder os/                     ← repo root (marketplace + source)
 ├── founder-os/                 ← the plugin itself
 │   ├── .claude-plugin/plugin.json   ← Claude Code manifest (name, version)
 │   ├── .mcp.json                    ← Claude local state-gateway adapter
-│   ├── .codex-plugin/plugin.json    ← Codex manifest
 │   ├── COMMANDS.md             ← GENERATED catalogue (do not hand-edit)
 │   ├── README.md               ← product philosophy
 │   ├── agents/*.md             ← 13 agents (role definitions)
-│   ├── skills/<name>/SKILL.md  ← 57 shared skills (workflows)
-│   │   └── <name>/agents/openai.yaml  ← Codex presentation adapter
-│   ├── hooks/                  ← session-context.py, record-agent.py,
-│   │                             ownership-guard.py, hooks.json
+│   ├── skills/<name>/SKILL.md  ← 57 skills (workflows)
+│   ├── hooks/                  ← session-context.py, ownership-guard.py,
+│   │                             hooks.json
 │   ├── mcp/                    ← eight-tool local state gateway
 │   ├── scripts/cadence_manager.py ← safe local scheduler manager
 │   ├── scripts/dashboard/      ← the `/dashboard` renderer (package)
@@ -153,7 +148,7 @@ never spawn subagents. See [`agents.md`](agents.md) for the full org chart.
 ### Skills — workflows
 
 Each `skills/<name>/SKILL.md` is one workflow, invoked as
-`/founder-os:<name>` in Claude Code or `$founder-os:<name>` in Codex. Its shape is
+`/founder-os:<name>` in Claude Code. Its shape is
 fixed by [`references/skill-template.md`](../founder-os/references/skill-template.md):
 
 - **Frontmatter**: `name`, `description` (starts with a verb, says when to use
@@ -185,12 +180,11 @@ Three kinds of skill:
 
 ### Hooks — the runtime layer
 
-`hooks/hooks.json` wires three Python hooks:
+`hooks/hooks.json` wires two Python hooks:
 
 | Event | Hook | What it does |
 |---|---|---|
 | `SessionStart` (startup/resume/clear/compact) | `session-context.py` | Injects `founder-os/references/guidance.md` into the session as additional context. This is how the house rules and state map are present in every session. |
-| `UserPromptSubmit` and `SubagentStart` | `record-agent.py` | Records `turn_id → agent_type` for Codex (Claude includes `agent_type` directly; Codex identifies later tool calls by `turn_id`). Lets one guard enforce both hosts. The same script is registered under both events and each registration passes `--event`, because a payload field that stops arriving would record nothing for the main turn — and the guard denies every call on a turn it cannot resolve. |
 | `PreToolUse` on every tool | `ownership-guard.py` | Denies known roles every tool but the gateway (and the harmless `ToolSearch` and `TodoWrite`), denies self-elevation, and checks gateway capabilities against native role identity. A generic fallback (`general-purpose`, `default`) gets the same lockdown from its first gateway call that spends a role capability (`docs/enforcement.md`). |
 
 The gateway and guard are covered in full in
@@ -216,7 +210,7 @@ use.
 
 ## The eight-tool state gateway
 
-`founder-os-state` is a local Python stdio MCP process shared by both hosts. It
+`founder-os-state` is a local Python stdio MCP process started by Claude Code. It
 makes no network request and exposes no shell or arbitrary filesystem browser.
 
 - `resolve_workspace` applies the single/multi-business rules and returns an
@@ -294,36 +288,24 @@ scoped to subagents, so an installed local skill invoked as `/local-foo` is not
 checked against the merged map — the identical property every packaged skill
 has, stated in the docs rather than implied away.
 
-## Dual-host: Claude Code + Codex
+## The host: Claude Code
 
-The same package runs under Claude Code and Codex:
+Claude Code is the only host:
 
 - **Claude Code** reads `.claude-plugin/plugin.json`, `agents/*.md`, and
-  `skills/*/SKILL.md`; `.mcp.json` points at the shared gateway with
+  `skills/*/SKILL.md`; `.mcp.json` points at the gateway with
   `${CLAUDE_PLUGIN_ROOT}`.
-- **Codex** reads `.codex-plugin/plugin.json` (which points `skills` at
-  `./skills/`) and, per skill, `skills/<name>/agents/openai.yaml` — a small
-  interface file (`display_name`, `short_description`, `default_prompt`). Its
-  inline `mcpServers` entry reaches the same gateway as `./mcp/founder_os_state.py`
-  with `"cwd": "."`, resolved from the plugin root the host launches it in.
-  `${CODEX_PLUGIN_ROOT}` is not expanded there, and an unexpanded path is a
-  gateway that never starts.
-- The `SessionStart` and guard hooks are written to handle both: Claude supplies
-  `agent_type` on tool calls directly; Codex identifies every call by `turn_id`
-  and `record-agent.py` holds the mapping — the `--event user-prompt`
-  registration records the main turn, `--event subagent-start` records a
-  subagent's role. A Codex turn with no mapping is denied rather than treated as
-  the founder. `AGENTS.md` at the repo root
-  points Codex at `founder-os/references/guidance.md` as the canonical guidance.
+- The guard reads the `agent_type` Claude Code supplies on every subagent tool
+  call — the bare role or the namespaced `founder-os:<role>` — and a call with
+  no `agent_type` is the founder's main thread.
 - The main thread prefers a named native role where the host exposes it. The
   portable generic-agent fallback receives the byte-identical packaged role
-  file, one active workflow, one bounded handoff, and the same role capability;
-  Codex parity does not depend on undocumented `agents/*.md` discovery.
+  file, one active workflow, one bounded handoff, and the same role capability,
+  so a role never depends on `agents/*.md` discovery alone.
 
 ## Versioning
 
-The version lives in `founder-os/.claude-plugin/plugin.json` (and mirrored in
-`.codex-plugin/plugin.json`); the [`CHANGELOG.md`](../CHANGELOG.md) tracks it.
+The version lives in `founder-os/.claude-plugin/plugin.json`; the [`CHANGELOG.md`](../CHANGELOG.md) tracks it.
 Current candidate: **2.9.1** (decision-first activation and workflow receipts,
-with full Claude Code and Codex parity). Releases follow SemVer against the plugin
+on Claude Code). Releases follow SemVer against the plugin
 manifest. See [`development.md`](development.md) for the release checklist.

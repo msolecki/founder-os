@@ -1,4 +1,0 @@
-interface:
-  display_name: "Premortem"
-  short_description: "Run the Premortem Founder OS workflow."
-  default_prompt: "Use $premortem to handle this Founder OS task."

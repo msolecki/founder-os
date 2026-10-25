@@ -55,8 +55,8 @@ class CadenceConfig:
     slug: Optional[str]
 
     def __post_init__(self) -> None:
-        if self.host not in {"claude", "codex"}:
-            raise CadenceError("host must be claude or codex")
+        if self.host != "claude":
+            raise CadenceError("host must be claude")
         for value in (
             self.binary,
             self.workspace,
@@ -119,34 +119,17 @@ def _normalized_identity(identity: str) -> str:
 def host_argv(config: CadenceConfig, workflow: str) -> Tuple[str, ...]:
     if SAFE_ID.fullmatch(workflow) is None:
         raise CadenceError("invalid workflow")
-    if config.host == "claude":
-        return (
-            str(config.binary),
-            "-p",
-            "/founder-os:" + workflow,
-            "--permission-mode",
-            "dontAsk",
-            "--allowedTools",
-            "mcp__plugin_founder-os_founder-os-state__*",
-            "--max-turns",
-            "50",
-            "--no-session-persistence",
-        )
     return (
         str(config.binary),
-        "-a",
-        "never",
-        # Pin the shell sandbox offline whatever the user's config.toml says:
-        # the run needs only the founder-os-state MCP server, which is local.
-        "-c",
-        "sandbox_workspace_write.network_access=false",
-        "exec",
-        "--sandbox",
-        "workspace-write",
-        "--ephemeral",
-        "-C",
-        str(config.workdir),
-        "$founder-os:" + workflow,
+        "-p",
+        "/founder-os:" + workflow,
+        "--permission-mode",
+        "dontAsk",
+        "--allowedTools",
+        "mcp__plugin_founder-os_founder-os-state__*",
+        "--max-turns",
+        "50",
+        "--no-session-persistence",
     )
 
 
@@ -1096,7 +1079,7 @@ def _read_json(path: Path) -> Dict[str, object]:
 def _add_config_arguments(
     parser: argparse.ArgumentParser, *, scheduler: bool = True
 ) -> None:
-    parser.add_argument("--host", choices=("claude", "codex"), required=True)
+    parser.add_argument("--host", choices=("claude",), required=True)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("--workdir", type=Path, required=True)

@@ -719,20 +719,6 @@ class OnboardingActivationContract(unittest.TestCase):
             r"receivable|pipeline|cadence",
         )
 
-    def test_codex_interface_promises_resumable_persisted_activation(self):
-        interface = yaml.safe_load(
-            (
-                PLUGIN_ROOT
-                / "skills"
-                / "founder-os-init"
-                / "agents"
-                / "openai.yaml"
-            ).read_text(encoding="utf-8")
-        )["interface"]
-        prompt = interface["default_prompt"]
-        for token in ("resum", "persisted", "daily brief"):
-            self.assertRegex(prompt, rf"(?i){semantic_pattern(token)}")
-
     def test_delegated_skills_follow_live_agent_and_ownership_manifests(self):
         _, delegation, _ = section_matching(
             self.init_body, r"Stage 5.*Owner-safe delegation"

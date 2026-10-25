@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pricing Strategy"
-  short_description: "Run the Pricing Strategy Founder OS workflow."
-  default_prompt: "Use $pricing-strategy to handle this Founder OS task."

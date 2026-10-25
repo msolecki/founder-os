@@ -316,7 +316,6 @@ class SafeStateIO:
             "references/linking.md",
             "references/thresholds.yaml",
             ".claude-plugin/plugin.json",
-            ".codex-plugin/plugin.json",
         }
         if workflow is not None:
             allowed.add(

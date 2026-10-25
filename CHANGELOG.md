@@ -5,6 +5,17 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+**Breaking: Claude Code is the only host.** Codex support is removed: the
+`.codex-plugin` manifest, the per-skill `agents/openai.yaml` adapters, the
+`record-agent.py` hook that mapped a Codex `turn_id` to a role, the guard's
+`turn_id` and `apply_patch` paths, the Codex cadence argv, and the `$founder-os:`
+syntax in the docs and the generated catalogue. Founder OS no longer installs
+in Codex. If you run it there, stay on **2.9.1**; your Markdown workspace is
+unchanged and opens in Claude Code as it is. On Claude Code nothing moved: the
+guard still reads a tool's file arguments and never a shell command, and the
+package still ships **57 workflows**. It now runs **20 build-time checks** —
+the Codex skill-adapter check went with the adapters.
+
 ## 2.9.1 — 2026-10-19
 
 **Native Windows stops with a pointer to WSL instead of a traceback.** The

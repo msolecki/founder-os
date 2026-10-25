@@ -249,7 +249,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not live:
         sys.stderr.write(
             "No Founder OS workspace found. Run /founder-os:founder-os-init "
-            "in Claude Code or $founder-os:founder-os-init in Codex.\n")
+            "in Claude Code.\n")
         return EXIT_UNRESOLVED
 
     selected = live[0]

@@ -5,16 +5,14 @@
      when this file and the package disagree. A hand edit here is a second
      map, and second maps go stale silently. -->
 
-Claude Code invokes a skill as `/founder-os:<name>`; Codex invokes it as
-`$founder-os:<name>`. On a multi-business install, pass the business slug first
-— `/founder-os:daily-brief acme` in Claude Code or
-`$founder-os:daily-brief acme` in Codex.
+Claude Code invokes a skill as `/founder-os:<name>`. On a multi-business
+install, pass the business slug first — `/founder-os:daily-brief acme`.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 
 ## The cadences
 
-Scheduled by the host-specific `setup-cadences` skill; every one also works typed by hand.
+Scheduled by the `setup-cadences` skill; every one also works typed by hand.
 
 | Command | When | Run by |
 |---|---|---|
