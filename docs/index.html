@@ -3635,7 +3635,7 @@
 
           <div class="workspace-browser-body">
             <nav class="workspace-sidebar" aria-label="Studio North sample files">
-              <div class="workspace-sidebar-head"><strong>Studio North</strong><span>7 of 11 files</span></div>
+              <div class="workspace-sidebar-head"><strong>Studio North</strong><span>7 of 13 files</span></div>
               <ul class="workspace-file-list">
                 <li><a class="workspace-file" href="#sample-daily" data-workspace-file="daily" data-workspace-open="daily" aria-controls="sample-daily" aria-current="true"><span class="file-icon">01</span><span>reviews/daily/2026-07-20.md</span></a></li>
                 <li><a class="workspace-file" href="#sample-queue" data-workspace-file="queue" data-workspace-open="queue" aria-controls="sample-queue"><span class="file-icon">02</span><span>queue.md</span></a></li>
@@ -3645,7 +3645,7 @@
                 <li><a class="workspace-file" href="#sample-metrics" data-workspace-file="metrics" data-workspace-open="metrics" aria-controls="sample-metrics"><span class="file-icon">06</span><span>metrics.md</span></a></li>
                 <li><a class="workspace-file" href="#sample-decision" data-workspace-file="decision" data-workspace-open="decision" aria-controls="sample-decision"><span class="file-icon">07</span><span>decisions/2026-07-18-raised-sprint-floor.md</span></a></li>
               </ul>
-              <a class="workspace-source-link" href="https://github.com/msolecki/founder-os/tree/main/examples/studio-north">Browse all 11 source files →</a>
+              <a class="workspace-source-link" href="https://github.com/msolecki/founder-os/tree/main/examples/studio-north">Browse all 13 source files →</a>
             </nav>
 
             <div class="workspace-view">
@@ -3949,18 +3949,18 @@
           <p class="eyebrow">Fit</p>
           <h2 class="section-title">Built for an operating founder, not an <span class="serif">empty company.</span></h2>
         </div>
-        <div class="fit-grid">
-          <article class="fit-card reveal"><h3>Founder OS fits if…</h3><ul><li>you run a solo service business with live clients, prospects, revenue, or commitments,</li><li>you work in Claude Code and own sales and delivery yourself,</li><li>your decisions are scattered across chats, notes, and memory.</li></ul></article>
-          <article class="fit-card reveal"><h3>Do not install it if…</h3><ul><li>you expect it to invent a pre-idea business,</li><li>you need a shared CRM, team dashboard, or autonomous operator,</li><li>you want tax, legal, medical, or investment advice.</li></ul></article>
-        </div>
+        <p class="section-copy reveal">It works on a business that already has clients, prospects, revenue, or commitments. <a href="#fit">See who it is for, and who should not install it →</a></p>
       </div>
     </section>
 
     <section class="section requirements" id="requirements-summary">
       <div class="container">
         <div class="requirements-head reveal">
-          <div><p class="eyebrow">Before you install</p><h2 class="section-title">What you need. What it <span class="serif">costs.</span></h2></div>
-          <p class="section-copy">Founder OS is free and MIT-licensed. It needs Claude Code plus Python 3.9+ for the local state gateway and host hooks. PyYAML is needed only for development, tests, and package validation.</p>
+          <div><p class="eyebrow">Before you install</p><h2 class="section-title">Free, local, and <span class="serif">MIT-licensed.</span></h2></div>
+          <div>
+            <p class="section-copy">Founder OS is free and MIT-licensed. It needs Claude Code plus Python 3.9+ for the local state gateway and host hooks. PyYAML is needed only for development, tests, and package validation.</p>
+            <a class="button button-orange" href="#requirements">See the full requirements <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
         </div>
       </div>
     </section>
@@ -4024,7 +4024,7 @@
             </div>
 
             <div class="workflow-groups" id="workflow-groups">
-          <details class="workflow-group" data-workflow-group data-category="focus" data-search="chief of staff attention priorities routing reviews queue" open>
+          <details class="workflow-group" data-workflow-group data-category="focus" data-search="chief of staff attention priorities routing reviews queue">
             <summary>
               <span class="workflow-group-number">01</span>
               <span class="workflow-group-title"><strong>Chief of Staff</strong><small>Attention, reviews, decisions, and the live queue.</small></span>
@@ -4555,8 +4555,9 @@
           <article class="fit-card reveal">
             <h3>Founder OS fits if…</h3>
             <ul>
-              <li>you run a company of one or a small service business where every decision lands with you,</li>
+              <li>you run a company of one or a small service business with live clients, prospects, revenue, or commitments, and every decision lands with you,</li>
               <li>you work in Claude Code and want every conversation to build shared business state,</li>
+              <li>your decisions are scattered across chats, notes, and memory,</li>
               <li>you need a rhythm across pipeline, delivery, money, and focus,</li>
               <li>you run multiple businesses and need to divide resources honestly.</li>
             </ul>
@@ -4567,7 +4568,9 @@
               <li>you want an autonomous bot that sends messages and moves money for you,</li>
               <li>you refuse to maintain any business state in files,</li>
               <li>you need a full CRM with a shared dashboard for a large team,</li>
-              <li>you want an assistant that validates every decision without pushing back.</li>
+              <li>you expect it to invent a business that does not exist yet,</li>
+              <li>you want an assistant that validates every decision without pushing back,</li>
+              <li>you want tax, legal, medical, or investment advice.</li>
             </ul>
           </article>
         </div>
@@ -4599,8 +4602,8 @@
           </article>
           <article class="requirement">
             <span>Optional</span>
-            <h3>cron for schedules</h3>
-            <p>Manual workflows need no cron. Scheduled cadences run only while your machine and cron service are on.</p>
+            <h3>A user scheduler</h3>
+            <p>launchd, user systemd, or cron runs cadences. Manual workflows need none. Cron jobs run only while your machine is on; launchd and persistent user systemd timers catch up after sleep.</p>
           </article>
           <article class="requirement">
             <span>Price</span>

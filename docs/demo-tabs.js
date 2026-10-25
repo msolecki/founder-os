@@ -55,8 +55,6 @@
       (tab) => tab.getAttribute('aria-selected') === 'true',
     );
     if (initialTab) selectPanel(initialTab.dataset.demo);
-
-    return { selectPanel };
   }
 
   return { initDemoTabs };

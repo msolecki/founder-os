@@ -475,8 +475,9 @@ test('workflow controller executes every approved state transition', () => {
     assert.equal(workflowSearch.value, '');
     assert.equal(workflowCount.textContent, `${SKILL_COUNT} of ${SKILL_COUNT} workflows`);
     assert.equal(
-      workflowGroups.every((group) => !group.hidden && !group.open),
+      workflowGroups.every((group) => !group.hidden && group.open),
       true,
+      '"Show all" opens every group',
     );
   });
 });
