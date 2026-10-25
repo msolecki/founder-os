@@ -38,8 +38,8 @@ def run_hook(payload):
 def run_hook_with_data(payload, data_root):
     env = {**os.environ,
            "FOUNDER_OS_HOME": str(PLUGIN_ROOT),
-           "PLUGIN_ROOT": str(PLUGIN_ROOT),
-           "PLUGIN_DATA": str(data_root)}
+           "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT),
+           "CLAUDE_PLUGIN_DATA": str(data_root)}
     return subprocess.run([sys.executable, str(GUARD_PATH)],
                           input=json.dumps(payload), capture_output=True,
                           text=True, env=env, cwd=str(REPO_ROOT))
@@ -171,7 +171,7 @@ class TestAgentTypeFor(unittest.TestCase):
             self.assertIsNone(self.guard._mapped_agent_type("agent.a-1"))
 
     def test_missing_mapping_returns_none(self):
-        with mock.patch.dict(os.environ, {"PLUGIN_DATA": "/tmp/no-such-data"},
+        with mock.patch.dict(os.environ, {"CLAUDE_PLUGIN_DATA": "/tmp/no-such-data"},
                              clear=False):
             self.assertIsNone(self.guard._mapped_agent_type("agent.a-1"))
 
@@ -185,7 +185,7 @@ class TestAgentTypeFor(unittest.TestCase):
             (mapping / "agent.a-1.json").symlink_to(source)
             with mock.patch.dict(
                 os.environ,
-                {"PLUGIN_DATA": temp_dir},
+                {"CLAUDE_PLUGIN_DATA": temp_dir},
                 clear=False,
             ):
                 resolved = self.guard._mapped_agent_type("agent.a-1")
@@ -205,7 +205,7 @@ class TestAgentTypeFor(unittest.TestCase):
                 encoding="utf-8",
             )
             with mock.patch.dict(
-                os.environ, {"PLUGIN_DATA": temp_dir}, clear=False
+                os.environ, {"CLAUDE_PLUGIN_DATA": temp_dir}, clear=False
             ), mock.patch.object(self.guard.time, "time",
                                  return_value=self.NOW):
                 return self.guard._mapped_agent_type("agent.old")
@@ -767,8 +767,7 @@ class TestOwnershipHotPath(unittest.TestCase):
         map_path.write_text(
             "derived_files:\n  - _dashboard/\n"
             "owns:\n  strategist:\n    - goals.md\n", encoding="utf-8")
-        with mock.patch.dict(os.environ, {"PLUGIN_ROOT": str(tmp),
-                                          "CLAUDE_PLUGIN_ROOT": str(tmp)}):
+        with mock.patch.dict(os.environ, {"CLAUDE_PLUGIN_ROOT": str(tmp)}):
             self.assertEqual(guard.load_ownership(), {"goals.md": "strategist"})
             map_path.write_text("owns:\n  strategist:\n    - goals.md\n",
                                 encoding="utf-8")
@@ -1260,7 +1259,7 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             guard = load_guard()
             with mock.patch.dict(
                 os.environ,
-                {"PLUGIN_DATA": temp_dir},
+                {"CLAUDE_PLUGIN_DATA": temp_dir},
                 clear=False,
             ), mock.patch.object(
                 guard.time,
@@ -1607,7 +1606,7 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             data_root = Path(temp_dir) / ".founder-os" / "plugin-data"
             capability = self._issue_capability(data_root, role="cfo")
             env = {key: value for key, value in os.environ.items()
-                   if key not in ("PLUGIN_DATA", "CLAUDE_PLUGIN_DATA")}
+                   if key != "CLAUDE_PLUGIN_DATA"}
             env.update(HOME=temp_dir, FOUNDER_OS_HOME=str(PLUGIN_ROOT),
                        CLAUDE_PLUGIN_ROOT=str(PLUGIN_ROOT))
             result = subprocess.run(
@@ -1664,8 +1663,7 @@ class TestGuardFilesAreNotAgentWritable(unittest.TestCase):
             target.symlink_to(home / ".founder-os" / "businesses.yaml")
         env = {**os.environ, "FOUNDER_OS_HOME": str(ws), "HOME": str(home),
                "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT),
-               "PLUGIN_DATA": str(data)}
-        env.pop("PLUGIN_ROOT", None)
+               "CLAUDE_PLUGIN_DATA": str(data)}
         payload = {"tool_name": tool_name, "cwd": str(tmp),
                    "tool_input": {"file_path": str(target)}}
         if agent_type is not None:

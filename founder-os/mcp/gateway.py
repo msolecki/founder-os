@@ -537,9 +537,7 @@ class Gateway:
 
     @staticmethod
     def _default_data_root() -> Path:
-        configured = os.environ.get("PLUGIN_DATA") or os.environ.get(
-            "CLAUDE_PLUGIN_DATA"
-        )
+        configured = os.environ.get("CLAUDE_PLUGIN_DATA")
         if configured:
             return Path(configured) / "state-gateway"
         return Path.home() / ".founder-os" / "plugin-data" / "state-gateway"

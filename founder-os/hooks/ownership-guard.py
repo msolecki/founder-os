@@ -425,7 +425,7 @@ def _read_packaged_map():
     one reader an owner list the other's derived list never saw. Per invocation,
     the same discipline `_LOCAL_CACHE` holds for the overlay (PERF-002).
     """
-    env_root = os.environ.get("PLUGIN_ROOT") or os.environ.get("CLAUDE_PLUGIN_ROOT")
+    env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
     if env_root in _PACKAGED_CACHE:
         return _PACKAGED_CACHE[env_root]
     roots = []
@@ -746,8 +746,7 @@ def _data_root():
     that gave up instead read no session the gateway had opened, and denied
     every role's gateway call as holding no live capability.
     """
-    return (os.environ.get("PLUGIN_DATA")
-            or os.environ.get("CLAUDE_PLUGIN_DATA")
+    return (os.environ.get("CLAUDE_PLUGIN_DATA")
             or os.path.join(os.path.expanduser("~"), ".founder-os",
                             "plugin-data"))
 
@@ -1070,7 +1069,7 @@ def check_guard_files(agent_type, file_path, hook_cwd):
     registry = os.path.join(user_home, ".founder-os", "businesses.yaml")
     dirs = _expand_roots([
         root for root in (
-            os.environ.get("PLUGIN_ROOT"), os.environ.get("CLAUDE_PLUGIN_ROOT"),
+            os.environ.get("CLAUDE_PLUGIN_ROOT"),
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             _data_root(),
         ) if root])

@@ -134,8 +134,7 @@ class TestTheWriteGuardReadsTheSameKey(unittest.TestCase):
         # equality below survives deleting `derived_files:` from the map.
         self.assertTrue(entries, "the packaged map declares no derived path")
         with mock.patch.dict(os.environ,
-                             {"PLUGIN_ROOT": str(PLUGIN_ROOT),
-                              "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}):
+                             {"CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)}):
             self.assertEqual(guard.load_derived(), entries)
 
     def test_the_hook_denies_what_the_schema_calls_derived(self):
