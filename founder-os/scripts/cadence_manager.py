@@ -151,11 +151,13 @@ def _cron_command(config: CadenceConfig, workflow: str) -> str:
     argv = " ".join(quote(value) for value in host_argv(config, workflow))
     return (
         "cd {workdir} && umask 077 && "
-        "PATH={path} FOUNDER_OS_HOME={workspace} {argv} >> {log} 2>&1"
+        "PATH={path} FOUNDER_OS_HOME={workspace} "
+        "FOUNDER_OS_CADENCE_WORKFLOW={workflow} {argv} >> {log} 2>&1"
     ).format(
         workdir=quote(str(config.workdir)),
         path=quote(_host_path(config)),
         workspace=quote(str(config.workspace)),
+        workflow=quote(workflow),
         argv=argv,
         log=quote(str(_log_path(config, workflow))),
     )
@@ -322,6 +324,7 @@ def render_launchd(config: CadenceConfig) -> Dict[str, bytes]:
             "ProgramArguments": list(host_argv(config, cadence.workflow)),
             "EnvironmentVariables": {
                 "FOUNDER_OS_HOME": str(config.workspace),
+                "FOUNDER_OS_CADENCE_WORKFLOW": cadence.workflow,
                 "PATH": _host_path(config, system=True),
             },
             "WorkingDirectory": str(config.workdir),
@@ -386,7 +389,8 @@ def render_systemd(config: CadenceConfig) -> Dict[str, bytes]:
             "[Unit]\nDescription=Founder OS {workflow}\n\n"
             "[Service]\nType=oneshot\nUMask=0077\n"
             "WorkingDirectory={workdir}\n"
-            "Environment={environment}\nEnvironment={path}\n"
+            "Environment={environment}\nEnvironment={pin}\n"
+            "Environment={path}\n"
             "ExecStart={command}\n"
             "StandardOutput={log}\nStandardError={log}\n"
         ).format(
@@ -394,6 +398,9 @@ def render_systemd(config: CadenceConfig) -> Dict[str, bytes]:
             workdir=_systemd_bare(str(config.workdir)),
             environment=_systemd_quote(
                 "FOUNDER_OS_HOME=" + str(config.workspace)
+            ),
+            pin=_systemd_quote(
+                "FOUNDER_OS_CADENCE_WORKFLOW=" + cadence.workflow
             ),
             path=_systemd_quote("PATH=" + _host_path(config)),
             command=command,
@@ -1048,6 +1055,7 @@ def smoke(config: CadenceConfig, workflow: str) -> None:
         "HOME": str(Path.home()),
         "PATH": _host_path(config),
         "FOUNDER_OS_HOME": str(config.workspace),
+        "FOUNDER_OS_CADENCE_WORKFLOW": workflow,
     }
     try:
         result = subprocess.run(

@@ -72,6 +72,14 @@ you chose, not its symlink target, so a package-manager upgrade does not
 strand the schedule. Cron, launchd, and systemd times are all derived from one
 cron table in the manager.
 
+Every unit also exports `FOUNDER_OS_CADENCE_WORKFLOW=<workflow>` beside
+`FOUNDER_OS_HOME`, quoted the same way. While it is set, the state gateway
+refuses `open_role_session` for any other workflow with
+`ROLE_SESSION_INVALID`, so text a scheduled run reads cannot steer it into
+another role's workflow. The `smoke` command runs with the same pin. Units
+installed before the pin existed keep running unpinned until you preview and
+apply again.
+
 Scheduled sessions run without persisting their conversation transcripts. Durable decisions and receipts stay in the Founder OS workspace;
 recurring host transcripts do not accumulate separately.
 
