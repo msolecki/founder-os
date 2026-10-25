@@ -19,7 +19,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -192,6 +192,49 @@ class TestCli(unittest.TestCase):
                 encoding="utf-8"))
         checks = [item["check"] for item in payload["integrity"]]
         self.assertIn("file-unreadable", checks)
+
+
+class TestToday(unittest.TestCase):
+    """Ages and overdue counts are drawn on the charter's day, not the machine's."""
+
+    def setUp(self):
+        self.main = load_main()
+
+    def test_the_charter_timezone_sets_the_date(self):
+        late = datetime(2026, 7, 20, 23, 0, tzinfo=timezone.utc)
+        self.assertEqual(self.main._real_today("Pacific/Auckland", now=late),
+                         date(2026, 7, 21))
+        self.assertEqual(self.main._real_today("America/Los_Angeles", now=late),
+                         date(2026, 7, 20))
+
+    def test_an_unreadable_zone_falls_back_to_the_machine(self):
+        late = datetime(2026, 7, 20, 23, 0, tzinfo=timezone.utc)
+        machine = late.astimezone().date()
+        for zone in (None, "", "Mars/Olympus", "Europe/London (GMT)", "../etc"):
+            with self.subTest(zone=zone):
+                self.assertEqual(self.main._real_today(zone, now=late), machine)
+
+    def test_a_run_without_now_draws_each_business_on_its_own_day(self):
+        workspace = Path(tempfile.mkdtemp()) / "founder-os"
+        shutil.copytree(EXAMPLE, workspace)
+        charter = workspace / "charter.md"
+        charter.write_text(charter.read_text(encoding="utf-8").replace(
+            "Europe/London", "Pacific/Auckland"), encoding="utf-8")
+        seen = []
+
+        def today(zone=None, now=None):
+            seen.append(zone)
+            return date(2026, 7, 21) if zone == "Pacific/Auckland" \
+                else date(2026, 7, 20)
+
+        out = io.StringIO()
+        with mock.patch.object(self.main, "_real_today", side_effect=today), \
+                contextlib.redirect_stdout(out), \
+                contextlib.redirect_stderr(io.StringIO()):
+            code = self.main.main(["--home", str(workspace), "--json"])
+        self.assertEqual(code, self.main.EXIT_OK)
+        self.assertEqual(json.loads(out.getvalue())["today"], "2026-07-21")
+        self.assertIn("Pacific/Auckland", seen)
 
 
 class TestPage(unittest.TestCase):

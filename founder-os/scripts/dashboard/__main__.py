@@ -13,9 +13,10 @@ import json
 import os
 import sys
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Iterable, List, Mapping, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 # `python3 <plugin>/scripts/dashboard` runs this file as a top-level module with
 # no parent, where a relative import raises. Putting the package's parent on the
@@ -186,9 +187,21 @@ def configured_business(live: Iterable):
     return None
 
 
-def _real_today() -> date:
-    """The machine's date. Its own function so a test can say which day it is."""
-    return datetime.now().date()
+def _real_today(zone: Optional[str] = None,
+                now: Optional[datetime] = None) -> date:
+    """Today in the charter's `## Timezone` when it names a valid zone, else the
+    machine's date. Its own function so a test can say which day it is.
+
+    A founder in Auckland running at 23:00 UTC is already a day ahead, and an
+    overdue count drawn on the machine's date is a day behind their own.
+    """
+    instant = now or datetime.now(timezone.utc)
+    if zone:
+        try:
+            return instant.astimezone(ZoneInfo(zone)).date()
+        except (KeyError, ValueError):  # ZoneInfoNotFoundError is a KeyError
+            pass
+    return instant.astimezone().date()
 
 
 def _today(raw: Optional[str]) -> date:
@@ -295,7 +308,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     chosen_facts = None
     for business in live:
         sources = collect.collect(business.home, view, slug=business.slug)
-        facts = analyze.build_facts(sources, today, generated, thresholds)
+        day = today if args.now else _real_today(sources.timezone)
+        facts = analyze.build_facts(sources, day, generated, thresholds)
         payloads.append((business, facts))
         if business is selected:
             chosen_facts = facts
@@ -366,7 +380,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     # series and the envelope beside it are kept to days that happened.
     # Only an explicit `--now` can be a preview: without one, a run that
     # crosses midnight would otherwise skip persisting its own day.
-    real = _real_today()
+    real = _real_today(chosen_facts.business.get("timezone"))
     preview = args.now is not None and today != real
 
     updated = []
