@@ -8,8 +8,7 @@ last-verified: 2026-10-25
 # Backlog
 
 Follow-ups from the 2026-10-16 audit (branch fix/audit-2026-10-16-int). Each was
-deliberately left out of that batch; the reason is given. Items about Codex were
-dropped when Codex support was removed ([decisions D11](decisions.md)).
+deliberately left out of that batch; the reason is given.
 
 ## Needs a host or a tool not available in the batch
 
