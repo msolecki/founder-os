@@ -145,6 +145,12 @@ Read first, in order — house rule 1:
 Write to `pipeline.md`. Rewrite `## Live`; **append** to `## Won` and `## Dead`;
 replace `## Last review`.
 
+**One field in `## Dead` is not append-only.** A line whose prospect now has a
+`### <Prospect> — lost …` block under `## Win/loss` has `win/loss: pending`
+rewritten to `win/loss: done`, and nothing else in the line changes. It is
+arithmetic over this file, so the unattended run does it too, and
+`Win/loss pending:` counts only the lines still `pending` after it.
+
 **Rewriting `## Live` carries every surviving deal's other lines forward
 verbatim.** `outreach-draft` and `proposal-draft` keep their own lines under the
 same `### <Prospect>` block — `Outreach:`, `Touch:`, `Last reply:`, the lines

@@ -83,7 +83,8 @@ Read for one named section only:
   file the brief never opened. Not the effective rate, not the concentration, not
   the runway — those are the **CFO's** to narrate and reading them here is how a
   brief becomes a monthly close nobody asked for.
-- `pipeline.md` — anything with a next action dated today or overdue
+- `pipeline.md` — anything with a next action dated today or overdue, and the
+  `Win/loss pending:` counter in `## Last review`
 - `clients/<client>.md` `## Health` — the latest `Verdict:` line on each active
   engagement, **with its date**. `at-risk` or `failing` is rotting; `healthy`
   is not. That is `client-health`'s vocabulary and those are the only three
@@ -203,7 +204,9 @@ Read for one named section only:
    action, a client whose `Verdict:` is `at-risk` or `failing`, an invoice past
    terms, a client whose latest `Verdict:` is older than 45 days (`client-health`
    overdue — an unexamined client is not a healthy one, it is an unexamined
-   one), a `## Dead` deal whose `win/loss: pending` is older than 5 business days (the
+   one), a `Win/loss pending:` counter in `pipeline.md` `## Last review` whose oldest —
+   its `oldest <n> days` plus the days since that review's `Date:` — is past 5
+   business days (the
    lesson is expiring — `win-loss-analysis`'s own window is five business days), a
    `goals.md` bet or `Experiment:` line whose `Judgment date:` has passed with no
    verdict written (the **Strategist**'s `kill-or-continue` or `experiment` is
