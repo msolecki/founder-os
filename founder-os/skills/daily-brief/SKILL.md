@@ -99,8 +99,11 @@ Read for one named section only:
   never have been taken.
 - `pipeline.md`, `content.md`, `network.md` and `metrics.md` `## Close` — the
   `Proposed:` lines, and nothing else; `goals.md` is read whole above, so the
-  quarterly's line arrives on its own. Step 0. (`## Close` was already open for
-  the receivables, so this widens nothing.)
+  quarterly's line arrives on its own. Step 0. (`## Close` was already open for the receivables, so this widens nothing.)
+- `week.md` `## Arithmetic` and `## Audit` — the `Proposed:` line a blocked
+  `week-plan` or `calendar-audit` leaves, and nothing else. Friday's audit line
+  lives only until `week-plan` rewrites the file at 08:30 on Monday, so the
+  08:00 Monday brief is the one that drains it.
 
 ## Beliefs
 

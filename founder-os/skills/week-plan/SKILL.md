@@ -59,8 +59,11 @@ Read first, in order — house rule 1:
    `## Ledger` forward and prepend last week's ledger line (`blocked` when last
    week's audit was) — but write exactly
    `blocked — needs founder input: this week's calendar, what others have already booked`
-   as the body of `## Arithmetic`, leave `## Blocks`, `## Unfunded` and
-   `## The trade` empty, and stop. Never guess the hours.
+   as the body of `## Arithmetic`, followed by one line
+   `Proposed: run /week-plan with this week's calendar for YYYY-Www — bet: none`,
+   leave `## Blocks`, `## Unfunded` and `## The trade` empty, and stop. The
+   next `daily-brief` drains the line — that is how a blocked Monday reaches the
+   founder. Never guess the hours.
 1. **Do the arithmetic first, and say it first.** Available hours minus
    committed delivery hours equals free hours. Total the bets' required hours.
    If required > free, the plan is fiction and everything below it is theatre —
