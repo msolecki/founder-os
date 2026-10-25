@@ -25,24 +25,30 @@ concurrency:
 
 jobs:
   snapshot:
+    # A fork has no traffic of its own to keep and no `metrics` branch to push.
+    if: github.repository == 'msolecki/founder-os'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out the scripts from the default branch
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: source
-          # The series is pushed from the second checkout below, which sets its
-          # own remote URL. Leaving the token in this one's git config is a
+          # The series is pushed from the second checkout below, which hands
+          # git the token per step, from the environment. Leaving it in this one's git config is a
           # credential nothing reads.
           persist-credentials: false
 
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
 
+      # The Traffic API needs Administration: read, which GITHUB_TOKEN cannot be
+      # granted, so the reads use a fine-grained token (docs/development.md).
+      # The push below stays on github.token and its `contents: write`.
       - name: Read the Traffic API
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p api
@@ -75,8 +81,12 @@ jobs:
           mkdir -p series
           cd series
           git init -q
-          git remote add origin \
-            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          # The token rides in an http.extraheader set from the environment for
+          # this step only, never in the remote URL, so nothing writes it into
+          # series/.git/config.
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraheader \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
           if git fetch -q --depth=1 origin metrics; then
             git checkout -q FETCH_HEAD
             git switch -q -c metrics
@@ -103,6 +113,8 @@ jobs:
         run: python3 source/scripts/traffic_report.py series/metrics/traffic.csv
 
       - name: Commit and push the series
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           cd series
@@ -118,4 +130,6 @@ jobs:
             exit 0
           fi
           git commit -q -m "chore(metrics): traffic snapshot $(date -u +%F)"
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraheader \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
           git push -q origin metrics
