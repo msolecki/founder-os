@@ -5,6 +5,18 @@ All notable changes to Founder OS. Versions follow the plugin's
 
 ## Unreleased
 
+**Re-run `setup-cadences` after updating: scheduled runs are pinned to their workflow.** Every generated cron, launchd and systemd unit now exports `FOUNDER_OS_CADENCE_WORKFLOW=<workflow>`, and while it is set the state gateway refuses to open any other workflow, so text planted in a file a scheduled run reads cannot make it rewrite another role's state. Units installed before this change stay unpinned until you preview and apply again; a preview made before the update no longer applies. A scheduled run that needs another owner now stops at `ROLE_NOT_OWNER` and leaves the handoff to you. A failed apply rolls the identity back and names the backup to restore earlier units from, and `smoke` has a timeout and shows the host's error.
+
+**The guard covers more and the gateway trusts less.** `MultiEdit` is checked like `Edit`. A non-role subagent can no longer write the plugin's own files, its data directory or `~/.founder-os/businesses.yaml` (any letter case). The gateway accepts only role sessions it opened itself, caps them at the 30-minute TTL, and a gateway restart ends every open session — the main thread opens a new one. A bad or unknown tool argument now returns `STATE_IO_ERROR` ("fix the call") on every tool.
+
+**`default: portfolio` in `businesses.yaml` is refused.** `default:` must name a business; the error says to remove the line or name a slug.
+
+**Workflow fixes that change what lands in your files.** `proposal-draft` records `Proposal drafted:` and writes `Proposal sent:` only from your report. `follow-up-sweep` keeps each message body in the new `drafts/network/` (owned by the Network Manager) and records what was drafted, never what was sent. Blocked `week-plan`, `calendar-audit` and day-1 `quarterly-planning` runs now leave a `Proposed:` line the daily brief picks up; a dead deal's `win/loss: pending` flips to `done` once its win/loss is written; `queue.md ## Done` is kept until that month's review, and at most 60 days (`queue.done_ceiling_days`). `context-load` is now a universal skill every agent lists. `founder-os-doctor` runs 19 checks: the installed-copy drift check moved to `skill-forge`.
+
+**Dashboard.** Passed judgment and kill dates read as overdue; signals older than 14 days are marked stale (`signals.stale_days`); runway shows its own age; `zł`, `€` and `£` are stored as PLN, EUR and GBP in `snapshots.csv`; "today" follows the charter's timezone; an exported `FOUNDER_OS_HOME` that matches no registered business stops the run (exit 2) instead of opening the first business; `[DISREGARD]` amounts stay out of the total.
+
+**Repository.** The weekly traffic snapshot workflow and its scripts are removed (they needed an admin token). CI tests Python 3.9, 3.11 and 3.13 on Linux and macOS, with actions on Node 24 and job timeouts.
+
 **Stricter quoting in `_local/ownership.yaml` and `~/.founder-os/businesses.yaml`, read by the guard's new parser.** The guard now reads both with the package parser (`mcp/ownership.py`), never PyYAML, and that grammar is stricter: a quoted value holds no backslash escape and no `''` escape, and a bare value holds no `[`, `]`, `{` or `}`. A registry with `'it''s'` is refused with `WORKSPACE_UNRESOLVED`; an overlay with it is ignored by the guard and reported by `founder-os-doctor` as **Overlay unreadable** (grammar in `docs/enforcement.md`). Nothing else moved: the package still ships 57 workflows and runs 22 build-time checks, and the guard still reads a tool's file arguments, never a shell command.
 
 ## 3.0.0 — 2026-10-25
