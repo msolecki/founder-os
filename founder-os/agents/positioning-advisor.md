@@ -5,6 +5,7 @@ skills:
   - icp-definition
   - offer-design
   - pricing-strategy
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

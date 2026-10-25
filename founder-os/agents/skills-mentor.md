@@ -4,6 +4,7 @@ description: Decides which capability to build next and how. Use for skill-gap a
 skills:
   - skill-gap
   - learning-plan
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

@@ -48,16 +48,17 @@ Read first, in order — house rule 1:
   actual pasted writing, or has someone filled it with prose about the writing?
   The second is worse than empty and it is the failure this skill exists to
   prevent.
-- `drafts/outreach/`, `drafts/proposals/`, `drafts/content/` — **every file whose
+- `drafts/outreach/`, `drafts/proposals/`, `drafts/content/`, `drafts/network/` — **every file whose
   `## Sent` is non-empty.** This is the best voice evidence in the company and it
   is now sitting still: `## Draft` is what we wrote, `## Sent` is what the founder
   actually sent, and the diff is the founder correcting us on their own name with
   something real at stake.
 
   You read these; you do not write them. `drafts/outreach/` and
-  `drafts/proposals/` are the **Pipeline Coach's** and `drafts/content/` is the
-  **Brand Editor's** — you are the Brand Editor, so the third is yours to write
-  and the first two are not. Read all three; write `voice.md`.
+  `drafts/proposals/` are the **Pipeline Coach's**, `drafts/network/` is the
+  **Network Manager's**, and `drafts/content/` is the **Brand Editor's** — you
+  are the Brand Editor, so that one is yours to write and the other three are
+  not. Read all four; write `voice.md`.
 - **The founder's own sent mail and published posts** — pasted by them, verbatim.
   The other real source, and the one to ask for directly in step 1 when there is
   no draft-diff yet on disk to read.

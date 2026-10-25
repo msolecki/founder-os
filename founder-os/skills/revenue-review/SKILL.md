@@ -115,7 +115,9 @@ Read first, in order — house rule 1:
    rate: the invoiced rate is a number the founder made up in a proposal, and the
    effective rate is what actually happened to them.
 4. **Compare to target and to last month.** One month is a data point, three is a
-   trend, and the trend is the finding. **A rate falling while revenue rises means
+   trend, and the trend is the finding. The close block is replaced every month,
+   so the trend lives in its `Trend:` line: read the previous close's line, drop
+   the oldest month, add this one. **A rate falling while revenue rises means
    the founder is buying revenue with their own time** — that is the report, not
    the growth.
 5. **Name the concentration.** What share of collected revenue came from the
@@ -190,6 +192,7 @@ Replace the `## Close — YYYY-MM` block in `metrics.md`:
       (sum of the lines above; carries the weakest tier among them)
     Hours worked: <n>  (delivery <n> / sales <n> / unbilled <n>)
     Effective rate: <amount>/h vs target <amount>/h  (prev month <amount>/h)
+    Trend: <YYYY-MM> <collected> at <rate>/h · <YYYY-MM> <collected> at <rate>/h · <YYYY-MM> <collected> at <rate>/h  (last three monthly closes, oldest first; carried from the previous close, never from an activation-baseline)
     Largest client: <n>% of collected
     Cash on hand: <amount>  (before any tax reserve)
     Proposed: chase <client> — <n> days past terms — bet: none | none

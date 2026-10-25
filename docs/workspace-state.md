@@ -53,6 +53,7 @@ map does not own.
 | `clients/` | delivery-lead | `## Scope`, `## Health`, `## Retro` |
 | `clients/_capacity.md` | delivery-lead | `## Capacity` |
 | `network.md` | network-manager | `## Map`, `## Not in the map`, `## Sweep` |
+| `drafts/network/` | network-manager | `## Draft`, `## Provenance`, `## Sent` |
 | `skills.md` | skills-mentor | `## Gap`, `## Hypotheses`, `## Learning plan` |
 | `content.md` | brand-editor | `## Plan`, `## Shipped`, `## Drafts`, `## Audience` |
 | `voice.md` | brand-editor | `## Samples`, `## Tells`, `## Never`, `## Register` |
@@ -103,7 +104,7 @@ grows is a to-do list, and you already have one of those.
 Every taken item carries `from: <file> <date>` (the proposal it came from) so
 tomorrow's brief can see a proposal was already answered and leave it alone.
 
-### `drafts/{outreach,proposals,content}/` — bodies, and what was sent
+### `drafts/{outreach,proposals,content,network}/` — bodies, and what was sent
 
 Each draft file has `## Draft` (the body the founder is about to send),
 `## Provenance` (where its claims came from, the founder-only reader), and

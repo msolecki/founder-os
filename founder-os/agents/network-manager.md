@@ -4,6 +4,7 @@ description: Decides who to talk to and when to follow up. Use for relationship 
 skills:
   - relationship-map
   - follow-up-sweep
+  - context-load
   - ingestion-gate
   - guardrails
   - state-integrity

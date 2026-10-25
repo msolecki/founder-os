@@ -133,7 +133,7 @@ for brevity. Full command descriptions are in [`commands.md`](commands.md).
 
 ### Network Manager
 - **Decides:** who to talk to, and when to follow up.
-- **Owns:** `network.md`.
+- **Owns:** `network.md`, `drafts/network/`.
 - **Skills:** `relationship-map`, `follow-up-sweep`.
 - **Notes:** owns the identity of every *person* — `network.md` `## Map` is the
   definition a `[[slug]]` for a person resolves to (people have no file).
