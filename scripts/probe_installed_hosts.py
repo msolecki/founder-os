@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Probe copied Founder OS installs through isolated Claude and Codex roots."""
+"""Probe copied Founder OS installs through an isolated Claude Code root."""
 
 from __future__ import annotations
 
@@ -39,8 +39,6 @@ def isolated_environment(root, host, inherited=None):
         "CLAUDE_CONFIG_DIR",
         "CLAUDE_PLUGIN_DATA",
         "CLAUDE_PLUGIN_ROOT",
-        "CODEX_HOME",
-        "CODEX_PLUGIN_ROOT",
         "FOUNDER_OS_HOME",
         "PLUGIN_DATA",
         "PLUGIN_ROOT",
@@ -59,10 +57,6 @@ def isolated_environment(root, host, inherited=None):
         config = root / "claude"
         config.mkdir(parents=True, exist_ok=True)
         environment["CLAUDE_CONFIG_DIR"] = str(config)
-    elif host == "codex":
-        config = root / "codex"
-        config.mkdir(parents=True, exist_ok=True)
-        environment["CODEX_HOME"] = str(config)
     else:
         raise ProbeFailure("unknown host: %s" % host)
     return environment
@@ -85,12 +79,6 @@ def installation_commands(host, repo_root, binary):
             [binary, "plugin", "install", PLUGIN_ID, "--scope", "user"],
             [binary, "plugin", "list", "--json"],
             [binary, "plugin", "details", PLUGIN_ID],
-        ]
-    if host == "codex":
-        return [
-            [binary, "plugin", "marketplace", "add", source, "--json"],
-            [binary, "plugin", "add", PLUGIN_ID, "--json"],
-            [binary, "plugin", "list", "--json"],
         ]
     raise ProbeFailure("unknown host: %s" % host)
 
@@ -132,36 +120,19 @@ def _inside(path, root, label):
 
 
 def _discover_install(host, results, isolated_root):
-    if host == "claude":
-        listing = _json_output(results[2].stdout, "claude plugin list")
-        matches = [
-            item
-            for item in listing
-            if isinstance(item, dict) and item.get("id") == PLUGIN_ID
-        ] if isinstance(listing, list) else []
-        if len(matches) != 1:
-            raise ProbeFailure("Claude did not discover exactly one Founder OS install")
-        installed = matches[0]
-        install_path = installed.get("installPath")
-        cli_version = installed.get("version")
-        enabled = installed.get("enabled")
-        details = results[3].stdout
-    else:
-        install_result = _json_output(results[1].stdout, "codex plugin add")
-        listing = _json_output(results[2].stdout, "codex plugin list")
-        installed_items = listing.get("installed", []) if isinstance(listing, dict) else []
-        matches = [
-            item
-            for item in installed_items
-            if isinstance(item, dict) and item.get("pluginId") == PLUGIN_ID
-        ]
-        if len(matches) != 1:
-            raise ProbeFailure("Codex did not discover exactly one Founder OS install")
-        installed = matches[0]
-        install_path = install_result.get("installedPath")
-        cli_version = installed.get("version")
-        enabled = installed.get("enabled")
-        details = ""
+    listing = _json_output(results[2].stdout, "claude plugin list")
+    matches = [
+        item
+        for item in listing
+        if isinstance(item, dict) and item.get("id") == PLUGIN_ID
+    ] if isinstance(listing, list) else []
+    if len(matches) != 1:
+        raise ProbeFailure("Claude did not discover exactly one Founder OS install")
+    installed = matches[0]
+    install_path = installed.get("installPath")
+    cli_version = installed.get("version")
+    enabled = installed.get("enabled")
+    details = results[3].stdout
 
     if not isinstance(install_path, str):
         raise ProbeFailure("%s discovery omitted its installed path" % host)
@@ -171,8 +142,7 @@ def _discover_install(host, results, isolated_root):
     if cli_version != VERSION or enabled is not True:
         raise ProbeFailure("%s discovered the wrong or disabled release" % host)
 
-    manifest_name = ".claude-plugin/plugin.json" if host == "claude" else ".codex-plugin/plugin.json"
-    manifest_path = plugin_root / manifest_name
+    manifest_path = plugin_root / ".claude-plugin" / "plugin.json"
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, TypeError, ValueError) as exc:
@@ -223,19 +193,12 @@ def check_cadence_preview(plugin_root, host, binary, workspace_root):
         argv = module.host_argv(config, "daily-brief")
     except Exception as exc:
         raise ProbeFailure("%s cadence preview failed: %s" % (host, exc)) from exc
-    if host == "claude":
-        required = {
-            "dontAsk",
-            "--allowedTools",
-            "--no-session-persistence",
-            "mcp__plugin_founder-os_founder-os-state__*",
-        }
-    else:
-        required = {
-            "never",
-            "workspace-write",
-            "$founder-os:daily-brief",
-        }
+    required = {
+        "dontAsk",
+        "--allowedTools",
+        "--no-session-persistence",
+        "mcp__plugin_founder-os_founder-os-state__*",
+    }
     if not required.issubset(set(argv)):
         raise ProbeFailure("%s cadence preview drifted" % host)
     return tuple(argv)
@@ -251,15 +214,14 @@ def _check_orchestration(host, plugin_root, details, guard_report, required):
         raise ProbeFailure("%s fallback envelope failed: %s" % (host, "; ".join(errors)))
 
     native_status = "not-exposed"
-    if host == "claude":
-        if (
-            "Agents (13)" in details
-            and "cfo" in details
-            and guard_report.get("native_allowed") is None
-        ):
-            native_status = "PASS"
-        elif required:
-            raise ProbeFailure("Claude did not expose its thirteen native roles")
+    if (
+        "Agents (13)" in details
+        and "cfo" in details
+        and guard_report.get("native_allowed") is None
+    ):
+        native_status = "PASS"
+    elif required:
+        raise ProbeFailure("Claude did not expose its thirteen native roles")
     fallback_status = (
         "PASS" if guard_report.get("fallback_allowed") is None else "FAIL"
     )
@@ -333,7 +295,6 @@ def _parser():
         description="Probe isolated local Founder OS installs on real host CLIs."
     )
     parser.add_argument("--claude", action="store_true", help="require Claude Code")
-    parser.add_argument("--codex", action="store_true", help="require Codex")
     parser.add_argument(
         "--require-native-and-fallback",
         action="store_true",
@@ -347,12 +308,12 @@ def main(argv=None):
     arguments = parser.parse_args(argv)
     hosts = [
         host
-        for host, enabled in (("claude", arguments.claude), ("codex", arguments.codex))
+        for host, enabled in (("claude", arguments.claude),)
         if enabled
     ]
     if not hosts:
         parser.print_usage(sys.stderr)
-        print("probe_installed_hosts.py: error: select --claude and/or --codex", file=sys.stderr)
+        print("probe_installed_hosts.py: error: select --claude", file=sys.stderr)
         return 2
 
     try:

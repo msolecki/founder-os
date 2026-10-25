@@ -81,9 +81,9 @@ The build checks structure; review holds the bar. The three that matter:
 3. **House rule 0 is not negotiable.** No agent gets a tool that can reach
    the outside world, and no PR that loosens an allowlist will be merged —
    agents draft, the founder sends.
-4. **One host-independent role contract.** Claude Code and Codex adapters may
-   differ, but the role file, workflow, bounded sibling handoff, role
-   capability, ownership rule, and persisted result may not.
+4. **One role contract.** The role file, workflow, bounded sibling handoff,
+   role capability, ownership rule, and persisted result are the contract; a
+   host file is an adapter to it, never a second copy of it.
 
 ## Scope
 

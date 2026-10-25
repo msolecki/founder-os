@@ -1,3 +1,10 @@
+---
+title: "Data integrity"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-07-28
+---
+
 # Data integrity
 
 Ownership decides *who may write* a file. It has no opinion about whether the

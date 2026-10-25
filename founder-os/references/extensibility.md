@@ -135,9 +135,8 @@ the main thread, and no packaged agent has ever had a reason to write there.
 ## Discovery: the source of truth and the installed copy
 
 A `SKILL.md` under `$FOUNDER_OS_HOME/_local/skills/` is **not** discoverable.
-The hosts load skills from installed plugins and their user skill scopes:
-`~/.claude/skills/` for Claude Code and `~/.codex/skills/` for Codex. A file in
-a Markdown workspace is a file, and
+Claude Code loads skills from installed plugins and its user skill scope,
+`~/.claude/skills/`. A file in a Markdown workspace is a file, and
 writing one and calling it a command is how a founder ends up with a workflow
 that exists and never runs.
 
@@ -146,7 +145,7 @@ So there are two copies and they have different jobs:
 | | Where | Job |
 |---|---|---|
 | **Source of truth** | `$FOUNDER_OS_HOME/_local/skills/<slug>/SKILL.md` | The founder's, versioned with their workspace, doctor-validated, survives uninstall. |
-| **Installed copies** | `~/.claude/skills/founder-os-local-<business>-<slug>/` and `~/.codex/skills/founder-os-local-<business>-<slug>/` | What each host can actually load. The same source directory is copied to both scopes, namespaced per business, with a header naming the source. |
+| **Installed copy** | `~/.claude/skills/founder-os-local-<business>-<slug>/` | What the host can actually load. The source directory is copied to the user scope, namespaced per business, with a header naming the source. |
 
 The install step is explicit, consented, and once — the `setup-cadences`
 precedent exactly: a plugin cannot ship a schedule, so that skill writes one on
@@ -167,7 +166,7 @@ skill has the identical property, and the guard's own docstring says at length
 that it is not a security boundary. What the merged map actually buys:
 
 - a **local agent writing a local path with a direct file tool** (`Write`,
-  `Edit`, `NotebookEdit`, `apply_patch`) is checked against that path's local
+  `Edit`, `NotebookEdit`) is checked against that path's local
   owner by the guard,
 - `founder-os-doctor` can check the whole thing statically, which is where the
   overlay's real validation lives,
@@ -200,8 +199,8 @@ because the founder will build on the implication.
   Making it a role skill would additionally force `_local/` into `owns:`, which
   pulls founder-authored structure into the map of company state and hands an
   agent a lane through the map that governs it.
-- **Installed copies go to each host's user scope** (`~/.claude/skills/` and
-  `~/.codex/skills/`), not a project's skill directory. The workspace usually
+- **The installed copy goes to the host's user scope** (`~/.claude/skills/`),
+  not a project's skill directory. The workspace usually
   lives outside any repository, and project scope would leak a founder's
   business workflows into a code repo they may well push.
 - **Local slugs carry a `local-` prefix.** A packaged skill added upstream next

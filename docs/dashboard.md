@@ -1,3 +1,10 @@
+---
+title: "The dashboard"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # The dashboard
 
 `/dashboard` reads a Founder OS workspace and writes one self-contained HTML
@@ -25,7 +32,7 @@ from.
 python3 <plugin>/scripts/dashboard [slug] [--open] [--out PATH] [--now YYYY-MM-DD]
 ```
 
-In Claude Code, `/founder-os:dashboard`; in Codex, `$founder-os:dashboard`.
+In Claude Code, `/founder-os:dashboard`.
 
 | Flag | What it does |
 |---|---|

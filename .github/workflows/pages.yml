@@ -1,0 +1,58 @@
+name: pages
+
+# Builds docs/ with Jekyll and publishes it to GitHub Pages: the landing page and
+# Trust Center pass through untouched, the Markdown guides render as pages, and
+# CHANGELOG.md is copied in as changelog.html. Needs Settings → Pages → Source:
+# GitHub Actions; until that is switched, Pages keeps serving main:/docs as is.
+on:
+  push:
+    branches: [main]
+    paths: [docs/**, CHANGELOG.md, .github/workflows/pages.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      # The changelog lives at the repository root, outside the site source.
+      - name: copy the changelog into the site
+        run: |
+          {
+            printf -- '---\ntitle: Changelog\nsource: CHANGELOG.md\nstatus: current\nowner: Mateusz Solecki\n'
+            printf 'last-verified: %s\n---\n\n' "$(date -u +%F)"
+            cat CHANGELOG.md
+          } > docs/changelog.md
+      # The guides link files outside the site (../founder-os/…, ../README.md) for readers on GitHub.
+      # On the site those would 404, so the build copy points them at GitHub's file view instead.
+      - name: point links outside the site at GitHub
+        run: |
+          sed -i -E \
+            -e 's#\]\(\.\./CHANGELOG\.md#](changelog.md#g' \
+            -e 's#\]\(\.\./#](https://github.com/msolecki/founder-os/blob/main/#g' \
+            docs/*.md
+      - uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1.0.13
+        with:
+          source: ./docs
+          destination: ./_site
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

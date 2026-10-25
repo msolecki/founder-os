@@ -1,3 +1,10 @@
+---
+title: "Concepts"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Concepts
 
 The whole package rests on a small set of ideas. Understand these five and the
@@ -83,53 +90,5 @@ mechanism.
 
 ## Glossary
 
-**Agent** — one of the 13 role definitions in
-[`founder-os/agents/`](../founder-os/agents/). Each owns one decision, a set of
-skills, a tool allowlist, and (for most) a set of workspace files.
-
-**Skill** — a workflow in `founder-os/skills/<name>/SKILL.md`, invoked as
-`/founder-os:<name>` in Claude Code or `$founder-os:<name>` in Codex. There are
-57 skills. A *role skill* belongs to one agent; a *system
-skill* is cross-cutting; a *standalone skill* is run directly by the founder.
-
-**Cadence** — one of the ten per-business skills, plus the conditional
-portfolio skill, that `setup-cadences` can schedule locally. Every cadence is
-also a normal skill you can invoke by hand.
-
-**Workspace** — the directory of Markdown state, `FOUNDER_OS_HOME` (default
-`./founder-os/`). One per business.
-
-**House rules** — the seven rules in
-[`references/house-rules.md`](../founder-os/references/house-rules.md) that every
-agent obeys. Rule 0 (never outbound, never money) is the one that matters most.
-
-**Ownership map** — [`references/ownership.yaml`](../founder-os/references/ownership.yaml):
-who may write each file (`owns:`) and what headings live inside it (`sections:`).
-
-**State gateway** — the local `founder-os-state` process that resolves one
-workspace and gives a role a short-lived capability for bounded reads and
-owner-checked atomic writes. It is the authoritative write boundary.
-
-**The guard / the hook** — `hooks/ownership-guard.py`, the `PreToolUse` defense
-that maps host identity, denies role direct/outbound tools, and requires
-capability-consistent local gateway calls.
-
-**Provenance** — the inline stamp on a claim that came from outside, e.g.
-`(per Anna, buyer at Acme, call, 12 May)`. A file's timestamp says when it was
-touched, not when a claim was last true.
-
-**Tier** — the FACT / VALIDATE / DISREGARD label put on every claim entering a
-file. See [`data-integrity.md`](data-integrity.md).
-
-**`[[slug]]`** — an entity link. A reference to an entity that another file also
-names is a `[[slug]]`, not a retyped name. See
-[`data-integrity.md`](data-integrity.md).
-
-**Portfolio / registry** — multi-business machinery: `~/.founder-os/businesses.yaml`
-names the businesses, and a portfolio workspace holds `portfolio.md`, the one
-decision that ranks between businesses. See [`multi-business.md`](multi-business.md).
-
-**Fail closed** — the gateway's write posture: unknown workspace, role session,
-path, owner, structure, or file version produces a stable denial and no
-mutation. Malformed non-role hook traffic can remain silent without granting a
-role any gateway authority.
+The terms used across these pages are defined in
+[`glossary.md`](glossary.md).

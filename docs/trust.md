@@ -1,23 +1,29 @@
+---
+title: "Founder OS Trust Center"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+permalink: /trust-notes.html
+---
+
 # Founder OS Trust Center
 
-Founder OS is one workflow system on Claude Code and Codex. The host adapter
-changes discovery; it does not change the workflow, workspace write, output, or
-guardrail contract.
+Founder OS is one product on Claude Code. The host adapter changes discovery; it
+does not change the workflow, workspace write, output, or guardrail contract.
 
 The deployable version of this page is the [public Trust Center](trust.html).
 
-## One product on Claude Code and Codex
+## One product on Claude Code
 
-The same `skills/<name>/SKILL.md` is the business logic on both hosts. Claude
-Code may select it through `agents/*.md`; Codex discovers it through
-`agents/openai.yaml`. Founder-created local skills follow the same contract and
-are installed to both host user scopes by `/skill-forge` after consent.
+The same `skills/<name>/SKILL.md` is the business logic whether Claude Code runs
+it through a native role in `agents/*.md` or the generic fallback. Founder-created local skills follow the same contract and
+are installed to the host user scope by `/skill-forge` after consent.
 
 ## What stays local — and what may reach the model host
 
 Canonical business state is local Markdown. Founder OS has no cloud service,
 telemetry, or automatic calendar, CRM, email, bank, or accounting sync. Prompts,
-attached context, and tool results sent through Claude Code or Codex are still
+attached context, and tool results sent through Claude Code are still
 governed by that model host's account and data settings. Local workspace does
 not mean that model context never leaves the machine.
 
@@ -58,6 +64,12 @@ not load even if one were added by accident. The inline allowance is what the
 two small blocks on the landing page need; it grants nothing to another origin,
 which is the claim this section is making.
 
+The Markdown guides, this page among them, are rendered to HTML by Jekyll when
+the site is built. They use no theme, because GitHub's default one loads a
+script from another origin; one layout with inline CSS styles them, and they
+load no script at all. The layout carries the same `Content-Security-Policy`
+as the landing page and the Trust Center.
+
 What does exist is what exists for any hosted page: GitHub serves the request
 and keeps its own server-side logs, and the repository's owner can see the
 aggregate visit and clone counts GitHub reports for any public repository. That
@@ -83,10 +95,10 @@ portfolio workspace crosses business boundaries.
 
 ## Installation, updates, cache, and removal
 
-Codex plugins use cached installed copies. After an update or reinstall, review
-and trust the bundled hooks if prompted, then start a new conversation so the
-new skills and metadata are loaded. Claude Code and Codex expose the same
-workflow contract despite different discovery adapters. Uninstalling Founder OS
+Claude Code runs plugins from cached installed copies. After an update or
+reinstall, review and trust the bundled hooks if prompted, then run
+`/reload-plugins` or start a new conversation so the new skills and metadata
+are loaded. Uninstalling Founder OS
 does not delete the founder's Markdown workspace or local overlay.
 
 ## Reporting a security or trust issue
@@ -112,4 +124,4 @@ entity slugs, amounts, or absolute paths. A private advisory becomes public when
 it is published.
 
 This page describes product boundaries. It is not legal, tax, medical, or
-investment advice and does not replace Claude Code or Codex policies.
+investment advice and does not replace Claude Code policies.

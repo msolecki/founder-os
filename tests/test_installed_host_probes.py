@@ -1,4 +1,4 @@
-"""Contracts for isolated Claude Code and Codex installed-host probes."""
+"""Contracts for the isolated Claude Code installed-host probe."""
 
 from __future__ import annotations
 
@@ -9,6 +9,8 @@ import os
 import subprocess
 import tempfile
 import unittest
+
+import yaml
 from pathlib import Path
 
 
@@ -27,7 +29,7 @@ def load_probe_module():
 
 
 class InstalledHostProbeContractTest(unittest.TestCase):
-    def test_probe_script_exists_and_cli_mentions_both_hard_gates(self):
+    def test_probe_script_exists_and_cli_mentions_its_hard_gates(self):
         self.assertTrue(PROBE_SCRIPT.is_file())
         result = subprocess.run(
             [os.fspath(PROBE_SCRIPT), "--help"],
@@ -37,7 +39,7 @@ class InstalledHostProbeContractTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        for flag in ("--claude", "--codex", "--require-native-and-fallback"):
+        for flag in ("--claude", "--require-native-and-fallback"):
             self.assertIn(flag, result.stdout)
 
     def test_host_environments_are_isolated_from_real_user_configuration(self):
@@ -45,48 +47,34 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         inherited = {
             "HOME": "/real/home",
             "CLAUDE_CONFIG_DIR": "/real/claude",
-            "CODEX_HOME": "/real/codex",
             "PLUGIN_DATA": "/real/plugin-data",
             "PATH": os.environ.get("PATH", ""),
         }
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir).resolve()
             claude = probe.isolated_environment(root, "claude", inherited)
-            codex = probe.isolated_environment(root, "codex", inherited)
 
             self.assertTrue(Path(claude["HOME"]).is_relative_to(root))
             self.assertTrue(
                 Path(claude["CLAUDE_CONFIG_DIR"]).is_relative_to(root)
             )
-            self.assertNotIn("CODEX_HOME", claude)
-            self.assertTrue(Path(codex["HOME"]).is_relative_to(root))
-            self.assertTrue(Path(codex["CODEX_HOME"]).is_relative_to(root))
-            self.assertNotIn("CLAUDE_CONFIG_DIR", codex)
-            for environment in (claude, codex):
-                self.assertNotIn("PLUGIN_DATA", environment)
-                self.assertTrue(
-                    Path(environment["XDG_CONFIG_HOME"]).is_relative_to(root)
-                )
+            self.assertNotIn("PLUGIN_DATA", claude)
+            self.assertTrue(
+                Path(claude["XDG_CONFIG_HOME"]).is_relative_to(root)
+            )
 
     def test_install_commands_use_only_the_local_marketplace(self):
         probe = load_probe_module()
-        for host in ("claude", "codex"):
-            with self.subTest(host=host):
-                commands = probe.installation_commands(
-                    host, REPO_ROOT, "/absolute/host-cli"
-                )
-                flattened = [item for command in commands for item in command]
-                self.assertIn(str(REPO_ROOT), flattened)
-                self.assertNotIn("msolecki/founder-os", flattened)
-                self.assertTrue(
-                    any("marketplace" in command for command in commands)
-                )
-                self.assertTrue(
-                    any(
-                        "founder-os@founder-os" in command
-                        for command in commands
-                    )
-                )
+        commands = probe.installation_commands(
+            "claude", REPO_ROOT, "/absolute/host-cli"
+        )
+        flattened = [item for command in commands for item in command]
+        self.assertIn(str(REPO_ROOT), flattened)
+        self.assertNotIn("msolecki/founder-os", flattened)
+        self.assertTrue(any("marketplace" in command for command in commands))
+        self.assertTrue(
+            any("founder-os@founder-os" in command for command in commands)
+        )
 
     def test_unavailable_cli_and_missing_host_selection_are_failures(self):
         probe = load_probe_module()
@@ -95,7 +83,7 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
             self.assertEqual(probe.main([]), 2)
-        self.assertIn("select --claude and/or --codex", stderr.getvalue())
+        self.assertIn("select --claude", stderr.getvalue())
 
     def test_pass_record_contains_hashes_but_no_business_content(self):
         probe = load_probe_module()
@@ -128,23 +116,18 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         )
         self.assertTrue(any("byte-identical" in error for error in errors), errors)
 
-    def test_installed_cadence_preview_uses_host_specific_unattended_contract(self):
+    def test_installed_cadence_preview_uses_the_unattended_contract(self):
         probe = load_probe_module()
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             claude = probe.check_cadence_preview(
                 PLUGIN_ROOT, "claude", root / "claude", root / "workspace"
             )
-            codex = probe.check_cadence_preview(
-                PLUGIN_ROOT, "codex", root / "codex", root / "workspace"
-            )
         self.assertIn("--allowedTools", claude)
         self.assertIn(
             "mcp__plugin_founder-os_founder-os-state__*", claude
         )
         self.assertIn("--no-session-persistence", claude)
-        self.assertIn("workspace-write", codex)
-        self.assertIn("$founder-os:daily-brief", codex)
 
     def test_ci_runs_probe_contracts_without_downloading_host_clis(self):
         workflow = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(
@@ -152,8 +135,9 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         )
         # The discover run covers this module; a dedicated step ran it twice.
         self.assertIn("python3 -m unittest discover -s tests", workflow)
-        self.assertNotIn("install claude", workflow.lower())
-        self.assertNotIn("install codex", workflow.lower())
+        # Only the lint job installs the Claude CLI; the test matrix never does.
+        test_job = yaml.safe_load(workflow)["jobs"]["test"]
+        self.assertNotIn("install claude", yaml.safe_dump(test_job).lower())
 
 
 if __name__ == "__main__":

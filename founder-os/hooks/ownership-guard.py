@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Keep Founder OS role subagents on the capability-bound state gateway.
 
-Claude identifies a role directly with ``agent_type`` — as the bare name or
-host-namespaced (``founder-os:cfo``). Codex supplies a ``turn_id`` that
-``record-agent.py`` maps to the same role. Once a *role* is known, direct
+Claude Code identifies a role directly with ``agent_type`` — as the bare name
+or host-namespaced (``founder-os:cfo``). Once a *role* is known, direct
 filesystem, shell, web, and non-Founder-OS MCP access is denied. The eight
 local gateway calls are recognized explicitly — under the packaged name
 (``mcp__founder-os-state__*``) and the host-wrapped one
@@ -21,7 +20,7 @@ capability at the gateway. That binds the role to its identity
 (`_bind_generic_role`), and from that call on it gets the role lockdown.
 
 Those three bind **tools that name a path** — ``Write``, ``Edit``,
-``NotebookEdit``, ``apply_patch``. They do not inspect a shell command, so a
+``NotebookEdit``. They do not inspect a shell command, so a
 non-role subagent holding ``Bash`` can write anything its own permissions allow,
 and this hook will not be what stops it. That is the deliberate trade: the
 alternative, denying every unrecognized subagent every tool, locked reviewers
@@ -73,19 +72,19 @@ ROLE_HARMLESS_TOOLS = frozenset({"ToolSearch", "TodoWrite"})
 NESTED_AGENT_TOOLS = frozenset({"Task", "Agent"})
 DIRECT_FILE_TOOLS = frozenset({
     "Read", "Write", "Edit", "MultiEdit", "NotebookEdit", "NotebookRead",
-    "Glob", "Grep", "LS", "apply_patch",
+    "Glob", "Grep", "LS",
 })
 # The tools `_tool_paths` can read a target path out of, in the order a deny
 # names them. Narrower than DIRECT_FILE_TOOLS, which is about a role touching
 # the filesystem at all: this is the set every ownership and derived deny is
 # actually speaking about. A path-naming tool missing from here — MultiEdit on
 # a host that ships it — hands the guard no path and is allowed, which is why
-# the derived deny names these four rather than claiming "a file tool".
-PATH_NAMING_TOOLS = ("Write", "Edit", "NotebookEdit", "apply_patch")
+# the derived deny names these three rather than claiming "a file tool".
+PATH_NAMING_TOOLS = ("Write", "Edit", "NotebookEdit")
 MCP_TOOL = re.compile(r"^mcp__")
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 # Agent identities may carry a host namespace — `founder-os:cfo` on Claude
-# Code. turn_id keeps SAFE_ID: it becomes a filename and never holds a colon.
+# Code. Binding stems keep SAFE_ID: they become filenames and never hold a colon.
 SAFE_AGENT = re.compile(r"^[A-Za-z0-9._:-]+$")
 # This plugin's name, which is also the namespace the host prefixes onto its
 # subagent identities. Pinned to `founder-os` by `check_plugin`.
@@ -106,7 +105,6 @@ SESSION_FIELDS = frozenset({
     "correlation_id", "workflow", "expires_at", "status",
 })
 AGENT_MAPPING_TTL_SECONDS = 24 * 60 * 60
-MAIN_AGENT_TYPE = "__founder_os_main__"
 
 # The founder's local overlay (references/extensibility.md). `_local/` is the
 # directory; the file below it is the additive half of the ownership map.
@@ -115,8 +113,8 @@ LOCAL_MAP = "_local/ownership.yaml"
 
 # One overlay read per root per process. A hook process handles one invocation,
 # so this is per-invocation caching — the same property PERF-002 pinned for
-# workspace_roots, for the same reason: a multi-path apply_patch must not
-# re-read the same file once per path.
+# workspace_roots, for the same reason: a write judged under both of its names
+# (`_workspace_rels`) must not re-read the same file once per name.
 _LOCAL_CACHE = {}
 # The packaged map, keyed by the plugin root the search started from, under the
 # same discipline: `owns:` and `derived_files:` are two readers of one document.
@@ -589,7 +587,7 @@ def resolve_in_workspace(file_path, hook_cwd, roots=None):
     none.
     """
     if not os.path.isabs(file_path):
-        # Codex apply_patch uses workspace-relative paths. Its hook payload
+        # A relative path means nothing without a base. The hook payload
         # carries the session cwd, so resolve against that explicit value.
         if not isinstance(hook_cwd, str) or not os.path.isabs(hook_cwd):
             return (None, None)
@@ -679,8 +677,8 @@ def _deny_tool(agent_type, tool_name, reason):
 def _role_of(agent_type):
     """Bare role name for one of *this plugin's* role identities, or None.
 
-    Claude Code identifies plugin subagents as ``<plugin>:<agent>``; Codex and
-    the packaged fixtures use the bare name.
+    Claude Code identifies plugin subagents as ``<plugin>:<agent>``; the
+    packaged fixtures use the bare name.
 
     Only this plugin's namespace counts. `cfo`, `strategist` and `board-member`
     are ordinary agent names, so a second installed plugin shipping one arrives
@@ -854,14 +852,12 @@ def check_gateway(agent_type, role, tool_name, tool_input, data=None):
 def _binding_stem(data):
     """The `agent-types/` record naming this agent instance, or None.
 
-    The most specific identity the host supplies: Claude's per-subagent
-    `agent_id`, then Codex's `turn_id` (whose recorder mapping this rewrites),
-    then the `session_id` every generic agent of the session shares — coarser,
-    so it locks down every generic agent of that session, which is the
-    restricted reading of not knowing which one holds the role.
+    The most specific identity the host supplies: Claude Code's per-subagent
+    `agent_id`, then the `session_id` every generic agent of the session
+    shares — coarser, so it locks down every generic agent of that session,
+    which is the restricted reading of not knowing which one holds the role.
     """
-    for field, prefix in (("agent_id", "agent."), ("turn_id", ""),
-                          ("session_id", "session.")):
+    for field, prefix in (("agent_id", "agent."), ("session_id", "session.")):
         value = data.get(field)
         if isinstance(value, str) and SAFE_ID.fullmatch(value):
             return prefix + value
@@ -885,25 +881,10 @@ def _bind_generic_role(agent_type, tool_name, data, role):
     """
     stem = _binding_stem(data)
     if stem is None:
-        log("allow: generic gateway call carries no agent, turn or session id "
+        log("allow: generic gateway call carries no agent or session id "
             "— no identity to bind the role lockdown to")
         return
-    bound = _mapped_agent_type(stem)
-    if bound == role:
-        return
-    record = _read_small_regular_json(
-        os.path.join(_data_root(), "agent-types", stem + ".json"))
-    # Only the recorder writes a main-thread mapping, and only under a bare
-    # turn id; a main record under a guard-private `agent.`/`session.` stem
-    # is forged and is rebound like any other.
-    if "." not in stem and (bound == MAIN_AGENT_TYPE or (
-            isinstance(record, dict)
-            and record.get("agent_type") == MAIN_AGENT_TYPE)):
-        # A Codex turn the recorder mapped to the founder's own thread, live
-        # or lapsed. That thread holds sessions by design, and overwriting its
-        # mapping with a role would lock the founder out of their own turn.
-        log("allow: gateway call on the recorded main-thread turn — "
-            "the main-thread mapping is never rebound")
+    if _mapped_agent_type(stem) == role:
         return
     target_dir = os.path.join(_data_root(), "agent-types")
     temporary = None
@@ -938,36 +919,7 @@ def check_outbound(agent_type, tool_name):
         )
 
 
-def _patch_paths(command):
-    """Return paths touched by a Codex apply_patch payload.
-
-    Case-insensitive: a header the regex does not recognize yields no paths,
-    and no paths means `check_ownership` returns without an opinion. Matching
-    the verb's exact case made `*** update File: _local/ownership.yaml` an
-    allow and `*** Update File: …` a deny.
-    """
-    if not isinstance(command, str):
-        return []
-    paths = []
-    marker = re.compile(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", re.I)
-    move = re.compile(r"^\*\*\* Move to: (.+)$", re.I)
-    for line in command.splitlines():
-        match = marker.match(line) or move.match(line)
-        if match:
-            path = match.group(1).strip()
-            if path and path not in paths:
-                paths.append(path)
-    return paths
-
-
 def _tool_paths(tool_name, tool_input):
-    if tool_name == "apply_patch":
-        for key in ("command", "input", "patch"):
-            paths = _patch_paths(tool_input.get(key))
-            if paths:
-                return paths
-        log("allow: apply_patch payload contained no recognizable file paths")
-        return []
     if tool_name in PATH_NAMING_TOOLS:
         path = tool_input.get("file_path") or tool_input.get("notebook_path")
         return [path] if isinstance(path, str) and path else []
@@ -1135,7 +1087,7 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
 
 
 def agent_type_for(data):
-    """Resolve the subagent type from Claude input or Codex turn state.
+    """Resolve the subagent type from the Claude Code hook input.
 
     A generic agent bound to a role (`_bind_generic_role`) resolves to that
     role. A binding record that exists but cannot be read is uncertainty about
@@ -1164,10 +1116,7 @@ def agent_type_for(data):
                            "This agent's role binding `%s` is unreadable."
                            % path)
         return bound if _role_of(bound) else direct
-    turn_id = data.get("turn_id")
-    if not isinstance(turn_id, str) or not SAFE_ID.fullmatch(turn_id):
-        return None
-    return _mapped_agent_type(turn_id)
+    return None
 
 
 def _mapped_agent_type(stem):
@@ -1209,39 +1158,18 @@ def main():
         allow("hook input is not an object")
 
     tool_name = data.get("tool_name") or ""
-    if data.get("agent_type") == MAIN_AGENT_TYPE:
-        _deny_tool(
-            "unresolved role",
-            tool_name if isinstance(tool_name, str) else "<invalid tool name>",
-            "The main-thread identity is reserved for a recorded Codex turn.",
-        )
-    for identity_field, pattern in (("agent_type", SAFE_AGENT),
-                                    ("turn_id", SAFE_ID)):
-        if identity_field in data:
-            identity_value = data.get(identity_field)
-            if not isinstance(identity_value, str) or not pattern.fullmatch(
-                identity_value
-            ):
-                _deny_tool(
-                    "unresolved role",
-                    (
-                        tool_name
-                        if isinstance(tool_name, str)
-                        else "<invalid tool name>"
-                    ),
-                    "A present subagent identity marker is invalid.",
-                )
-    agent_type = agent_type_for(data)
-    if agent_type == MAIN_AGENT_TYPE:
-        allow("recorded Codex main thread — the founder is the CEO")
-    if not agent_type:
-        turn_id = data.get("turn_id")
-        if isinstance(turn_id, str) and SAFE_ID.fullmatch(turn_id):
+    if "agent_type" in data:
+        identity_value = data.get("agent_type")
+        if not isinstance(identity_value, str) or not SAFE_AGENT.fullmatch(
+            identity_value
+        ):
             _deny_tool(
-                "unresolved Codex role",
+                "unresolved role",
                 tool_name if isinstance(tool_name, str) else "<invalid tool name>",
-                "The turn identity mapping is missing or invalid.",
+                "A present subagent identity marker is invalid.",
             )
+    agent_type = agent_type_for(data)
+    if not agent_type:
         allow("main thread — the founder is the CEO")
 
     if not isinstance(tool_name, str):

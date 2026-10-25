@@ -1,10 +1,15 @@
+---
+title: "Commands"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Commands
 
-Claude Code invokes a skill as `/founder-os:<name>`; Codex invokes it as
-`$founder-os:<name>`. On a multi-business install, pass the business slug in
-the request: `/founder-os:daily-brief acme` in Claude or
-`$founder-os:daily-brief acme` in Codex. Tables below use the short workflow
-name as a host-neutral label.
+Claude Code invokes a skill as `/founder-os:<name>`. On a multi-business
+install, pass the business slug in the request: `/founder-os:daily-brief acme`.
+Tables below use the short workflow name as a label.
 
 Don't know which command? Ask the **chief-of-staff** — routing is its decision.
 
@@ -26,13 +31,12 @@ After `founder-os-init` persists and validates the first brief:
 4. Run `/weekly-review` on Friday before memory rewrites the week.
 5. Ask the **Chief of Staff** to route any uncategorized decision.
 
-In Claude use `/founder-os:daily-brief`, `/founder-os:pipeline-review`, and
-`/founder-os:weekly-review`. In Codex use `$founder-os:daily-brief`,
-`$founder-os:pipeline-review`, and `$founder-os:weekly-review`.
+In full: `/founder-os:daily-brief`, `/founder-os:pipeline-review`, and
+`/founder-os:weekly-review`.
 
 ## The 11 cadences
 
-Scheduled by the host-specific `setup-cadences` skill; every one also works typed by hand. See
+Scheduled by the `setup-cadences` skill; every one also works typed by hand. See
 [`cadences.md`](cadences.md) for the scheduling mechanics.
 
 | Command | When | Run by |

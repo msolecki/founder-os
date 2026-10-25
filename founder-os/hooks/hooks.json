@@ -7,29 +7,18 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.py\"",
-            "statusMessage": "Loading Founder OS context"
+            "statusMessage": "Loading Founder OS context",
+            "timeout": 10
           }
         ]
-      }
-    ],
-    "UserPromptSubmit": [
+      },
       {
+        "matcher": "startup",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\" --event user-prompt",
-            "statusMessage": "Recording Founder OS main turn"
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\" --event subagent-start",
-            "statusMessage": "Recording Founder OS decision role"
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/version-notice.py\"",
+            "timeout": 5
           }
         ]
       }
@@ -41,7 +30,19 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ownership-guard.py\"",
-            "statusMessage": "Checking Founder OS boundaries"
+            "statusMessage": "Checking Founder OS boundaries",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/decision-nudge.py\"",
+            "timeout": 10
           }
         ]
       }

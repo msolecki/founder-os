@@ -4,7 +4,7 @@
 
 ## Know what matters today
 
-Founder OS is for a solo service founder already using Claude Code or Codex.
+Founder OS is for a solo service founder already using Claude Code.
 When company decisions disappear into chats and disconnected notes, it turns
 current business state into one source-linked decision, saves it to local
 Markdown, and produces a valid first brief in less than fifteen minutes.
@@ -19,15 +19,14 @@ cancels, or publishes; the founder remains the CEO.
 **Local Markdown · No automatic sending · Explicit ownership · No hidden
 actions**
 
-It is a plugin for [Claude Code](https://code.claude.com/docs) and
-[Codex](https://developers.openai.com/codex/plugins/build) for a company of one
-— or a founder running several. Behind the daily decision are **13 agents, 57
+It is a plugin for [Claude Code](https://code.claude.com/docs) for a company of
+one — or a founder running several. Behind the daily decision are **13 agents, 57
 skills, 11 scheduled cadences** and one Markdown workspace per business. The
 roles own separate decisions; a local state gateway keeps their state from
-silently crossing those boundaries on either host.
+silently crossing those boundaries.
 
-**Free and MIT-licensed.** Founder OS runs inside your existing Claude Code or
-Codex environment and adds no account or subscription of its own.
+**Free and MIT-licensed.** Founder OS runs inside your existing Claude Code
+environment and adds no account or subscription of its own.
 
 [Getting started](docs/getting-started.md) ·
 [Example workspace](examples/studio-north/README.md) ·
@@ -48,9 +47,9 @@ Before installing:
 
 | Requirement | Purpose |
 |---|---|
-| Recent [Claude Code](https://code.claude.com/docs) or [Codex](https://developers.openai.com/codex/plugins/build) | Founder OS is a plugin, not a standalone app. |
+| Recent [Claude Code](https://code.claude.com/docs) | Founder OS is a plugin, not a standalone app. |
 | Python 3.9+ | Runs the local state gateway and host hooks. |
-| macOS, Linux, or WSL on Windows | The state gateway needs POSIX file locking; native Windows is not supported. Install WSL (`wsl --install`) and run Claude Code or Codex inside it. |
+| macOS, Linux, or WSL on Windows | The state gateway needs POSIX file locking; native Windows is not supported. Install WSL (`wsl --install`) and run Claude Code inside it. |
 | PyYAML *(development only)* | Runs the full package validator; installed runtime parsers remain dependency-light. |
 | A user scheduler *(optional)* | `launchd`, user `systemd`, or cron runs cadences. Manual workflows need none. |
 
@@ -58,7 +57,7 @@ The 13 agents are specialized roles invoked when needed, not 13 autonomous
 processes running all day. Founder OS knows only what is recorded in its local
 Markdown workspace or supplied in the current session; it does not
 automatically sync a calendar, CRM, inbox, or bank account. Workspace files stay
-on your machine. Prompts and context sent through Claude Code or Codex remain
+on your machine. Prompts and context sent through Claude Code remain
 governed by that environment's data-handling terms.
 
 In Claude Code:
@@ -68,25 +67,11 @@ In Claude Code:
 /plugin install founder-os@founder-os
 ```
 
-In Codex:
-
-```
-codex plugin marketplace add msolecki/founder-os
-codex plugin add founder-os@founder-os
-```
-
-Then run the two workflows once. Claude Code uses namespaced slash commands:
+Then run the two workflows once, as namespaced slash commands:
 
 ```
 /founder-os:founder-os-init      # one resumable flow to a persisted first brief
 /founder-os:setup-cadences       # optional local scheduling
-```
-
-Codex invokes the same skills with dollar syntax:
-
-```
-$founder-os:founder-os-init
-$founder-os:setup-cadences
 ```
 
 The flow targets a ten-minute median and stops at fifteen minutes. Activation
@@ -94,7 +79,7 @@ means a valid `reviews/daily/YYYY-MM-DD.md`, not an installed plugin or an empty
 folder. A valid brief has all four required headings from `ownership.yaml` —
 `## The one thing`, `## Rotting`, `## The trade`, and `## Triage` — with
 non-empty `## The one thing` and `## The trade`. If onboarding stops, repeat
-the host-specific init command above; it preserves populated sections and
+the init command above; it preserves populated sections and
 resumes from the first missing owner output.
 
 After preflight, onboarding asks the optional **“What made you install Founder
@@ -149,11 +134,7 @@ the source date without inventing a freshness label.
 Update with `/plugin marketplace update founder-os`, then
 `/plugin update founder-os@founder-os` and `/reload-plugins`. Diagnose a live
 workspace with `/founder-os-doctor`; it reports before proposing repairs.
-For Codex, refresh with `codex plugin marketplace upgrade founder-os`, replace
-the cached install with `codex plugin remove founder-os@founder-os` followed by
-`codex plugin add founder-os@founder-os`, then start a new conversation.
-Uninstall with the host's corresponding `plugin uninstall`/`plugin remove`
-command. Your Markdown workspace is separate from the plugin and remains yours.
+Uninstall with `/plugin uninstall founder-os@founder-os`. Your Markdown workspace is separate from the plugin and remains yours.
 The full recovery branches are in
 [`docs/getting-started.md`](docs/getting-started.md#update-repair-or-uninstall).
 
@@ -167,8 +148,8 @@ The full recovery branches are in
 | Skills | `founder-os/skills/*/SKILL.md` | 57 procedures. Role skills follow `references/skill-template.md` exactly; each declares its writes in `metadata.writes`. |
 | Ownership map | `founder-os/references/ownership.yaml` | The single source of truth: `workspace_files:` (the expected inventory; init scaffolds the Chief of Staff's entries, each other owner creates its own on first write), `owns:` (one owner per file), `sections:` (the headings each file may contain). |
 | State gateway | `founder-os/mcp/` | The local `founder-os-state` stdio server. A role capability binds one role, workspace, workflow, and run; reads are bounded and writes are owner-checked, hash-guarded, structure-validated, atomic, and fail closed. |
-| Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Maps Claude `agent_type` or Codex `turn_id`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the local gateway. |
-| Validator | `scripts/validate_package.py` | 21 build-time checks (below). CI runs it on every push. |
+| Host guard | `founder-os/hooks/ownership-guard.py` | Defense in depth. Reads the Claude Code `agent_type`, denies role direct-file/outbound access and unknown MCP, and permits only capability-consistent calls to the local gateway. |
+| Validator | `scripts/validate_package.py` | 22 build-time checks (below). CI runs it on every push. |
 | Cadences | `founder-os/scripts/cadence_manager.py` | Previews, snapshots, and safely applies ten jobs per business plus one conditional portfolio job through cron, launchd, or persistent user systemd. Exact identities prevent sibling schedules from being overwritten. |
 | Local overlay | `founder-os/references/extensibility.md` | Per-business extension without a fork: `$FOUNDER_OS_HOME/_local/` may **add** a file, skill or agent and can never reassign or remove one the package ships. Merged into the guard's map per workspace; validated by `founder-os-doctor`, because a build-time validator cannot see a stranger's workspace. Forged by `/skill-forge`, whose commonest correct answer is "a packaged agent already owns this decision". |
 | Multi-business | `founder-os/references/multi-business.md` | One workspace per business + a registry (`~/.founder-os/businesses.yaml`) + a portfolio workspace. The hook resolves all registered roots; `context-load` step 0 picks the business before any file opens. |
@@ -193,10 +174,10 @@ button.
 
 ### Enforcement is layered, deliberately
 
-1. **Build time** — `scripts/validate_package.py`: 21 build-time checks cover
-   both manifests/adapters, strict frontmatter and tools, one-level sibling
+1. **Build time** — `scripts/validate_package.py`: 22 build-time checks cover
+   the manifest and gateway adapter, strict frontmatter and tools, one-level sibling
    orchestration, ownership/section joins, beliefs, hooks, public counts, and
-   the reference pages' membership against the package.
+   the reference pages' membership and frontmatter against the package.
 2. **State access** — the local `founder-os-state` gateway is the authoritative
    write boundary. Role reads require a live role capability; write uncertainty
    fails closed with one of seven stable error codes, and successful writes use
@@ -226,22 +207,29 @@ founder-os/                       # the plugin (what gets installed)
   mcp/                            # one eight-tool local state gateway
   scripts/cadence_manager.py      # safe scheduler preview/snapshot/apply
   scripts/dashboard/              # the /dashboard renderer (reads state, writes _dashboard/)
-  hooks/                          # hooks.json + ownership-guard.py
+  scripts/skill_usage.py          # read-only per-workflow usage from local history
+  hooks/                          # guard, session context, version notice, Stop nudge
+  output-styles/                  # founder-brief
+  SURFACE.txt                     # every public name; the validator diffs it
   references/                     # guidance.md (injected into every session;
                                   # the never-miss rules), ownership.yaml,
                                   # house-rules, skill-template,
                                   # thresholds.yaml, ingestion-gate, linking,
                                   # multi-business
   images/                         # org chart (mermaid + png)
-scripts/validate_package.py       # build-time validator (21 checks)
+scripts/validate_package.py       # build-time validator (22 checks)
 scripts/generate_commands.py      # derives COMMANDS.md from the package; CI checks it
 tests/                            # validator mutations + hook subprocess + registry roots
 CHANGELOG.md                      # what shipped in each version
 ```
 
-GitHub Pages serves `docs/index.html` as the public landing page. The remaining
-Markdown files under `docs/` are the linked documentation hub and are not a
-second landing-page index.
+GitHub Pages serves `docs/index.html` as the public landing page.
+`.github/workflows/pages.yml` builds `docs/` with Jekyll: the remaining Markdown
+files are the linked documentation hub, rendered as pages beside it, and
+`CHANGELOG.md` is copied in as the changelog page. Deliberate settings that look
+like defects are in [`docs/pitfalls.md`](docs/pitfalls.md), the project's
+decision log is [`docs/decisions.md`](docs/decisions.md), and known follow-ups
+are in [`docs/backlog.md`](docs/backlog.md).
 
 ## Development
 

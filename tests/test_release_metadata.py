@@ -15,7 +15,6 @@ MARKETPLACE_PATH = REPO_ROOT / ".claude-plugin" / "marketplace.json"
 CLAUDE_MANIFEST_PATH = (
     REPO_ROOT / "founder-os" / ".claude-plugin" / "plugin.json"
 )
-CODEX_MANIFEST_PATH = REPO_ROOT / "founder-os" / ".codex-plugin" / "plugin.json"
 CHANGELOG_PATH = REPO_ROOT / "CHANGELOG.md"
 CI_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 DEVELOPMENT_PATH = REPO_ROOT / "docs" / "development.md"
@@ -67,9 +66,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         cls.claude_manifest = json.loads(
             CLAUDE_MANIFEST_PATH.read_text(encoding="utf-8")
         )
-        cls.codex_manifest = json.loads(
-            CODEX_MANIFEST_PATH.read_text(encoding="utf-8")
-        )
         cls.changelog = CHANGELOG_PATH.read_text(encoding="utf-8")
         cls.ci = CI_PATH.read_text(encoding="utf-8")
         cls.development = DEVELOPMENT_PATH.read_text(encoding="utf-8")
@@ -86,7 +82,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         versions = {
             "marketplace": self.marketplace["plugins"][0]["version"],
             "claude": self.claude_manifest["version"],
-            "codex": self.codex_manifest["version"],
         }
         self.assertEqual(set(versions.values()), {RELEASE_VERSION}, versions)
 
@@ -95,7 +90,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "marketplace": self.marketplace.get("description"),
             "marketplace entry": self.marketplace["plugins"][0]["description"],
             "claude": self.claude_manifest["description"],
-            "codex": self.codex_manifest["description"],
         }
         self.assertEqual(
             set(descriptions.values()), {ACTIVATION_DESCRIPTION}, descriptions
@@ -119,10 +113,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, release)
-        self.assertNotIn("Codex remains beta/manual", release)
-
-        historical = self.changelog.split("## 2.4.0 — 2026-07-22", 1)[1]
-        self.assertIn("Codex remains beta/manual", historical)
 
     def test_a_published_release_entry_is_never_rewritten(self):
         """A tagged entry is a record, not a draft.
@@ -211,7 +201,7 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "agents": 13,
             "skills": 57,
             "cadences": 11,
-            "validator": 21,
+            "validator": 22,
             "doctor": 20,
         })
 
@@ -265,8 +255,8 @@ class ReleaseMetadataContractTest(unittest.TestCase):
                 "authoritative write boundary", "fail closed", "defense in depth",
             ),
             "docs/getting-started.md": (
-                "codex plugin marketplace add msolecki/founder-os",
-                "codex plugin add founder-os@founder-os",
+                "/plugin marketplace add msolecki/founder-os",
+                "/plugin install founder-os@founder-os",
             ),
         }
         documents = {
@@ -315,7 +305,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "all 50 commands",
             "current: **2.4.0**",
             "current: **2.3.0**",
-            "codex remains beta/manual",
             "seven-tool state gateway",
             "managers can summon",
             "it can summon the rest",
@@ -376,19 +365,6 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "published: %s — move them to docs/superpowers/" % internal,
         )
 
-    def test_codex_manifest_names_the_real_gateway_and_trust_boundary(self):
-        self.assertEqual(
-            set(self.codex_manifest["mcpServers"]),
-            {"founder-os-state"},
-        )
-        self.assertEqual(
-            self.codex_manifest["interface"]["privacyPolicyURL"],
-            "https://msolecki.github.io/founder-os/trust.html",
-        )
-        capabilities = self.codex_manifest["interface"]["capabilities"]
-        self.assertIn("Local state gateway", capabilities)
-        self.assertIn("Role-owned Markdown writes", capabilities)
-
     def test_internal_launch_working_material_is_not_shipped(self):
         product_hunt = REPO_ROOT / "docs" / "product-hunt"
         self.assertFalse(
@@ -396,9 +372,9 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "internal launch material is shipped: docs/product-hunt",
         )
 
-    def test_ci_keeps_internal_smoke_without_unapproved_cli_download(self):
+    def test_ci_keeps_internal_smoke_and_pins_the_only_cli_download(self):
         workflow = yaml.safe_load(self.ci)
-        job = workflow["jobs"]["validate-and-test"]
+        job = workflow["jobs"]["test"]
         self.assertNotIn("if", job)
         self.assertFalse(job.get("continue-on-error", False))
 
@@ -420,9 +396,16 @@ class ReleaseMetadataContractTest(unittest.TestCase):
                 self.assertNotIn("if", step)
                 self.assertFalse(step.get("continue-on-error", False))
 
+        # The founder approved one npm download (2026-10-25): the pinned Claude CLI,
+        # in the lint job only, with every dependency's lifecycle script skipped.
         self.assertNotIn("npx", self.ci)
-        self.assertNotIn("npm install", self.ci)
         self.assertNotIn("npm exec", self.ci)
+        self.assertNotIn("npm install", yaml.safe_dump(job))
+        installs = re.findall(r"npm install[^\n]*", self.ci)
+        self.assertEqual(
+            installs,
+            ["npm install -g --ignore-scripts @anthropic-ai/claude-code@2.1.300"],
+        )
 
     def test_development_guide_documents_both_official_local_gates(self):
         normalized = " ".join(self.development.split())
@@ -433,8 +416,8 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "`founder-os/references/guidance.md`, not a root `CLAUDE.md`",
             "the `SessionStart` hook injects that canonical guidance",
             "tests/test_session_context.py",
-                        "explicit founder approval",
-            "a release gate, not CI coverage",
+            "pinned Claude CLI",
+            "--ignore-scripts",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, normalized)

@@ -1,3 +1,10 @@
+---
+title: "Cadences and scheduling"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Cadences and scheduling
 
 Founder OS can run ten recurring workflows per business and one conditional
@@ -22,16 +29,8 @@ and local to your machine. There is no Founder OS cloud scheduler.
 
 ## Invoke setup on your host
 
-Claude Code:
-
 ```text
 /founder-os:setup-cadences
-```
-
-Codex:
-
-```text
-$founder-os:setup-cadences
 ```
 
 The workflow uses the packaged `founder-os/scripts/cadence_manager.py`; it does
@@ -53,25 +52,13 @@ directory.
 
 ## Unattended host commands
 
-Claude jobs use a namespaced workflow and grant only the packaged MCP surface:
+Jobs use a namespaced workflow and grant only the packaged MCP surface:
 
 ```text
 claude -p /founder-os:<workflow> --permission-mode dontAsk \
   --allowedTools 'mcp__plugin_founder-os_founder-os-state__*' --max-turns 50 \
   --no-session-persistence
 ```
-
-Codex jobs use the documented non-interactive command and dollar skill syntax:
-
-```text
-codex -a never -c sandbox_workspace_write.network_access=false \
-  exec --sandbox workspace-write --ephemeral \
-  -C <workspace-parent> '$founder-os:<workflow>'
-```
-
-The Codex run needs only the local `founder-os-state` MCP server, so its shell
-sandbox is pinned offline on the command line. A `network_access = true` in
-your own `~/.codex/config.toml` does not reach scheduled runs.
 
 The manager passes argument arrays, never `/bin/sh -c`. Cron fields use POSIX
 quoting and escape cron's special percent sign. Launchd uses
@@ -84,14 +71,11 @@ you chose, not its symlink target, so a package-manager upgrade does not
 strand the schedule. Cron, launchd, and systemd times are all derived from one
 cron table in the manager.
 
-Both hosts run scheduled sessions without persisting their conversation
-rollouts. Durable decisions and receipts stay in the Founder OS workspace;
+Scheduled sessions run without persisting their conversation transcripts. Durable decisions and receipts stay in the Founder OS workspace;
 recurring host transcripts do not accumulate separately.
 
 Official host contracts:
 
-- [Codex non-interactive mode](https://developers.openai.com/codex/noninteractive)
-- [Codex CLI reference](https://developers.openai.com/codex/cli/reference)
 - [Claude Code headless mode](https://code.claude.com/docs/en/headless)
 - [Claude MCP permissions](https://code.claude.com/docs/en/agent-sdk/mcp)
 

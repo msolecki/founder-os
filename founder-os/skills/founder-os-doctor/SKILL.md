@@ -86,7 +86,7 @@ a health report that lists a screen of green checks trains the founder to skim i
 | **Overlay incoherent** | A path in the overlay's `workspace_files:` or `sections:` has no `owns:` entry; or two local agents claim one path; or a local skill's `metadata.writes` names a path its agent does not own | The three joins `scripts/validate_package.py` runs against the package, run here against the overlay. The third is the one nothing else catches: `agent -> skill` and `file -> owner` can both be right while `skill -> file` is wrong, and the result is a local skill that produces a deny every time it runs. Report each join that failed. |
 | **Local agent overreaches** | A file in `_local/agents/` omits `tools:`, or names `Bash`, `WebFetch`, `WebSearch`, `Agent`, or an `mcp__*` tool | Omitting `tools:` inherits everything, including Bash. **You are the only check that reads this rule.** The guard's `check_outbound` denies outbound tools to the thirteen packaged roles; a local agent is not one of them, so the role lockdown never applies to it and a granted `Bash` is a capability the founder really has. The gateway still refuses it — no role capability, no `founder-os-state` call — but nothing stops the shell. Report the tool by name and say plainly that it is live, not pending a mid-run denial. House rule 0 binds every packaged role; it cannot bind an agent the founder wrote, which is why this finding is theirs to act on. |
 | **Local skill off template** | A file in `_local/skills/` is missing `## Beliefs`, carries fewer than 3 belief bullets, places them after `## Steps`, or its slug lacks the `local-` prefix or collides with a packaged skill | The template's bar does not lapse because the founder is the author — a local skill with no beliefs is the generic advisor with a custom name on it, which is the thing this package exists not to be. The slug rules are collision insurance: a packaged skill added upstream next year must not silently shadow one they wrote this year. |
-| **Installed copy drift** | A skill in `_local/skills/` has no identical installed copy under either `~/.claude/skills/` or `~/.codex/skills/`, or either copy differs from its source | Two host copies are required by the one-contract rule. Uninstalled means a workflow exists and one host cannot run it; diverged means the founder edited a copy the doctor cannot vouch for. Report the host and hand to `/skill-forge`; **never sync them yourself** — you cannot tell which side is intended. |
+| **Installed copy drift** | A skill in `_local/skills/` has no installed copy under `~/.claude/skills/`, or the copy differs from its source | Uninstalled means a workflow exists and the host cannot run it; diverged means the founder edited a copy the doctor cannot vouch for. Report the path and hand to `/skill-forge`; **never sync them yourself** — you cannot tell which side is intended. |
 | **Queue rotting** | `## Doing` holds more than its cap, `## Queued` more than its cap, or any item sits past its own clock — the caps and the clocks are in `references/thresholds.yaml` (`queue.doing_cap`, `queue.queued_cap`, `queue.queued_days`, `queue.blocked_days`, `queue.doing_days`), and that file is the only place they are written down | The caps and clocks are enforced by `queue` and the Friday sweep in `weekly-review` is the only thing that enforces them. If the sweep stalls, the queue bloats into the graveyard `queue` warns about and nothing else notices — every other check reads state some cadence maintains, and this is the state the missing cadence was maintaining. Report the counts and the oldest offender; hand to the **Chief of Staff**. Never drop items yourself — the drop rule wants a reason written, and that is the sweep's job, not yours. |
 
 ## Steps
@@ -186,6 +186,23 @@ Deliver in conversation:
 
 If nothing tripped, say so in one line. Do not enumerate the passing checks.
 
+### Optional: which workflows ever run
+
+Not a check — nothing here is rot — and only when the founder asks which
+workflows they use, or is about to prune or add one. You have no shell, so you
+do not run it: offer the founder the command to run in their own terminal (or
+the main thread, outside any role), and read what they paste back.
+
+    python3 <plugin>/scripts/skill_usage.py
+
+It reads their local Claude Code session history, read-only, and prints per
+workflow and role the calls in the last 30 days and the last date, then the
+names that never ran. It prints names and dates only, never transcript content,
+and nothing leaves the machine. Add it under the report as **Usage**, one line
+per name that ran plus the never-used list, and draw no conclusion the
+founder did not ask for: a workflow nobody ran may simply not have been needed
+yet.
+
 ## The shareable report
 
 Everything above is written for the founder, about their own company, and none
@@ -220,7 +237,7 @@ count, or a ratio. **Nothing the founder wrote enters it.**
 | Field | Value | Why this is not the founder's data |
 |---|---|---|
 | `founder-os` | Version, read from `.claude-plugin/plugin.json` | The package's own number. |
-| `host` | `claude-code` or `codex` | Which host is running you. |
+| `host` | `claude-code` | Which host is running you. |
 | `businesses` | The count of active entries in the registry, or `1` | A count. Never a slug — a business slug is a company name. |
 | `activated` | `yes` / `no` — is there a `reviews/daily/` file with the four required headings, `## The one thing` and `## The trade` non-empty | The answer maintainers most need and cannot otherwise get. |
 | `workspace` | `<present>/<declared>` against `workspace_files:`, then the names of any missing entries | Those names come from `ownership.yaml`. The founder did not choose them. |

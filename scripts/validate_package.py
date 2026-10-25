@@ -99,36 +99,19 @@ def check_plugin(root, agents):
         errs.append("plugin.json: 'name' is the one required field and it is missing")
     if d.get("name") and d["name"] != "founder-os":
         errs.append("plugin.json: name must be 'founder-os'")
-    codex_path = root / ".codex-plugin" / "plugin.json"
-    if codex_path.exists():
-        try:
-            codex = json.loads(codex_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as e:
-            return errs + [".codex-plugin/plugin.json: invalid JSON (%s)" % e]
-        for field in ("name", "version", "description"):
-            if d.get(field) != codex.get(field):
-                errs.append("plugin manifests: %s differs between Claude and Codex" % field)
     return errs
 
 
 def check_host_adapters(root, agents):
-    """Validate Claude and Codex point at the same packaged stdio gateway."""
+    """Validate Claude Code points at the packaged stdio gateway."""
     errs = []
     claude_path = root / ".mcp.json"
-    codex_path = root / ".codex-plugin" / "plugin.json"
     claude_expected = {
         "mcpServers": {
             "founder-os-state": {
                 "command": "python3",
                 "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/founder_os_state.py"],
             },
-        },
-    }
-    codex_expected = {
-        "founder-os-state": {
-            "command": "python3",
-            "args": ["./mcp/founder_os_state.py"],
-            "cwd": ".",
         },
     }
 
@@ -144,21 +127,6 @@ def check_host_adapters(root, agents):
                 errs.append(
                     ".mcp.json: founder-os-state must use python3 and "
                     "${CLAUDE_PLUGIN_ROOT}/mcp/founder_os_state.py"
-                )
-
-    if not codex_path.is_file():
-        errs.append(".codex-plugin/plugin.json: missing Codex adapter manifest")
-    else:
-        try:
-            codex = json.loads(codex_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            errs.append(".codex-plugin/plugin.json: invalid JSON (%s)" % exc)
-        else:
-            if codex.get("mcpServers") != codex_expected:
-                errs.append(
-                    ".codex-plugin/plugin.json: mcpServers must inline "
-                    "founder-os-state via ./mcp/founder_os_state.py with "
-                    "cwd '.'"
                 )
 
     entry = root / "mcp" / "founder_os_state.py"
@@ -209,58 +177,6 @@ def check_host_adapters(root, agents):
                     "missing=%s unexpected=%s"
                     % (missing, unexpected)
                 )
-    return errs
-
-
-def check_codex_skill_interfaces(root, agents):
-    """Prove every shared workflow has a Codex discovery adapter."""
-    errs = []
-    for skill_path in sorted((root / "skills").glob("*/SKILL.md")):
-        slug = skill_path.parent.name
-        interface_path = skill_path.parent / "agents" / "openai.yaml"
-        if not interface_path.exists():
-            errs.append(
-                "skills/%s: missing agents/openai.yaml for Codex" % slug
-            )
-            continue
-        try:
-            data = yaml.safe_load(
-                interface_path.read_text(encoding="utf-8")
-            ) or {}
-        except yaml.YAMLError as exc:
-            errs.append(
-                "skills/%s/agents/openai.yaml: invalid YAML (%s)"
-                % (slug, exc)
-            )
-            continue
-        interface = data.get("interface") if isinstance(data, dict) else None
-        if not isinstance(interface, dict):
-            errs.append(
-                "skills/%s/agents/openai.yaml: missing interface" % slug
-            )
-            continue
-        for field in (
-            "display_name",
-            "short_description",
-            "default_prompt",
-        ):
-            value = interface.get(field)
-            if not isinstance(value, str) or not value.strip():
-                errs.append(
-                    "skills/%s/agents/openai.yaml: missing %s"
-                    % (slug, field)
-                )
-        prompt = interface.get("default_prompt", "")
-        prompt_names_skill = (
-            isinstance(prompt, str)
-            and prompt.strip()
-            and ("$" + slug) in prompt
-        )
-        if isinstance(prompt, str) and prompt.strip() and not prompt_names_skill:
-            errs.append(
-                "skills/%s/agents/openai.yaml: default_prompt must name $%s"
-                % (slug, slug)
-            )
     return errs
 
 
@@ -1058,8 +974,14 @@ def check_beliefs(root, agents):
     return errs
 
 
+HOOK_OUTPUT_CAP = 10000
+# session-context's prefix plus the version notice and their JSON envelopes,
+# measured at about 620 characters; the rest is margin.
+HOOK_OUTPUT_ROOM = 1024
+
+
 def check_hooks(root, agents):
-    """Validate matcher coverage and compile both identity-boundary hooks.
+    """Validate matcher coverage and compile the identity-boundary hook.
 
     A typo in the matcher or a syntax error in the guard ships silently today:
     every other check validates prose and map, and the one layer that acts at
@@ -1081,39 +1003,6 @@ def check_hooks(root, agents):
     patterns = [h.get("matcher", "")
                 for h in hooks.get("PreToolUse", [])]
 
-    def recorders(event):
-        return [
-            hook.get("command", "")
-            for group in hooks.get(event, [])
-            for hook in group.get("hooks", [])
-            if isinstance(hook, dict) and hook.get("type") == "command"
-            and "record-agent.py" in hook.get("command", "")
-        ]
-
-    # One script under two events, and both registrations have to exist. Which
-    # one fired is the host's knowledge, and a payload that stops carrying
-    # `hook_event_name` records nothing — after which the guard denies every
-    # Codex tool call on the unrecorded turn. The existence half was checked for
-    # the main turn only, so deleting the whole SubagentStart block validated
-    # clean while every subagent turn went unmapped.
-    for event, flag, denied in (
-        ("UserPromptSubmit", "--event user-prompt", "the founder's main turn"),
-        ("SubagentStart", "--event subagent-start", "every subagent turn"),
-    ):
-        registrations = recorders(event)
-        if not registrations:
-            errs.append(
-                "hooks/hooks.json: %s must record its turn via "
-                "record-agent.py — without it the guard denies %s under Codex"
-                % (event, denied)
-            )
-        for command in registrations:
-            if flag not in command:
-                errs.append(
-                    "hooks/hooks.json: the %s registration of record-agent.py "
-                    "must pass %s" % (event, flag)
-                )
-
     def covered(tool_name):
         for pat in list(patterns):
             if not pat:
@@ -1129,7 +1018,7 @@ def check_hooks(root, agents):
 
     for tool in (
         "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep",
-        "Bash", "WebFetch", "WebSearch", "apply_patch", "mcp__x",
+        "Bash", "WebFetch", "WebSearch", "mcp__x",
     ):
         if not covered(tool):
             if tool == "mcp__x":
@@ -1138,6 +1027,30 @@ def check_hooks(root, agents):
             else:
                 errs.append("hooks/hooks.json: PreToolUse matcher does not "
                             "cover '%s'" % tool)
+    # A command hook without a timeout inherits the host's default, which is
+    # minutes: a hung guard would stall every tool call for that long.
+    for event, entries in sorted(hooks.items()):
+        for entry in entries or []:
+            for hook in entry.get("hooks") or []:
+                timeout = hook.get("timeout")
+                if hook.get("type") == "command" and not (
+                        isinstance(timeout, int)
+                        and not isinstance(timeout, bool) and timeout > 0):
+                    errs.append("hooks/hooks.json: %s command %r has no "
+                                "positive integer timeout"
+                                % (event, hook.get("command", "")))
+    # Claude Code caps hook output at 10,000 characters. session-context
+    # injects all of guidance.md, and the version notice lands in the same
+    # SessionStart context, so together they must fit — a guidance file that
+    # grows past the cap is truncated mid-rule, silently.
+    guidance = root / "references" / "guidance.md"
+    if guidance.exists():
+        size = len(guidance.read_text(encoding="utf-8"))
+        if size + HOOK_OUTPUT_ROOM > HOOK_OUTPUT_CAP:
+            errs.append("references/guidance.md: %d characters leaves no room "
+                        "for the hook prefix and notice under Claude Code's "
+                        "%d-character hook output cap"
+                        % (size, HOOK_OUTPUT_CAP))
     guard = root / "hooks" / "ownership-guard.py"
     if not guard.exists():
         errs.append("hooks/ownership-guard.py: missing")
@@ -1146,14 +1059,6 @@ def check_hooks(root, agents):
             compile(guard.read_text(encoding="utf-8"), str(guard), "exec")
         except SyntaxError as e:
             errs.append("hooks/ownership-guard.py: does not compile (%s)" % e)
-    recorder = root / "hooks" / "record-agent.py"
-    if not recorder.exists():
-        errs.append("hooks/record-agent.py: missing")
-    else:
-        try:
-            compile(recorder.read_text(encoding="utf-8"), str(recorder), "exec")
-        except SyntaxError as e:
-            errs.append("hooks/record-agent.py: does not compile (%s)" % e)
     return errs
 
 
@@ -1205,10 +1110,10 @@ VERSION_SCANNED = (
 def check_version_sites(root, agents):
     """Every place the version is written must be one `bump_version.py` knows.
 
-    A release moves one number through eleven files. The list of eleven lived in
+    A release moves one number through ten files. The list of ten lived in
     a prose checklist, which is a hand-kept list of places — the same shape as
     every count this package refuses to hand-keep. So the list lives in
-    `scripts/bump_version.py`, this reads it, and a twelfth site added without
+    `scripts/bump_version.py`, this reads it, and an eleventh site added without
     telling that script fails the build instead of shipping a package that
     disagrees with itself about which version it is.
 
@@ -1307,8 +1212,7 @@ def _counted_docs(root):
             root / "README.md", root / "references" / "guidance.md", root / "COMMANDS.md",
             root / "references" / "extensibility.md",
             root / "skills" / "skill-forge" / "SKILL.md",
-            root.parent / ".github" / "ISSUE_TEMPLATE" / "idea.yml",
-            root / ".codex-plugin" / "plugin.json"]
+            root.parent / ".github" / "ISSUE_TEMPLATE" / "idea.yml"]
 
 
 def check_readme_counts(root, agents):
@@ -1473,14 +1377,88 @@ def check_docs_parity(root, agents):
     return errs
 
 
-CHECKS = [check_plugin, check_host_adapters, check_codex_skill_interfaces, check_agents,
+def check_surface(root, agents):
+    """`SURFACE.txt` lists every public name, and must match the disk.
+
+    A skill, agent or output style is something a founder types or a host
+    loads by name, and a hook event or script is something their machine runs.
+    Renaming or dropping one breaks an installed habit, so it should be a
+    deliberate edit to this list — and a changelog line — never a side effect
+    of moving a file. Skipped when the package carries no list, which is every
+    test fixture.
+    """
+    listed_path = root / "SURFACE.txt"
+    if not listed_path.exists():
+        return []
+    names = ["skill " + p.parent.name
+             for p in (root / "skills").glob("*/SKILL.md")]
+    names += ["agent " + p.stem for p in (root / "agents").glob("*.md")]
+    names += ["output-style " + p.stem
+              for p in (root / "output-styles").glob("*.md")]
+    hooks_json = root / "hooks" / "hooks.json"
+    if hooks_json.exists():
+        try:
+            events = json.loads(hooks_json.read_text(encoding="utf-8"))
+        except ValueError:
+            events = {}  # check_hooks reports the broken file
+        names += ["hook " + event for event in (events.get("hooks") or {})]
+    names += ["hook-script " + p.name for p in (root / "hooks").glob("*.py")]
+    on_disk = set(names)
+    lines = [line.strip() for line in
+             listed_path.read_text(encoding="utf-8").splitlines()
+             if line.strip()]
+    listed = set(lines)
+    errs = [] if lines == sorted(listed) else [
+        "SURFACE.txt: not sorted, or a name is listed twice"]
+    errs += ["SURFACE.txt: '%s' ships but is not listed — add it and a "
+            "changelog line" % name for name in sorted(on_disk - listed)]
+    errs += ["SURFACE.txt: lists '%s', which no longer ships — a rename or "
+             "removal is a changelog line, not a silent edit" % name
+             for name in sorted(listed - on_disk)]
+    return errs
+
+
+def check_docs_frontmatter(root, agents):
+    """Every `docs/*.md` page says what it is, who owns it and when it was
+    last checked against the code.
+
+    A page with no date reads as current forever, which is how a doc goes
+    stale without anyone noticing. `last-verified` must be a real date; a page
+    nobody re-checked carries the date of its last substantive change instead.
+    Skipped when the site is absent, which is every test fixture.
+    """
+    from datetime import date
+
+    errs = []
+    site = root.parent / "docs"
+    for page in sorted(site.glob("*.md")) if site.is_dir() else []:
+        name = "docs/" + page.name
+        try:
+            data, _ = parse_frontmatter(page)
+        except (ValueError, yaml.YAMLError) as error:
+            errs.append("%s: no readable frontmatter (%s)"
+                        % (name, str(error).splitlines()[0]))
+            continue
+        if not str(data.get("title") or "").strip():
+            errs.append("%s: frontmatter has no title" % name)
+        if data.get("status") not in ("current", "draft", "deprecated"):
+            errs.append("%s: status must be current, draft or deprecated"
+                        % name)
+        if not str(data.get("owner") or "").strip():
+            errs.append("%s: frontmatter has no owner" % name)
+        if not isinstance(data.get("last-verified"), date):
+            errs.append("%s: last-verified is not a YYYY-MM-DD date" % name)
+    return errs
+
+
+CHECKS = [check_plugin, check_host_adapters, check_agents,
           check_agent_tools, check_one_level_orchestration,
           check_role_skill_exclusivity, check_orphans, check_agent_headings,
           check_ownership, check_derived_files, check_thresholds,
           check_workspace_files_complete, check_skill_writes,
           check_sections, check_capture_contract, check_beliefs, check_hooks,
           check_readme_counts, check_docs_parity,
-          check_version_sites]
+          check_version_sites, check_surface, check_docs_frontmatter]
 
 
 def run_checks(root):

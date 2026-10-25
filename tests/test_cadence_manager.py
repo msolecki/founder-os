@@ -71,7 +71,7 @@ class CadenceManagerTests(unittest.TestCase):
             slug=slug,
         )
 
-    def test_host_argv_matches_supported_claude_and_codex_contracts(self):
+    def test_host_argv_matches_the_supported_claude_contract(self):
         claude = self.config("claude")
         self.assertEqual(
             self.manager.host_argv(claude, "daily-brief"),
@@ -88,27 +88,11 @@ class CadenceManagerTests(unittest.TestCase):
                 "--no-session-persistence",
             ),
         )
-        codex = self.config("codex")
-        self.assertEqual(
-            self.manager.host_argv(codex, "daily-brief"),
-            (
-                "/opt/Codex App/bin/codex",
-                "-a",
-                "never",
-                "-c",
-                "sandbox_workspace_write.network_access=false",
-                "exec",
-                "--sandbox",
-                "workspace-write",
-                "--ephemeral",
-                "-C",
-                "/Users/Test Founder/work $;(tree)",
-                "$founder-os:daily-brief",
-            ),
-        )
+        with self.assertRaisesRegex(self.manager.CadenceError, "host must be claude"):
+            self.config("other")
 
     def test_cron_quoting_roundtrips_metacharacters_without_shell_fragments(self):
-        config = self.config("codex")
+        config = self.config()
         block = self.manager.render_cron_blocks(config, "2026-08-01")
         line = next(line for line in block.splitlines() if "daily-brief" in line)
         command = line.split(None, 5)[5].split(" >> ", 1)[0]
@@ -170,7 +154,7 @@ class CadenceManagerTests(unittest.TestCase):
         self.assertNotIn("100%real", block)
 
     def test_launchd_and_systemd_are_shell_free_and_persistent(self):
-        config = self.config("codex")
+        config = self.config()
         launchd = self.manager.render_launchd(config)
         quarterly_name = next(name for name in launchd if "quarterly-planning" in name)
         quarterly = plistlib.loads(launchd[quarterly_name])
@@ -206,7 +190,7 @@ class CadenceManagerTests(unittest.TestCase):
         self.assertIn("ExecStart=", service)
         self.assertIn("UMask=0077", service)
         self.assertIn(
-            'Environment="PATH=/opt/Codex App/bin:/usr/bin:/bin"',
+            'Environment="PATH=/opt/Claude App/bin:/usr/bin:/bin"',
             service,
         )
         # systemd does not unquote WorkingDirectory= or StandardOutput=.

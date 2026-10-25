@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inject the canonical Founder OS invariants into Claude and Codex sessions."""
+"""Inject the canonical Founder OS invariants into Claude Code sessions."""
 import json
 import os
 import sys
@@ -27,7 +27,7 @@ WINDOWS_UNSUPPORTED = (
     "Founder OS context warning: this session runs on native Windows, where "
     "the Founder OS state server cannot start. Do not run Founder OS "
     "workflows here. Tell the user to install WSL (wsl --install), open "
-    "Claude Code or Codex inside the WSL shell, and run setup again there."
+    "Claude Code inside the WSL shell, and run setup again there."
 )
 
 

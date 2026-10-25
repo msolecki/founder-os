@@ -60,6 +60,5 @@ routing is its one decision, and its instructions carry the full table.
 
 ## First run
 
-Run `/founder-os:founder-os-init` in Claude Code or
-`$founder-os:founder-os-init` in Codex. An org of agents and an empty directory
-is not a product yet.
+Run `/founder-os:founder-os-init`. An org of agents and an empty directory is
+not a product yet.

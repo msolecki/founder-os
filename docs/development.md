@@ -1,3 +1,10 @@
+---
+title: "Development guide"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Development guide
 
 For working *on* the package. The repo is both the plugin marketplace and the
@@ -21,14 +28,13 @@ is a no from the machine before it is a review comment from a human.
 
 ## What the validator checks
 
-`scripts/validate_package.py` runs 21 build-time checks (each named function).
+`scripts/validate_package.py` runs 22 build-time checks (each named function).
 They enforce *structure*; they cannot decide whether business advice is good.
 
 | Check | Fails when… |
 |---|---|
-| `check_plugin` | Claude/Codex manifests are missing or invalid, identities/descriptions disagree, or the plugin name is not `founder-os`. |
-| `check_host_adapters` | The Claude `.mcp.json` or Codex `mcpServers` adapter is missing, malformed, or does not point at the one shared local gateway entry. |
-| `check_codex_skill_interfaces` | A shared `skills/<name>/SKILL.md` has no Codex `agents/openai.yaml`, malformed interface YAML, missing presentation fields, or a default prompt that does not name the same `$<name>` skill. |
+| `check_plugin` | The manifest is missing or invalid, or the plugin name is not `founder-os`. |
+| `check_host_adapters` | The Claude `.mcp.json` adapter is missing, malformed, or does not point at the one local gateway entry, or the gateway does not expose exactly its eight tools. |
 | `check_agents` | An agent lacks `name`/`description`/`skills`, its `name` ≠ filename, it lists a skill with no `SKILL.md`, or it omits a universal skill (`guardrails`, `state-integrity`, `ingestion-gate`). |
 | `check_agent_tools` | An agent has no `tools:`, names a direct/outbound/unknown tool, or differs from the bounded `founder-os-state` gateway allowlist. |
 | `check_one_level_orchestration` | A role lacks the shared state/delegation contract, names a nested-agent edge, carries an unbounded handoff, or uses an invalid gateway tool. |
@@ -47,6 +53,8 @@ They enforce *structure*; they cannot decide whether business advice is good.
 | `check_readme_counts` | The README "What's inside" table's Agents/Skills/Cadences counts don't match the package. |
 | `check_version_sites` | A version literal appears somewhere `scripts/bump_version.py` does not know to rewrite, a declared site stops matching exactly once, or one of them disagrees with the manifest. |
 | `check_docs_parity` | A cadence is missing from a schedule table in `docs/commands.md` or `docs/cadences.md`; `docs/commands.md` has no row for a packaged workflow or a row for something the package does not ship; or `docs/agents.md` omits a skill an agent holds or a path it owns. |
+| `check_surface` | `founder-os/SURFACE.txt` is unsorted, lists a name that no longer ships, or misses a skill, agent, output style, hook event or hook script on disk. |
+| `check_docs_frontmatter` | A `docs/*.md` page has no frontmatter, or it lacks a `title`, an `owner`, a `status` of `current`/`draft`/`deprecated`, or a `last-verified` date. |
 
 The **system skills** (`founder-os-init`, `founder-os-doctor`, `context-load`,
 `guardrails`, `state-integrity`, `ingestion-gate`) are exempt from the
@@ -83,10 +91,8 @@ Three things the machine can't read, from
    must own every path in `metadata.writes`.
 4. If it writes a *new* section of a file, add that heading to `sections:` in
    `ownership.yaml` **in the same PR**.
-5. For Codex parity, add `skills/<name>/agents/openai.yaml` (a small interface:
-   `display_name`, `short_description`, `default_prompt`).
-6. Regenerate: `python3 scripts/generate_commands.py founder-os`.
-7. Validate and test.
+5. Regenerate: `python3 scripts/generate_commands.py founder-os`.
+6. Validate and test.
 
 A skill that writes nothing (every board-member skill) omits `metadata` entirely.
 Declaring a write you don't make is worse than declaring none — it asserts an
@@ -114,24 +120,34 @@ an internal release plan. Use these sources of truth:
 
 | Public claim | Authority |
 |---|---|
-| Current version | `.claude-plugin/marketplace.json` and both package manifests; all three must match. |
+| Current version | `.claude-plugin/marketplace.json` and the package manifest; both must match. |
 | Agent and workflow totals | `founder-os/agents/*.md` and `founder-os/skills/*/SKILL.md`. |
 | Cadence total | The command table in `founder-os/skills/setup-cadences/SKILL.md`. |
-| Host install and update commands | Commands exercised by the current Claude and Codex CLIs and pinned in release tests. |
+| Host install and update commands | Commands exercised by the current Claude Code CLI and pinned in release tests. |
 | Runtime dependencies | Imports and subprocess entry points used by the installed gateway and hooks; development-only tooling is labeled separately. |
 | Gateway, ownership, and orchestration behavior | `founder-os/mcp/`, `founder-os/hooks/`, `founder-os/references/ownership.yaml`, and `founder-os/references/orchestration.md`. |
 
-The public site has two HTML surfaces. `docs/index.html` is one concise landing
-page containing the user-facing product contract, both host installation paths,
-current counts and version, and links to deeper Markdown guides. `docs/trust.html`
-is the separate Trust Center navigation destination for data, host, ownership,
-hook, installed-copy, and human-authority boundaries. Do not add another HTML
-page for release or technical details that belong in the one-page landing or an
-existing Markdown guide.
+The public site has two hand-written HTML surfaces. `docs/index.html` is one
+concise landing page containing the user-facing product contract, the
+installation path, current counts and version, and links to deeper Markdown
+guides. `docs/trust.html` is the separate Trust Center navigation destination
+for data, host, ownership, hook, installed-copy, and human-authority
+boundaries. Do not add another HTML page for release or technical details that
+belong in the one-page landing or an existing Markdown guide.
+
+`.github/workflows/pages.yml` builds `docs/` with Jekyll (`docs/_config.yml`)
+on every push to `main` that touches `docs/`, `CHANGELOG.md` or the workflow.
+The two HTML pages, the scripts and the images carry no front matter and are
+copied as they are; each `docs/*.md` guide renders as `<name>.html`, and
+`CHANGELOG.md` is copied in as `changelog.html`. Link the landing pages to a
+guide as `<name>.html`; `scripts/check_local_links.py` resolves that to the
+Markdown source. Every guide carries `title`, `status`, `owner` and
+`last-verified` frontmatter (`check_docs_frontmatter`). The settings that look
+wrong here are listed in [`pitfalls.md`](pitfalls.md).
 
 Release tests must derive totals and versions from their authorities and reject
-stale public copy. Landing tests must exercise both Claude and Codex installation
-paths, dependency wording, local-state boundaries, and every interactive
+stale public copy. Landing tests must exercise the Claude Code installation
+path, dependency wording, local-state boundaries, and every interactive
 controller. The repository link checker remains the final local target and
 anchor gate.
 
@@ -150,7 +166,7 @@ Under `tests/`:
 - `test_validate_package.py` — the validator's own behavior.
 - `test_state_gateway_*.py` — protocol framing, workspace/session reads,
   ownership, optimistic concurrency, atomic writes, and journal redaction.
-- `test_ownership_guard.py` — host defense in depth: native/Codex identity,
+- `test_ownership_guard.py` — host defense in depth: native and generic identity,
   capability agreement, direct/outbound denial, and malformed-hook paths.
 - `test_session_context.py` — copies the plugin into a temporary marketplace,
   checks every `SessionStart` source and exercises ownership from that copy.
@@ -222,24 +238,24 @@ python3 scripts/bump_version.py X.Y.Z --dry-run   # every site, nothing written
 python3 scripts/bump_version.py X.Y.Z
 ```
 
-1. `scripts/bump_version.py` moves the version through all ten places that
-   carry it — the marketplace entry, both package manifests, the gateway's
+1. `scripts/bump_version.py` moves the version through all nine places that
+   carry it — the marketplace entry, the package manifest, the gateway's
    `SERVER_VERSION`, the installed-host probe, three test constants, the landing
    page proof line and the architecture note — plus the `CHANGELOG.md` heading:
    it renames `## Unreleased` to the dated heading and opens a fresh empty one
    above it. It refuses to run against an empty `## Unreleased`.
-2. The list of ten lives in that script's `SITES`, and `check_version_sites`
-   reads it: an eleventh place that carries the version fails the build rather
+2. The list of nine lives in that script's `SITES`, and `check_version_sites`
+   reads it: a tenth place that carries the version fails the build rather
    than shipping a package that disagrees with itself. Its `RECORDS` table is
    the opposite — versions that name a release which already shipped and must
    *not* move.
 3. Run every command from **Before you open a PR**, then run both official local
-   Claude gates and the Codex plugin validator below, and the installed-host
-   probe, which installs the package into isolated Claude and Codex homes and
-   checks native and fallback dispatch are byte-identical:
+   Claude gates below, and the installed-host probe, which installs the package
+   into an isolated Claude Code home and checks native and fallback dispatch are
+   byte-identical:
 
    ```bash
-   python3 scripts/probe_installed_hosts.py --claude --codex --require-native-and-fallback
+   python3 scripts/probe_installed_hosts.py --claude --require-native-and-fallback
    ```
 4. Tag / publish only after the release plan's remaining gates are complete.
    The repo *is* the marketplace, so a merge to the default branch ships it.
@@ -270,28 +286,18 @@ because plugin roots are not loaded as project context by Claude: the
 `tests/test_session_context.py` and the installed-copy smoke pin the actual
 delivery path.
 
-These local official commands are a release gate, not CI coverage. Adding a
-pinned Claude CLI package to CI would download and execute an npm dependency;
-that requires explicit founder approval before the workflow may change.
+CI runs both commands too, in the `lint` job, with a pinned Claude CLI
+(`@anthropic-ai/claude-code@2.1.300`) installed with `--ignore-scripts`, so only
+the CLI's own `install.cjs` runs and no dependency's lifecycle script does. The
+founder approved that one npm download on 2026-10-25; the test matrix installs
+nothing from npm, and `tests/test_release_metadata.py` pins both facts. Run the
+commands locally before a release anyway: CI checks the pinned CLI, your machine
+checks the one founders actually run.
 
-Validate the Codex package shape from the plugin-creator tooling Codex installs
-in its own home (`$CODEX_HOME`, default `~/.codex`):
+## Host notes
 
-```bash
-python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/plugin-creator/scripts/validate_plugin.py" founder-os
-```
-
-If that path does not exist, the local Codex install does not ship the
-plugin-creator skill; skip this gate rather than substituting another script.
-
-## Dual-host notes
-
-- Claude Code reads `.claude-plugin/plugin.json` + `.mcp.json` + the shared role
-  and workflow files.
-- Codex reads `.codex-plugin/plugin.json` + `skills/<name>/agents/openai.yaml`;
-  the manifest's inline `mcpServers` points at the same Python gateway.
-- The `SessionStart` and guard hooks handle both hosts: Claude supplies
-  `agent_type` directly; Codex supplies `turn_id`, resolved through
-  `record-agent.py`. Named native roles and the generic fallback receive the
-  same packaged role bytes and role capability. Keep both manifests' `version`
-  in sync.
+- Claude Code reads `.claude-plugin/plugin.json` + `.mcp.json` + the role and
+  workflow files.
+- The guard reads the `agent_type` Claude Code supplies directly. Named native
+  roles and the generic fallback receive the same packaged role bytes and role
+  capability.

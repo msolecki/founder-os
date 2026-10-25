@@ -21,6 +21,15 @@ MARKDOWN_LINK = re.compile(
 ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$")
 SETEXT_HEADING = re.compile(r"^\s{0,3}(?:=+|-+)\s*$")
 FENCE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+# The site under docs/ is built by Jekyll (.github/workflows/pages.yml), so the
+# landing pages link to `X.html` files that exist only in the build output.
+# A missing top-level `docs/X.html` resolves to its source `docs/X.md`; the two
+# pages whose source is not a same-named sibling are listed here, and nothing
+# else is exempt. See docs/pitfalls.md.
+SITE_SOURCES = {
+    "docs/changelog.html": "CHANGELOG.md",  # copied in by pages.yml
+    "docs/trust-notes.html": "docs/trust.md",  # permalink; trust.html exists
+}
 
 
 class _HTMLReferences(HTMLParser):
@@ -51,7 +60,15 @@ def _markdown_slug(value):
 def _visible_markdown_lines(text):
     visible = []
     fence_marker = None
+    # Leading YAML frontmatter is page metadata, not prose: its closing `---`
+    # would otherwise read as a setext underline and mint a bogus anchor.
+    in_frontmatter = text.startswith("---\n")
     for number, line in enumerate(text.splitlines(), 1):
+        if in_frontmatter:
+            if number > 1 and line == "---":
+                in_frontmatter = False
+            visible.append((number, ""))
+            continue
         match = FENCE.match(line)
         if match:
             marker = match.group(1)[0]
@@ -118,6 +135,18 @@ def _relative_path(root, value):
     return path.as_posix()
 
 
+def _site_source(root, target_relative):
+    """The tracked source of a page Jekyll builds, or None."""
+    if target_relative in SITE_SOURCES:
+        return SITE_SOURCES[target_relative]
+    target = Path(target_relative)
+    if target.parent.as_posix() == "docs" and target.suffix == ".html":
+        source = target.with_suffix(".md").as_posix()
+        if (root / source).is_file():
+            return source
+    return None
+
+
 def tracked_paths(root):
     result = subprocess.run(
         ["git", "-C", str(root), "ls-files", "-z"],
@@ -137,10 +166,14 @@ def tracked_paths(root):
 def check_links(root, tracked):
     root = Path(root).resolve()
     tracked = sorted({_relative_path(root, item) for item in tracked})
+    # docs/_layouts/ and any other Jekyll underscore directory holds Liquid
+    # templates, not pages: their hrefs are `{{ … | relative_url }}` until the
+    # site is built, and Jekyll never publishes the directory itself.
     documents = [
         relative for relative in tracked
         if Path(relative).suffix.lower() in DOCUMENT_SUFFIXES
         and (root / relative).is_file()
+        and not relative.startswith("docs/_")
     ]
     errors = []
     indexes = {}
@@ -211,6 +244,10 @@ def check_links(root, tracked):
                 )
                 continue
 
+            if not resolved.exists():
+                built = _site_source(root, target_relative)
+                if built is not None:
+                    resolved, target_relative = root / built, built
             if not resolved.exists():
                 errors.append(
                     "%s:%d: missing target '%s'" % (

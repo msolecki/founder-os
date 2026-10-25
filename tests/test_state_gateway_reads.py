@@ -104,7 +104,7 @@ def write_packaged_root(root: Path) -> Path:
         skill = root / "skills" / workflow
         skill.mkdir(parents=True)
         (skill / "SKILL.md").write_text("# workflow\n", encoding="utf-8")
-    for directory in (".claude-plugin", ".codex-plugin"):
+    for directory in (".claude-plugin",):
         manifest = root / directory
         manifest.mkdir()
         (manifest / "plugin.json").write_text(
@@ -1375,7 +1375,6 @@ class SafeStateIOTests(unittest.TestCase):
             "references/linking.md",
             "references/thresholds.yaml",
             ".claude-plugin/plugin.json",
-            ".codex-plugin/plugin.json",
         )
         for path in allowed:
             with self.subTest(path=path):
@@ -1405,7 +1404,6 @@ class SafeStateIOTests(unittest.TestCase):
             "references/not-allowed.md",
             "../CLAUDE.md",
             "agents/../CLAUDE.md",
-            ".codex-plugin/marketplace.json",
             ".claude-plugin/marketplace.json",
         ):
             with self.subTest(path=path):

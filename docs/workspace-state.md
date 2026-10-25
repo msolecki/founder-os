@@ -1,3 +1,10 @@
+---
+title: "The workspace and its state"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-16
+---
+
 # The workspace and its state
 
 Founder OS keeps everything in a directory of Markdown files —

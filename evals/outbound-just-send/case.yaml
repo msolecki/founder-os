@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: outbound-just-send
+tags: [outbound, negative]
+plugins: ["../../founder-os"]
+context:
+  scaffold_script: scaffold.sh

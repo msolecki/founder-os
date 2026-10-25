@@ -1,3 +1,10 @@
+---
+title: "Ownership and enforcement"
+status: current
+owner: Mateusz Solecki
+last-verified: 2026-10-25
+---
+
 # Ownership and enforcement
 
 "Every file has exactly one owner" and "no agent sends" are not promises left
@@ -11,7 +18,7 @@ Hooks are defense in depth and explicitly not a security sandbox.
 |---|---|---|---|
 | Canonical map | `references/ownership.yaml` | Every build and write | Who owns each path and which `##` sections that document may contain. |
 | Local gateway | `mcp/founder_os_state.py` | Every role state call | Unsafe paths, invalid/expired capability, wrong owner, stale content, invalid structure, and I/O failure. |
-| Host hooks | `hooks/*.py` | Session/subagent start and role tool calls | Missing context, Claude/Codex identity mapping, direct file/outbound access, self-elevation, and capability-role mismatch. |
+| Host hooks | `hooks/*.py` | Session start and role tool calls | Missing context, role identity, direct file/outbound access, self-elevation, and capability-role mismatch. |
 | Build validator | `scripts/validate_package.py` | CI / before merge | Incoherent manifests, adapters, roles, tools, sibling orchestration, skills, ownership, sections, beliefs, hooks, and public counts. |
 
 The validator proves the package is internally coherent. The gateway enforces
@@ -21,8 +28,7 @@ through a direct file, shell, web, or unrelated MCP tool.
 
 ## The authoritative state gateway
 
-Both Claude Code and Codex start the same local stdio process named
-`founder-os-state`. It exposes exactly eight actions:
+Claude Code starts one local stdio process named `founder-os-state`. It exposes exactly eight actions:
 
 - `resolve_workspace`
 - `open_role_session`
@@ -64,18 +70,16 @@ Failures use one stable code and one recovery action:
 
 ## What the host guard does
 
-`ownership-guard.py` runs for every tool call. Claude supplies `agent_type`;
-Codex supplies a `turn_id` and `record-agent.py` holds what it maps to — the
-`--event user-prompt` registration records the main turn, `--event
-subagent-start` records a subagent's role. A `turn_id` with no mapping is
-denied; the fail-open case below is a call carrying no identity marker at all.
-Both hooks and the gateway keep that state in `PLUGIN_DATA` (or
-`CLAUDE_PLUGIN_DATA`), and all three fall back to `~/.founder-os/plugin-data`.
+`ownership-guard.py` runs for every tool call. Claude Code supplies
+`agent_type` on a subagent's call; a call carrying no identity marker at all is
+the founder's main thread. The guard and the gateway keep their state in
+`PLUGIN_DATA` (or `CLAUDE_PLUGIN_DATA`), and both fall back to
+`~/.founder-os/plugin-data`.
 
 For a known packaged role, the guard:
 
 1. denies `Read`, `Write`, `Edit`, `MultiEdit`, `NotebookEdit`,
-   `NotebookRead`, `Glob`, `Grep`, `LS`, and `apply_patch` so role state cannot
+   `NotebookRead`, `Glob`, `Grep`, and `LS` so role state cannot
    bypass the gateway;
 2. denies shell, web, nested agents (`Task`, `Agent`), and every
    non-Founder-OS MCP tool under house rule 0;
@@ -89,14 +93,12 @@ For a known packaged role, the guard:
 
 A generic fallback (`general-purpose`, `default`) may spend a live capability
 of any role. That gateway call binds the capability's role to the agent's
-identity — Claude's `agent_id`, else Codex's `turn_id`, else the `session_id`,
+identity — Claude Code's `agent_id`, else the `session_id`,
 which locks every generic agent of that session — and from then on the guard
 treats it as that role, with all five rules above. A binding the guard cannot
 persist denies the gateway call, and a binding it cannot read denies the tool;
-a binding older than 24 hours lapses. A Codex `turn_id` the recorder mapped to
-the main thread is never rebound: a generic gateway call on that turn leaves the
-mapping as it is. A generic call carrying none of the three
-identifiers has nothing to bind to: the guard logs it and the capability is
+a binding older than 24 hours lapses. A generic call carrying neither
+identifier has nothing to bind to: the guard logs it and the capability is
 spent unbound, the same fail-open as a call with no identity marker at all.
 The lockdown starts at the fallback's first gateway call, so the main thread
 dispatches the fallback with the role's gateway-only tool allowlist

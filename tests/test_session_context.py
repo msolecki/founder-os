@@ -108,15 +108,8 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
                 "direct_file",
                 "wrong_role",
                 "elevation",
-                "claimed_main_thread",
                 "main_thread",
-                "recorded_main_thread",
-                "recorded_turns",
             },
-        )
-        self.assertEqual(
-            outcomes["recorded_turns"],
-            {"cfo", "strategist", "__founder_os_main__"},
         )
         for key in (
             "direct_file",
@@ -125,7 +118,6 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
             "claude_namespaced_elevation",
             "wrong_role",
             "elevation",
-            "claimed_main_thread",
         ):
             denied = outcomes[key]["hookSpecificOutput"]
             self.assertEqual(denied["permissionDecision"], "deny")
@@ -146,7 +138,7 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
         self.assertIn("missing", warning["stderr"])
         self.assertIn("Do not give Founder OS advice", warning["stderr"])
 
-    def test_both_installed_adapters_run_the_complete_role_io_lifecycle(self):
+    def test_the_installed_adapter_runs_the_complete_role_io_lifecycle(self):
         smoke = load_smoke_module()
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
@@ -154,12 +146,9 @@ class TestInstalledCopySmokeContract(unittest.TestCase):
                 SOURCE_PLUGIN, temp_root / "marketplace"
             )
             reports = {
-                host: smoke.check_mcp_lifecycle(
-                    installed,
-                    temp_root / (host + "-workspace"),
-                    host,
-                )
-                for host in ("claude", "codex")
+                "claude": smoke.check_mcp_lifecycle(
+                    installed, temp_root / "claude-workspace", "claude"
+                ),
             }
 
         for host, report in reports.items():
@@ -268,7 +257,6 @@ class TestSessionContextFailureVisibility(unittest.TestCase):
                     warning,
                     r"(?i)do not give Founder OS advice until .*restored",
                 )
-
 
 
 class TestNativeWindowsSessionContext(unittest.TestCase):

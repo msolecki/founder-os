@@ -130,15 +130,11 @@ class ValidatorTestCase(unittest.TestCase):
             # System skills: exempt from beliefs, so no beliefs.
             self.write_skill(slug, body="## Steps\n\n1. Go.\n")
         self.write_skill("daily-brief", writes=["goals.md"])
-        for slug in UNIVERSALS + ["daily-brief"]:
-            self.write_codex_interface(slug)
         self.write_agent("chief-of-staff", skills=["daily-brief"] + UNIVERSALS,
                          tools=DEFAULT_TOOLS, body=MANAGER_BODY)
         self.write_agent("cfo", skills=list(UNIVERSALS))
         self.write_ownership(base_ownership())
         self.write_hooks()
-        for skill_path in (self.root / "skills").glob("*/SKILL.md"):
-            self.write_codex_interface(skill_path.parent.name)
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -158,16 +154,6 @@ class ValidatorTestCase(unittest.TestCase):
                 ],
             },
         }}))
-        write(self.root / ".codex-plugin" / "plugin.json", json.dumps({
-            "name": "founder-os",
-            "mcpServers": {
-                "founder-os-state": {
-                    "command": "python3",
-                    "args": ["./mcp/founder_os_state.py"],
-                    "cwd": ".",
-                },
-            },
-        }))
         write(self.root / "mcp" / "founder_os_state.py", "x = 1\n")
 
     def write_agent(self, slug, **kw):
@@ -177,55 +163,17 @@ class ValidatorTestCase(unittest.TestCase):
     def write_skill(self, slug, **kw):
         write(self.root / "skills" / slug / "SKILL.md", skill_md(slug, **kw))
 
-    def write_codex_interface(self, slug, data=None, raw=None):
-        payload = data or {"interface": {
-            "display_name": slug.replace("-", " ").title(),
-            "short_description": "Run the shared Founder OS workflow.",
-            "default_prompt": f"Use ${slug} for this Founder OS task.",
-        }}
-        text = raw if raw is not None else yaml.safe_dump(payload, sort_keys=False)
-        write(self.root / "skills" / slug / "agents" / "openai.yaml", text)
-
-    def write_codex_interface(self, slug, data=None, raw=None):
-        payload = data or {"interface": {
-            "display_name": slug.replace("-", " ").title(),
-            "short_description": "Run the shared Founder OS workflow.",
-            "default_prompt": f"Use ${slug} for this Founder OS task.",
-        }}
-        text = raw if raw is not None else yaml.safe_dump(
-            payload, sort_keys=False
-        )
-        write(
-            self.root / "skills" / slug / "agents" / "openai.yaml",
-            text,
-        )
-
     def write_ownership(self, data):
         write(self.root / "references" / "ownership.yaml",
               yaml.safe_dump(data, sort_keys=False))
 
     def write_hooks(self):
         write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
-            "UserPromptSubmit": [{"hooks": [{
-                "type": "command",
-                "command": (
-                    "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\""
-                    " --event user-prompt"
-                ),
-            }]}],
-            "SubagentStart": [{"hooks": [{
-                "type": "command",
-                "command": (
-                    "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record-agent.py\""
-                    " --event subagent-start"
-                ),
-            }]}],
             "PreToolUse": [{"matcher":
                 "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
-                "WebSearch|apply_patch|mcp__.*)$",
+                "WebSearch|mcp__.*)$",
                 "hooks": []}]}}))
         write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
-        write(self.root / "hooks" / "record-agent.py", "x = 1\n")
 
     def check(self, fn):
         return fn(self.root, V.load_agents(self.root))
@@ -285,14 +233,6 @@ class TestPlugin(ValidatorTestCase):
             self.check(V.check_plugin),
             ["plugin.json: name must be 'founder-os'"])
 
-    def test_claude_and_codex_manifest_identity_must_match(self):
-        write(self.root / ".codex-plugin" / "plugin.json",
-              json.dumps({"name": "founder-os", "version": "0.0.1",
-                          "description": "different"}))
-        errs = self.check(V.check_plugin)
-        self.assertTrue(any("version differs" in err for err in errs), errs)
-        self.assertTrue(any("description differs" in err for err in errs), errs)
-
     def test_missing_plugin_json_is_caught(self):
         (self.root / ".claude-plugin" / "plugin.json").unlink()
         self.assertEqual(self.check(V.check_plugin),
@@ -327,84 +267,6 @@ class TestHostAdapters(ValidatorTestCase):
             any("public gateway tools must be exactly" in error for error in errors),
             errors,
         )
-
-
-class TestCodexInterfaces(ValidatorTestCase):
-    def test_missing_codex_skill_interface_is_caught(self):
-        (self.root / "skills" / "daily-brief" / "agents" / "openai.yaml").unlink()
-        self.assertIn(
-            "skills/daily-brief: missing agents/openai.yaml for Codex",
-            self.check(V.check_codex_skill_interfaces),
-        )
-
-    def test_codex_skill_interface_requires_shared_skill_prompt(self):
-        self.write_codex_interface("daily-brief", data={"interface": {
-            "display_name": "Daily Brief",
-            "short_description": "Run the shared workflow.",
-            "default_prompt": "Use another workflow.",
-        }})
-        self.assertIn(
-            "skills/daily-brief/agents/openai.yaml: default_prompt must name $daily-brief",
-            self.check(V.check_codex_skill_interfaces),
-        )
-
-
-class TestCodexSkillInterfaces(ValidatorTestCase):
-    def test_missing_codex_skill_interface_is_caught(self):
-        path = (
-            self.root / "skills" / "daily-brief" / "agents" / "openai.yaml"
-        )
-        path.unlink()
-        self.assertIn(
-            "skills/daily-brief: missing agents/openai.yaml for Codex",
-            self.check(V.check_codex_skill_interfaces),
-        )
-
-    def test_invalid_codex_skill_interface_is_caught(self):
-        self.write_codex_interface("daily-brief", raw="interface: [")
-        errors = self.check(V.check_codex_skill_interfaces)
-        self.assertTrue(
-            any(
-                error.startswith(
-                    "skills/daily-brief/agents/openai.yaml: invalid YAML"
-                )
-                for error in errors
-            ),
-            errors,
-        )
-
-    def test_codex_skill_interface_requires_all_presentation_fields(self):
-        self.write_codex_interface(
-            "daily-brief",
-            data={"interface": {"display_name": "Daily Brief"}},
-        )
-        errors = self.check(V.check_codex_skill_interfaces)
-        self.assertIn(
-            "skills/daily-brief/agents/openai.yaml: missing short_description",
-            errors,
-        )
-        self.assertIn(
-            "skills/daily-brief/agents/openai.yaml: missing default_prompt",
-            errors,
-        )
-
-    def test_codex_skill_interface_requires_shared_skill_prompt(self):
-        self.write_codex_interface(
-            "daily-brief",
-            data={"interface": {
-                "display_name": "Daily Brief",
-                "short_description": "Run the shared workflow.",
-                "default_prompt": "Use another workflow.",
-            }},
-        )
-        self.assertIn(
-            "skills/daily-brief/agents/openai.yaml: default_prompt must name "
-            "$daily-brief",
-            self.check(V.check_codex_skill_interfaces),
-        )
-
-    def test_complete_codex_skill_interfaces_are_clean(self):
-        self.assertEqual(self.check(V.check_codex_skill_interfaces), [])
 
 
 class TestAgents(ValidatorTestCase):
@@ -885,7 +747,7 @@ class TestCheckHooks(unittest.TestCase):
         errs = V.check_hooks(self.root, {})
         for tool in (
             "Read", "Edit", "NotebookEdit", "Glob", "Grep", "Bash",
-            "WebFetch", "WebSearch", "apply_patch", "mcp__",
+            "WebFetch", "WebSearch", "mcp__",
         ):
             self.assertTrue(any(tool in e for e in errs), (tool, errs))
 
@@ -907,59 +769,6 @@ class TestCheckHooks(unittest.TestCase):
         errs = V.check_hooks(self.root, {})
         self.assertTrue(any("compile" in e for e in errs), errs)
 
-    def test_user_prompt_submit_must_record_main_turn_identity(self):
-        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
-            "PreToolUse": [{"matcher":
-                "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
-                "WebSearch|apply_patch|mcp__.*)$", "hooks": []}]}}))
-        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
-        write(self.root / "hooks" / "record-agent.py", "x = 1\n")
-
-        errs = V.check_hooks(self.root, {})
-
-        self.assertTrue(any("UserPromptSubmit" in e for e in errs), errs)
-
-    def test_a_missing_subagent_recorder_fails_the_build(self):
-        """The existence half was checked for the main turn only.
-
-        Deleting the whole `SubagentStart` block validated clean, and every
-        Codex subagent turn then arrived unmapped for the guard to deny.
-        """
-        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
-            "UserPromptSubmit": [{"hooks": [{
-                "type": "command",
-                "command": "python3 record-agent.py --event user-prompt"}]}],
-            "PreToolUse": [{"matcher":
-                "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
-                "WebSearch|apply_patch|mcp__.*)$", "hooks": []}]}}))
-        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
-        write(self.root / "hooks" / "record-agent.py", "x = 1\n")
-
-        errs = V.check_hooks(self.root, {})
-
-        self.assertTrue(any("SubagentStart must record" in e for e in errs), errs)
-
-    def test_a_recorder_registration_must_declare_which_event_fired(self):
-        """The same script is registered twice, and the payload field that
-        told them apart is the host's to rename."""
-        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
-            "UserPromptSubmit": [{"hooks": [{
-                "type": "command",
-                "command": "python3 hooks/record-agent.py"}]}],
-            "SubagentStart": [{"hooks": [{
-                "type": "command",
-                "command": "python3 hooks/record-agent.py"}]}],
-            "PreToolUse": [{"matcher":
-                "^(Read|Write|Edit|NotebookEdit|Glob|Grep|Bash|WebFetch|"
-                "WebSearch|apply_patch|mcp__.*)$", "hooks": []}]}}))
-        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
-        write(self.root / "hooks" / "record-agent.py", "x = 1\n")
-
-        errs = V.check_hooks(self.root, {})
-
-        self.assertTrue(any("--event user-prompt" in e for e in errs), errs)
-        self.assertTrue(any("--event subagent-start" in e for e in errs), errs)
-
     def test_real_plugin_is_clean(self):
         real = Path(__file__).resolve().parents[1] / "founder-os"
         self.assertEqual(V.check_hooks(real, {}), [])
@@ -970,6 +779,79 @@ class TestCheckHooks(unittest.TestCase):
         write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
         errs = V.check_hooks(self.root, {})
         self.assertTrue(any("not a valid regex" in e for e in errs), errs)
+
+    def test_command_hook_without_timeout_is_an_error(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": ".*", "hooks": [
+                {"type": "command", "command": "guard", "timeout": 5}]}],
+            "Stop": [{"hooks": [
+                {"type": "command", "command": "nudge"},
+                {"type": "command", "command": "flag", "timeout": True}]}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        errs = V.check_hooks(self.root, {})
+        self.assertEqual(
+            [e for e in errs if "timeout" in e],
+            ["hooks/hooks.json: Stop command 'nudge' has no positive "
+             "integer timeout",
+             "hooks/hooks.json: Stop command 'flag' has no positive "
+             "integer timeout"])
+
+    def test_guidance_over_the_hook_output_cap_is_an_error(self):
+        write(self.root / "hooks" / "hooks.json", json.dumps({"hooks": {
+            "PreToolUse": [{"matcher": ".*", "hooks": []}]}}))
+        write(self.root / "hooks" / "ownership-guard.py", "x = 1\n")
+        guidance = self.root / "references" / "guidance.md"
+        write(guidance, "x" * (V.HOOK_OUTPUT_CAP - V.HOOK_OUTPUT_ROOM))
+        self.assertEqual(V.check_hooks(self.root, {}), [])
+        write(guidance, "x" * (V.HOOK_OUTPUT_CAP - V.HOOK_OUTPUT_ROOM + 1))
+        errs = V.check_hooks(self.root, {})
+        self.assertTrue(any("hook output cap" in e for e in errs), errs)
+
+
+class TestCheckSurface(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        write(self.root / "skills" / "triage" / "SKILL.md", "x")
+        write(self.root / "agents" / "cfo.md", "x")
+        write(self.root / "output-styles" / "founder-brief.md", "x")
+        write(self.root / "hooks" / "hooks.json",
+              json.dumps({"hooks": {"Stop": [], "PreToolUse": []}}))
+        write(self.root / "hooks" / "guard.py", "x")
+        self.listed = ["agent cfo", "hook PreToolUse", "hook Stop",
+                       "hook-script guard.py", "output-style founder-brief",
+                       "skill triage"]
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def surface(self, lines):
+        write(self.root / "SURFACE.txt", "\n".join(lines) + "\n")
+        return V.check_surface(self.root, {})
+
+    def test_matching_list_is_clean(self):
+        self.assertEqual(self.surface(self.listed), [])
+
+    def test_no_list_is_skipped(self):
+        self.assertEqual(V.check_surface(self.root, {}), [])
+
+    def test_unlisted_and_stale_names_are_errors(self):
+        lines = [l for l in self.listed if l != "skill triage"]
+        lines.append("skill zombie")
+        self.assertEqual(self.surface(lines), [
+            "SURFACE.txt: 'skill triage' ships but is not listed — add it "
+            "and a changelog line",
+            "SURFACE.txt: lists 'skill zombie', which no longer ships — a "
+            "rename or removal is a changelog line, not a silent edit"])
+
+    def test_unsorted_list_is_an_error(self):
+        errs = self.surface(list(reversed(self.listed)))
+        self.assertEqual(errs, ["SURFACE.txt: not sorted, or a name is "
+                                "listed twice"])
+
+    def test_real_package_matches_its_list(self):
+        real = Path(__file__).resolve().parents[1] / "founder-os"
+        self.assertTrue((real / "SURFACE.txt").is_file())
+        self.assertEqual(V.check_surface(real, {}), [])
 
 
 class TestReadmeCounts(ValidatorTestCase):
@@ -1015,6 +897,44 @@ class TestReadmeCounts(ValidatorTestCase):
               "Founder OS adds 12 agents, 48 workflows, and 9 optional cadences.")
         errs = self.check(V.check_readme_counts)
         self.assertTrue(any("docs/README.md" in err for err in errs), errs)
+
+
+class TestDocsFrontmatter(ValidatorTestCase):
+    """Every docs page carries title, status, owner and a last-verified date."""
+
+    GOOD = ("---\ntitle: Guide\nstatus: current\nowner: Someone\n"
+            "last-verified: 2026-10-25\n---\n\n# Guide\n")
+
+    def test_complete_frontmatter_is_clean(self):
+        write(self.tmp / "docs" / "guide.md", self.GOOD)
+        self.assertEqual(self.check(V.check_docs_frontmatter), [])
+
+    def test_absent_site_is_not_this_checks_problem(self):
+        self.assertEqual(self.check(V.check_docs_frontmatter), [])
+
+    def test_page_without_frontmatter_is_caught(self):
+        write(self.tmp / "docs" / "guide.md", "# Guide\n")
+        errs = self.check(V.check_docs_frontmatter)
+        self.assertEqual(len(errs), 1, errs)
+        self.assertTrue(errs[0].startswith(
+            "docs/guide.md: no readable frontmatter"), errs)
+
+    def test_each_missing_field_is_named(self):
+        write(self.tmp / "docs" / "guide.md",
+              "---\nstatus: shipped\nlast-verified: soon\n---\n\n# Guide\n")
+        self.assertEqual(self.check(V.check_docs_frontmatter), [
+            "docs/guide.md: frontmatter has no title",
+            "docs/guide.md: status must be current, draft or deprecated",
+            "docs/guide.md: frontmatter has no owner",
+            "docs/guide.md: last-verified is not a YYYY-MM-DD date",
+        ])
+
+    def test_one_bad_page_does_not_hide_the_next(self):
+        write(self.tmp / "docs" / "a.md", "# A\n")
+        write(self.tmp / "docs" / "b.md", self.GOOD.replace("Someone", "''"))
+        errs = self.check(V.check_docs_frontmatter)
+        self.assertEqual(len(errs), 2, errs)
+        self.assertIn("docs/b.md: frontmatter has no owner", errs)
 
 
 class TestRealPackage(unittest.TestCase):
@@ -1066,7 +986,6 @@ class TestRunChecksContainment(unittest.TestCase):
             "check 'check_ownership' aborted at first bad file" in err
             for err in errs), errs)
         self.assertTrue(any("hooks.json" in err for err in errs), errs)
-
 
 
 REAL_PLUGIN = Path(__file__).resolve().parents[1] / "founder-os"
@@ -1226,7 +1145,6 @@ class TestDerivedFiles(unittest.TestCase):
     def test_check_derived_files_is_registered(self):
         names = [check.__name__ for check in V.CHECKS]
         self.assertIn("check_derived_files", names)
-
 
 
 class TestThresholdsCheck(unittest.TestCase):
@@ -1498,7 +1416,6 @@ derived_files:
         schema = module.OwnershipSchema.load(path)
         self.assertEqual(schema.owner_for("_dashboardx/snapshots/x.md"),
                          "chief-of-staff")
-
 
 
 if __name__ == "__main__":
