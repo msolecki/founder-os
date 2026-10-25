@@ -372,9 +372,9 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "internal launch material is shipped: docs/product-hunt",
         )
 
-    def test_ci_keeps_internal_smoke_without_unapproved_cli_download(self):
+    def test_ci_keeps_internal_smoke_and_pins_the_only_cli_download(self):
         workflow = yaml.safe_load(self.ci)
-        job = workflow["jobs"]["validate-and-test"]
+        job = workflow["jobs"]["test"]
         self.assertNotIn("if", job)
         self.assertFalse(job.get("continue-on-error", False))
 
@@ -396,9 +396,16 @@ class ReleaseMetadataContractTest(unittest.TestCase):
                 self.assertNotIn("if", step)
                 self.assertFalse(step.get("continue-on-error", False))
 
+        # The founder approved one npm download (2026-10-25): the pinned Claude CLI,
+        # in the lint job only, with every dependency's lifecycle script skipped.
         self.assertNotIn("npx", self.ci)
-        self.assertNotIn("npm install", self.ci)
         self.assertNotIn("npm exec", self.ci)
+        self.assertNotIn("npm install", yaml.safe_dump(job))
+        installs = re.findall(r"npm install[^\n]*", self.ci)
+        self.assertEqual(
+            installs,
+            ["npm install -g --ignore-scripts @anthropic-ai/claude-code@2.1.300"],
+        )
 
     def test_development_guide_documents_both_official_local_gates(self):
         normalized = " ".join(self.development.split())
@@ -409,8 +416,8 @@ class ReleaseMetadataContractTest(unittest.TestCase):
             "`founder-os/references/guidance.md`, not a root `CLAUDE.md`",
             "the `SessionStart` hook injects that canonical guidance",
             "tests/test_session_context.py",
-                        "explicit founder approval",
-            "a release gate, not CI coverage",
+            "pinned Claude CLI",
+            "--ignore-scripts",
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, normalized)

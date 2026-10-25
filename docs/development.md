@@ -267,9 +267,13 @@ because plugin roots are not loaded as project context by Claude: the
 `tests/test_session_context.py` and the installed-copy smoke pin the actual
 delivery path.
 
-These local official commands are a release gate, not CI coverage. Adding a
-pinned Claude CLI package to CI would download and execute an npm dependency;
-that requires explicit founder approval before the workflow may change.
+CI runs both commands too, in the `lint` job, with a pinned Claude CLI
+(`@anthropic-ai/claude-code@2.1.300`) installed with `--ignore-scripts`, so only
+the CLI's own `install.cjs` runs and no dependency's lifecycle script does. The
+founder approved that one npm download on 2026-10-25; the test matrix installs
+nothing from npm, and `tests/test_release_metadata.py` pins both facts. Run the
+commands locally before a release anyway: CI checks the pinned CLI, your machine
+checks the one founders actually run.
 
 ## Host notes
 

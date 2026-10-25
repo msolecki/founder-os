@@ -9,6 +9,8 @@ import os
 import subprocess
 import tempfile
 import unittest
+
+import yaml
 from pathlib import Path
 
 
@@ -133,7 +135,9 @@ class InstalledHostProbeContractTest(unittest.TestCase):
         )
         # The discover run covers this module; a dedicated step ran it twice.
         self.assertIn("python3 -m unittest discover -s tests", workflow)
-        self.assertNotIn("install claude", workflow.lower())
+        # Only the lint job installs the Claude CLI; the test matrix never does.
+        test_job = yaml.safe_load(workflow)["jobs"]["test"]
+        self.assertNotIn("install claude", yaml.safe_dump(test_job).lower())
 
 
 if __name__ == "__main__":
