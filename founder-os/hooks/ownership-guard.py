@@ -12,19 +12,20 @@ role agrees with a native role identity.
 
 A subagent that is *not* one of the thirteen roles — a reviewer, an Explore
 pass, another plugin's agent — is not governed by the gateway lockdown. It is
-bound by three checks: no write under ``_local/``, no write under a path the
-map lists in ``derived_files:``, and no write to a file the ownership map gives
-someone else. Everything else it does is between it and the normal permission
+bound by four checks: no write under ``_local/``, no write under a path the
+map lists in ``derived_files:``, no write to a file the ownership map gives
+someone else, and no write to the files that define this guard — the plugin
+root, the plugin data root and ``~/.founder-os/businesses.yaml``. Everything else it does is between it and the normal permission
 system — until a *generic* agent (`general-purpose`, `default`) spends a role
 capability at the gateway. That binds the role to its identity
 (`_bind_generic_role`), and from that call on it gets the role lockdown.
 
-Those three bind **tools that name a path** — ``Write``, ``Edit``,
-``NotebookEdit``. They do not inspect a shell command, so a
+Those four bind **tools that name a path** — ``Write``, ``Edit``,
+``MultiEdit``, ``NotebookEdit``. They do not inspect a shell command, so a
 non-role subagent holding ``Bash`` can write anything its own permissions allow,
 and this hook will not be what stops it. That is the deliberate trade: the
 alternative, denying every unrecognized subagent every tool, locked reviewers
-and Explore passes out of unrelated repositories machine-wide. Read the three
+and Explore passes out of unrelated repositories machine-wide. Read the four
 checks as protection against an honest agent editing the wrong file, not as a
 boundary around a hostile one. A *role* is different — it holds no shell at all.
 
@@ -41,7 +42,6 @@ import os
 import re
 import stat
 import sys
-import tempfile
 import time
 
 _YAML_UNSET = object()
@@ -77,10 +77,11 @@ DIRECT_FILE_TOOLS = frozenset({
 # The tools `_tool_paths` can read a target path out of, in the order a deny
 # names them. Narrower than DIRECT_FILE_TOOLS, which is about a role touching
 # the filesystem at all: this is the set every ownership and derived deny is
-# actually speaking about. A path-naming tool missing from here — MultiEdit on
-# a host that ships it — hands the guard no path and is allowed, which is why
-# the derived deny names these three rather than claiming "a file tool".
-PATH_NAMING_TOOLS = ("Write", "Edit", "NotebookEdit")
+# actually speaking about. A path-naming tool missing from here hands the guard
+# no path and is allowed, which is why the derived deny names these rather than
+# claiming "a file tool". MultiEdit is no longer documented by Claude Code; it
+# stays listed so a host that still ships it is bound like Edit.
+PATH_NAMING_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
 MCP_TOOL = re.compile(r"^mcp__")
 SAFE_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 # Agent identities may carry a host namespace — `founder-os:cfo` on Claude
@@ -536,7 +537,7 @@ def _registry_roots():
     return roots
 
 
-def workspace_roots(hook_cwd):
+def workspace_roots(hook_cwd, registry=True):
     """Candidate absolute workspace roots, best guess first.
 
     `FOUNDER_OS_HOME` or `./founder-os/` — but `./` needs a base, and the docs
@@ -548,7 +549,8 @@ def workspace_roots(hook_cwd):
     On a multi-business install the registry's roots are appended, so a write
     into *any* registered business workspace — or the portfolio workspace — is
     checked against the map, not only the workspace this session happens to be
-    homed on.
+    homed on. `registry=False` leaves them out, for a caller that adds them
+    only when a target is outside the primary roots (`check_ownership`).
     """
     bases = [os.environ.get("CLAUDE_PROJECT_DIR"), hook_cwd, os.getcwd()]
     home = os.environ.get("FOUNDER_OS_HOME")
@@ -564,7 +566,13 @@ def workspace_roots(hook_cwd):
         for b in bases:
             if b:
                 roots.append(os.path.join(b, leaf))
-    roots.extend(_registry_roots())
+    if registry:
+        roots.extend(_registry_roots())
+    return _expand_roots(roots)
+
+
+def _expand_roots(roots):
+    """Each root under its realpath and its literal spelling, deduplicated."""
     out = []
     for r in roots:
         for v in (os.path.realpath(r), os.path.normpath(os.path.abspath(r))):
@@ -886,6 +894,7 @@ def _bind_generic_role(agent_type, tool_name, data, role):
         return
     if _mapped_agent_type(stem) == role:
         return
+    import tempfile  # only here: ~4 ms on every call for one rare write
     target_dir = os.path.join(_data_root(), "agent-types")
     temporary = None
     try:
@@ -907,16 +916,6 @@ def _bind_generic_role(agent_type, tool_name, data, role):
                 os.unlink(temporary)
             except OSError:
                 pass
-
-
-def check_outbound(agent_type, tool_name):
-    """Retained public helper for focused unit tests."""
-    if tool_name in OUTBOUND_TOOLS:
-        _deny_tool(
-            agent_type,
-            tool_name,
-            "House rule 0 says agents draft and the founder sends.",
-        )
 
 
 def _tool_paths(tool_name, tool_input):
@@ -1041,12 +1040,67 @@ def check_derived(agent_type, rel, derived):
     )
 
 
+def _spellings(file_path, hook_cwd):
+    """The realpath and the literal absolute spelling of a target, or []."""
+    if not os.path.isabs(file_path):
+        if not isinstance(hook_cwd, str) or not os.path.isabs(hook_cwd):
+            return []
+        file_path = os.path.join(hook_cwd, file_path)
+    return [os.path.realpath(file_path),
+            os.path.normpath(os.path.abspath(file_path))]
+
+
+def _under(target, roots):
+    return any(target == root or target.startswith(root.rstrip(os.sep) + os.sep)
+               for root in roots)
+
+
+def check_guard_files(agent_type, file_path, hook_cwd):
+    """No subagent rewrites the files that decide what this guard allows.
+
+    The packaged map, the role agents, these hooks (the plugin root), the
+    session and binding records (`_data_root()`) and the business registry
+    sit outside every workspace, so the ownership checks never see them and
+    the outside-the-workspace allow used to wave them through. A non-role
+    agent that can edit `references/ownership.yaml` or forge an
+    `agent-types/` record has no map. Same shape as `check_local_map`: not
+    grantable by an entry, and bound to the tools that name a path.
+    """
+    user_home = os.environ.get("HOME") or os.path.expanduser("~")
+    registry = os.path.join(user_home, ".founder-os", "businesses.yaml")
+    dirs = _expand_roots([
+        root for root in (
+            os.environ.get("PLUGIN_ROOT"), os.environ.get("CLAUDE_PLUGIN_ROOT"),
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            _data_root(),
+        ) if root])
+    files = _expand_roots([registry])
+    for target in _spellings(file_path, hook_cwd):
+        if target in files or _under(target, dirs):
+            deny(
+                "`%s` is part of what defines the Founder OS guard — the "
+                "plugin, its session records or the business registry — and "
+                "no agent writes it with %s, including `%s`.\n\n"
+                "An agent that can edit the map or the records that bind it "
+                "does not have one, so this deny cannot be granted by an entry "
+                "in the ownership map.\n\n"
+                "(The founder can always make this edit themselves — this rule "
+                "is about agents.)" % (file_path, _path_naming_tools(), agent_type)
+            )
+
+
 def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
     paths = _tool_paths(tool_name, tool_input)
     if not paths:
         return
     derived = load_derived()
-    roots = workspace_roots(hook_cwd)
+    roots = workspace_roots(hook_cwd, registry=False)
+    # The registry loads `mcp/workspaces.py` (~20 ms), and only a target
+    # outside the primary roots can need it.
+    if any(not _under(target, roots) for file_path in paths
+           for target in _spellings(file_path, hook_cwd)):
+        roots += [root for root in _expand_roots(_registry_roots())
+                  if root not in roots]
     by_path = load_ownership()
     if by_path is None:
         # `derived_files:` has its own reader, and an `owns:` block this guard
@@ -1058,6 +1112,7 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
         for file_path in paths:
             for rel in _workspace_rels(file_path, hook_cwd, roots):
                 check_derived(agent_type, rel, derived)
+            check_guard_files(agent_type, file_path, hook_cwd)
         allow("no ownership map — the guard is off, not strict")
     for file_path in paths:
         root, rel = resolve_in_workspace(file_path, hook_cwd, roots)
@@ -1084,6 +1139,10 @@ def check_ownership(agent_type, tool_name, tool_input, hook_cwd):
             "(The founder can always make this edit themselves — this rule is about "
             "agents.)" % (rel, owner, agent_type, owner)
         )
+    # After the workspace checks, so a workspace deny keeps its own reason
+    # when a development checkout makes the plugin root a workspace root too.
+    for file_path in paths:
+        check_guard_files(agent_type, file_path, hook_cwd)
 
 
 def agent_type_for(data):
@@ -1207,7 +1266,11 @@ def main():
             "less than the role is.",
         )
     if tool_name in OUTBOUND_TOOLS:
-        check_outbound(agent_type, tool_name)
+        _deny_tool(
+            agent_type,
+            tool_name,
+            "House rule 0 says agents draft and the founder sends.",
+        )
     if tool_name in DIRECT_FILE_TOOLS:
         _deny_tool(
             agent_type,

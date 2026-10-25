@@ -106,8 +106,10 @@ dispatches the fallback with the role's gateway-only tool allowlist
 instructions are what bind it.
 
 Any other subagent — a reviewer, an Explore pass, a `_local/agents/` agent —
-is held only to the ownership, `_local/` and derived-file denies, and only for
-tools that name a path. Its `Bash` and web tools are its own permission
+is held only to the ownership, `_local/` and derived-file denies plus a deny on
+the files that define the guard (the plugin root, the plugin data directory and
+`~/.founder-os/businesses.yaml`), and only for tools that name a path
+(`Write`, `Edit`, `MultiEdit`, `NotebookEdit`). Its `Bash` and web tools are its own permission
 settings' business, and the gateway refuses it every capability-bound call.
 
 Malformed hook input or a call with no resolvable subagent identity stays out

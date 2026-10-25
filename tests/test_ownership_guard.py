@@ -192,21 +192,32 @@ class TestAgentTypeFor(unittest.TestCase):
 
         self.assertIsNone(resolved)
 
-    def test_mapping_older_than_twenty_four_hours_is_not_trusted(self):
+    NOW = 1_800_000_000.0
+
+    def _mapping_aged(self, age):
         with tempfile.TemporaryDirectory() as temp_dir:
             mapping = Path(temp_dir) / "agent-types"
             mapping.mkdir()
             (mapping / "agent.old.json").write_text(
                 json.dumps(
-                    {"agent_type": "cfo", "recorded_at": time.time() - 86401}
+                    {"agent_type": "cfo", "recorded_at": self.NOW - age}
                 ),
                 encoding="utf-8",
             )
             with mock.patch.dict(
                 os.environ, {"PLUGIN_DATA": temp_dir}, clear=False
-            ):
-                resolved = self.guard._mapped_agent_type("agent.old")
-        self.assertIsNone(resolved)
+            ), mock.patch.object(self.guard.time, "time",
+                                 return_value=self.NOW):
+                return self.guard._mapped_agent_type("agent.old")
+
+    def test_mapping_older_than_twenty_four_hours_is_not_trusted(self):
+        self.assertIsNone(self._mapping_aged(86401))
+
+    def test_mapping_exactly_twenty_four_hours_old_is_not_trusted(self):
+        self.assertIsNone(self._mapping_aged(86400))
+
+    def test_mapping_one_second_inside_the_ttl_is_trusted(self):
+        self.assertEqual(self._mapping_aged(86399), "cfo")
 
     def test_present_invalid_identity_markers_are_not_treated_as_main(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -232,10 +243,9 @@ class TestAgentTypeFor(unittest.TestCase):
 class TestOutboundGuard(unittest.TestCase):
     """House rule 0 at the tool layer — the half of the hook nothing covered.
 
-    The guard's own docstring calls check_outbound 'the only reason [Bash
-    routing-around] isn't trivial today'. A matcher typo there would have
-    shipped silently: every prior test exercised ownership, none exercised
-    outbound.
+    Driven through the hook as the runtime runs it, so the deny is pinned
+    where `main` makes it. A matcher typo there would have shipped silently:
+    every prior test exercised ownership, none exercised outbound.
     """
 
     def test_bash_by_subagent_is_denied(self):
@@ -491,11 +501,10 @@ class TestDerivedFilesAreNotWritable(unittest.TestCase):
         # The hook sees tools that name a path. A shell command names none, so
         # the message says which writes it is speaking about instead of
         # promising an absolute the mechanism does not deliver. "A file tool"
-        # was still a class wider than the mechanism: it reads three tools and
-        # hands every other one — MultiEdit on a host that ships it — no path
-        # at all, so the three are named.
+        # was still a class wider than the mechanism: it reads four tools and
+        # hands every other one no path at all, so the four are named.
         p = self._run(self.MAP, "_dashboard/notes.md")
-        for tool in ("Write", "Edit", "NotebookEdit"):
+        for tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
             self.assertIn("`%s`" % tool, p.stdout, tool)
         self.assertNotIn("with a file tool", p.stdout)
 
@@ -595,6 +604,17 @@ class TestDerivedFilesAreNotWritable(unittest.TestCase):
     def test_edit_is_bound_as_well_as_write(self):
         p = self._run(self.MAP, "_dashboard/index.html", tool_name="Edit")
         self.assertIn("deny", p.stdout, p.stderr)
+
+    def test_multiedit_is_bound_like_edit(self):
+        # SEC-01: MultiEdit names its target the way Edit does; a host that
+        # still ships it must not get a path-free pass on any of the denies.
+        for rel, reason in (("_dashboard/index.html", "derived_files"),
+                            ("goals.md", "Hand off to"),
+                            ("_local/ownership.yaml", "local overlay")):
+            with self.subTest(rel=rel):
+                p = self._run(self.MAP, rel, tool_name="MultiEdit")
+                self.assertIn("deny", p.stdout, p.stderr)
+                self.assertIn(reason, p.stdout)
 
     def test_a_relative_path_resolves_against_the_session_cwd(self):
         p = self._run(
@@ -705,7 +725,33 @@ class TestOwnershipHotPath(unittest.TestCase):
                 mock.patch.object(guard, "workspace_roots", return_value=[] ) as roots:
             guard.check_ownership("cfo", "Write", {
                 "file_path": "/tmp/workspace/a.md"}, "/tmp/workspace")
-        roots.assert_called_once_with("/tmp/workspace")
+        roots.assert_called_once_with("/tmp/workspace", registry=False)
+
+    def test_an_in_root_write_does_not_load_the_registry(self):
+        # PERF-01: the registry costs an import of mcp/workspaces.py on every
+        # call, and a target under the primary roots cannot need it.
+        guard = load_guard()
+        with tempfile.TemporaryDirectory() as td:
+            ws = Path(td).resolve() / "founder-os"
+            ws.mkdir()
+            with mock.patch.dict(os.environ, {"FOUNDER_OS_HOME": str(ws)}), \
+                    mock.patch.object(guard, "_registry_roots",
+                                      return_value=[]) as registry:
+                guard.check_ownership("explore", "Write", {
+                    "file_path": str(ws / "scratch.md")}, td)
+                registry.assert_not_called()
+                guard.check_ownership("explore", "Write", {
+                    "file_path": str(Path(td) / "elsewhere.md")}, td)
+                registry.assert_called_once_with()
+
+    def test_a_main_thread_call_does_not_import_tempfile(self):
+        # PERF-03: tempfile is for binding a generic role and nothing else.
+        p = subprocess.run([sys.executable, "-X", "importtime", str(GUARD_PATH)],
+                           input=json.dumps({"tool_name": "Read"}),
+                           capture_output=True, text=True, cwd=str(REPO_ROOT))
+        self.assertEqual(p.stdout.strip(), "")
+        self.assertIn("import time:", p.stderr)
+        self.assertNotIn("tempfile", p.stderr)
 
     def test_the_packaged_map_is_read_once_per_invocation(self):
         # PERF-002's discipline with a second consumer on it: `owns:` and
@@ -995,21 +1041,18 @@ class TestLocalOverlay(unittest.TestCase):
             self.assertIn("deny", also_denied.stdout, also_denied.stderr)
 
     def test_overlay_is_read_once_per_root(self):
+        # Stated as behaviour: an overlay rewritten between two reads in one
+        # invocation is not read again, so both answers come from one file.
         guard = load_guard()
-        calls = []
-        real = guard._owns_from_text
-
-        def counted(text, source):
-            calls.append(source)
-            return real(text, source)
-
         import tempfile
         with tempfile.TemporaryDirectory() as td:
             ws = self._workspace(Path(td), self.OVERLAY)
-            with mock.patch.object(guard, "_owns_from_text", counted):
-                guard.local_ownership(str(ws))
-                guard.local_ownership(str(ws))
-        self.assertEqual(len(calls), 1)
+            first = guard.local_ownership(str(ws))
+            (ws / "_local" / "ownership.yaml").write_text(
+                "owns:\n  cfo:\n    - other.md\n", encoding="utf-8")
+            second = guard.local_ownership(str(ws))
+        self.assertEqual(first, {"partners.md": "network-manager"})
+        self.assertEqual(second, first)
 
 
 class TestLocalMapIsNotAgentWritable(unittest.TestCase):
@@ -1583,6 +1626,79 @@ class TestGatewayCapabilityBoundary(unittest.TestCase):
             load_guard().ROLE_NAMES,
             {path.stem for path in (PLUGIN_ROOT / "agents").glob("*.md")},
         )
+
+    def test_session_fields_match_the_gateways_record(self):
+        # HOOK-06 — `_session_role` refuses any record whose keys differ, so a
+        # field the gateway adds would deny every role's gateway call.
+        sys.path.insert(0, str(PLUGIN_ROOT))
+        try:
+            from mcp import sessions
+        finally:
+            sys.path.pop(0)
+        self.assertEqual(load_guard().SESSION_FIELDS,
+                         sessions._BASE_RECORD_FIELDS)
+
+
+class TestGuardFilesAreNotAgentWritable(unittest.TestCase):
+    """SEC-02: the files that define the guard sit outside every workspace.
+
+    The plugin root, the plugin data root and the business registry are not
+    workspace files, so the outside-the-workspace allow used to cover them.
+    """
+
+    def _run(self, rel_or_path, agent_type="explore", tool_name="Edit"):
+        tmp = Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, str(tmp), True)
+        ws, data, home = tmp / "ws", tmp / "data", tmp / "home"
+        for directory in (ws, data / "state-gateway", home / ".founder-os"):
+            directory.mkdir(parents=True)
+        target = {"plugin": PLUGIN_ROOT / "references" / "ownership.yaml",
+                  "hook": PLUGIN_ROOT / "hooks" / "ownership-guard.py",
+                  "agent": PLUGIN_ROOT / "agents" / "cfo.md",
+                  "session": data / "state-gateway" / ("0" * 64 + ".json"),
+                  "binding": data / "agent-types" / "agent.x.json",
+                  "registry": home / ".founder-os" / "businesses.yaml",
+                  "registry-link": tmp / "link.yaml",
+                  "outside": tmp / "elsewhere.md"}[rel_or_path]
+        if rel_or_path == "registry-link":
+            target.symlink_to(home / ".founder-os" / "businesses.yaml")
+        env = {**os.environ, "FOUNDER_OS_HOME": str(ws), "HOME": str(home),
+               "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT),
+               "PLUGIN_DATA": str(data)}
+        env.pop("PLUGIN_ROOT", None)
+        payload = {"tool_name": tool_name, "cwd": str(tmp),
+                   "tool_input": {"file_path": str(target)}}
+        if agent_type is not None:
+            payload["agent_type"] = agent_type
+        return subprocess.run([sys.executable, str(GUARD_PATH)],
+                              input=json.dumps(payload), capture_output=True,
+                              text=True, env=env, cwd=str(tmp))
+
+    def test_a_non_role_agent_may_not_write_a_guard_file(self):
+        for target in ("plugin", "hook", "agent", "session", "binding",
+                       "registry", "registry-link"):
+            for tool_name in ("Write", "Edit"):
+                with self.subTest(target=target, tool_name=tool_name):
+                    p = self._run(target, tool_name=tool_name)
+                    self.assertIn("deny", p.stdout, p.stderr)
+                    self.assertIn("defines the Founder OS guard", p.stdout)
+                    self.assertEqual(p.returncode, 0)
+
+    def test_a_generic_agent_is_denied_too(self):
+        p = self._run("session", agent_type="general-purpose", tool_name="Write")
+        self.assertIn("defines the Founder OS guard", p.stdout, p.stderr)
+
+    def test_the_main_thread_is_unaffected(self):
+        for target in ("plugin", "session", "registry"):
+            with self.subTest(target=target):
+                p = self._run(target, agent_type=None)
+                self.assertEqual(p.stdout.strip(), "", p.stdout)
+                self.assertEqual(p.returncode, 0)
+
+    def test_an_ordinary_path_outside_the_workspace_is_still_allowed(self):
+        p = self._run("outside", tool_name="Write")
+        self.assertEqual(p.stdout.strip(), "", p.stdout)
+        self.assertEqual(p.returncode, 0)
 
 
 class TestHostRuntimeShapes(unittest.TestCase):
