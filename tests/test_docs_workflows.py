@@ -1,5 +1,6 @@
 """Contract tests for the dependency-free workflow catalogue landing section."""
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -568,6 +569,8 @@ class WorkflowLibraryContractTest(unittest.TestCase):
 
     def test_controllers_execute_the_approved_interactions(self):
         if shutil.which("node") is None:
+            if os.environ.get("CI"):
+                self.fail("node required in CI for docs/index.html behavior tests")
             self.skipTest("node required for docs/index.html behavior tests")
         behavior_test = REPO_ROOT / "tests" / "docs_workflows.behavior.test.js"
         result = subprocess.run(

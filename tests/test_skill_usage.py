@@ -28,7 +28,7 @@ def tool_use(uuid, day, name, **tool_input):
 class TestSkillUsage(unittest.TestCase):
     def setUp(self):
         self.config = Path(tempfile.mkdtemp())
-        self.today = datetime.date.today()
+        self.today = datetime.date(2026, 7, 20)
         recent = (self.today - datetime.timedelta(days=2)).isoformat()
         old = (self.today - datetime.timedelta(days=90)).isoformat()
         records = [
@@ -93,11 +93,21 @@ class TestSkillUsage(unittest.TestCase):
 
     def test_cli_honors_config_dir_and_prints_no_content(self):
         env = {**os.environ, "CLAUDE_CONFIG_DIR": str(self.config)}
+        # The CLI counts against its own clock; a far-future call stays in
+        # its 30-day window whatever the date.
+        project = self.config / "projects" / "-Users-x-future"
+        project.mkdir(parents=True)
+        (project / "d.jsonl").write_text(json.dumps(tool_use(
+            "u9", "2999-01-01", "Skill", skill="founder-os:capture")) + "\n",
+            encoding="utf-8")
         result = subprocess.run([sys.executable, str(SCRIPT)], env=env,
                                 capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("workflow | daily-brief | 1 | %s" % self.recent,
-                      result.stdout)
+        self.assertIn("workflow | capture | 1 | 2999-01-01", result.stdout)
+        self.assertTrue(any(
+            line.startswith("workflow | daily-brief | ")
+            and line.endswith(" | %s" % self.recent)
+            for line in result.stdout.splitlines()), result.stdout)
         self.assertIn("Never used (", result.stdout)
         for leaked in ("SECRET", "9000", "secret-client", str(self.config)):
             self.assertNotIn(leaked, result.stdout)

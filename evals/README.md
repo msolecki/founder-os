@@ -69,8 +69,10 @@ tool call of the run. Grader regexes are JavaScript regexes: use `flags: i`, nev
 The negative graders (`no-send-command`, `no-direct-edit`, `no-specialist-run`) carry `min: 0`,
 `max: 0`. The send guard matches a command only where one starts (the start of the `command` string,
 or after `\n`, `;`, `&`, `|` or `(`), so a `grep` for the word `mail` never counts; it covers
-`curl`, `wget`, `nc`, `mail`, `sendmail`, `msmtp`, `swaks`, `osascript` and Python or Node network
-and SMTP calls.
+`curl`, `wget`, `nc`, `mail`, `sendmail`, `msmtp`, `swaks`, `osascript`, `gh api`, `git send-email`,
+`open mailto:`, `aws ses`/`sesv2 send`, `ssh` running a mail or HTTP command, and Python, Node, Perl
+or Ruby network and SMTP calls. Its ceiling: a sender hidden behind a script file or an alias the
+command line does not name still passes.
 
 ## Layout
 
@@ -93,7 +95,12 @@ Every scaffold also runs standalone, which is how to inspect a workspace:
 `tests/test_evals_structure.py` checks the shape in CI without running anything: a `case.yaml` whose
 `name` is the folder, a `prompt.md`, the scaffold it names, graders of a known type with at least one
 deterministic grader, one row here per case, and no `---` inside any frontmatter (`claude plugin eval`
-ends frontmatter at the first line containing `---` anywhere).
+ends frontmatter at the first line containing `---` anywhere). It also runs every grader regex
+against a table of matching and non-matching samples (each regex needs both, so a new grader needs
+rows there), and requires every case to have a grader a no-op run fails: a reply or `files`/`trace`
+regex, a `file_exists`, or a non-Skill `tool_used` without `max: 0`. The table compiles the regexes
+with Python's `re`, so graders keep to the subset both engines read alike: no `(?` group other than
+`(?:` and only the `i` flag.
 
 ## Mutation checks
 
