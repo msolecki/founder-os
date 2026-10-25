@@ -599,8 +599,11 @@ _HANDED_OVER = re.compile(r"^\+\s*(?P<count>\d+)\b", re.M)
 def _rotting_count(body: str) -> Optional[float]:
     """Printed items plus the remainder the brief says it withheld."""
     handed = _HANDED_OVER.search(body)
-    entries = parse.split_entries(
-        _HANDED_OVER.sub("", body) if handed else body)
+    # The whole `+7 more …` line goes, not just its count: its prose remainder
+    # alone is not a list, and a sole handed-over line then read as None.
+    entries = parse.split_entries("".join(
+        line for line in body.splitlines(keepends=True)
+        if not _HANDED_OVER.match(line)))
     if entries is None:
         return None
     return float(len(entries) + (int(handed.group("count")) if handed else 0))

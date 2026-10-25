@@ -797,6 +797,15 @@ class TestBriefCountsWhatTheBriefWrote(unittest.TestCase):
             "+7 more — handed to triage")), TODAY)
         self.assertEqual(fact(panel, "rotting_count").number, 10.0)
 
+    def test_a_sole_handed_over_line_counts_its_remainder(self):
+        self.assertEqual(
+            analyze._rotting_count("+7 more — handed to triage\n"), 7.0)
+        panel = analyze.build_brief(example_sources(edit(
+            "reviews/daily/2026-07-20.md",
+            "- Northwind reference follow-up — 3 days overdue",
+            "+7 more — handed to triage")), TODAY)
+        self.assertEqual(fact(panel, "rotting_count").number, 7.0)
+
     def test_a_first_run_rotting_line_is_a_zero(self):
         """daily-brief's first run writes `none — <why>`, not a bare `none`."""
         panel = analyze.build_brief(example_sources(edit(
