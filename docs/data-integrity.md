@@ -110,7 +110,7 @@ sounding like them.
   `## Samples`, `## Tells`, `## Never`, `## Register`. If the founder already
   keeps a style guide or a banned-phrases list, `init` offers to import it rather
   than making them teach it twice.
-- **`drafts/{outreach,proposals,content}/`** hold `## Draft` (the body), and
+- **`drafts/{outreach,proposals,content,network}/`** hold `## Draft` (the body), and
   `## Sent` (what actually went out). `## Sent` is the only place the founder's
   own edit to the machine's prose survives the session.
 - **The loop:** `voice-capture` reads the diff between `## Draft` and `## Sent` —
