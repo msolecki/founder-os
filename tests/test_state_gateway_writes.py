@@ -518,6 +518,12 @@ class StateGatewayWriteTests(unittest.TestCase):
         self.data_root = self.base / "plugin-data"
         self.home = self.base / "home"
         self.clock_value = 1_700_000_000.25
+        # Any set value, even empty, pins the gateway: a run started from a
+        # cadence unit must not leak its pin into these tests.
+        environment = mock.patch.dict(os.environ)
+        environment.start()
+        self.addCleanup(environment.stop)
+        os.environ.pop("FOUNDER_OS_CADENCE_WORKFLOW", None)
 
         for role in ROLES:
             agent = self.package / "agents" / (role + ".md")
@@ -1321,6 +1327,19 @@ class StateGatewayWriteTests(unittest.TestCase):
         self._open("cfo")
         self.assertFalse(oversized.exists())
 
+    def test_a_far_future_session_record_is_pruned_by_its_age(self):
+        # MCP-13 — retention keyed only off `expires_at` kept this forever.
+        self._open("cfo")
+        (record_path,) = self.data_root.glob("*.json")
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        record["expires_at"] = self.clock_value + 50 * 365 * 24 * 60 * 60
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        old = (self.clock_value - RoleSessionStore.SESSION_RETENTION_SECONDS
+               - 300 - 1)  # 300: the store's ttl
+        os.utime(record_path, (old, old))
+        self._open("strategist")
+        self.assertFalse(record_path.exists())
+
     def test_concurrent_journal_preflights_are_serialized(self):
         first = self.sessions.preflight_journal()
         started = threading.Event()
@@ -1638,8 +1657,23 @@ class StateGatewayWriteTests(unittest.TestCase):
                         },
                     )
                     self._assert_error(response, code="ROLE_SESSION_INVALID")
+        self._open("cfo")
+
+    def test_an_empty_cadence_pin_refuses_every_workflow(self):
+        """Set-but-empty is a pin that matches nothing, not an unpinned run."""
         with mock.patch.dict(os.environ, {"FOUNDER_OS_CADENCE_WORKFLOW": ""}):
-            self._open("cfo")
+            for role in ("chief-of-staff", "cfo"):
+                with self.subTest(role=role):
+                    response = self._call(
+                        "open_role_session",
+                        {
+                            "workspace_id": self.binding.workspace_id,
+                            "role": role,
+                            "correlation_id": "corr-" + role,
+                            "workflow": ROLE_WORKFLOWS[role],
+                        },
+                    )
+                    self._assert_error(response, code="ROLE_SESSION_INVALID")
 
     def test_a_gateway_started_with_the_cadence_pin_refuses_another_workflow(self):
         project = self.base / "projects" / "scheduled"

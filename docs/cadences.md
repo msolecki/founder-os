@@ -76,7 +76,8 @@ Every unit also exports `FOUNDER_OS_CADENCE_WORKFLOW=<workflow>` beside
 `FOUNDER_OS_HOME`, quoted the same way. While it is set, the state gateway
 refuses `open_role_session` for any other workflow with
 `ROLE_SESSION_INVALID`, so text a scheduled run reads cannot steer it into
-another role's workflow. The `smoke` command runs with the same pin. Units
+another role's workflow. Set but empty still counts as a pin and refuses
+every workflow. The `smoke` command runs with the same pin. Units
 installed before the pin existed keep running unpinned until you preview and
 apply again.
 

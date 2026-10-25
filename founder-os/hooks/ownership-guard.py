@@ -891,8 +891,13 @@ def check_guard_files(agent_type, file_path, hook_cwd):
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             _data_root(),
         ) if root])
-    files = _expand_roots([registry])
+    # Casefolded on both sides: on a case-insensitive volume (default APFS)
+    # `~/.Founder-OS/businesses.yaml` is the registry. Folding only widens
+    # this deny, the same casefold-to-deny rule as `owner_key`.
+    dirs = [d.casefold() for d in dirs]
+    files = [f.casefold() for f in _expand_roots([registry])]
     for target in _spellings(file_path, hook_cwd):
+        target = target.casefold()
         if target in files or _under(target, dirs):
             deny(
                 "`%s` is part of what defines the Founder OS guard — the "
